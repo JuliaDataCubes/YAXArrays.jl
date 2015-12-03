@@ -1,5 +1,5 @@
 module DataCubeReader
-export Cube, CubeData, getCube
+export Cube, CubeData, getCube,getTimeRanges
 
 using DataStructures
 using Base.Dates
@@ -73,11 +73,13 @@ end
 function getCube(cubedata::CubeData;variable=Int[],time=[],latitude=[],longitude=[])
     #First fill empty inputs
     isempty(variable) && (variable = cubedata.dataset_files)
-    isempty(time)     && (time     = (cubedata.cube.config["start_time"],cubedata.cube.config["end_time"]))
+    isempty(time)     && (time     = (cubedata.cube.config.start_time,cubedata.cube.config.end_time-Day(1)))
     isempty(latitude) && (latitude = (-90,90))
     isempty(longitude)&& (longitude= (-180,180))
-    get(cubedata,variable,time,latitude,longitude)
+    getCube(cubedata,variable,time,latitude,longitude)
 end
+
+
 
 using NetCDF
 vartype{T,N}(v::NcVar{T,N})=T
@@ -91,6 +93,14 @@ function getTimesToRead(time1,time2,config)
     index2 = min(round(Int,d2/config.temporal_res)+1,NpY)
     ntimesteps = -index1 + index2 + (y2-y1)*NpY + 1
     return y1,index1,y2,index2,ntimesteps,NpY
+end
+
+function getTimeRanges(cdata::CubeData,time::Tuple{Dates.TimeType,Dates.TimeType}=(cdata.cube.config.start_time,cdata.cube.config.end_time-Dates.Day(1)))
+    c=cdata.cube
+    NpY    = ceil(Int,365/c.config.temporal_res)
+    yrange = Dates.year(time[1]):Dates.year(time[2])
+    #TODO handle non-full year case properly
+    reshape([DateTime(y)+Dates.Day((i-1)*c.config.temporal_res) for i=1:NpY, y=yrange],NpY*length(yrange))
 end
 
 function getCube(cubedata::CubeData,
@@ -111,7 +121,9 @@ function getCube(cubedata::CubeData,
     t=vartype(v)
 
     if y1==y2
-        return(v[grid_x1:grid_x2,grid_y1:grid_y2,i1:i2])
+        outar=v[grid_x1:grid_x2,grid_y1:grid_y2,i1:i2]
+        ncclose()
+        return outar
     else
         #Allocate Space
         outar=zeros(grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)
@@ -120,11 +132,14 @@ function getCube(cubedata::CubeData,
         #Read full "sandwich" years
         ifirst=NpY-i1+2
         for y=(y1+1):(y2-1)
+            v=NetCDF.open(joinpath(cubedata.cube.base_dir,"data",variable,"$(y)_$(variable).nc"),variable)
             outar[:,:,ifirst:(ifirst+NpY-1)]=v[grid_x1:grid_x2,grid_y1:grid_y2,:]
             ifirst+=NpY
         end
         #Read from last Year
+        v=NetCDF.open(joinpath(cubedata.cube.base_dir,"data",variable,"$(y2)_$(variable).nc"),variable)
         outar[:,:,(end-i2+1):end]=v[grid_x1:grid_x2,grid_y1:grid_y2,1:i2]
+        ncclose()
         return outar
     end
     #joinpath(cubedata.cube.base_dir,"data",variable,"$(y1)_$(variable).nc")
