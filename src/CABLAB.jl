@@ -4,17 +4,19 @@
 
 Some info on the project...
 """
-module DataCubeReader
-export Cube, CubeData, getCube,getTimeRanges
+module CABLAB
+export Cube, getCube,getTimeRanges,CubeMem
 
 using DataStructures
 using Base.Dates
+using NullableArrays
 
 type ConfigEntry{LHS}
     lhs
     rhs
 end
 
+include("axes.jl")
 
 "
  A data cube's static configuration information.
@@ -85,34 +87,38 @@ where `base_dir` is the datacube's base directory.
 type Cube
     base_dir::UTF8String
     config::CubeConfig
-end
-Cube(base_dir::AbstractString)=Cube(base_dir,parseConfig(base_dir))
-
-type CubeData
-    cube::Cube
     dataset_files::Vector{UTF8String}
     var_name_to_var_index::OrderedDict{UTF8String,Int}
     firstYearOffset::Int
 end
-
-"""
-CubeData(Cube::Cube)
-
-Returns a representation of the cube's read-only data. This can be passed to further getCube function calls.
-"""
-function CubeData(cube::Cube)
-    data_dir=joinpath(cube.base_dir,"data")
-    data_dir_entries=readdir(data_dir)
-    sort!(data_dir_entries)
-    var_name_to_var_index=OrderedDict{UTF8String,Int}()
-    for i=1:length(data_dir_entries) var_name_to_var_index[data_dir_entries[i]]=i end
-    firstYearOffset=div(dayofyear(cube.config.start_time)-1,cube.config.temporal_res)
-    CubeData(cube,data_dir_entries,var_name_to_var_index,firstYearOffset)
+function Cube(base_dir::AbstractString)
+  cubeconfig=parseConfig(base_dir)
+  data_dir=joinpath(base_dir,"data")
+  data_dir_entries=readdir(data_dir)
+  sort!(data_dir_entries)
+  var_name_to_var_index=OrderedDict{UTF8String,Int}()
+  for i=1:length(data_dir_entries) var_name_to_var_index[data_dir_entries[i]]=i end
+  firstYearOffset=div(dayofyear(cubeconfig.start_time)-1,cubeconfig.temporal_res)
+  Cube(base_dir,cubeconfig,data_dir_entries,var_name_to_var_index,firstYearOffset)
 end
 
+type CubeMem{T,N} <: AbstractArray{T,N}
+  axes::Vector{CubeAxis}
+  data::Array{T,N}
+  mask::Array{UInt8,N}
+end
+
+Base.linearindexing(::CubeMem)=Base.LinearFast()
+Base.getindex(c::CubeMem,i::Integer)=getindex(c.data,i)
+Base.setindex!(c::CubeMem,i::Integer,v)=setindex!(c.data,i,v)
+Base.size(c::CubeMem)=size(c.data)
+Base.similar(c::CubeMem)=cubeMem(c.lon,c.lat,c.time,similar(c.data))
+
+
+
 """
 
-    Cube(cubedata::CubeData;variable,time,latitude,longitude)
+    getCube(cube::Cube;variable,time,latitude,longitude)
 
 The following keyword arguments are accepted:
 
@@ -125,16 +131,19 @@ Returns a dictionary mapping variable names --> arrays of dimension (longitude, 
 
 http://earthsystemdatacube.org
 """
-function getCube(cubedata::CubeData;variable=Int[],time=[],latitude=[],longitude=[])
+function getCube(cube::Cube;variable=Int[],time=[],latitude=[],longitude=[])
     #First fill empty inputs
-    isempty(variable) && (variable = cubedata.dataset_files)
-    isempty(time)     && (time     = (cubedata.cube.config.start_time,cubedata.cube.config.end_time-Day(1)))
-    isempty(latitude) && (latitude = (-90,90))
-    isempty(longitude)&& (longitude= (-180,180))
-    getCube(cubedata,variable,time,latitude,longitude)
+    isempty(variable) && (variable = defaultvariable(cube))
+    isempty(time)     && (time     = defaulttime(cube))
+    isempty(latitude) && (latitude = defaultlatitude(cube))
+    isempty(longitude)&& (longitude= defaultlongitude(cube))
+    getCube(cube,variable,time,latitude,longitude)
 end
 
-
+defaulttime(cube::Cube)=cube.config.start_time,cube.config.end_time-Day(1)
+defaultvariable(cube::Cube)=cube.dataset_files
+defaultlatitude(cube::Cube)=(-90.0,90.0)
+defaultlongitude(cube::Cube)=(-180.0,180.0)
 
 using NetCDF
 vartype{T,N}(v::NcVar{T,N})=T
@@ -152,8 +161,7 @@ function getTimesToRead(time1,time2,config)
 end
 
 "Returns a vector of DateTime objects giving the time indices returned by a respective call to getCube."
-function getTimeRanges(cdata::CubeData,time::Tuple{Dates.TimeType,Dates.TimeType}=(cdata.cube.config.start_time,cdata.cube.config.end_time-Dates.Day(1)))
-    c=cdata.cube
+function getTimeRanges(c::Cube,time::Tuple{Dates.TimeType,Dates.TimeType}=(cdata.cube.config.start_time,cdata.cube.config.end_time-Dates.Day(1)))
     NpY    = ceil(Int,365/c.config.temporal_res)
     yrange = Dates.year(time[1]):Dates.year(time[2])
     #TODO handle non-full year case properly
@@ -161,7 +169,7 @@ function getTimeRanges(cdata::CubeData,time::Tuple{Dates.TimeType,Dates.TimeType
 end
 
 #Convert single input to vectors
-function getCube{T<:Union{Integer,AbstractString}}(cubedata::CubeData,
+function getCube{T<:Union{Integer,AbstractString}}(cube::Cube,
                 variable::Union{AbstractString,Integer,AbstractVector{T}},
                 time::Union{Tuple{TimeType,TimeType},TimeType},
                 latitude::Union{Tuple{Real,Real},Real},
@@ -170,68 +178,75 @@ function getCube{T<:Union{Integer,AbstractString}}(cubedata::CubeData,
   isa(time,TimeType) && (time=(time,time))
   isa(latitude,Real) && (latitude=(latitude,latitude))
   isa(longitude,Real) && (longitude=(longitude,longitude))
-  isa(variable,AbstractVector) && isa(eltype(variable),Integer) && (variable=[cubedata.cube.config.dataset_files[i] for i in variable])
+  isa(variable,AbstractVector) && isa(eltype(variable),Integer) && (variable=[cube.config.dataset_files[i] for i in variable])
   isa(variable,Integer) && (variable=dataset_files[i])
-  getCube(cubedata,variable,time,longitude,latitude)
+  getCube(cube,variable,time,longitude,latitude)
 end
 
-function getCube{T<:AbstractString}(cubedata::CubeData,
+function getCube{T<:AbstractString}(cube::Cube,
                 variable::Vector{T},
                 time::Tuple{TimeType,TimeType},
                 latitude::Tuple{Real,Real},
                 longitude::Tuple{Real,Real})
   r=Dict{T,Any}()
   for i=1:length(variable)
-    if haskey(cubedata.var_name_to_var_index,variable[i])
-      r[variable[i]]=getCube(cubedata,variable[i],time,latitude,longitude)
+    if haskey(cube.var_name_to_var_index,variable[i])
+      r[variable[i]]=getCube(cube,variable[i],time,latitude,longitude)
     else
       warn("Skipping variable $(variable[i]), not found in Datacube")
     end
   end
 end
 
+function getLonLatsToRead(config,longitude,latitude)
+  grid_y1 = round(Int,(90.0 - latitude[2]) / config.spatial_res) - config.grid_y0 + 1
+  grid_y2 = round(Int,(90.0 - latitude[1]) / config.spatial_res) - config.grid_y0
+  grid_x1 = round(Int,(180.0 + longitude[1]) / config.spatial_res) - config.grid_x0 + 1
+  grid_x2 = round(Int,(180.0 + longitude[2]) / config.spatial_res) - config.grid_x0
+  grid_y1,grid_y2,grid_x1,grid_x2
+end
 
 
-function getCube(cubedata::CubeData,
+function getCube(cube::Cube,
                 variable::AbstractString,
                 time::Tuple{TimeType,TimeType},
                 latitude::Tuple{Real,Real},
                 longitude::Tuple{Real,Real})
     # This function is doing the actual reading
-    config=cubedata.cube.config
-    grid_y1 = round(Int,(90.0 - latitude[2]) / config.spatial_res) - config.grid_y0 + 1
-    grid_y2 = round(Int,(90.0 - latitude[1]) / config.spatial_res) - config.grid_y0
-    grid_x1 = round(Int,(180.0 + longitude[1]) / config.spatial_res) - config.grid_x0 + 1
-    grid_x2 = round(Int,(180.0 + longitude[2]) / config.spatial_res) - config.grid_x0
+    config=cube.config
 
+    grid_y1,grid_y2,grid_x1,grid_x2 = getLonLatsToRead(config,longitude,latitude)
     y1,i1,y2,i2,ntime,NpY = getTimesToRead(time[1],time[2],config)
 
-    v=NetCDF.open(joinpath(cubedata.cube.base_dir,"data",variable,"$(y1)_$(variable).nc"),variable)
+    datafiles=sort!(readdir(joinpath(cube.base_dir,"data",variable)))
+    fnamefirst=datafiles[1]
+    v=NetCDF.open(joinpath(cube.base_dir,"data",variable,fnamefirst),variable)
     t=vartype(v)
+    outar=Array(t,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)
 
     if y1==y2
-        outar=v[grid_x1:grid_x2,grid_y1:grid_y2,i1:i2]
+        outar[:]=v[grid_x1:grid_x2,grid_y1:grid_y2,i1:i2]
         ncclose()
-        return outar
     else
-        #Allocate Space
-        outar=zeros(grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)
         #Read from first year
         outar[:,:,1:(NpY-i1+1)]=v[grid_x1:grid_x2,grid_y1:grid_y2,i1:NpY]
         #Read full "sandwich" years
         ifirst=NpY-i1+2
         for y=(y1+1):(y2-1)
-            v=NetCDF.open(joinpath(cubedata.cube.base_dir,"data",variable,"$(y)_$(variable).nc"),variable)
+            v=NetCDF.open(joinpath(cube.base_dir,"data",variable,"$(y)_$(variable).nc"),variable)
             outar[:,:,ifirst:(ifirst+NpY-1)]=v[grid_x1:grid_x2,grid_y1:grid_y2,:]
             ifirst+=NpY
         end
         #Read from last Year
-        v=NetCDF.open(joinpath(cubedata.cube.base_dir,"data",variable,"$(y2)_$(variable).nc"),variable)
+        v=NetCDF.open(joinpath(cube.base_dir,"data",variable,"$(y2)_$(variable).nc"),variable)
         outar[:,:,(end-i2+1):end]=v[grid_x1:grid_x2,grid_y1:grid_y2,1:i2]
         ncclose()
-        return outar
     end
-    #joinpath(cubedata.cube.base_dir,"data",variable,"$(y1)_$(variable).nc")
+
+    return CubeMem(CubeAxis[LonAxis(longitude[1]:0.25:longitude[2]),LatAxis(latitude[1]:0.25:latitude[2]),TimeAxis(getTimeRanges(cube,time))],outar,zeros(UInt8,size(outar)))
+    #joinpath(cube.base_dir,"data",variable,"$(y1)_$(variable).nc")
 
 end
 end # module
+
+include("DAT.jl")
