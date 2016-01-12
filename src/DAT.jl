@@ -1,5 +1,5 @@
 module DAT
-export @registerDATFunction
+export @registerDATFunction, joinVars
 using CABLAB
 using Base.Dates
 
@@ -14,22 +14,21 @@ macro registerDATFunction(fname, dimsin, dimsout, args...)
   if dimsin.args==[:TimeAxis]
     DAT.cubeFunctions[fname]=(TimeAxis,)
     fhead=Expr(:call,sfname,:(dc::CubeMem),args...)
-    println(fhead)
     args2=ntuple(i->(isa(args[i],Expr) && args[i].head==:(::)) ? args[i].args[1] : args[i],length(args))
-    println(args2)
-    fcall=Expr(:call,sfname,:xin,:xout,args2...)
+    fcall=Expr(:call,sfname,:xin,:xout,:mask,args2...)
       return quote
           #This generates a wrapper that takes a block of Lon-Lat-Time data and peforms the operations along Time Axis"
           $fhead=begin
-              println(NpY)
               isa(dc.axes[1],TimeAxis) || (dc=dims2Front(dc,TimeAxis))
               ntime=size(dc.data,1)
               nother=div(length(dc.data),ntime)
               indata=reshape(dc.data,(ntime,nother))
               outdata=zeros(eltype(indata),size(indata))
+              maskfull=reshape(dc.mask,(ntime,nother))
               for iother=1:nother
                   xin=slice(indata,:,iother)
                   xout=slice(outdata,:,iother)
+                  mask=slice(maskfull,:,iother)
                   $fcall
               end
               CubeMem(dc.axes,reshape(outdata,size(dc.data)),dc.mask)
@@ -61,10 +60,30 @@ macro registerDATFunction(fname, dimsin, dimsout, args...)
                   saveToTemp(resu,ilat,ilon)
               end
           end
-          #Add to the list of functions
-          #cubeFunctions[$sfname]=(TimeAxis,)
       end
+  elseif dimsin.args==[:TimeAxis,:VariableAxis]
+    DAT.cubeFunctions[fname]=(TimeAxis,VariableAxis)
+    fhead=Expr(:call,sfname,:(dc::CubeMem),args...)
+    args2=ntuple(i->(isa(args[i],Expr) && args[i].head==:(::)) ? args[i].args[1] : args[i],length(args))
+    fcall=Expr(:call,sfname,:xin,:xout,args2...)
+    return quote
+      #This generates a wrapper that takes a block of Lon-Lat-Time data and peforms the operations along Time Axis"
+      $fhead=begin
+        isa(dc.axes[1],TimeAxis) && isa(dc.axes[1],TimeAxis,VariableAxis) || (dc=dims2Front(dc,TimeAxis))
+        ntime=size(dc.data,1)
+        nother=div(length(dc.data),ntime)
+        indata=reshape(dc.data,(ntime,nother))
+        outdata=zeros(eltype(indata),size(indata))
+        for iother=1:nother
+          xin=slice(indata,:,iother)
+          xout=slice(outdata,:,iother)
+          $fcall
+        end
+        CubeMem(dc.axes,reshape(outdata,size(dc.data)),dc.mask)
+      end
+    end
   end
+
 end
 
 "Find a certain axis type in a vector of Cube axes"
@@ -80,19 +99,32 @@ end
 function dims2Front{T,N}(dc::CubeMem{T,N},dims...)
   axes=copy(dc.axes)
   perm=Int[i for i=1:length(axes)];
-  for i=1:length(dims)
-    iold=findAxis(dims[i],axes)
-    itemp=splice!(perm,iold)
-    unshift!(perm,itemp)
-  end
+  iold=Int[]
+  for i=1:length(dims) push!(iold,findAxis(dims[i],axes)) end
+  iold2=sort(iold,rev=true)
+  for i=1:length(iold) splice!(perm,iold2[i]) end
+  perm=Int[iold;perm]
   newdata=permutedims(dc.data,ntuple(i->perm[i],N))
   newmask=permutedims(dc.mask,ntuple(i->perm[i],N))
   CubeMem(axes[perm],newdata,newmask)
 end
 
 "Function to join a Dict of several variables in a data cube to a single one."
-function joinVars{T,N}(d::Dict{UTF8String,Array{T,N}})
-
+function joinVars(d::Dict{UTF8String,Any})
+  #First determine the common promote type of all variables
+  vnames=collect(keys(d))
+  typevec=DataType[eltype(d[vnames[i]]) for i in 1:length(vnames)]
+  tcommon=reduce(promote_type,typevec[1],typevec)
+  nold=prod(size(d[vnames[1]]))
+  datanew=zeros(tcommon,nold*length(vnames))
+  masknew=zeros(UInt8,nold*length(vnames))
+  ipos=1
+  for i=1:length(vnames)
+    datanew[ipos:ipos+nold-1]=d[vnames[i]].data
+    masknew[ipos:ipos+nold-1]=d[vnames[i]].mask
+    ipos+=nold
+  end
+  CubeMem(CubeAxis[d[vnames[1]].axes;VariableAxis{length(vnames)}(vnames)],reshape(datanew,size(d[vnames[1]])...,length(vnames)),reshape(masknew,size(d[vnames[1]])...,length(vnames)))
 end
 
 include("msc.jl")

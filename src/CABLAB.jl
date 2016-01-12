@@ -6,6 +6,7 @@ Some info on the project...
 """
 module CABLAB
 export Cube, getCube,getTimeRanges,CubeMem
+include("constants.jl")
 
 using DataStructures
 using Base.Dates
@@ -188,7 +189,7 @@ function getCube{T<:AbstractString}(cube::Cube,
                 time::Tuple{TimeType,TimeType},
                 latitude::Tuple{Real,Real},
                 longitude::Tuple{Real,Real})
-  r=Dict{T,Any}()
+  r=Dict{UTF8String,Any}()
   for i=1:length(variable)
     if haskey(cube.var_name_to_var_index,variable[i])
       r[variable[i]]=getCube(cube,variable[i],time,latitude,longitude)
@@ -196,6 +197,7 @@ function getCube{T<:AbstractString}(cube::Cube,
       warn("Skipping variable $(variable[i]), not found in Datacube")
     end
   end
+  r
 end
 
 function getLonLatsToRead(config,longitude,latitude)
@@ -204,6 +206,22 @@ function getLonLatsToRead(config,longitude,latitude)
   grid_x1 = round(Int,(180.0 + longitude[1]) / config.spatial_res) - config.grid_x0 + 1
   grid_x2 = round(Int,(180.0 + longitude[2]) / config.spatial_res) - config.grid_x0
   grid_y1,grid_y2,grid_x1,grid_x2
+end
+
+function readFromDataYear(cube::Cube,outar::AbstractArray,mask,variable,y,grid_x1,grid_x2,grid_y1,grid_y2,i1,i2)
+  filename=joinpath(cube.base_dir,"data",variable,string(y,"_",variable,".nc"))
+  if isfile(filename)
+    v=NetCDF.open(filename,variable)
+    outar[:]=v[grid_x1:grid_x2,grid_y1:grid_y2,i1:i2]
+    missval=ncgetatt(filename,variable,"_FillValue")
+    for i=eachindex(outar)
+      outar[i] == missval && (mask[i]=mask[i] | MISSING)
+    end
+  else
+    for i=eachindex(mask)
+      mask[i]=(mask[i] | OUTOFPERIOD)
+    end
+  end
 end
 
 
@@ -219,31 +237,29 @@ function getCube(cube::Cube,
     y1,i1,y2,i2,ntime,NpY = getTimesToRead(time[1],time[2],config)
 
     datafiles=sort!(readdir(joinpath(cube.base_dir,"data",variable)))
-    fnamefirst=datafiles[1]
-    v=NetCDF.open(joinpath(cube.base_dir,"data",variable,fnamefirst),variable)
-    t=vartype(v)
+    yfirst=parse(Int,datafiles[1][1:4])
+
+    t=vartype(NetCDF.open(joinpath(cube.base_dir,"data",variable,datafiles[1]),variable))
     outar=Array(t,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)
+    mask=zeros(UInt8,size(outar))
 
     if y1==y2
-        outar[:]=v[grid_x1:grid_x2,grid_y1:grid_y2,i1:i2]
-        ncclose()
+        readFromDataYear(cube,outar,mask,variable,y1,grid_x1,grid_x2,grid_y1,grid_y2,i1,i2)
     else
         #Read from first year
-        outar[:,:,1:(NpY-i1+1)]=v[grid_x1:grid_x2,grid_y1:grid_y2,i1:NpY]
+        readFromDataYear(cube,sub(outar,:,:,1:(NpY-i1+1)),sub(mask,:,:,1:(NpY-i1+1)),variable,y1,grid_x1,grid_x2,grid_y1,grid_y2,i1,NpY)
         #Read full "sandwich" years
         ifirst=NpY-i1+2
         for y=(y1+1):(y2-1)
-            v=NetCDF.open(joinpath(cube.base_dir,"data",variable,"$(y)_$(variable).nc"),variable)
-            outar[:,:,ifirst:(ifirst+NpY-1)]=v[grid_x1:grid_x2,grid_y1:grid_y2,:]
+            readFromDataYear(cube,sub(outar,:,:,ifirst:(ifirst+NpY-1)),sub(mask,:,:,ifirst:(ifirst+NpY-1)),variable,y,grid_x1,grid_x2,grid_y1,grid_y2,1,NpY)
             ifirst+=NpY
         end
         #Read from last Year
-        v=NetCDF.open(joinpath(cube.base_dir,"data",variable,"$(y2)_$(variable).nc"),variable)
-        outar[:,:,(end-i2+1):end]=v[grid_x1:grid_x2,grid_y1:grid_y2,1:i2]
-        ncclose()
+        readFromDataYear(cube,sub(outar,:,:,(ntime-i2+1):ntime),sub(mask,:,:,(ntime-i2+1):ntime),variable,y2,grid_x1,grid_x2,grid_y1,grid_y2,1,i2)
     end
+    ncclose()
 
-    return CubeMem(CubeAxis[LonAxis(longitude[1]:0.25:longitude[2]),LatAxis(latitude[1]:0.25:latitude[2]),TimeAxis(getTimeRanges(cube,time))],outar,zeros(UInt8,size(outar)))
+    return CubeMem(CubeAxis[LonAxis(longitude[1]:0.25:longitude[2]),LatAxis(latitude[1]:0.25:latitude[2]),TimeAxis(getTimeRanges(cube,time))],outar,mask)
     #joinpath(cube.base_dir,"data",variable,"$(y1)_$(variable).nc")
 
 end

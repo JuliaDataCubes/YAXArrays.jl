@@ -7,6 +7,15 @@ function removeMSC!{T,ndim}(xin::AbstractArray{T,ndim},xout::AbstractArray{T,ndi
     xout
 end
 
+function gapFillMSC!(xin::AbstractArray,xout::AbstractArray,NpY::Integer)
+
+  msc=getMSC!(xin,xout,NpY)
+  replaceMisswithMSC!(xin,xout,NpY)
+
+end
+
+
+
 
 "Calculate the mean seasonal cycle of xin and write the output to xout."
 function getMSC!(xin::AbstractVector,xout::AbstractVector,NpY::Integer;imscstart::Int=1)
@@ -27,6 +36,15 @@ function subtractMSC(msc::AbstractVector,xin2::AbstractVector,xout2,NpY)
         xout2[i] = xin2[i]-msc[imsc]
         imsc =imsc==NpY ? 1 : imsc+1 # Increase msc time step counter
     end
+end
+
+function replaceMisswithMSC!(msc::AbstractVector,xin::AbstractArray,xout::AbstractArray,NpY::Integer)
+  imsc=1
+  ltime=length(xin)
+  for i in 1:ltime
+      xout2[i] 
+      imsc= imsc==NpY ? 1 : imsc+1 # Increase msc time step counter
+  end
 end
 
 function fillmsc{T}(imscstart::Integer,msc::AbstractVector{T},nmsc::AbstractVector{T},xin::AbstractVector{T},NpY)
