@@ -61,25 +61,27 @@ macro registerDATFunction(fname, dimsin, dimsout, args...)
               end
           end
       end
-  elseif dimsin.args==[:TimeAxis,:VariableAxis]
+  elseif dimsin.args==[:TimeAxis,:VariableAxis] && dimsout.args==[:TimeAxis]
     DAT.cubeFunctions[fname]=(TimeAxis,VariableAxis)
     fhead=Expr(:call,sfname,:(dc::CubeMem),args...)
     args2=ntuple(i->(isa(args[i],Expr) && args[i].head==:(::)) ? args[i].args[1] : args[i],length(args))
-    fcall=Expr(:call,sfname,:xin,:xout,args2...)
+    fcall=Expr(:call,sfname,:xin,:xout,mask,args2...)
     return quote
       #This generates a wrapper that takes a block of Lon-Lat-Time data and peforms the operations along Time Axis"
       $fhead=begin
-        isa(dc.axes[1],TimeAxis) && isa(dc.axes[1],TimeAxis,VariableAxis) || (dc=dims2Front(dc,TimeAxis))
+        isa(dc.axes[1],TimeAxis) && isa(dc.axes[2],VariableAxis) || (dc=dims2Front(dc,TimeAxis,VariableAxis))
         ntime=size(dc.data,1)
-        nother=div(length(dc.data),ntime)
-        indata=reshape(dc.data,(ntime,nother))
-        outdata=zeros(eltype(indata),size(indata))
+        nvar=size(dc.data,2)
+        nother=div(length(dc.data),ntime*nvar)
+        indata=reshape(dc.data,(ntime,nvar,nother))
+        outdata=zeros(eltype(indata),(ntime,nother))
         for iother=1:nother
-          xin=slice(indata,:,iother)
+          xin=slice(indata,:,:,iother)
           xout=slice(outdata,:,iother)
           $fcall
         end
-        CubeMem(dc.axes,reshape(outdata,size(dc.data)),dc.mask)
+        s=map(length,dc.axes)
+        CubeMem([dc.axes[1];dc.axes[3:end]],reshape(outdata,(ntime,s[3:end]...)),dc.mask)
       end
     end
   end
@@ -128,6 +130,7 @@ function joinVars(d::Dict{UTF8String,Any})
 end
 
 include("msc.jl")
+include("misc.jl")
 
 
 end
