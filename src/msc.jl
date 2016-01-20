@@ -1,17 +1,17 @@
 "Function that removes mean seasonal cycle from xin and writes the MSC to xout. The time dimension is specified in itimedim, NpY is the number of years"
-function removeMSC!{T,ndim}(xin::AbstractArray{T,ndim},xout::AbstractArray{T,ndim},mask,NpY::Integer)
-
+function removeMSC!{T,ndim}(xin::AbstractArray{T,ndim},xout::AbstractArray{T,ndim},maskin::AbstractArray{UInt8,ndim},maskout::AbstractArray{UInt8,ndim},NpY::Integer)
     #Start loop through all other variables
-    msc=getMSC!(xin,xout,mask,NpY)
+    msc=getMSC!(xin,xout,maskin,NpY)
     subtractMSC(msc,xin,xout,NpY)
+    copy!(maskout,maskin)
     xout
 end
 export removeMSC!
 
-function gapFillMSC!(xin::AbstractArray,xout::AbstractArray,mask,NpY::Integer)
+function gapFillMSC!(xin::AbstractArray,xout::AbstractArray,maskin::AbstractArray{UInt8},maskout::AbstractArray{UInt8},NpY::Integer)
 
-  msc=getMSC!(xin,xout,NpY)
-  replaceMisswithMSC!(xin,xout,mask,NpY)
+  msc=getMSC!(xin,xout,maskin,NpY)
+  replaceMisswithMSC!(xin,xout,maskin,maskout,NpY)
 
 end
 
@@ -40,13 +40,12 @@ function subtractMSC(msc::AbstractVector,xin2::AbstractVector,xout2,NpY)
 end
 
 "Replaces missing values with mean seasonal cycle"
-function replaceMisswithMSC!(msc::AbstractVector,xin::AbstractArray,xout::AbstractArray,mask,NpY::Integer)
+function replaceMisswithMSC!(msc::AbstractVector,xin::AbstractArray,xout::AbstractArray,maskin,maskout,NpY::Integer)
   imsc=1
-  ltime=length(xin)
-  for i in 1:ltime
+  for i in eachindex(xin)
     if (mask[i] & MISSING)>0 && !isnan(msc[imsc])
       xout[i]=msc[imsc]
-      mask[i]=mask[i] & FILLED
+      maskout[i]=maskin[i] & FILLED
     end
     imsc= imsc==NpY ? 1 : imsc+1 # Increase msc time step counter
   end
@@ -57,8 +56,7 @@ function fillmsc{T}(imscstart::Integer,msc::AbstractVector{T},nmsc::AbstractVect
     imsc=imscstart
     fill!(msc,zero(T))
     fill!(nmsc,zero(T))
-    ltime=length(xin)
-    for itime=1:ltime
+    for itime=eachindex(xin)
         if mask[itime]==CABLAB.VALID
             msc[imsc]  += xin[itime]
             nmsc[imsc] += 1
@@ -68,5 +66,5 @@ function fillmsc{T}(imscstart::Integer,msc::AbstractVector{T},nmsc::AbstractVect
     for i in 1:NpY msc[i] = nmsc[i] > 0 ? msc[i]/nmsc[i] : NaN end # Get MSC by dividing by number of points
 end
 
-@registerDATFunction removeMSC! (TimeAxis,) TimeAxis NpY::Int
-@registerDATFunction gapFillMSC (TimeAxis,) TimeAxis NpY::Int
+@registerDATFunction removeMSC! (TimeAxis,) (TimeAxis,) NpY::Int
+@registerDATFunction gapFillMSC (TimeAxis,) (TimeAxis,) NpY::Int

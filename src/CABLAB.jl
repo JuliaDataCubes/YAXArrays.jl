@@ -259,10 +259,10 @@ function getCube(cube::Cube,
     end
     ncclose()
 
-    return CubeMem(CubeAxis[LonAxis(longitude[1]:0.25:longitude[2]),LatAxis(latitude[1]:0.25:latitude[2]),TimeAxis(getTimeRanges(cube,time))],outar,mask)
+    return CubeMem(CubeAxis[LonAxis(longitude[1]:0.25:(longitude[2]-0.25)),LatAxis(latitude[1]:0.25:(latitude[2]-0.25)),TimeAxis(getTimeRanges(cube,time))],outar,mask)
     #joinpath(cube.base_dir,"data",variable,"$(y1)_$(variable).nc")
-
 end
 end # module
 
 include("DAT.jl")
+include("plot.jl")
