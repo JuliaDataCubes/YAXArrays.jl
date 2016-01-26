@@ -1,3 +1,8 @@
+module MSC
+export removeMSC!, gapFillMSC
+importall ..DAT
+importall ..CubeAPI
+
 "Function that removes mean seasonal cycle from xin and writes the MSC to xout. The time dimension is specified in itimedim, NpY is the number of years"
 function removeMSC!{T,ndim}(xin::AbstractArray{T,ndim},xout::AbstractArray{T,ndim},maskin::AbstractArray{UInt8,ndim},maskout::AbstractArray{UInt8,ndim},NpY::Integer)
     #Start loop through all other variables
@@ -57,7 +62,7 @@ function fillmsc{T}(imscstart::Integer,msc::AbstractVector{T},nmsc::AbstractVect
     fill!(msc,zero(T))
     fill!(nmsc,zero(T))
     for itime=eachindex(xin)
-        if mask[itime]==CABLAB.VALID
+        if mask[itime]==VALID
             msc[imsc]  += xin[itime]
             nmsc[imsc] += 1
         end
@@ -68,3 +73,4 @@ end
 
 @registerDATFunction removeMSC! (TimeAxis,) (TimeAxis,) NpY::Int
 @registerDATFunction gapFillMSC (TimeAxis,) (TimeAxis,) NpY::Int
+end

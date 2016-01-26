@@ -1,9 +1,18 @@
+module Proc
+export removeMSC!, gapFillMSC, recurrences!, normalize
+using ..DAT, ..CubeAPI
+
+include("MSC.jl")
+include("Outlier.jl")
+
+importall .MSC, .Outlier
+
 function normalize{T}(xin::AbstractVector{T},xout::AbstractVector,maskin::AbstractVector,maskout::AbstractVector)
   s=zero(T)
   s2=zero(T)*zero(T)
   n=0
   for i in eachindex(xin)
-    if maskin[i]==CABLAB.VALID
+    if maskin[i]==VALID
       s+=xin[i]
       s2+=xin[i]*xin[i]
       n+=1
@@ -17,3 +26,5 @@ function normalize{T}(xin::AbstractVector{T},xout::AbstractVector,maskin::Abstra
   copy!(maskout,maskin)
 end
 @registerDATFunction normalize (TimeAxis,) (TimeAxis,)
+
+end
