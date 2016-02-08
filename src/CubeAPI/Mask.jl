@@ -8,7 +8,7 @@ const MISSING=UInt8(4)
 const FILLED=UInt8(8)
 
 isvalid(x::UInt8)=x==VALID
-isinvalid(x::UInt8)=x>0
+isinvalid(x::UInt8)=x>zero(UInt8)
 
 isvalidorfilled(x::UInt8)=(x>UInt8(0)) || (x & FILLED)==FILLED
 function isvalidorfilled(x::AbstractArray{UInt8})

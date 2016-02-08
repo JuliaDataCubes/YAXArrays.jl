@@ -11,9 +11,12 @@ include(joinpath(funcfolder,"outlier_scores.jl"))
 
 
 function recurrences!(xin::AbstractMatrix, xout::AbstractVector, maskin::AbstractMatrix,maskout::AbstractVector,rec_threshold::Float64, temp_excl::Int,distmatspace::AbstractMatrix)
-  isvalidorfilled(maskin) || error("Data has missing values, please consider Gapfilling before calculating scores")
   pairwise!(distmatspace,Euclidean(),xin)
   recurrences!(xout,distmatspace,rec_threshold,temp_excl)
+  fill!(maskout,zero(UInt8))
+  for itime=1:size(maskin,2), ivar=1:size(maskin,1)
+    maskout[itime]=maskout[itime] | maskin[ivar,itime]
+  end
   xout
 end
 

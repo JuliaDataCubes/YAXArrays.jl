@@ -5,10 +5,10 @@
 Some info on the project...
 """
 module CABLAB
-export Cube, getCubeData,getTimeRanges,CubeMem,CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis #From Cube module
+export Cube, getCubeData,getTimeRanges,CubeMem,CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis #From Cube module
 export @registerDATFunction, joinVars #From DAT module
 export axVal2Index, plotTS, plotMAP #From Plot module
-export removeMSC!, gapFillMSC, recurrences!, normalize #From Proc module
+export removeMSC!, gapFillMSC, recurrences!, normalize, timeMean, spatialMean #From Proc module
 
 include("CubeAPI/CubeAPI.jl")
 include("DAT/DAT.jl")

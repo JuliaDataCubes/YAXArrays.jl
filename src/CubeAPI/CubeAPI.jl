@@ -1,5 +1,5 @@
 module CubeAPI
-export Cube, getCubeData,getTimeRanges,CubeMem,CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis
+export Cube, getCubeData,getTimeRanges,CubeMem,CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis
 export VALID, OCEAN, OUTOFPERIOD, MISSING, FILLED, isvalid, isinvalid, isvalid, isvalidorfilled
 
 include("Axes.jl")
@@ -111,7 +111,7 @@ Base.linearindexing(::CubeMem)=Base.LinearFast()
 Base.getindex(c::CubeMem,i::Integer)=getindex(c.data,i)
 Base.setindex!(c::CubeMem,i::Integer,v)=setindex!(c.data,i,v)
 Base.size(c::CubeMem)=size(c.data)
-Base.similar(c::CubeMem)=cubeMem(c.lon,c.lat,c.time,similar(c.data))
+Base.similar(c::CubeMem)=cubeMem(c.axes,similar(c.data),copy(c.mask))
 
 
 
@@ -222,15 +222,24 @@ function readFromDataYear(cube::Cube,outar::AbstractArray,mask,variable,y,grid_x
     outar[:]=v[grid_x1:grid_x2,grid_y1:grid_y2,i1:i2]
     missval=ncgetatt(filename,variable,"_FillValue")
     for i=eachindex(outar)
-      outar[i] == missval && (mask[i]=mask[i] | MISSING)
+      if outar[i] == missval
+        mask[i]=mask[i] | MISSING
+        outar[i]=oftype(outar[i],NaN)
+      end
     end
   else
     for i=eachindex(mask)
       mask[i]=(mask[i] | OUTOFPERIOD)
+      outar[i]=oftype(outar[i],NaN)
     end
   end
 end
 
+function getLandSeaMask(cube::Cube,grid_x1,grid_x2,grid_y1,grid_y2)
+  filename=joinpath(cube.base_dir,"mask","mask.nc")
+  v=NetCDF.open(filename,"mask")
+  return v[grid_x1:grid_x2,grid_y1:grid_y2]
+end
 
 function getCubeData(cube::Cube,
                 variable::AbstractString,
@@ -248,7 +257,9 @@ function getCubeData(cube::Cube,
 
     t=vartype(NetCDF.open(joinpath(cube.base_dir,"data",variable,datafiles[1]),variable))
     outar=Array(t,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)
+    landsea = getLandSeaMask(cube,grid_x1,grid_x2,grid_y1,grid_y2)
     mask=zeros(UInt8,size(outar))
+    broadcast!(+,mask,mask,landsea)
 
     if y1==y2
         readFromDataYear(cube,outar,mask,variable,y1,grid_x1,grid_x2,grid_y1,grid_y2,i1,i2)

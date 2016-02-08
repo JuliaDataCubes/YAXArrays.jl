@@ -118,4 +118,22 @@ function joinVars(d::Dict{UTF8String,Any})
   end
   CubeMem(CubeAxis[d[vnames[1]].axes;VariableAxis(vnames)],reshape(datanew,size(d[vnames[1]])...,length(vnames)),reshape(masknew,size(d[vnames[1]])...,length(vnames)))
 end
+
+"This function creates a new view of the cube, joining longitude and latitude axes to a single spatial axis"
+function mergeLonLat!(c::CubeMem)
+ilon=findAxis(LonAxis,c.axes)
+ilat=findAxis(LatAxis,c.axes)
+ilat==ilon+1 || error("Lon and Lat axes must be consecutive to merge")
+lonAx=c.axes[ilon]
+latAx=c.axes[ilat]
+newVals=Tuple{Float64,Float64}[(lonAx.values[i],latAx.values[j]) for i=1:length(lonAx), j=1:length(latAx)]
+newAx=SpatialPointAxis(reshape(newVals,length(lonAx)*length(latAx)));
+allNewAx=[c.axes[1:ilon-1];newAx;c.axes[ilat+1:end]];
+s  = size(c.data)
+s1 = s[1:ilon-1]
+s2 = s[ilat+1:end]
+newShape=(s1...,length(lonAx)*length(latAx),s2...)
+CubeMem(allNewAx,reshape(c.data,newShape),reshape(c.mask,newShape))
+end
+
 end

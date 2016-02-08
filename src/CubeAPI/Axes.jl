@@ -1,5 +1,5 @@
 module Axes
-export CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis
+export CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis
 abstract CubeAxis
 immutable TimeAxis <: CubeAxis
   values::Vector{DateTime}
@@ -12,6 +12,9 @@ immutable LonAxis <: CubeAxis
 end
 immutable LatAxis <: CubeAxis
   values::FloatRange{Float64}
+end
+immutable SpatialPointAxis <: CubeAxis
+  values::Vector{Tuple{Float64,Float64}}
 end
 immutable CountryAxis<: CubeAxis
   values::Vector{UTF8String}
