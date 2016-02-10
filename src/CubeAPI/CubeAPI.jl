@@ -8,7 +8,6 @@ include("Mask.jl")
 importall .Axes, .Mask
 using DataStructures
 using Base.Dates
-using NullableArrays
 
 type ConfigEntry{LHS}
     lhs
