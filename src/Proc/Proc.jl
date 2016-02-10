@@ -68,7 +68,7 @@ function spatialMean{T}(xin::AbstractMatrix,xout::AbstractArray{T,0},maskin::Abs
   xout[1]=m
 end
 
-@registerDATFunction spatialMean (LonAxis,LatAxis) () ;
+@registerDATFunction spatialMean (LonAxis,LatAxis) ()
 @registerDATFunction normalize (TimeAxis,) (TimeAxis,)
 @registerDATFunction timeMean (TimeAxis,) ()
 @registerDATFunction timeVariance (TimeAxis,) ()

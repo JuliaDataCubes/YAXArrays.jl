@@ -2,12 +2,25 @@ module Outlier
 export recurrences!
 using ..DAT
 using ..CubeAPI
+using Distances
 
-funcfolder=joinpath(Pkg.dir("CABLAB"),"deps","hotspot_outlier_utility_functions","Milan","Julia_v0.4","functions")
-include(joinpath(funcfolder,"distance_density.jl"))
-include(joinpath(funcfolder,"evaluate_indices.jl"))
-include(joinpath(funcfolder,"helpers.jl"))
-include(joinpath(funcfolder,"outlier_scores.jl"))
+function recurrences!(recurrence_num::AbstractVector,D::AbstractArray, rec_threshold::Float64, temp_excl::Int = 5)
+  N = size(D, 1)
+  @assert N==length(recurrence_num)
+  @inbounds for i = 1:N
+  for j = 1:max(i-temp_excl-1,1)
+    if D[i, j] < rec_threshold
+      recurrence_num[i] = recurrence_num[i] + 1
+    end
+  end
+  for j = min(i+temp_excl+1,N):N
+    if D[i, j] < rec_threshold
+      recurrence_num[i] = recurrence_num[i] + 1
+    end
+  end
+end
+return(recurrence_num)
+end
 
 
 function recurrences!(xin::AbstractMatrix, xout::AbstractVector, maskin::AbstractMatrix,maskout::AbstractVector,rec_threshold::Float64, temp_excl::Int,distmatspace::AbstractMatrix)
