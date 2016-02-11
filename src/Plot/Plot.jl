@@ -11,7 +11,7 @@ axVal2Index(axis::Union{LonAxis,LatAxis},v)=round(Int,v*axis.values.divisor-axis
 function plotTS(cube::CubeMem)
     sliders=Array(Any,0)
     buttons=Array(Any,0)
-    signals=Array(Reactive.Input,0)
+    signals=Array(Reactive.Signal,0)
     sliceargs=Array(Any,0)
     argvars=Array(Symbol,0)
     xaxi=0
@@ -95,7 +95,7 @@ end
 
 function plotMAP{T}(cube::CubeMem{T};dmin::T=zero(T),dmax::T=zero(T))
     sliders=Array(Any,0)
-    signals=Array(Reactive.Input,0)
+    signals=Array(Reactive.Signal,0)
     sliceargs=Array(Any,0)
     argvars=Array(Symbol,0)
     lonaxi=0
