@@ -60,7 +60,7 @@ function plotTS(cube::CubeMem)
     for i=1:nvar push!(plotfun2.args,:($(symbol(string("s_",i))) && push!(lay,$(layerex[i])))) end
     push!(plotfun2.args,plotfun)
     lambda = Expr(:(->), Expr(:tuple, argvars...),plotfun2)
-    liftex = Expr(:call,:lift,lambda,signals...)
+    liftex = Expr(:call,:map,lambda,signals...)
     myfun=eval(:(li(cube)=$liftex))
     for b in buttons display(b) end
     display(myfun(cube))
@@ -141,7 +141,7 @@ function plotMAP{T}(cube::CubeMem{T};dmin::T=zero(T),dmax::T=zero(T))
       Image(rgbar,Dict("spatialorder"=>["x","y"]))
     end
     lambda = Expr(:(->), Expr(:tuple, argvars...),plotfun)
-    liftex = Expr(:call,:lift,lambda,signals...)
+    liftex = Expr(:call,:map,lambda,signals...)
     myfun=eval(:(li(cube)=$liftex))
     display(myfun(cube))
     #plotfun
