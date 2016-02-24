@@ -100,6 +100,21 @@ function Cube(base_dir::AbstractString)
   Cube(base_dir,cubeconfig,data_dir_entries,var_name_to_var_index,firstYearOffset)
 end
 
+"A SubCube is a representation of a certain region or time range returned by the getCube function."
+immutable SubCube{T}
+  cube::Cube #Parent cube
+  variable::UTF8String #Variable
+  sub_grid::Tuple{Int,Int,Int,Int} #grid_y1,grid_y2,grid_x1,grid_x2
+  sub_times::NTuple{6,Int} #y1,i1,y2,i2,ntime,NpY
+  lonAxis::LonAxis
+  latAxis::LatAxis
+  timeAxis::TimeAxis
+end
+
+Base.eltype{T}(s::SubCube{T})=T
+Base.ndims(s::SubCube)=3
+Base.size(s::SubCube)=(length(s.lonAxis),length(s.latAxis),length(s.timeAxis))
+
 type CubeMem{T,N} <: AbstractArray{T,N}
   axes::Vector{CubeAxis}
   data::Array{T,N}
@@ -214,30 +229,15 @@ function getLonLatsToRead(config,longitude,latitude)
   grid_y1,grid_y2,grid_x1,grid_x2
 end
 
-function readFromDataYear(cube::Cube,outar::AbstractArray,mask,variable,y,grid_x1,grid_x2,grid_y1,grid_y2,i1,i2)
-  filename=joinpath(cube.base_dir,"data",variable,string(y,"_",variable,".nc"))
-  if isfile(filename)
-    v=NetCDF.open(filename,variable)
-    outar[:]=v[grid_x1:grid_x2,grid_y1:grid_y2,i1:i2]
-    missval=ncgetatt(filename,variable,"_FillValue")
-    for i=eachindex(outar)
-      if outar[i] == missval
-        mask[i]=mask[i] | MISSING
-        outar[i]=oftype(outar[i],NaN)
-      end
-    end
-  else
-    for i=eachindex(mask)
-      mask[i]=(mask[i] | OUTOFPERIOD)
-      outar[i]=oftype(outar[i],NaN)
-    end
-  end
-end
-
-function getLandSeaMask(cube::Cube,grid_x1,grid_x2,grid_y1,grid_y2)
+function getLandSeaMask!(mask::Array{UInt8,3},cube::Cube,grid_x1,grid_x2,grid_y1,grid_y2)
   filename=joinpath(cube.base_dir,"mask","mask.nc")
-  v=NetCDF.open(filename,"mask")
-  return v[grid_x1:grid_x2,grid_y1:grid_y2]
+  if isfile(filename)
+      ncread!(filename,"mask",sub(mask,:,:,1),start=[grid_x1,grid_y1],count=[grid_x2-grid_x1+1,grid_y2-grid_y1+1])
+      nT=size(mask,3)
+      for itime=2:nT,ilat=1:size(mask,2),ilon=1:size(mask,1)
+          mask[ilon,ilat,itime]=mask[ilon,ilat,1]
+      end
+  end
 end
 
 function getCubeData(cube::Cube,
@@ -252,31 +252,100 @@ function getCubeData(cube::Cube,
     y1,i1,y2,i2,ntime,NpY = getTimesToRead(time[1],time[2],config)
 
     datafiles=sort!(readdir(joinpath(cube.base_dir,"data",variable)))
-    yfirst=parse(Int,datafiles[1][1:4])
+    #yfirst=parse(Int,datafiles[1][1:4])
 
     t=vartype(NetCDF.open(joinpath(cube.base_dir,"data",variable,datafiles[1]),variable))
-    outar=Array(t,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)
-    landsea = getLandSeaMask(cube,grid_x1,grid_x2,grid_y1,grid_y2)
-    mask=zeros(UInt8,size(outar))
-    broadcast!(+,mask,mask,landsea)
 
-    if y1==y2
-        readFromDataYear(cube,outar,mask,variable,y1,grid_x1,grid_x2,grid_y1,grid_y2,i1,i2)
-    else
-        #Read from first year
-        readFromDataYear(cube,sub(outar,:,:,1:(NpY-i1+1)),sub(mask,:,:,1:(NpY-i1+1)),variable,y1,grid_x1,grid_x2,grid_y1,grid_y2,i1,NpY)
-        #Read full "sandwich" years
-        ifirst=NpY-i1+2
-        for y=(y1+1):(y2-1)
-            readFromDataYear(cube,sub(outar,:,:,ifirst:(ifirst+NpY-1)),sub(mask,:,:,ifirst:(ifirst+NpY-1)),variable,y,grid_x1,grid_x2,grid_y1,grid_y2,1,NpY)
-            ifirst+=NpY
+    return SubCube{t}(cube,variable,
+      (grid_y1,grid_y2,grid_x1,grid_x2),
+      (y1,i1,y2,i2,ntime,NpY),
+      LonAxis(longitude[1]:0.25:(longitude[2]-0.25)),
+      LatAxis(latitude[1]:0.25:(latitude[2]-0.25)),
+      TimeAxis(getTimeRanges(cube,y1,y2,i1,i2)))
+end
+
+function read{T}(s::SubCube{T})
+    grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid
+    y1,i1,y2,i2,ntime,NpY           = s.sub_times
+    outar=Array(T,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)
+    mask=zeros(UInt8,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)
+    _read(s,outar,mask)
+    return CubeMem(CubeAxis[s.lonAxis,s.latAxis,s.timeAxis],outar,mask)
+end
+
+function _read{T}(s::SubCube{T},outar,mask;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,nx::Int=size(outar,1),ny::Int=size(outar,2),nt::Int=size(outar,3))
+
+    grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid
+    y1,i1,y2,i2,ntime,NpY           = s.sub_times
+
+    grid_x1 = grid_x1 + xoffs
+    grid_x2 = grid_x1 + nx - 1
+    grid_y1 = grid_y1 + yoffs
+    grid_y2 = grid_y1 + ny - 1
+    if toffs > 0
+        i1 = i1 + toffs
+        if i1 > NpY
+            y1 = y1 + div(i1-1,NpY)
+            i1 = mod(i1-1,NpY)+1
         end
-        #Read from last Year
-        readFromDataYear(cube,sub(outar,:,:,(ntime-i2+1):ntime),sub(mask,:,:,(ntime-i2+1):ntime),variable,y2,grid_x1,grid_x2,grid_y1,grid_y2,1,i2)
+    end
+#        ntime2 = size(outar,3)
+#        nY,rem = divrem(ntime2,NpY)
+#        y2     = y1 + nY
+#        i2     = i1 + rem
+#        if i2>NpY
+#            y2 += 1
+#            i2 -= NpY
+#        end
+#    end
+
+    println("Year 1=",y1)
+    println("i1    =",i1)
+    println("grid_x=",grid_x1:grid_x2)
+    println("grid_y=",grid_y1:grid_y2)
+
+    fill!(mask,zero(UInt8))
+    getLandSeaMask!(mask,s.cube,grid_x1,grid_x2,grid_y1,grid_y2)
+
+    ycur=y1   #Current year to read
+    i1cur=i1  #Current time step in year
+    itcur=1   #Current time step in output file
+    fin = false
+    while !fin
+        fin,ycur,i1cur,itcur = readFromDataYear(s.cube,outar,mask,s.variable,ycur,grid_x1,nx,grid_y1,ny,itcur,i1cur,nt,NpY)
     end
     ncclose()
-
-    return CubeMem(CubeAxis[LonAxis(longitude[1]:0.25:(longitude[2]-0.25)),LatAxis(latitude[1]:0.25:(latitude[2]-0.25)),TimeAxis(getTimeRanges(cube,y1,y2,i1,i2))],outar,mask)
-    #joinpath(cube.base_dir,"data",variable,"$(y1)_$(variable).nc")
 end
+
+function readFromDataYear(cube::Cube,outar::AbstractArray,mask,variable,y,grid_x1,nx,grid_y1,ny,itcur,i1cur,ntime,NpY)
+  filename=joinpath(cube.base_dir,"data",variable,string(y,"_",variable,".nc"))
+  ntleft = ntime - itcur + 1
+  nt = min(NpY-i1cur+1,ntleft)
+  xr = grid_x1:(grid_x1+nx-1)
+  yr = grid_y1:(grid_y1+ny-1)
+  if isfile(filename)
+    v=NetCDF.open(filename,variable);
+    outar[1:nx,1:ny,itcur:(itcur+nt-1)]=v[xr,yr,i1cur:(i1cur+nt-1)]
+    missval=ncgetatt(filename,variable,"_FillValue")
+    for i=eachindex(outar)
+      if outar[i] == missval
+        mask[i]=mask[i] | MISSING
+        outar[i]=oftype(outar[i],NaN)
+      end
+    end
+  else
+    for i=eachindex(mask)
+      mask[i]=(mask[i] | OUTOFPERIOD)
+      outar[i]=oftype(outar[i],NaN)
+    end
+  end
+  itcur+=nt
+  y+=1
+  i1cur=1
+  fin=nt==ntleft
+  return fin,y,i1cur,itcur
+end
+
+
+
 end

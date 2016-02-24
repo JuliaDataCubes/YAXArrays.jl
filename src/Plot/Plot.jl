@@ -6,7 +6,6 @@ using Reactive, Interact
 using Gadfly
 using Images, ImageMagick, Colors
 import Patchwork.load_js_runtime
-load_js_runtime()
 axVal2Index(axis::Union{LonAxis,LatAxis},v)=round(Int,v*axis.values.divisor-axis.values.start)+1
 function plotTS(cube::CubeMem)
     sliders=Array(Any,0)
