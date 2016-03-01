@@ -11,9 +11,11 @@ export axVal2Index, plotTS, plotMAP #From Plot module
 export removeMSC!, gapFillMSC, recurrences!, normalize, timeMean, spatialMean #From Proc module
 
 include("CubeAPI/CubeAPI.jl")
+include("CachedArrays/CachedArrays.jl")
 include("DAT/DAT.jl")
 include("Proc/Proc.jl")
 include("Plot/Plot.jl")
+
 
 importall .CubeAPI, .DAT, .Proc, .Plot
 

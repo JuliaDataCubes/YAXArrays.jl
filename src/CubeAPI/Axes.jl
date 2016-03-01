@@ -1,5 +1,5 @@
 module Axes
-export CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis
+export CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis,Axes
 abstract CubeAxis
 immutable TimeAxis <: CubeAxis
   values::Vector{DateTime}

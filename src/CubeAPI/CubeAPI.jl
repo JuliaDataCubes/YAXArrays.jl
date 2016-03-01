@@ -1,5 +1,5 @@
 module CubeAPI
-export Cube, getCubeData,getTimeRanges,CubeMem,CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis
+export Cube, getCubeData,getTimeRanges,CubeMem,CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, SubCube, axes, AbstractCubeData
 export VALID, OCEAN, OUTOFPERIOD, MISSING, FILLED, isvalid, isinvalid, isvalid, isvalidorfilled
 
 include("Axes.jl")
@@ -75,6 +75,8 @@ function parseConfig(cubepath)
   d
 end
 
+abstract AbstractCubeData{T}
+
 "
 Represents a data cube. The default constructor is
 
@@ -101,7 +103,7 @@ function Cube(base_dir::AbstractString)
 end
 
 "A SubCube is a representation of a certain region or time range returned by the getCube function."
-immutable SubCube{T}
+immutable SubCube{T} <: AbstractCubeData{T}
   cube::Cube #Parent cube
   variable::UTF8String #Variable
   sub_grid::Tuple{Int,Int,Int,Int} #grid_y1,grid_y2,grid_x1,grid_x2
@@ -110,16 +112,34 @@ immutable SubCube{T}
   latAxis::LatAxis
   timeAxis::TimeAxis
 end
+axes(s::SubCube)=CubeAxis[s.lonAxis,s.latAxis,s.timeAxis]
 
 Base.eltype{T}(s::SubCube{T})=T
 Base.ndims(s::SubCube)=3
 Base.size(s::SubCube)=(length(s.lonAxis),length(s.latAxis),length(s.timeAxis))
 
-type CubeMem{T,N} <: AbstractArray{T,N}
+"A SubCube containing several variables"
+immutable SubCubeV{T} <: AbstractCubeData{T}
+    cube::Cube #Parent cube
+    variable::Vector{UTF8String} #Variable
+    sub_grid::Tuple{Int,Int,Int,Int} #grid_y1,grid_y2,grid_x1,grid_x2
+    sub_times::NTuple{6,Int} #y1,i1,y2,i2,ntime,NpY
+    lonAxis::LonAxis
+    latAxis::LatAxis
+    timeAxis::TimeAxis
+    varAxis::VariableAxis
+end
+axes(s::SubCubeV)=CubeAxis[s.lonAxis,s.latAxis,s.timeAxis,s.varAxis]
+Base.eltype{T}(s::SubCubeV{T})=T
+Base.ndims(s::SubCubeV)=4
+Base.size(s::SubCubeV)=(length(s.lonAxis),length(s.latAxis),length(s.timeAxis),length(s.varAxis))
+
+type CubeMem{T,N} <: AbstractCubeData
   axes::Vector{CubeAxis}
   data::Array{T,N}
   mask::Array{UInt8,N}
 end
+axes(c::CubeMem)=c.axes
 
 Base.linearindexing(::CubeMem)=Base.LinearFast()
 Base.getindex(c::CubeMem,i::Integer)=getindex(c.data,i)
@@ -205,21 +225,7 @@ function getCubeData{T<:Union{Integer,AbstractString}}(cube::Cube,
   getCubeData(cube,variable,time,longitude,latitude)
 end
 
-function getCubeData{T<:AbstractString}(cube::Cube,
-                variable::Vector{T},
-                time::Tuple{TimeType,TimeType},
-                latitude::Tuple{Real,Real},
-                longitude::Tuple{Real,Real})
-  r=Dict{UTF8String,Any}()
-  for i=1:length(variable)
-    if haskey(cube.var_name_to_var_index,variable[i])
-      r[variable[i]]=getCubeData(cube,variable[i],time,latitude,longitude)
-    else
-      warn("Skipping variable $(variable[i]), not found in Datacube")
-    end
-  end
-  r
-end
+
 
 function getLonLatsToRead(config,longitude,latitude)
   grid_y1 = round(Int,(90.0 - latitude[2]) / config.spatial_res) - config.grid_y0 + 1
@@ -236,6 +242,17 @@ function getLandSeaMask!(mask::Array{UInt8,3},cube::Cube,grid_x1,grid_x2,grid_y1
       nT=size(mask,3)
       for itime=2:nT,ilat=1:size(mask,2),ilon=1:size(mask,1)
           mask[ilon,ilat,itime]=mask[ilon,ilat,1]
+      end
+  end
+end
+
+function getLandSeaMask!(mask::Array{UInt8,4},cube::Cube,grid_x1,grid_x2,grid_y1,grid_y2)
+  filename=joinpath(cube.base_dir,"mask","mask.nc")
+  if isfile(filename)
+      ncread!(filename,"mask",sub(mask,:,:,1,1),start=[grid_x1,grid_y1],count=[grid_x2-grid_x1+1,grid_y2-grid_y1+1])
+      nT=size(mask,3)
+      for ivar=1:size(mask,4),itime=2:nT,ilat=1:size(mask,2),ilon=1:size(mask,1)
+          mask[ilon,ilat,itime,ivar]=mask[ilon,ilat,1,1]
       end
   end
 end
@@ -264,6 +281,40 @@ function getCubeData(cube::Cube,
       TimeAxis(getTimeRanges(cube,y1,y2,i1,i2)))
 end
 
+"Construct a subcube with many variables"
+function getCubeData{T<:AbstractString}(cube::Cube,
+                variable::Vector{T},
+                time::Tuple{TimeType,TimeType},
+                latitude::Tuple{Real,Real},
+                longitude::Tuple{Real,Real})
+
+config=cube.config
+
+grid_y1,grid_y2,grid_x1,grid_x2 = getLonLatsToRead(config,longitude,latitude)
+y1,i1,y2,i2,ntime,NpY = getTimesToRead(time[1],time[2],config)
+  variableNew=UTF8String[]
+  varTypes=DataType[]
+  for i=1:length(variable)
+    if haskey(cube.var_name_to_var_index,variable[i])
+        datafiles=sort!(readdir(joinpath(cube.base_dir,"data",variable[i])))
+        #yfirst=parse(Int,datafiles[1][1:4])
+        t=vartype(NetCDF.open(joinpath(cube.base_dir,"data",variable[i],datafiles[1]),variable[i]))
+        push!(variableNew,variable[i])
+        push!(varTypes,t)
+    else
+      warn("Skipping variable $(variable[i]), not found in Datacube")
+    end
+  end
+  tnew=reduce(promote_type,varTypes[1],varTypes)
+  return SubCubeV{tnew}(cube,variable,
+    (grid_y1,grid_y2,grid_x1,grid_x2),
+    (y1,i1,y2,i2,ntime,NpY),
+    LonAxis(longitude[1]:0.25:(longitude[2]-0.25)),
+    LatAxis(latitude[1]:0.25:(latitude[2]-0.25)),
+    TimeAxis(getTimeRanges(cube,y1,y2,i1,i2)),
+    VariableAxis(variableNew))
+end
+
 function read{T}(s::SubCube{T})
     grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid
     y1,i1,y2,i2,ntime,NpY           = s.sub_times
@@ -273,7 +324,7 @@ function read{T}(s::SubCube{T})
     return CubeMem(CubeAxis[s.lonAxis,s.latAxis,s.timeAxis],outar,mask)
 end
 
-function _read{T}(s::SubCube{T},outar,mask;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,nx::Int=size(outar,1),ny::Int=size(outar,2),nt::Int=size(outar,3))
+function _read{T}(s::AbstractCubeData{T},outar,mask;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,1),ny::Int=size(outar,2),nt::Int=size(outar,3),nv::Int=length(s.variable))
 
     grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid
     y1,i1,y2,i2,ntime,NpY           = s.sub_times
@@ -289,35 +340,46 @@ function _read{T}(s::SubCube{T},outar,mask;xoffs::Int=0,yoffs::Int=0,toffs::Int=
             i1 = mod(i1-1,NpY)+1
         end
     end
-#        ntime2 = size(outar,3)
-#        nY,rem = divrem(ntime2,NpY)
-#        y2     = y1 + nY
-#        i2     = i1 + rem
-#        if i2>NpY
-#            y2 += 1
-#            i2 -= NpY
-#        end
-#    end
 
-    println("Year 1=",y1)
-    println("i1    =",i1)
-    println("grid_x=",grid_x1:grid_x2)
-    println("grid_y=",grid_y1:grid_y2)
+    #println("Year 1=",y1)
+    #println("i1    =",i1)
+    #println("grid_x=",grid_x1:grid_x2)
+    #println("grid_y=",grid_y1:grid_y2)
 
     fill!(mask,zero(UInt8))
     getLandSeaMask!(mask,s.cube,grid_x1,grid_x2,grid_y1,grid_y2)
 
-    ycur=y1   #Current year to read
-    i1cur=i1  #Current time step in year
-    itcur=1   #Current time step in output file
-    fin = false
-    while !fin
-        fin,ycur,i1cur,itcur = readFromDataYear(s.cube,outar,mask,s.variable,ycur,grid_x1,nx,grid_y1,ny,itcur,i1cur,nt,NpY)
-    end
+    readAllyears(s,outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
     ncclose()
 end
 
-function readFromDataYear(cube::Cube,outar::AbstractArray,mask,variable,y,grid_x1,nx,grid_y1,ny,itcur,i1cur,ntime,NpY)
+function readAllyears(s::SubCube,outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
+  ycur=y1   #Current year to read
+  i1cur=i1  #Current time step in year
+  itcur=1   #Current time step in output file
+  fin = false
+  while !fin
+    fin,ycur,i1cur,itcur = readFromDataYear(s.cube,outar,mask,s.variable,ycur,grid_x1,nx,grid_y1,ny,itcur,i1cur,nt,NpY)
+  end
+  ncclose()
+end
+
+function readAllyears(s::SubCubeV,outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
+    for iv in (voffs+1):(nv-voffs)
+        outar2=sub(outar,:,:,:,iv)
+        mask2=sub(mask,:,:,:,iv)
+        ycur=y1   #Current year to read
+        i1cur=i1  #Current time step in year
+        itcur=1   #Current time step in output file
+        fin = false
+        while !fin
+            fin,ycur,i1cur,itcur = readFromDataYear(s.cube,outar2,mask2,s.variable[iv],ycur,grid_x1,nx,grid_y1,ny,itcur,i1cur,nt,NpY)
+        end
+        ncclose()
+  end
+end
+
+function readFromDataYear{T}(cube::Cube,outar::AbstractArray{T,3},mask::AbstractArray{UInt8,3},variable,y,grid_x1,nx,grid_y1,ny,itcur,i1cur,ntime,NpY)
   filename=joinpath(cube.base_dir,"data",variable,string(y,"_",variable,".nc"))
   ntleft = ntime - itcur + 1
   nt = min(NpY-i1cur+1,ntleft)
