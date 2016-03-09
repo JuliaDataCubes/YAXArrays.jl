@@ -17,6 +17,6 @@ include("Proc/Proc.jl")
 include("Plot/Plot.jl")
 
 
-importall .CubeAPI, .DAT, .Proc, .Plot
+importall .CubeAPI, .DAT, .Proc, .Plot, .CachedArrays
 
 end # module

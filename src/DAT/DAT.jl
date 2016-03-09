@@ -3,10 +3,6 @@ export @registerDATFunction, joinVars
 using ..CubeAPI
 using Base.Dates
 
-#To fix deprecation warning
-#Base.broadcast(::Function)=nothing
-
-
 getCheckExpr(i::Int,axtype::Symbol)=:(isa(dc.axes[$i],$axtype))
 function getCheckExpr(dimsin::Vector)
     ndimin=length(dimsin)
@@ -135,5 +131,7 @@ s2 = s[ilat+1:end]
 newShape=(s1...,length(lonAx)*length(latAx),s2...)
 CubeMem(allNewAx,reshape(c.data,newShape),reshape(c.mask,newShape))
 end
+
+
 
 end
