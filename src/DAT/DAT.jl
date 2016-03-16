@@ -1,6 +1,7 @@
 module DAT
 export @registerDATFunction, joinVars
 using ..CubeAPI
+using ..CachedArrays
 using Base.Dates
 
 getCheckExpr(i::Int,axtype::Symbol)=:(isa(dc.axes[$i],$axtype))
@@ -39,46 +40,143 @@ function getOutDimExpr(ndimout,dimsout)
    end
  end
 end
-cubeFunctions=Dict{Symbol,Tuple}()
-macro registerDATFunction(fname, dimsin, dimsout, args...)
-  #Handle cases for input dimensions
-  sfname=esc(fname)
-  DAT.cubeFunctions[fname]=(dimsin.args...)
-  fhead=Expr(:call,sfname,:(dc::CubeMem),args...)
-  args2=ntuple(i->(isa(args[i],Expr) && args[i].head==:(::)) ? args[i].args[1] : args[i],length(args))
-  fcall=Expr(:call,sfname,:xin,:xout,:maskin,:maskout,args2...)
-  ndimin=length(dimsin.args);
-  ndimout=length(dimsout.args);
-  return quote
-    #This generates a wrapper that takes a block of Lon-Lat-Time data and peforms the operations along Time Axis"
-    $fhead=begin
-      #println(size(dc))
-      $(getCheckExpr(dimsin.args))
-      #println(size(dc))
-      $(getInDimExpr(ndimin))
-      $(getOutDimExpr(ndimout,dimsout))
-      for iother=1:nother
-        xin=$(Expr(:call,:slice,:indata,fill(:(:),ndimin)...,:iother))
-        xout=$(Expr(:call,:slice,:outdata,fill(:(:),ndimout)...,:iother))
-        maskin=$(Expr(:call,:slice,:inmaskfull,fill(:(:),ndimin)...,:iother))
-        maskout=$(Expr(:call,:slice,:outmaskfull,fill(:(:),ndimout)...,:iother))
-        $fcall
-      end
-      #println(nfrontout,nbackout)
-      nbackout=size(dc.data)[$(ndimin+1):end]
-      CubeMem([dc.axes[idimout];dc.axes[$(ndimin+1):end]],reshape(outdata,(nfrontout...,nbackout...)),reshape(outmaskfull,(nfrontout...,nbackout...)))
+
+
+abstract DATFunction
+const f2Type=Dict{Function,DATFunction}()
+const type2f=Dict{DATFunction,Function}()
+const fdimsin=Dict{Function,Tuple}()
+const fdimsout=Dict{Function,Tuple}()
+const fargs=Dict{Function,Tuple}()
+
+totuple(x::AbstractArray)=ntuple(i->x[i],length(x))
+function applyDATFunction{T}(fu::Function,cdata::AbstractCubeData{T},addargs...;max_cache=1e6)
+  axlist=axes(cdata)
+  fT=f2Type[fu]
+  indims=collect(fdimsin[fu])
+  outdims=collect(fdimsout[fu])
+  loopinR=[] #Values to pass to inner Loop
+  loopOutR=[] #Values to pass to inner Loop
+  inAxes=[]  #Axes to be operated on
+  outAxes=[] #Axes to be operated on
+  LoopAxes=[] #Axes to loop over
+  for a in axlist
+    if typeof(a) in fdimsin[fu]
+      push!(loopinR,Colon())
+      push!(inAxes,a)
+    else
+      push!(loopinR,length(a))
+      push!(LoopAxes,a)
+    end
+    if typeof(a) in fdimsout[fu]
+      push!(outAxes,a)
     end
   end
+  axlistOut=[outAxes;LoopAxes]
+  totcachesize=max_cache
+  inblocksize=length(inAxes)>0 ? sizeof(T)*prod(map(length,inAxes)) : 1
+  outblocksize=length(outAxes)>0 ? sizeof(T)*prod(map(length,outAxes)) : 1
+  incfac=totcachesize/max(inblocksize,outblocksize)
+  incfac<1 && error("Not enough memory, please increase availabale cache size")
+  loopCacheSize = ones(Int,length(LoopAxes))
+  for iLoopAx=1:length(LoopAxes)
+    s=length(LoopAxes[iLoopAx])
+    if s<incfac
+      loopCacheSize[iLoopAx]=s
+      incfac=incfac/s
+      continue
+    else
+      ii=floor(Int,incfac)
+      while ii>1 && rem(s,ii)!=0
+        ii=ii-1
+      end
+      loopCacheSize[iLoopAx]=ii
+      break
+    end
+  end
+  println("Choosing Cache size of ",loopCacheSize)
+  tc=CachedArrays.TempCube(axlistOut,CartesianIndex(totuple([map(length,outAxes);loopCacheSize])))
+  j=1
+  CacheInSize=Int[]
+  for a in axlist
+    if typeof(a) in fdimsin[fu]
+      push!(CacheInSize,length(a))
+    else
+      push!(CacheInSize,loopCacheSize[j])
+      j=j+1
+    end
+  end
+  @assert j==length(loopCacheSize)+1
+  tca=CachedArrays.CachedArray(tc,1,tc.block_size,CachedArrays.MaskedCacheBlock{T,length(axlistOut)});
+  cm=CachedArrays.CachedArray(cdata,1,CartesianIndex(totuple(CacheInSize)),CachedArrays.MaskedCacheBlock{T,length(axlist)});
+  loopOutR=[fill(Colon(),length(outAxes));map(length,LoopAxes)]
+  innerLoop(fT,cm,tca,totuple(loopinR),totuple(loopOutR),addargs)
+  CachedArrays.sync(tca)
+  tc
+end
+
+@generated function innerLoop{T1,T2}(fT::DATFunction,xin,xout,loopinRanges::T1,loopoutRanges::T2,addargs)
+    Nin=length(T1.parameters)
+    Nout=length(T2.parameters)
+    Nloopvars=mapreduce(x->x!=Colon,+,0,T1.parameters)
+    NinCol=mapreduce(x->x==Colon,+,0,T1.parameters)
+    NoutCol=mapreduce(x->x==Colon,+,0,T2.parameters)
+    loopRanges=Expr(:block)
+    subIn=Expr(:call,:(CachedArrays.getSubRange),:xin)
+    subOut=Expr(:call,:(CachedArrays.getSubRange),:xout)
+    j=1
+    for i=1:Nin
+        if T1.parameters[i]==Colon
+            push!(subIn.args,:(:))
+        else
+            isym=Symbol("i_$(j)")
+            unshift!(loopRanges.args,:($isym=1:loopinRanges[$i]))
+            push!(subIn.args,isym)
+            j+=1
+        end
+    end
+    j=1
+    for i=1:Nout
+        if T2.parameters[i]==Colon
+            push!(subOut.args,:(:))
+        else
+            isym=Symbol("i_$(j)")
+            push!(subOut.args,isym)
+            j+=1
+        end
+    end
+    push!(subOut.args,Expr(:kw,:write,true))
+    callex=Expr(:call,:f,:ain,:aout,:min,:mout)
+    loopBody=quote
+        ain,min=$subIn
+        aout,mout=$subOut
+        fT(ain,aout,min,mout,addargs...)
+    end
+    Expr(:for,loopRanges,loopBody)
+end
+
+macro registerDATFunction(fname, dimsin,dimsout,args...)
+    @assert dimsin.head==:tuple
+    @assert dimsout.head==:tuple
+    tName=esc(gensym())
+    sfname=esc(fname)
+    quote
+        immutable $tName <: DATFunction end
+        Base.call(::$tName,xin,xout,maskin,maskout,addargs)=$sfname(xin,xout,maskin,maskout,addargs...)
+        f2Type[$sfname]=$(tName)()
+        fdimsin[$sfname]=$dimsin
+        fdimsout[$sfname]=$dimsout
+        fargs[$sfname]=$args
+    end
 end
 
 
 "Find a certain axis type in a vector of Cube axes"
 function findAxis{T<:CubeAxis}(a::Type{T},v)
-    i=1
     for i=1:length(v)
-        isa(v[i],a) && break
+        isa(v[i],a) && return i
     end
-    i
+    return 0
 end
 
 "Reshape a cube to bring the wanted dimensions to the front"

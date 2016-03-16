@@ -365,9 +365,9 @@ function readAllyears(s::SubCube,outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs
 end
 
 function readAllyears(s::SubCubeV,outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
-    for iv in (voffs+1):(nv-voffs)
-        outar2=sub(outar,:,:,:,iv)
-        mask2=sub(mask,:,:,:,iv)
+    for iv in (voffs+1):(nv+voffs)
+        outar2=sub(outar,:,:,:,iv-voffs)
+        mask2=sub(mask,:,:,:,iv-voffs)
         ycur=y1   #Current year to read
         i1cur=i1  #Current time step in year
         itcur=1   #Current time step in output file

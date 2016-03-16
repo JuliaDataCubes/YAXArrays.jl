@@ -56,7 +56,7 @@ function plotTS{T}(cube::AbstractCubeData{T})
         axlist=axes(cube)
     end
     #Generate CachedArray for plotting
-    ga[1] = CachedArray(cube,50,CartesianIndex(ntuple(i->subcubedims[i],length(subcubedims))),CachedArrays.MaskedCacheBlock{T,length(subcubedims)})
+    ga[1] = CachedArray(cube,20,CartesianIndex(ntuple(i->subcubedims[i],length(subcubedims))),CachedArrays.MaskedCacheBlock{T,length(subcubedims)})
 
     layerex=Array(Any,0)
     if nvar==0

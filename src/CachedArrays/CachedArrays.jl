@@ -12,7 +12,7 @@ type SimpleCacheBlock{T,N} <: CacheBlock{T,N}
 end
 emptyblock{T,N}(b::Type{SimpleCacheBlock{T,N}})=SimpleCacheBlock{T,N}(Array(T,ntuple(i->0,N)),0.0,CartesianIndex{N}()-CartesianIndex{N}())
 zeroblock{T,N}(b::Type{SimpleCacheBlock{T,N}},block_size,position)=SimpleCacheBlock{T,N}(zeros(T,block_size.I),0.0,position)
-getValues(b::SimpleCacheBlock,I...)=b.data[I...]
+getValues(b::SimpleCacheBlock,I...)=slice(b.data,I...)
 import Base.<
 <(c1::CacheBlock,c2::CacheBlock)=c1.score<c2.score
 
@@ -25,9 +25,9 @@ type MaskedCacheBlock{T,N} <: CacheBlock{T,N}
 end
 emptyblock{T,N}(b::Type{MaskedCacheBlock{T,N}})=MaskedCacheBlock{T,N}(Array(T,ntuple(i->0,N)),Array(UInt8,ntuple(i->0,N)),0.0,CartesianIndex{N}()-CartesianIndex{N}(),false)
 zeroblock{T,N}(b::Type{MaskedCacheBlock{T,N}},block_size,position)=MaskedCacheBlock{T,N}(zeros(T,block_size.I),zeros(UInt8,block_size.I),0.0,position,false)
-getValues(b::MaskedCacheBlock,I::Union{Integer,UnitRange}...)=(sub(b.data,I...),sub(b.mask,I...))
-getValues(b::MaskedCacheBlock,I::Integer...)=(b.data[I...],b.mask[I...])
-function setValues(b::MaskedCacheBlock,vals,mask,I::Union{Integer,UnitRange}...)
+getValues(b::MaskedCacheBlock,I::Union{Integer,UnitRange,Colon}...)=(slice(b.data,I...),slice(b.mask,I...))
+#getValues(b::MaskedCacheBlock,I::Integer...)=(b.data[I...],b.mask[I...])
+function setValues(b::MaskedCacheBlock,vals,mask,I::Union{Integer,UnitRange,Colon}...)
     b.data[I...]=vals
     b.mask[I...]=mask
 end
@@ -95,8 +95,9 @@ function getBlockIndEx(N,isym,iIsym,bIsym)
     iIsym_d=symbol(string(iIsym,"_d"))
     bIsym_d=symbol(string(bIsym,"_d"))
     quote
-      @nexprs $N d->($(bIsym_d)=div($(isym_d)-1,c.block_size[d]))
-      @nexprs $N d->($(iIsym_d)=$(isym_d)-$(bIsym_d)*c.block_size[d])
+      @nexprs $N d->($(bIsym_d) = div($(isym_d)-1,block_size[d]))
+      @nexprs $N d->(offs_d     = $(bIsym_d)*block_size[d])
+      @nexprs $N d->($(iIsym_d) = $(isym_d)-offs_d)
       @nexprs $N d->($(bIsym_d) = $(bIsym_d)+1)
     end
 end
@@ -104,11 +105,11 @@ end
 function getBlockExchangeEx(N)
     quote
         blockx,i = findmin(c.currentblocks)
-        blockx.iswritten && write_subblock!(blockx,c.x,c.block_size)
+        blockx.iswritten && write_subblock!(blockx,c.x,block_size)
         c.blocks[blockx.position]=c.emptyblock
         blockx.position=CartesianIndex(@ntuple($N,bI))
         @nref($N,blocks,bI)=blockx
-        read_subblock!(blockx,c.x,c.block_size)
+        read_subblock!(blockx,c.x,block_size)
     end
 end
 
@@ -136,28 +137,35 @@ function slowgetRangeEx(N,higetVal,higetSub)
 end
 
 setWriteEx(e::Expr)=e.args[1]==:setSubRange ? :(blockx.iswritten=true) : :()
+@inline firstval(x::Integer)=x
+@inline firstval(x::UnitRange)=x.start
+@inline firstval(x::Colon)=1
+@inline llength(x,s)=length(x)
+@inline llength(x::Colon,s)=s
+@inline subOffs(x,o)=x-o
+@inline subOffs(x::Colon,o)=x
+
 
 function funcbodyRangeEx(N,higetVal,higetSub)
     quote
-      @nexprs $N d->(istart_d=i_d[1];iend_d=i_d[end])
-      $(getBlockIndEx(N,"istart","iIstart","bIstart"))
-      $(getBlockIndEx(N,"iend","iIend","bIend"))
+      block_size=c.block_size
+      @nexprs $N d->(istart_d=firstval(i_d);l_d=llength(i_d,block_size[d]))
+      $(getBlockIndEx(N,"istart","iIstart","bI"))
       blocks=c.blocks
-      if @nall $N d->(bIstart_d==bIend_d)
-          @nexprs $N d->(bI_d=bIstart_d)
+      if @nall $N d->(iIstart_d+l_d-1<=block_size[d])
           if @nref($N,blocks,bI) == c.emptyblock
               $(getBlockExchangeEx(N))
           else
               blockx=@nref($N,blocks,bI)
           end
           blockx.score+=1.0
-          @nexprs $N d->(iI_d = iIstart_d==iIend_d ? iIstart_d : iIstart_d:iIend_d)
-          println(string("Accessing block ",@ntuple($N,d->bI_d)," at ",@ntuple($N,d->iI_d)))
+          @nexprs $N d->(iI_d = subOffs(i_d,offs_d))
           o=$higetVal
-          $(setWriteEx(higetSub))
+          blockx.iswritten=write
           return o
       else
-          $(slowgetRangeEx(N,higetVal,higetSub))
+          #$(slowgetRangeEx(N,higetVal,higetSub))
+          error("trying to access subrange at wrong indices")
       end
     end
 end
@@ -167,9 +175,10 @@ function findminscore(c::CachedArray)
 end
 
 
+
 hi=Expr(:call,:(Base.getindex{T}),:(c::CachedArray{T,N}))
-hiRange=Expr(:call,:(getSubRange{T,S<:MaskedCacheBlock}),:(c::CachedArray{T,N,S}))
-hisetRange=Expr(:call,:(setSubRange{T,S<:MaskedCacheBlock}),:(c::CachedArray{T,N,S}),:vals,:mask)
+hiRange=Expr(:call,:(getSubRange{T,S<:MaskedCacheBlock}),Expr(:parameters,Expr(:kw,:write,false)),:(c::CachedArray{T,N,S}))
+hisetRange=Expr(:call,:(setSubRange{T,S<:MaskedCacheBlock}),Expr(:parameters,Expr(:kw,:write,false)),:(c::CachedArray{T,N,S}),:vals,:mask)
 higetVal=Expr(:call,:getValues,:blockx)
 hisetVal=Expr(:call,:setValues,:blockx,:vals,:mask)
 higetSub=Expr(:call,:getSubRange,:c)
@@ -185,6 +194,7 @@ for N=1:5
   # then check if this is in cache and returns the value. bI refers to the index of the
   # block and iI refers to the index inside the block
   funcbody=quote
+      block_size=c.block_size
     $(getBlockIndEx(N,"i","iI","bI"))
     blocks=c.blocks
     if @nref($N,blocks,bI) == c.emptyblock
@@ -200,11 +210,11 @@ for N=1:5
   funcbodyRangeSet=funcbodyRangeEx(N,hisetVal,hisetSub)
   #Here is the function body if getindex is called on ranges.
   hi.args[2].args[2].args[3]=N
-  hiRange.args[2].args[2].args[3]=N
-  hisetRange.args[2].args[2].args[3]=N
+  hiRange.args[3].args[2].args[3]=N
+  hisetRange.args[3].args[2].args[3]=N
   push!(hi.args,:($(symbol(string("i_",N)))::Integer))
-  push!(hiRange.args,:($(symbol(string("i_",N)))::Union{UnitRange,Integer}))
-  push!(hisetRange.args,:($(symbol(string("i_",N)))::Union{UnitRange,Integer}))
+  push!(hiRange.args,:($(symbol(string("i_",N)))::Union{UnitRange,Integer,Colon}))
+  push!(hisetRange.args,:($(symbol(string("i_",N)))::Union{UnitRange,Integer,Colon}))
   ex=Expr(:function,hi,funcbody)
   exRange=Expr(:function,hiRange,funcbodyRange)
   exsetRange=Expr(:function,hisetRange,funcbodyRangeSet)
@@ -261,11 +271,16 @@ function write_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::TempCube{T,N},block_si
     x.iswritten=false
 end
 function read_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::TempCube{T,N},block_size::CartesianIndex{N})
-    filename=joinpath(y.folder,tofilename(x.position))
-    #println("Reading from file $filename")
-    ncread!(filename,"cube",x.data)
-    ncread!(filename,"mask",x.mask)
-    ncclose()
+    if block_size==y.block_size
+        filename=joinpath(y.folder,tofilename(x.position))
+        #println("Reading from file $filename")
+        ncread!(filename,"cube",x.data)
+        ncread!(filename,"mask",x.mask)
+        ncclose()
+    else
+        r = CartesianRange((x.position-CartesianIndex{N}()).*block_size+CartesianIndex{N}(),(x.position).*block_size)
+        TempCubes.readTempCube(y,x.data,x.mask,r)
+    end
 end
 
 function sync(c::CachedArray)
