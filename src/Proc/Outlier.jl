@@ -1,7 +1,7 @@
 module Outlier
 export recurrences!
-using ..DAT
-using ..CubeAPI
+importall ..DAT
+importall ..CubeAPI
 using Distances
 
 function recurrences!(recurrence_num::AbstractVector,D::AbstractArray, rec_threshold::Float64, temp_excl::Int = 5)
