@@ -97,7 +97,7 @@ end
 
 function val2col(x,m,colorm,mi,ma,misscol,oceancol)
   N=length(colorm)
-  if m==VALID
+  if m==VALID && !isnan(x)
     i=min(N,max(1,ceil(Int,(x-mi)/(ma-mi)*N)))
     return colorm[i]
   elseif (m & OCEAN)==OCEAN

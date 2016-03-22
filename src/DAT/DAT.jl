@@ -115,7 +115,7 @@ function applyDATFunction{T}(fu::Function,cdata::AbstractCubeData{T},addargs...;
   tc
 end
 
-@generated function innerLoop{T1,T2}(fT::DATFunction,xin,xout,loopinRanges::T1,loopoutRanges::T2,addargs)
+@generated function innerLoop{T1,T2,T3}(fT::DATFunction,xin,xout,loopinRanges::T1,loopoutRanges::T2,addargs::T3)
     Nin=length(T1.parameters)
     Nout=length(T2.parameters)
     Nloopvars=mapreduce(x->x!=Colon,+,0,T1.parameters)
@@ -163,6 +163,7 @@ macro registerDATFunction(fname, dimsin,dimsout,args...)
     quote
         immutable $tName <: DATFunction end
         Base.call(::$tName,xin,xout,maskin,maskout,addargs)=$sfname(xin,xout,maskin,maskout,addargs...)
+        Base.call(::$tName,xin,xout,maskin,maskout)=$sfname(xin,xout,maskin,maskout)
         f2Type[$sfname]=$(tName)()
         fdimsin[$sfname]=$dimsin
         fdimsout[$sfname]=$dimsout
