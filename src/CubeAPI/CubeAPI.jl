@@ -348,7 +348,6 @@ function _read{T}(s::AbstractCubeData{T},outar,mask;xoffs::Int=0,yoffs::Int=0,to
 
     fill!(mask,zero(UInt8))
     getLandSeaMask!(mask,s.cube,grid_x1,grid_x2,grid_y1,grid_y2)
-
     readAllyears(s,outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
     ncclose()
 end
@@ -385,20 +384,21 @@ function readFromDataYear{T}(cube::Cube,outar::AbstractArray{T,3},mask::Abstract
   nt = min(NpY-i1cur+1,ntleft)
   xr = grid_x1:(grid_x1+nx-1)
   yr = grid_y1:(grid_y1+ny-1)
+  nanval=convert(T,NaN)
   if isfile(filename)
     v=NetCDF.open(filename,variable);
     outar[1:nx,1:ny,itcur:(itcur+nt-1)]=v[xr,yr,i1cur:(i1cur+nt-1)]
     missval=ncgetatt(filename,variable,"_FillValue")
-    for i=eachindex(outar)
-      if outar[i] == missval
-        mask[i]=mask[i] | MISSING
-        outar[i]=oftype(outar[i],NaN)
+    for k=itcur:(itcur+nt-1),j=1:ny,i=1:nx
+      if outar[i,j,k] == missval
+        mask[i,j,k]=mask[i,j,k] | MISSING
+        outar[i,j,k]=nanval
       end
     end
   else
-    for i=eachindex(mask)
-      mask[i]=(mask[i] | OUTOFPERIOD)
-      outar[i]=oftype(outar[i],NaN)
+    for k=itcur:(itcur+nt-1),j=1:ny,i=1:nx
+      mask[i,j,k]=(mask[i,j,k] | OUTOFPERIOD)
+      outar[i,j,k]=nanval
     end
   end
   itcur+=nt
