@@ -150,7 +150,7 @@ end
     loopBody=quote
         ain,min=$subIn
         aout,mout=$subOut
-        fT(ain,aout,min,mout,addargs...)
+        fT(ain,aout,min,mout,addargs)
     end
     Expr(:for,loopRanges,loopBody)
 end

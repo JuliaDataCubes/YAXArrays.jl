@@ -51,4 +51,23 @@ function readTempCube{N}(y::TempCube,data,mask,r::CartesianRange{CartesianIndex{
   end
 end
 
+#Method for reading cubes that get transposed
+#Per means fileOrder -> MemoryOrder
+function readTempCube{N}(y::TempCube,data,mask,r::CartesianRange{CartesianIndex{N}},perm::NTuple{N})
+  blocksize_trans = y.block_size[perm]
+  unit=CartesianIndex{N}()
+  rsmall=CartesianRange(div(r.start-unit,blocksize_trans)+unit,div(r.stop-unit,blocksize_trans)+unit)
+  for Ismall in rsmall
+      bBig1=max((Ismall-unit).*blocksize_trans+unit,r.start)
+      bBig2=min(Ismall.*blocksize_trans,r.stop)
+      iToread=CartesianRange(bBig1-(Ismall-unit).*y.block_size,bBig2-(Ismall-unit).*y.block_size)
+      filename=tofilename(Ismall)
+      v=NetCDF.open(joinpath(y.folder,filename),"cube")
+      vmask=NetCDF.open(joinpath(y.folder,filename),"mask")
+      data[toRange(bBig1-r.start+unit,bBig2-r.start+unit)...]=v[toRange(iToread)...]
+      mask[toRange(bBig1-r.start+unit,bBig2-r.start+unit)...]=vmask[toRange(iToread)...]
+      ncclose()
+  end
+end
+
 end
