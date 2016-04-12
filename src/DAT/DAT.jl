@@ -50,7 +50,8 @@ const fdimsout=Dict{Function,Tuple}()
 const fargs=Dict{Function,Tuple}()
 
 totuple(x::AbstractArray)=ntuple(i->x[i],length(x))
-function applyDATFunction{T}(fu::Function,cdata::AbstractCubeData{T},addargs...;max_cache=1e6)
+function applyDATFunction{T}(fu::Function,cdata::AbstractCubeData{T},addargs...;max_cache=1e6,outfolder=mktempdir())
+  isdir(outfolder) || mkdir(outfolder)
   axlist=axes(cdata)
   fT=f2Type[fu]
   indims=collect(fdimsin[fu])
@@ -95,7 +96,7 @@ function applyDATFunction{T}(fu::Function,cdata::AbstractCubeData{T},addargs...;
     end
   end
   println("Choosing Cache size of ",loopCacheSize)
-  tc=CachedArrays.TempCube(axlistOut,CartesianIndex(totuple([map(length,outAxes);loopCacheSize])))
+  tc=CachedArrays.TempCube(axlistOut,CartesianIndex(totuple([map(length,outAxes);loopCacheSize])),folder=outfolder)
   j=1
   CacheInSize=Int[]
   for a in axlist
