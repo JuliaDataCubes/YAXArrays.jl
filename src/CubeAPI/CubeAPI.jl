@@ -102,8 +102,11 @@ function Cube(base_dir::AbstractString)
   Cube(base_dir,cubeconfig,data_dir_entries,var_name_to_var_index,firstYearOffset)
 end
 
+abstract AbstractSubCube{T} <: AbstractCubeData{T}
+
+
 "A SubCube is a representation of a certain region or time range returned by the getCube function."
-immutable SubCube{T} <: AbstractCubeData{T}
+immutable SubCube{T} <: AbstractSubCube{T}
   cube::Cube #Parent cube
   variable::UTF8String #Variable
   sub_grid::Tuple{Int,Int,Int,Int} #grid_y1,grid_y2,grid_x1,grid_x2
@@ -114,12 +117,24 @@ immutable SubCube{T} <: AbstractCubeData{T}
 end
 axes(s::SubCube)=CubeAxis[s.lonAxis,s.latAxis,s.timeAxis]
 
-Base.eltype{T}(s::SubCube{T})=T
-Base.ndims(s::SubCube)=3
+"A SubCubePerm is a representation of a permutation of region or time range returned by the getCube function."
+immutable SubCubePerm{T} <: AbstractSubCube{T}
+  parent::SubCube{T}
+  perm::Tuple{Int,Int,Int}
+end
+axes(s::SubCubePerm)=CubeAxis[s.parent.lonAxis,s.parent.latAxis,s.parent.timeAxis][perm]
+
+Base.eltype{T}(s::AbstractCubeData{T})=T
+Base.ndims(s::Union{SubCube,SubCubePerm})=3
 Base.size(s::SubCube)=(length(s.lonAxis),length(s.latAxis),length(s.timeAxis))
+Base.size(s::SubCubePerm)=(s.perm[1]==1 ? length(s.parent.lonAxis) : s.perm[1]==2 ? length(s.parent.latAxis) : length(s.parent.timeAxis),
+                           s.perm[2]==1 ? length(s.parent.lonAxis) : s.perm[2]==2 ? length(s.parent.latAxis) : length(s.parent.timeAxis),
+                           s.perm[3]==1 ? length(s.parent.lonAxis) : s.perm[3]==2 ? length(s.parent.latAxis) : length(s.parent.timeAxis))
+
+
 
 "A SubCube containing several variables"
-immutable SubCubeV{T} <: AbstractCubeData{T}
+immutable SubCubeV{T} <: AbstractSubCube{T}
     cube::Cube #Parent cube
     variable::Vector{UTF8String} #Variable
     sub_grid::Tuple{Int,Int,Int,Int} #grid_y1,grid_y2,grid_x1,grid_x2
@@ -129,10 +144,24 @@ immutable SubCubeV{T} <: AbstractCubeData{T}
     timeAxis::TimeAxis
     varAxis::VariableAxis
 end
+
+"A Permutation of a SubCube containing several variables"
+immutable SubCubeVPerm{T} <: AbstractSubCube{T}
+    parent::SubCubeV{T}
+    perm::NTuple{4,Int}
+end
 axes(s::SubCubeV)=CubeAxis[s.lonAxis,s.latAxis,s.timeAxis,s.varAxis]
-Base.eltype{T}(s::SubCubeV{T})=T
+axes(s::SubCubeVPerm)=CubeAxis[s.parent.lonAxis,s.parent.latAxis,s.parent.timeAxis,s.parent.varAxis][s.perm]
 Base.ndims(s::SubCubeV)=4
+Base.ndims(s::SubCubeVPerm)=4
 Base.size(s::SubCubeV)=(length(s.lonAxis),length(s.latAxis),length(s.timeAxis),length(s.varAxis))
+Base.size(s::SubCubeVPerm)=(s.perm[1]==1 ? length(s.parent.lonAxis) : s.perm[1]==2 ? length(s.parent.latAxis) : s.perm[1]==3 ? length(s.parent.timeAxis) : length(s.parent.varAxis),
+                            s.perm[2]==1 ? length(s.parent.lonAxis) : s.perm[2]==2 ? length(s.parent.latAxis) : s.perm[2]==3 ? length(s.parent.timeAxis) : length(s.parent.varAxis),
+                            s.perm[3]==1 ? length(s.parent.lonAxis) : s.perm[3]==2 ? length(s.parent.latAxis) : s.perm[3]==3 ? length(s.parent.timeAxis) : length(s.parent.varAxis),
+                            s.perm[4]==1 ? length(s.parent.lonAxis) : s.perm[4]==2 ? length(s.parent.latAxis) : s.perm[4]==3 ? length(s.parent.timeAxis) : length(s.parent.varAxis))
+
+Base.permutedims{T}(c::SubCube{T},perm::NTuple{3,Int})=SubCubePerm{T}(c,perm)
+Base.permutedims{T}(c::SubCubeV{T},perm::NTuple{4,Int})=SubCubeVPerm{T}(c,perm)
 
 type CubeMem{T,N} <: AbstractCubeData
   axes::Vector{CubeAxis}
@@ -324,7 +353,26 @@ function read{T}(s::SubCube{T})
     return CubeMem(CubeAxis[s.lonAxis,s.latAxis,s.timeAxis],outar,mask)
 end
 
-function _read{T}(s::AbstractCubeData{T},outar,mask;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,1),ny::Int=size(outar,2),nt::Int=size(outar,3),nv::Int=length(s.variable))
+"""
+Add a function to read some CubeData in a permuted way, we will make a copy here for simplicity, however, this might change in the future
+"""
+function _read{T}(s::SubCubeVPerm{T},outar,mask;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,findin(s.perm,1)[1]),ny::Int=size(outar,findin(s.perm,2)[1]),nt::Int=size(outar,findin(s.perm,3)[1]),nv::Int=size(outar,findin(s.perm,4)[1]))
+  perm=s.perm
+  outartemp=Array(T,nx,ny,nt,nv)
+  masktemp=zeros(UInt8,nx,ny,nt,nv)
+  _read(s.parent,outartemp,masktemp,xoffs=xoffs,yoffs=yoffs,toffs=toffs,voffs=voffs,nx=nx,ny=ny,nt=nt,nv=nv)
+  permutedims!(outar,outartemp,perm)
+end
+
+function _read{T}(s::SubCubePerm{T},outar,mask;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,findin(s.perm,1)[1]),ny::Int=size(outar,findin(s.perm,2)[1]),nt::Int=size(outar,findin(s.perm,3)[1]),nv::Int=1)
+  perm=s.perm
+  outartemp=Array(T,nx,ny,nt)
+  masktemp=zeros(UInt8,nx,ny,nt)
+  _read(s.parent,outar,mask,xoffs=xoffs,yoffs=yoffs,toffs=toffs,voffs=voffs,nx=nx,ny=ny,nt=nt,nv=nv)
+  permutedims!(outar,outartemp,perm)
+end
+
+function _read{T}(s::AbstractSubCube{T},outar,mask;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,1),ny::Int=size(outar,2),nt::Int=size(outar,3),nv::Int=length(s.variable))
 
     grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid
     y1,i1,y2,i2,ntime,NpY           = s.sub_times
@@ -348,6 +396,7 @@ function _read{T}(s::AbstractCubeData{T},outar,mask;xoffs::Int=0,yoffs::Int=0,to
 
     fill!(mask,zero(UInt8))
     getLandSeaMask!(mask,s.cube,grid_x1,grid_x2,grid_y1,grid_y2)
+
     readAllyears(s,outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
     ncclose()
 end
