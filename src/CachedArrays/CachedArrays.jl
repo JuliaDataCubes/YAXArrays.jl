@@ -149,7 +149,7 @@ setWriteEx(e::Expr)=e.args[1]==:setSubRange ? :(blockx.iswritten=true) : :()
 function funcbodyRangeEx(N,higetVal,higetSub)
     quote
       block_size=c.block_size
-      @nexprs $N d->(istart_d=firstval(i_d);l_d=llength(i_d,block_size[d]))
+      @nexprs $N d->(istart_d=firstval(i_d);l_d=llength(i_d,size(c,d)))
       $(getBlockIndEx(N,"istart","iIstart","bI"))
       blocks=c.blocks
       if @nall $N d->(iIstart_d+l_d-1<=block_size[d])
@@ -185,16 +185,15 @@ higetSub=Expr(:call,:getSubRange,:c)
 hisetSub=Expr(:call,:setSubRange,:c,:vals,:mask)
 ex=5
 for N=1:5
-
-    push!(higetVal.args,symbol("iI_$N"))
-    push!(higetSub.args,:($(symbol("iL_$N"))-1+$(symbol("istart_$N"))))
-    push!(hisetVal.args,symbol("iI_$N"))
-    push!(hisetSub.args,:($(symbol("iL_$N"))-1+$(symbol("istart_$N"))))
+  push!(higetVal.args,symbol("iI_$N"))
+  push!(higetSub.args,:($(symbol("iL_$N"))-1+$(symbol("istart_$N"))))
+  push!(hisetVal.args,symbol("iI_$N"))
+  push!(hisetSub.args,:($(symbol("iL_$N"))-1+$(symbol("istart_$N"))))
   # This is the function body that first determines the subblock to read,
   # then check if this is in cache and returns the value. bI refers to the index of the
   # block and iI refers to the index inside the block
   funcbody=quote
-      block_size=c.block_size
+    block_size=c.block_size
     $(getBlockIndEx(N,"i","iI","bI"))
     blocks=c.blocks
     if @nref($N,blocks,bI) == c.emptyblock
@@ -242,9 +241,9 @@ function read_subblock!{T,N}(x::SimpleCacheBlock{T,N},y::NcVar{T,N},block_size::
     NetCDF.readvar!(y,x.data,asRanges(istart+CartesianIndex{N}(),block_size)...)
 end
 
-import CABLAB.CubeAPI.SubCube
+import CABLAB.CubeAPI.SubCube, CABLAB.CubeAPI.SubCubePerm
 import CABLAB.CubeAPI._read
-import CABLAB.CubeAPI.SubCubeV
+import CABLAB.CubeAPI.SubCubeV, CABLAB.CubeAPI.SubCubeVPerm
 function read_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::SubCube{T},block_size::CartesianIndex{N})
     istart = (x.position-CartesianIndex{N}()).*block_size
     sx,sy,sz=size(y)
@@ -257,11 +256,19 @@ function read_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::SubCubeV{T},block_size:
     _read(y,x.data,x.mask,xoffs=istart[1],yoffs=istart[2],toffs=istart[3],nx=min(sx,block_size[1]),ny=min(sy,block_size[2]),nt=min(sz,block_size[3]),voffs=istart[4],nv=min(sz,block_size[4]))
 end
 
+function read_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::SubCubeVPerm{T},block_size::CartesianIndex{N})
+    iperm=y.iperm
+    istart = (x.position-CartesianIndex{N}()).*block_size
+    sx,sy,sz,nvar=size(y.parent)
+    _read(y,x.data,x.mask,xoffs=istart[iperm[1]],yoffs=istart[iperm[2]],toffs=istart[iperm[3]],nx=min(sx,block_size[iperm[1]]),ny=min(sy,block_size[iperm[2]]),nt=min(sz,block_size[iperm[3]]),voffs=istart[iperm[4]],nv=min(sz,block_size[iperm[4]]))
+end
+
 write_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::Any,block_size::CartesianIndex{N},i::CartesianIndex{N})=error("$(typeof(y)) is not writeable. Please add a write_subblock method.")
 
 include("TempCubes.jl")
 import .TempCubes.tofilename
 import .TempCubes.TempCube
+import .TempCubes.TempCubePerm
 function write_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::TempCube{T,N},block_size::CartesianIndex{N})
     filename=joinpath(y.folder,tofilename(x.position))
     #println("Writing to file $filename")
@@ -281,6 +288,11 @@ function read_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::TempCube{T,N},block_siz
         r = CartesianRange((x.position-CartesianIndex{N}()).*block_size+CartesianIndex{N}(),(x.position).*block_size)
         TempCubes.readTempCube(y,x.data,x.mask,r)
     end
+end
+
+function read_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::TempCubePerm{T,N},block_size::CartesianIndex{N})
+    r = CartesianRange((x.position-CartesianIndex{N}()).*block_size+CartesianIndex{N}(),(x.position).*block_size)
+    TempCubes.readTempCube(y,x.data,x.mask,r)
 end
 
 function sync(c::CachedArray)

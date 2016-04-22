@@ -121,7 +121,9 @@ axes(s::SubCube)=CubeAxis[s.lonAxis,s.latAxis,s.timeAxis]
 immutable SubCubePerm{T} <: AbstractSubCube{T}
   parent::SubCube{T}
   perm::Tuple{Int,Int,Int}
+  iperm::Tuple{Int,Int,Int}
 end
+SubCubePerm(p::SubCube,perm::Tuple{Int,Int,Int})=SubCubePerm(p,perm,NetCDF.getiperm(perm))
 axes(s::SubCubePerm)=CubeAxis[s.parent.lonAxis,s.parent.latAxis,s.parent.timeAxis][perm]
 
 Base.eltype{T}(s::AbstractCubeData{T})=T
@@ -149,7 +151,9 @@ end
 immutable SubCubeVPerm{T} <: AbstractSubCube{T}
     parent::SubCubeV{T}
     perm::NTuple{4,Int}
+    iperm::NTuple{4,Int}
 end
+SubCubeVPerm{T}(p::SubCubeV{T},perm::Tuple{Int,Int,Int,Int})=SubCubeVPerm{T}(p,perm,NetCDF.getiperm(perm))
 axes(s::SubCubeV)=CubeAxis[s.lonAxis,s.latAxis,s.timeAxis,s.varAxis]
 axes(s::SubCubeVPerm)=CubeAxis[s.parent.lonAxis,s.parent.latAxis,s.parent.timeAxis,s.parent.varAxis][s.perm]
 Base.ndims(s::SubCubeV)=4
@@ -160,8 +164,8 @@ Base.size(s::SubCubeVPerm)=(s.perm[1]==1 ? length(s.parent.lonAxis) : s.perm[1]=
                             s.perm[3]==1 ? length(s.parent.lonAxis) : s.perm[3]==2 ? length(s.parent.latAxis) : s.perm[3]==3 ? length(s.parent.timeAxis) : length(s.parent.varAxis),
                             s.perm[4]==1 ? length(s.parent.lonAxis) : s.perm[4]==2 ? length(s.parent.latAxis) : s.perm[4]==3 ? length(s.parent.timeAxis) : length(s.parent.varAxis))
 
-Base.permutedims{T}(c::SubCube{T},perm::NTuple{3,Int})=SubCubePerm{T}(c,perm)
-Base.permutedims{T}(c::SubCubeV{T},perm::NTuple{4,Int})=SubCubeVPerm{T}(c,perm)
+Base.permutedims{T}(c::SubCube{T},perm::NTuple{3,Int})=SubCubePerm(c,perm)
+Base.permutedims{T}(c::SubCubeV{T},perm::NTuple{4,Int})=SubCubeVPerm(c,perm)
 
 type CubeMem{T,N} <: AbstractCubeData
   axes::Vector{CubeAxis}
@@ -361,6 +365,9 @@ function _read{T}(s::SubCubeVPerm{T},outar,mask;xoffs::Int=0,yoffs::Int=0,toffs:
   outartemp=Array(T,nx,ny,nt,nv)
   masktemp=zeros(UInt8,nx,ny,nt,nv)
   _read(s.parent,outartemp,masktemp,xoffs=xoffs,yoffs=yoffs,toffs=toffs,voffs=voffs,nx=nx,ny=ny,nt=nt,nv=nv)
+  println(typeof(outar),size(outar))
+  println(typeof(outartemp),size(outartemp))
+  println(perm)
   permutedims!(outar,outartemp,perm)
 end
 

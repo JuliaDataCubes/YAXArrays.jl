@@ -53,9 +53,19 @@ totuple(x::AbstractArray)=ntuple(i->x[i],length(x))
 function applyDATFunction{T}(fu::Function,cdata::AbstractCubeData{T},addargs...;max_cache=1e6,outfolder=mktempdir())
   isdir(outfolder) || mkdir(outfolder)
   axlist=axes(cdata)
-  fT=f2Type[fu]
   indims=collect(fdimsin[fu])
   outdims=collect(fdimsout[fu])
+  #Test if we need to reshape
+  reorder=false
+  for (i,fi) in enumerate(indims)
+    typeof(axlist[i])==fi || (reorder=true)
+  end
+  if reorder
+    perm=getFrontPerm(cdata,indims)
+    cdata=permutedims(cdata,perm)
+    axlist=axlist[collect(perm)]
+  end
+  fT=f2Type[fu]
   loopinR=[] #Values to pass to inner Loop
   loopOutR=[] #Values to pass to inner Loop
   inAxes=[]  #Axes to be operated on
@@ -181,18 +191,17 @@ function findAxis{T<:CubeAxis}(a::Type{T},v)
     return 0
 end
 
-"Reshape a cube to bring the wanted dimensions to the front"
-function dims2Front{T,N}(dc::CubeMem{T,N},dims...)
-  axes=copy(dc.axes)
-  perm=Int[i for i=1:length(axes)];
+"Calculate an axis permutation that brings the wanted dimensions to the front"
+function getFrontPerm{T}(dc::AbstractCubeData{T},dims)
+  ax=axes(dc)
+  N=length(ax)
+  perm=Int[i for i=1:length(ax)];
   iold=Int[]
-  for i=1:length(dims) push!(iold,findAxis(dims[i],axes)) end
+  for i=1:length(dims) push!(iold,findAxis(dims[i],ax)) end
   iold2=sort(iold,rev=true)
   for i=1:length(iold) splice!(perm,iold2[i]) end
   perm=Int[iold;perm]
-  newdata=permutedims(dc.data,ntuple(i->perm[i],N))
-  newmask=permutedims(dc.mask,ntuple(i->perm[i],N))
-  CubeMem(axes[perm],newdata,newmask)
+  return ntuple(i->perm[i],N)
 end
 
 findOutIndex(dc::CubeMem,dims...)=Int[findAxis(d,dc.axes) for d in dims]
