@@ -263,6 +263,14 @@ function read_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::SubCubeVPerm{T},block_s
     _read(y,x.data,x.mask,xoffs=istart[iperm[1]],yoffs=istart[iperm[2]],toffs=istart[iperm[3]],nx=min(sx,block_size[iperm[1]]),ny=min(sy,block_size[iperm[2]]),nt=min(sz,block_size[iperm[3]]),voffs=istart[iperm[4]],nv=min(sz,block_size[iperm[4]]))
 end
 
+function read_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::SubCubePerm{T},block_size::CartesianIndex{N})
+    iperm=y.iperm
+    istart = (x.position-CartesianIndex{N}()).*block_size
+    sx,sy,sz=size(y.parent)
+    _read(y,x.data,x.mask,xoffs=istart[iperm[1]],yoffs=istart[iperm[2]],toffs=istart[iperm[3]],nx=min(sx,block_size[iperm[1]]),ny=min(sy,block_size[iperm[2]]),nt=min(sz,block_size[iperm[3]]),voffs=0,nv=1)
+end
+
+
 write_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::Any,block_size::CartesianIndex{N},i::CartesianIndex{N})=error("$(typeof(y)) is not writeable. Please add a write_subblock method.")
 
 include("TempCubes.jl")
@@ -302,6 +310,20 @@ function sync(c::CachedArray)
         end
     end
 end
+
+@generated function mypermutedims!{Q,T,S,N}(dest::AbstractArray{T,N},src::AbstractArray{S,N},perm::Type{Q})
+    ind1=ntuple(i->symbol("i_",i),N)
+    ind2=ntuple(i->symbol("i_",perm.parameters[1].parameters[1][i]),N)
+    ex1=Expr(:ref,:src,ind1...)
+    ex2=Expr(:ref,:dest,ind2...)
+    quote
+        @nloops $N i src begin
+            $ex2=$ex1
+        end
+    end
+end
+
+sync(c)=1
 
 
 end # module

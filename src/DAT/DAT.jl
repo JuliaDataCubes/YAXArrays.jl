@@ -1,8 +1,14 @@
 module DAT
-export @registerDATFunction, joinVars
+export @registerDATFunction, joinVars, DATdir
 using ..CubeAPI
 using ..CachedArrays
 using Base.Dates
+
+global const workdir=UTF8String["./"]
+global const debugDAT=true
+
+DATdir(x::AbstractString)=workdir[1]=x
+DATdir()=workdir[1]
 
 getCheckExpr(i::Int,axtype::Symbol)=:(isa(dc.axes[$i],$axtype))
 function getCheckExpr(dimsin::Vector)
@@ -50,8 +56,8 @@ const fdimsout=Dict{Function,Tuple}()
 const fargs=Dict{Function,Tuple}()
 
 totuple(x::AbstractArray)=ntuple(i->x[i],length(x))
-function applyDATFunction{T}(fu::Function,cdata::AbstractCubeData{T},addargs...;max_cache=1e6,outfolder=mktempdir())
-  isdir(outfolder) || mkdir(outfolder)
+function Base.map{T}(fu::Function,cdata::AbstractCubeData{T},addargs...;max_cache=1e7,outfolder=joinpath(workdir[1],string(tempname()[2:end],fu)))
+  isdir(outfolder) || mkpath(outfolder)
   axlist=axes(cdata)
   indims=collect(fdimsin[fu])
   outdims=collect(fdimsout[fu])
@@ -105,8 +111,6 @@ function applyDATFunction{T}(fu::Function,cdata::AbstractCubeData{T},addargs...;
       break
     end
   end
-  println("Choosing Cache size of ",loopCacheSize)
-  tc=CachedArrays.TempCube(axlistOut,CartesianIndex(totuple([map(length,outAxes);loopCacheSize])),folder=outfolder)
   j=1
   CacheInSize=Int[]
   for a in axlist
@@ -118,7 +122,14 @@ function applyDATFunction{T}(fu::Function,cdata::AbstractCubeData{T},addargs...;
     end
   end
   @assert j==length(loopCacheSize)+1
-  tca=CachedArrays.CachedArray(tc,1,tc.block_size,CachedArrays.MaskedCacheBlock{T,length(axlistOut)});
+  #Check if we get a number as a result
+  if length(outAxes)+length(LoopAxes)==0
+    tca=(zeros(T),zeros(UInt8))
+    tc=tca
+  else
+    tc=CachedArrays.TempCube(axlistOut,CartesianIndex(totuple([map(length,outAxes);loopCacheSize])),folder=outfolder)
+    tca=CachedArrays.CachedArray(tc,1,tc.block_size,CachedArrays.MaskedCacheBlock{T,length(axlistOut)});
+  end
   cm=CachedArrays.CachedArray(cdata,1,CartesianIndex(totuple(CacheInSize)),CachedArrays.MaskedCacheBlock{T,length(axlist)});
   loopOutR=[fill(Colon(),length(outAxes));map(length,LoopAxes)]
   innerLoop(fT,cm,tca,totuple(loopinR),totuple(loopOutR),addargs)
@@ -127,43 +138,52 @@ function applyDATFunction{T}(fu::Function,cdata::AbstractCubeData{T},addargs...;
 end
 
 @generated function innerLoop{T1,T2,T3}(fT::DATFunction,xin,xout,loopinRanges::T1,loopoutRanges::T2,addargs::T3)
-    Nin=length(T1.parameters)
-    Nout=length(T2.parameters)
-    Nloopvars=mapreduce(x->x!=Colon,+,0,T1.parameters)
-    NinCol=mapreduce(x->x==Colon,+,0,T1.parameters)
-    NoutCol=mapreduce(x->x==Colon,+,0,T2.parameters)
-    loopRanges=Expr(:block)
-    subIn=Expr(:call,:(CachedArrays.getSubRange),:xin)
-    subOut=Expr(:call,:(CachedArrays.getSubRange),:xout)
-    j=1
-    for i=1:Nin
-        if T1.parameters[i]==Colon
-            push!(subIn.args,:(:))
-        else
-            isym=Symbol("i_$(j)")
-            unshift!(loopRanges.args,:($isym=1:loopinRanges[$i]))
-            push!(subIn.args,isym)
-            j+=1
-        end
+  Nin=length(T1.parameters)
+  Nout=length(T2.parameters)
+  Nloopvars=mapreduce(x->x!=Colon,+,0,T1.parameters)
+  NinCol=mapreduce(x->x==Colon,+,0,T1.parameters)
+  NoutCol=mapreduce(x->x==Colon,+,0,T2.parameters)
+  loopRanges=Expr(:block)
+  subIn=Expr(:call,:(CachedArrays.getSubRange),:xin)
+  subOut=Expr(:call,:(CachedArrays.getSubRange),:xout)
+  j=1
+  for i=1:Nin
+    if T1.parameters[i]==Colon
+      push!(subIn.args,:(:))
+    else
+      isym=Symbol("i_$(j)")
+      unshift!(loopRanges.args,:($isym=1:loopinRanges[$i]))
+      push!(subIn.args,isym)
+      j+=1
     end
-    j=1
-    for i=1:Nout
-        if T2.parameters[i]==Colon
-            push!(subOut.args,:(:))
-        else
-            isym=Symbol("i_$(j)")
-            push!(subOut.args,isym)
-            j+=1
-        end
+  end
+  j=1
+  for i=1:Nout
+    if T2.parameters[i]==Colon
+      push!(subOut.args,:(:))
+    else
+      isym=Symbol("i_$(j)")
+      push!(subOut.args,isym)
+      j+=1
     end
-    push!(subOut.args,Expr(:kw,:write,true))
-    callex=Expr(:call,:f,:ain,:aout,:min,:mout)
+  end
+  push!(subOut.args,Expr(:kw,:write,true))
+  if length(subOut.args)>3
     loopBody=quote
-        ain,min=$subIn
-        aout,mout=$subOut
-        fT(ain,aout,min,mout,addargs)
+      ain,min=$subIn
+      aout,mout=$subOut
+      fT(ain,aout,min,mout,addargs)
     end
-    Expr(:for,loopRanges,loopBody)
+    #println(Expr(:for,loopRanges,loopBody))
+    return Expr(:for,loopRanges,loopBody)
+  else
+    loopBody=quote
+      ain,min=$subIn
+      aout,mout=(xout[1],xout[2])
+      fT(ain,aout,min,mout,addargs)
+    end
+    return loopBody
+  end
 end
 
 macro registerDATFunction(fname, dimsin,dimsout,args...)

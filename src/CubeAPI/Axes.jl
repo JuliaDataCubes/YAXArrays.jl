@@ -47,6 +47,7 @@ function NcDim(a::TimeAxis,start::Integer,count::Integer)
 end
 #Default constructor
 NcDim(a::CubeAxis,start::Integer,count::Integer)=NcDim(axname(a),count,values=collect(a.values[start:(start+count-1)]),atts=Dict{Any,Any}("units"=>axunits(a)))
+NcDim(a::VariableAxis,start::Integer,count::Integer)=NcDim(axname(a),count,values=Float64[start:(start+count-1);],atts=Dict{Any,Any}("units"=>axunits(a)))
 
 
 end

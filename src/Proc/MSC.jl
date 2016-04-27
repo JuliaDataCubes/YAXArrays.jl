@@ -1,28 +1,27 @@
 module MSC
-export removeMSC!, gapFillMSC
+export removeMSC, gapFillMSC
 importall ..DAT
 importall ..CubeAPI
 
 "Function that removes mean seasonal cycle from xin and writes the MSC to xout. The time dimension is specified in itimedim, NpY is the number of years"
-function removeMSC!{T,ndim}(xin::AbstractArray{T,ndim},xout::AbstractArray{T,ndim},maskin::AbstractArray{UInt8,ndim},maskout::AbstractArray{UInt8,ndim},NpY::Integer)
+function removeMSC{T,ndim}(xin::AbstractArray{T,ndim},xout::AbstractArray{T,ndim},maskin::AbstractArray{UInt8,ndim},maskout::AbstractArray{UInt8,ndim},NpY::Integer)
     #Start loop through all other variables
-    msc=getMSC!(xin,xout,maskin,NpY)
+    msc=getMSC(xin,xout,maskin,NpY)
     subtractMSC(msc,xin,xout,NpY)
     copy!(maskout,maskin)
     xout
 end
-export removeMSC!
 
 function gapFillMSC(xin::AbstractArray,xout::AbstractArray,maskin::AbstractArray{UInt8},maskout::AbstractArray{UInt8},NpY::Integer)
 
-  msc=getMSC!(xin,xout,maskin,NpY)
-  replaceMisswithMSC!(msc,xin,xout,maskin,maskout,NpY)
+  msc=getMSC(xin,xout,maskin,NpY)
+  replaceMisswithMSC(msc,xin,xout,maskin,maskout,NpY)
 
 end
 
 
 "Calculate the mean seasonal cycle of xin and write the output to xout."
-function getMSC!(xin::AbstractVector,xout::AbstractVector,mask,NpY::Integer;imscstart::Int=1)
+function getMSC(xin::AbstractVector,xout::AbstractVector,mask,NpY::Integer;imscstart::Int=1)
     #Reshape the cube to squeeze unimportant variables
     ntime=length(xin)
     length(xin)==length(xout) || error("Length of input and output vectors must be the same")
@@ -43,7 +42,7 @@ function subtractMSC(msc::AbstractVector,xin2::AbstractVector,xout2,NpY)
 end
 
 "Replaces missing values with mean seasonal cycle"
-function replaceMisswithMSC!(msc::AbstractVector,xin::AbstractArray,xout::AbstractArray,maskin,maskout,NpY::Integer)
+function replaceMisswithMSC(msc::AbstractVector,xin::AbstractArray,xout::AbstractArray,maskin,maskout,NpY::Integer)
   imsc=1
   for i in eachindex(xin)
     if (maskin[i] & (MISSING | OUTOFPERIOD))>0 && !isnan(msc[imsc])
@@ -72,6 +71,6 @@ function fillmsc{T}(imscstart::Integer,msc::AbstractVector{T},nmsc::AbstractVect
     for i in 1:NpY msc[i] = nmsc[i] > 0 ? msc[i]/nmsc[i] : NaN end # Get MSC by dividing by number of points
 end
 
-@registerDATFunction removeMSC! (TimeAxis,) (TimeAxis,) NpY::Int
+@registerDATFunction removeMSC (TimeAxis,) (TimeAxis,) NpY::Int
 @registerDATFunction gapFillMSC (TimeAxis,) (TimeAxis,) NpY::Int
 end

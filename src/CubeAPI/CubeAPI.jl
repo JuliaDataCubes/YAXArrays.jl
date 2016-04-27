@@ -258,15 +258,22 @@ function getCubeData{T<:Union{Integer,AbstractString}}(cube::Cube,
   getCubeData(cube,variable,time,longitude,latitude)
 end
 
-
+x2lon(x,config)   = (x+config.grid_x0-1)*config.spatial_res - 180.0
+lon2x(lon,config) = round(Int,(180.0 + lon) / config.spatial_res) - config.grid_x0
+y2lat(y,config)   = 90.0 - (y+config.grid_y0-1)*config.spatial_res
+lat2y(lat,config) = round(Int,(90.0 - lat) / config.spatial_res) - config.grid_y0
 
 function getLonLatsToRead(config,longitude,latitude)
-  grid_y1 = round(Int,(90.0 - latitude[2]) / config.spatial_res) - config.grid_y0 + 1
-  grid_y2 = round(Int,(90.0 - latitude[1]) / config.spatial_res) - config.grid_y0
-  grid_x1 = round(Int,(180.0 + longitude[1]) / config.spatial_res) - config.grid_x0 + 1
-  grid_x2 = round(Int,(180.0 + longitude[2]) / config.spatial_res) - config.grid_x0
+  grid_y1 = lat2y(latitude[2],config) + 1
+  grid_y2 = lat2y(latitude[1],config)
+  grid_x1 = lon2x(longitude[1],config) + 1
+  grid_x2 = lon2x(longitude[2],config)
+  grid_x1==grid_x2+1 && (grid_x2+=1)
+  grid_y1==grid_y2+1 && (grid_y2+=1)
   grid_y1,grid_y2,grid_x1,grid_x2
 end
+
+
 
 function getLandSeaMask!(mask::Array{UInt8,3},cube::Cube,grid_x1,grid_x2,grid_y1,grid_y2)
   filename=joinpath(cube.base_dir,"mask","mask.nc")
@@ -309,8 +316,8 @@ function getCubeData(cube::Cube,
     return SubCube{t}(cube,variable,
       (grid_y1,grid_y2,grid_x1,grid_x2),
       (y1,i1,y2,i2,ntime,NpY),
-      LonAxis(longitude[1]:0.25:(longitude[2]-0.25)),
-      LatAxis(latitude[1]:0.25:(latitude[2]-0.25)),
+      LonAxis(x2lon(grid_x1,config):config.spatial_res:x2lon(grid_x2,config)),
+      LatAxis(y2lat(grid_y1,config):-config.spatial_res:y2lat(grid_y2,config)),
       TimeAxis(getTimeRanges(cube,y1,y2,i1,i2)))
 end
 
@@ -342,8 +349,8 @@ y1,i1,y2,i2,ntime,NpY = getTimesToRead(time[1],time[2],config)
   return SubCubeV{tnew}(cube,variable,
     (grid_y1,grid_y2,grid_x1,grid_x2),
     (y1,i1,y2,i2,ntime,NpY),
-    LonAxis(longitude[1]:0.25:(longitude[2]-0.25)),
-    LatAxis(latitude[1]:0.25:(latitude[2]-0.25)),
+    LonAxis(x2lon(grid_x1,config):config.spatial_res:x2lon(grid_x2,config)),
+    LatAxis(y2lat(grid_y1,config):-config.spatial_res:y2lat(grid_y2,config)),
     TimeAxis(getTimeRanges(cube,y1,y2,i1,i2)),
     VariableAxis(variableNew))
 end
@@ -357,26 +364,35 @@ function read{T}(s::SubCube{T})
     return CubeMem(CubeAxis[s.lonAxis,s.latAxis,s.timeAxis],outar,mask)
 end
 
+function read{T}(s::SubCubeV{T})
+    grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid
+    y1,i1,y2,i2,ntime,NpY           = s.sub_times
+    outar=Array(T,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime,length(s.varAxis))
+    mask=zeros(UInt8,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime,length(s.varAxis))
+    _read(s,outar,mask)
+    return CubeMem(CubeAxis[s.lonAxis,s.latAxis,s.timeAxis,s.varAxis],outar,mask)
+end
+
 """
 Add a function to read some CubeData in a permuted way, we will make a copy here for simplicity, however, this might change in the future
 """
 function _read{T}(s::SubCubeVPerm{T},outar,mask;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,findin(s.perm,1)[1]),ny::Int=size(outar,findin(s.perm,2)[1]),nt::Int=size(outar,findin(s.perm,3)[1]),nv::Int=size(outar,findin(s.perm,4)[1]))
   perm=s.perm
+  #println("xoffs=$xoffs yoffs=$yoffs toffs=$toffs voffs=$voffs nx=$nx ny=$ny nt=$nt nv=$nv")
   outartemp=Array(T,nx,ny,nt,nv)
   masktemp=zeros(UInt8,nx,ny,nt,nv)
   _read(s.parent,outartemp,masktemp,xoffs=xoffs,yoffs=yoffs,toffs=toffs,voffs=voffs,nx=nx,ny=ny,nt=nt,nv=nv)
-  println(typeof(outar),size(outar))
-  println(typeof(outartemp),size(outartemp))
-  println(perm)
-  permutedims!(outar,outartemp,perm)
+  mypermutedims!(outar,outartemp,Val{perm})
+  mypermutedims!(mask,masktemp,Val{perm})
 end
 
 function _read{T}(s::SubCubePerm{T},outar,mask;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,findin(s.perm,1)[1]),ny::Int=size(outar,findin(s.perm,2)[1]),nt::Int=size(outar,findin(s.perm,3)[1]),nv::Int=1)
   perm=s.perm
   outartemp=Array(T,nx,ny,nt)
   masktemp=zeros(UInt8,nx,ny,nt)
-  _read(s.parent,outar,mask,xoffs=xoffs,yoffs=yoffs,toffs=toffs,voffs=voffs,nx=nx,ny=ny,nt=nt,nv=nv)
-  permutedims!(outar,outartemp,perm)
+  _read(s.parent,outartemp,masktemp,xoffs=xoffs,yoffs=yoffs,toffs=toffs,voffs=voffs,nx=nx,ny=ny,nt=nt,nv=nv)
+  mypermutedims!(outar,outartemp,Val{perm})
+  mypermutedims!(mask,masktemp,Val{perm})
 end
 
 function _read{T}(s::AbstractSubCube{T},outar,mask;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,1),ny::Int=size(outar,2),nt::Int=size(outar,3),nv::Int=length(s.variable))
@@ -441,18 +457,24 @@ function readFromDataYear{T}(cube::Cube,outar::AbstractArray{T,3},mask::Abstract
   xr = grid_x1:(grid_x1+nx-1)
   yr = grid_y1:(grid_y1+ny-1)
   nanval=convert(T,NaN)
+  #Make some assertions for inbounds
+  @assert itcur>0
+  @assert (itcur+nt-1)<=size(outar,3)
+  @assert ny<=size(outar,2)
+  @assert nx<=size(outar,1)
+  @assert size(outar)==size(mask)
   if isfile(filename)
     v=NetCDF.open(filename,variable);
     outar[1:nx,1:ny,itcur:(itcur+nt-1)]=v[xr,yr,i1cur:(i1cur+nt-1)]
-    missval=ncgetatt(filename,variable,"_FillValue")
-    for k=itcur:(itcur+nt-1),j=1:ny,i=1:nx
-      if outar[i,j,k] == missval
+    missval::T=convert(T,ncgetatt(filename,variable,"_FillValue"))
+    @inbounds for k=itcur:(itcur+nt-1),j=1:ny,i=1:nx
+      if (outar[i,j,k] == missval) || isnan(outar[i,j,k])
         mask[i,j,k]=mask[i,j,k] | MISSING
         outar[i,j,k]=nanval
       end
     end
   else
-    for k=itcur:(itcur+nt-1),j=1:ny,i=1:nx
+    @inbounds for k=itcur:(itcur+nt-1),j=1:ny,i=1:nx
       mask[i,j,k]=(mask[i,j,k] | OUTOFPERIOD)
       outar[i,j,k]=nanval
     end
@@ -464,6 +486,22 @@ function readFromDataYear{T}(cube::Cube,outar::AbstractArray{T,3},mask::Abstract
   return fin,y,i1cur,itcur
 end
 
+using Base.Cartesian
+@generated function mypermutedims!{Q,T,S,N}(dest::AbstractArray{T,N},src::AbstractArray{S,N},perm::Type{Q})
+    ind1=ntuple(i->symbol("i_",i),N)
+    ind2=ntuple(i->symbol("i_",perm.parameters[1].parameters[1][i]),N)
+    ex1=Expr(:ref,:src,ind1...)
+    ex2=Expr(:ref,:dest,ind2...)
+    quote
+        @nloops $N i src begin
+            $ex2=$ex1
+        end
+    end
+end
+
+@generated function Base.getindex{N}(t::NTuple{N},p::NTuple{N,Int})
+    :(@ntuple $N d->t[p[d]])
+end
 
 
 end

@@ -1,5 +1,5 @@
 module Proc
-export removeMSC!, gapFillMSC, recurrences!, normalize, spatialMean, timeMean
+export removeMSC, gapFillMSC, recurrences, normalize, spatialMean, timeMean
 importall ..DAT, ..CubeAPI
 
 include("MSC.jl")

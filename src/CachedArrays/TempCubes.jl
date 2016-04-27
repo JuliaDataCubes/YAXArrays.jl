@@ -19,6 +19,7 @@ Base.permutedims{T,N}(c::TempCube{T,N},perm)=TempCubePerm{T,N}(c.axes,c.folder,c
 
 
 CubeAPI.axes(t::AbstractTempCube)=t.axes
+CubeAPI.axes(t::TempCubePerm)=[t.axes[t.perm[i]] for i=1:length(t.axes)]
 using Base.Cartesian
 using NetCDF
 totuple(x::Vector)=ntuple(i->x[i],length(x))
@@ -79,10 +80,10 @@ function readTempCube{N}(y::TempCubePerm,data,mask,r::CartesianRange{CartesianIn
       filename=tofilename(CartesianIndex(ntuple(i->Ismall.I[iperm[i]],N)))
       v0=NetCDF.open(joinpath(y.folder,filename),"cube")
       vmask0=NetCDF.open(joinpath(y.folder,filename),"mask")
-      v=permutedims(v0,perm)
-      vmask=permutedims(vmask0,perm)
-      data[toRange(bBig1-r.start+unit,bBig2-r.start+unit)...]=NetCDF.readvar(v,toRange(iToread)...)
-      mask[toRange(bBig1-r.start+unit,bBig2-r.start+unit)...]=NetCDF.readvar(vmask,toRange(iToread)...)
+      v=NetCDF.readvar(v0,toRange(iToread)[iperm]...)
+      vmask=NetCDF.readvar(vmask0,toRange(iToread)[iperm]...)
+      CubeAPI.mypermutedims!(sub(data,toRange(bBig1-r.start+unit,bBig2-r.start+unit)...),v,Val{perm})
+      CubeAPI.mypermutedims!(sub(mask,toRange(bBig1-r.start+unit,bBig2-r.start+unit)...),vmask,Val{perm})
       ncclose()
   end
 end
