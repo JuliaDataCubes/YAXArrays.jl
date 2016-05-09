@@ -9,6 +9,7 @@ export Cube, getCubeData,getTimeRanges,CubeMem,CubeAxis, TimeAxis, VariableAxis,
 export @registerDATFunction, joinVars, DATdir #From DAT module
 export axVal2Index, plotTS, plotMAP #From Plot module
 export removeMSC, gapFillMSC, recurrences, normalize, timeMean, spatialMean #From Proc module
+export TempCube, openTempCube # From CachedArrays
 
 include("CubeAPI/CubeAPI.jl")
 include("CachedArrays/CachedArrays.jl")

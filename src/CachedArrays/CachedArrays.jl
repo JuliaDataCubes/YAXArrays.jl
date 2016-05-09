@@ -1,5 +1,5 @@
 module CachedArrays
-export CachedArray, getSubRange, TempCube
+export CachedArray, getSubRange, TempCube, openTempCube
 using ..CubeAPI
 using Base.Cartesian
 
@@ -277,6 +277,7 @@ include("TempCubes.jl")
 import .TempCubes.tofilename
 import .TempCubes.TempCube
 import .TempCubes.TempCubePerm
+import .TempCubes.openTempCube
 function write_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::TempCube{T,N},block_size::CartesianIndex{N})
     filename=joinpath(y.folder,tofilename(x.position))
     #println("Writing to file $filename")

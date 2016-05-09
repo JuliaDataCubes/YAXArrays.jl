@@ -2,10 +2,13 @@ module DAT
 export @registerDATFunction, joinVars, DATdir
 using ..CubeAPI
 using ..CachedArrays
+import ...CABLAB
 using Base.Dates
-
+include("parrallelTools.jl")
 global const workdir=UTF8String["./"]
 global const debugDAT=true
+
+haskey(ENV,"CABLAB_WORKDIR") && (workdir[1]=ENV["CABLAB_WORKDIR"])
 
 DATdir(x::AbstractString)=workdir[1]=x
 DATdir()=workdir[1]
@@ -49,18 +52,18 @@ end
 
 
 abstract DATFunction
-const f2Type=Dict{Function,DATFunction}()
-const type2f=Dict{DATFunction,Function}()
-const fdimsin=Dict{Function,Tuple}()
-const fdimsout=Dict{Function,Tuple}()
-const fargs=Dict{Function,Tuple}()
+const fname2Type=Dict{UTF8String,DATFunction}()
+const fdimsin=Dict{UTF8String,Tuple}()
+const fdimsout=Dict{UTF8String,Tuple}()
+const fargs=Dict{UTF8String,Tuple}()
 
 totuple(x::AbstractArray)=ntuple(i->x[i],length(x))
 function Base.map{T}(fu::Function,cdata::AbstractCubeData{T},addargs...;max_cache=1e7,outfolder=joinpath(workdir[1],string(tempname()[2:end],fu)))
   isdir(outfolder) || mkpath(outfolder)
   axlist=axes(cdata)
-  indims=collect(fdimsin[fu])
-  outdims=collect(fdimsout[fu])
+  sfu=split(string(fu),".")[end]
+  indims=collect(fdimsin[sfu])
+  outdims=collect(fdimsout[sfu])
   #Test if we need to reshape
   reorder=false
   for (i,fi) in enumerate(indims)
@@ -71,22 +74,23 @@ function Base.map{T}(fu::Function,cdata::AbstractCubeData{T},addargs...;max_cach
     cdata=permutedims(cdata,perm)
     axlist=axlist[collect(perm)]
   end
-  fT=f2Type[fu]
   loopinR=[] #Values to pass to inner Loop
   loopOutR=[] #Values to pass to inner Loop
+  loopR=[]   #Value to pass to inner Loop
   inAxes=[]  #Axes to be operated on
   outAxes=[] #Axes to be operated on
   LoopAxes=[] #Axes to loop over
   for a in axlist
-    if typeof(a) in fdimsin[fu]
+    if typeof(a) in fdimsin[sfu]
       push!(loopinR,Colon())
       push!(inAxes,a)
     else
-      push!(loopinR,length(a))
+      push!(loopR,length(a))
       push!(LoopAxes,a)
     end
-    if typeof(a) in fdimsout[fu]
+    if typeof(a) in fdimsout[sfu]
       push!(outAxes,a)
+      push!(loopOutR,Colon())
     end
   end
   axlistOut=[outAxes;LoopAxes]
@@ -114,7 +118,7 @@ function Base.map{T}(fu::Function,cdata::AbstractCubeData{T},addargs...;max_cach
   j=1
   CacheInSize=Int[]
   for a in axlist
-    if typeof(a) in fdimsin[fu]
+    if typeof(a) in fdimsin[sfu]
       push!(CacheInSize,length(a))
     else
       push!(CacheInSize,loopCacheSize[j])
@@ -128,43 +132,51 @@ function Base.map{T}(fu::Function,cdata::AbstractCubeData{T},addargs...;max_cach
     tc=tca
   else
     tc=CachedArrays.TempCube(axlistOut,CartesianIndex(totuple([map(length,outAxes);loopCacheSize])),folder=outfolder)
-    tca=CachedArrays.CachedArray(tc,1,tc.block_size,CachedArrays.MaskedCacheBlock{T,length(axlistOut)});
+    if nprocs()>1
+      global myExchangeObj
+      myExchangeObj=(outfolder,T,cdata,CacheInSize,axlist,sfu,loopinR,loopOutR,addargs)
+      try
+        passobj(1, workers(), [:myExchangeObj],from_mod=CABLAB.DAT,to_mod=Main.PMDATMODULE)
+      end
+      @everywhereelsem outfolder,T,cdata,CacheInSize,axlist,sfu,loopinR,loopOutR,addargs=Main.PMDATMODULE.myExchangeObj
+      @everywhereelsem tc=CABLAB.DAT.openTempCube(outfolder)
+      @everywhereelsem fT=CABLAB.DAT.fname2Type[sfu]
+      @everywhereelsem tca=CABLAB.CachedArrays.CachedArray(tc,1,tc.block_size,CABLAB.CachedArrays.MaskedCacheBlock{T,length(tc.block_size.I)});
+      @everywhereelsem cm=CABLAB.CachedArrays.CachedArray(cdata,1,CartesianIndex(CABLAB.DAT.totuple(CacheInSize)),CABLAB.CachedArrays.MaskedCacheBlock{T,length(axlist)});
+      allRanges=distributeLoopRanges(tc.block_size.I[(end-length(loopR)+1):end],loopR)
+      pmap(r->innerLoop(Val{Symbol(sfu)},Main.PMDATMODULE.cm,Main.PMDATMODULE.tca,CABLAB.DAT.totuple(Main.PMDATMODULE.loopinR),CABLAB.DAT.totuple(Main.PMDATMODULE.loopOutR),r,Main.PMDATMODULE.addargs),allRanges)
+      @everywhereelsem CABLAB.CachedArrays.sync(tca)
+    else
+      tca=CachedArrays.CachedArray(tc,1,tc.block_size,CachedArrays.MaskedCacheBlock{T,length(axlistOut)});
+      cm=CachedArrays.CachedArray(cdata,1,CartesianIndex(totuple(CacheInSize)),CachedArrays.MaskedCacheBlock{T,length(axlist)});
+      innerLoop(Val{Symbol(sfu)},cm,tca,totuple(loopinR),totuple(loopOutR),totuple(loopR),addargs)
+      CachedArrays.sync(tca)
+    end
   end
-  cm=CachedArrays.CachedArray(cdata,1,CartesianIndex(totuple(CacheInSize)),CachedArrays.MaskedCacheBlock{T,length(axlist)});
-  loopOutR=[fill(Colon(),length(outAxes));map(length,LoopAxes)]
-  innerLoop(fT,cm,tca,totuple(loopinR),totuple(loopOutR),addargs)
-  CachedArrays.sync(tca)
   tc
 end
 
-@generated function innerLoop{T1,T2,T3}(fT::DATFunction,xin,xout,loopinRanges::T1,loopoutRanges::T2,addargs::T3)
-  Nin=length(T1.parameters)
-  Nout=length(T2.parameters)
-  Nloopvars=mapreduce(x->x!=Colon,+,0,T1.parameters)
-  NinCol=mapreduce(x->x==Colon,+,0,T1.parameters)
-  NoutCol=mapreduce(x->x==Colon,+,0,T2.parameters)
-  loopRanges=Expr(:block)
-  subIn=Expr(:call,:(CachedArrays.getSubRange),:xin)
-  subOut=Expr(:call,:(CachedArrays.getSubRange),:xout)
-  j=1
-  for i=1:Nin
-    if T1.parameters[i]==Colon
-      push!(subIn.args,:(:))
+function init_DATworkers()
+  freshworkermodule()
+end
+
+@generated function innerLoop{fT,T1,T2,T3}(::Type{Val{fT}},xin,xout,loopinRanges::T1,loopoutRanges::T2,loopRanges::T3,addargs)
+  NinCol=length(T1.parameters)
+  NoutCol=length(T2.parameters)
+  Nloopvars=length(T3.parameters)
+  loopRangesE=Expr(:block)
+  subIn=Expr(:call,:(CachedArrays.getSubRange),:xin,fill(:(:),NinCol)...)
+  subOut=Expr(:call,:(CachedArrays.getSubRange),:xout,fill(:(:),NoutCol)...)
+  for i=1:Nloopvars
+    isym=Symbol("i_$(i)")
+    push!(subIn.args,isym)
+    push!(subOut.args,isym)
+    if T3.parameters[i]==UnitRange{Int}
+      unshift!(loopRangesE.args,:($isym=loopRanges[$i]))
+    elseif T3.parameters[i]==Int
+      unshift!(loopRangesE.args,:($isym=1:loopRanges[$i]))
     else
-      isym=Symbol("i_$(j)")
-      unshift!(loopRanges.args,:($isym=1:loopinRanges[$i]))
-      push!(subIn.args,isym)
-      j+=1
-    end
-  end
-  j=1
-  for i=1:Nout
-    if T2.parameters[i]==Colon
-      push!(subOut.args,:(:))
-    else
-      isym=Symbol("i_$(j)")
-      push!(subOut.args,isym)
-      j+=1
+      error("Wrong Range argument")
     end
   end
   push!(subOut.args,Expr(:kw,:write,true))
@@ -172,15 +184,14 @@ end
     loopBody=quote
       ain,min=$subIn
       aout,mout=$subOut
-      fT(ain,aout,min,mout,addargs)
+      Main.$(fT)(ain,aout,min,mout,addargs...)
     end
-    #println(Expr(:for,loopRanges,loopBody))
-    return Expr(:for,loopRanges,loopBody)
+    return Expr(:for,loopRangesE,loopBody)
   else
     loopBody=quote
       ain,min=$subIn
       aout,mout=(xout[1],xout[2])
-      fT(ain,aout,min,mout,addargs)
+      Main.$(fT)(ain,aout,min,mout,addargs...)
     end
     return loopBody
   end
@@ -190,12 +201,12 @@ macro registerDATFunction(fname, dimsin,dimsout,args...)
     @assert dimsin.head==:tuple
     @assert dimsout.head==:tuple
     tName=esc(gensym())
-    sfname=esc(fname)
+    sfname=isa(esc(fname),Symbol) ? string(esc(fname)) : string(esc(fname).args[end])
     quote
         immutable $tName <: DATFunction end
         Base.call(::$tName,xin,xout,maskin,maskout,addargs)=$sfname(xin,xout,maskin,maskout,addargs...)
         Base.call(::$tName,xin,xout,maskin,maskout)=$sfname(xin,xout,maskin,maskout)
-        f2Type[$sfname]=$(tName)()
+        fname2Type[$sfname]=$(tName)()
         fdimsin[$sfname]=$dimsin
         fdimsout[$sfname]=$dimsout
         fargs[$sfname]=$args

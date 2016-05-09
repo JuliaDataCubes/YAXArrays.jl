@@ -2,7 +2,7 @@ julia 0.4
 DataStructures
 NetCDF
 Images
-Gadfly
+Plots
 StatsBase
 ImageMagick
 Interact

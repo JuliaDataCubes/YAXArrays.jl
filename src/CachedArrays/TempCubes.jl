@@ -1,5 +1,5 @@
 module TempCubes
-export TempCube
+export TempCube, openTempCube
 using ..CubeAPI
 "This defines a temporary datacube, written on disk which is usually "
 abstract AbstractTempCube{T,N} <: AbstractCubeData{T}
@@ -33,6 +33,7 @@ end
   :(@ntuple $N i->length(x.axes[x.perm[i]]))
 end
 
+using JLD
 
 function TempCube{N}(axlist,block_size::CartesianIndex{N};folder=mktempdir(),T=Float32)
   s=map(length,axlist)
@@ -44,10 +45,22 @@ function TempCube{N}(axlist,block_size::CartesianIndex{N};folder=mktempdir(),T=F
     nc     = NetCDF.create(joinpath(folder,tofilename(ii)),vars)
     NetCDF.close(nc)
   end
+  save(joinpath(folder,"axinfo.jld"),"axlist",axlist)
   return TempCube{T,N}(axlist,folder,block_size)
 end
 toRange(r::CartesianRange)=map(colon,r.start.I,r.stop.I)
 toRange(c1::CartesianIndex,c2::CartesianIndex)=map(colon,c1.I,c2.I)
+
+function openTempCube(folder)
+  axlist=load(joinpath(folder,"axinfo.jld"),"axlist")
+  N=length(axlist)
+
+  v=NetCDF.open(joinpath(folder,tofilename(CartesianIndex{N}())),"cube")
+  T=eltype(v)
+  block_size=CartesianIndex(size(v))
+  return TempCube{T,N}(axlist,folder,block_size)
+end
+
 
 function readTempCube{N}(y::TempCube,data,mask,r::CartesianRange{CartesianIndex{N}})
   unit=CartesianIndex{N}()
