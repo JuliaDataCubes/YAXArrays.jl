@@ -1,3 +1,25 @@
+module CABLABTools
+export mypermutedims!, totuple, freshworkermodule, passobj, @everywhereelsem
+# SOme global function definitions
+
+using Base.Cartesian
+@generated function mypermutedims!{Q,T,S,N}(dest::AbstractArray{T,N},src::AbstractArray{S,N},perm::Type{Q})
+    ind1=ntuple(i->symbol("i_",i),N)
+    ind2=ntuple(i->symbol("i_",perm.parameters[1].parameters[1][i]),N)
+    ex1=Expr(:ref,:src,ind1...)
+    ex2=Expr(:ref,:dest,ind2...)
+    quote
+        @nloops $N i src begin
+            $ex2=$ex1
+        end
+    end
+end
+
+totuple(x::AbstractArray)=ntuple(i->x[i],length(x))
+
+@generated function Base.getindex{N}(t::NTuple{N},p::NTuple{N,Int})
+    :(@ntuple $N d->t[p[d]])
+end
 function passobj(src::Int, target::Vector{Int}, nm::Symbol;
                  from_mod=Main, to_mod=Main)
     r = RemoteRef(src)
@@ -35,20 +57,7 @@ function sendto(ps::Vector{Int}; args...)
 end
 
 getfrom(p::Int, nm::Symbol; mod=Main) = fetch(@spawnat(p, getfield(mod, nm)))
-using Base.Cartesian
-@generated function distributeLoopRanges{N}(block_size::NTuple{N,Int},loopR::Vector)
-    quote
-        @assert length(loopR)==N
-        nsplit=Int[div(l,b) for (l,b) in zip(loopR,block_size)]
-        baseR=UnitRange{Int}[1:b for b in block_size]
-        a=Array(NTuple{$N,UnitRange{Int}},nsplit...)
-        @nloops $N i a begin
-            rr=@ntuple $N d->baseR[d]+(i_d-1)*block_size[d]
-            @nref($N,a,i)=rr
-        end
-        a=reshape(a,length(a))
-    end
-end
+
 
 function freshworkermodule()
     in(:PMDATMODULE,names(Main)) || eval(Main,:(module PMDATMODULE
@@ -62,6 +71,11 @@ function freshworkermodule()
           r1=remotecall(pid,()->(eval(Main,:(using CABLAB));nothing))
           r2=remotecall(pid,()->(eval(Main,:(module PMDATMODULE
           using CABLAB
+          import CABLAB.Cubes.TempCubes.openTempCube
+          import CABLAB.CubeAPI.CachedArrays.CachedArray
+          import CABLAB.CubeAPI.CachedArrays.MaskedCacheBlock
+          import CABLAB.CubeAPI.CachedArrays
+          import CABLAB.CABLABTools.totuple
           end));nothing))
           push!(rs,r1)
           push!(rs,r2)
@@ -69,8 +83,10 @@ function freshworkermodule()
       end
       [wait(r) for r in rs]
   end)
+
   nothing
 end
+
 
 macro everywhereelsem(ex)
     quote
@@ -85,4 +101,5 @@ macro everywhereelsem(ex)
         Base.sync_end()
         end
     end
+end
 end

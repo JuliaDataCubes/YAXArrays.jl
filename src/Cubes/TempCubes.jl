@@ -1,6 +1,8 @@
 module TempCubes
-export TempCube, openTempCube
-using ..CubeAPI
+export TempCube, openTempCube, TempCubePerm
+importall ..Cubes
+importall ...CABLABTools
+
 "This defines a temporary datacube, written on disk which is usually "
 abstract AbstractTempCube{T,N} <: AbstractCubeData{T}
 type TempCube{T,N} <: AbstractTempCube{T,N}
@@ -15,11 +17,10 @@ type TempCubePerm{T,N} <: AbstractTempCube{T,N}
   block_size::CartesianIndex{N}
   perm::NTuple{N,Int}
 end
-Base.permutedims{T,N}(c::TempCube{T,N},perm)=TempCubePerm{T,N}(c.axes,c.folder,c.block_size,perm)
 
 
-CubeAPI.axes(t::AbstractTempCube)=t.axes
-CubeAPI.axes(t::TempCubePerm)=[t.axes[t.perm[i]] for i=1:length(t.axes)]
+axes(t::AbstractTempCube)=t.axes
+axes(t::TempCubePerm)=[t.axes[t.perm[i]] for i=1:length(t.axes)]
 using Base.Cartesian
 using NetCDF
 totuple(x::Vector)=ntuple(i->x[i],length(x))
@@ -78,6 +79,7 @@ function readTempCube{N}(y::TempCube,data,mask,r::CartesianRange{CartesianIndex{
   end
 end
 
+Base.permutedims{T,N}(c::TempCube{T,N},perm)=TempCubePerm{T,N}(c.axes,c.folder,c.block_size,perm)
 #Method for reading cubes that get transposed
 #Per means fileOrder -> MemoryOrder
 function readTempCube{N}(y::TempCubePerm,data,mask,r::CartesianRange{CartesianIndex{N}})
@@ -95,8 +97,8 @@ function readTempCube{N}(y::TempCubePerm,data,mask,r::CartesianRange{CartesianIn
       vmask0=NetCDF.open(joinpath(y.folder,filename),"mask")
       v=NetCDF.readvar(v0,toRange(iToread)[iperm]...)
       vmask=NetCDF.readvar(vmask0,toRange(iToread)[iperm]...)
-      CubeAPI.mypermutedims!(sub(data,toRange(bBig1-r.start+unit,bBig2-r.start+unit)...),v,Val{perm})
-      CubeAPI.mypermutedims!(sub(mask,toRange(bBig1-r.start+unit,bBig2-r.start+unit)...),vmask,Val{perm})
+      mypermutedims!(sub(data,toRange(bBig1-r.start+unit,bBig2-r.start+unit)...),v,Val{perm})
+      mypermutedims!(sub(mask,toRange(bBig1-r.start+unit,bBig2-r.start+unit)...),vmask,Val{perm})
       ncclose()
   end
 end

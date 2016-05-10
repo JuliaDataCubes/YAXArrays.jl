@@ -1,8 +1,9 @@
 module Axes
 export CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis,Axes
 import NetCDF.NcDim
+importall ..Cubes
 
-abstract CubeAxis
+abstract CubeAxis <: AbstractCubeMem
 immutable TimeAxis <: CubeAxis
   values::Vector{DateTime}
 end

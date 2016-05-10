@@ -1,11 +1,13 @@
 module CubeAPI
-export Cube, getCubeData,getTimeRanges,CubeMem,CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, SubCube, axes, AbstractCubeData
+importall ..Cubes
+importall ..Cubes.Axes
+importall ..CABLABTools
+export Cube, getCubeData,getTimeRanges
 export VALID, OCEAN, OUTOFPERIOD, MISSING, FILLED, isvalid, isinvalid, isvalid, isvalidorfilled
 
-include("Axes.jl")
 include("Mask.jl")
 
-importall .Axes, .Mask
+importall .Mask
 using DataStructures
 using Base.Dates
 
@@ -75,8 +77,6 @@ function parseConfig(cubepath)
   d
 end
 
-abstract AbstractCubeData{T}
-
 "
 Represents a data cube. The default constructor is
 
@@ -102,7 +102,6 @@ function Cube(base_dir::AbstractString)
   Cube(base_dir,cubeconfig,data_dir_entries,var_name_to_var_index,firstYearOffset)
 end
 
-abstract AbstractSubCube{T} <: AbstractCubeData{T}
 
 
 "A SubCube is a representation of a certain region or time range returned by the getCube function."
@@ -166,20 +165,6 @@ Base.size(s::SubCubeVPerm)=(s.perm[1]==1 ? length(s.parent.lonAxis) : s.perm[1]=
 
 Base.permutedims{T}(c::SubCube{T},perm::NTuple{3,Int})=SubCubePerm(c,perm)
 Base.permutedims{T}(c::SubCubeV{T},perm::NTuple{4,Int})=SubCubeVPerm(c,perm)
-
-type CubeMem{T,N} <: AbstractCubeData
-  axes::Vector{CubeAxis}
-  data::Array{T,N}
-  mask::Array{UInt8,N}
-end
-axes(c::CubeMem)=c.axes
-
-Base.linearindexing(::CubeMem)=Base.LinearFast()
-Base.getindex(c::CubeMem,i::Integer)=getindex(c.data,i)
-Base.setindex!(c::CubeMem,i::Integer,v)=setindex!(c.data,i,v)
-Base.size(c::CubeMem)=size(c.data)
-Base.similar(c::CubeMem)=cubeMem(c.axes,similar(c.data),copy(c.mask))
-
 
 
 """
@@ -355,7 +340,7 @@ y1,i1,y2,i2,ntime,NpY = getTimesToRead(time[1],time[2],config)
     VariableAxis(variableNew))
 end
 
-function read{T}(s::SubCube{T})
+function readCubeData{T}(s::SubCube{T})
     grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid
     y1,i1,y2,i2,ntime,NpY           = s.sub_times
     outar=Array(T,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)
@@ -364,7 +349,7 @@ function read{T}(s::SubCube{T})
     return CubeMem(CubeAxis[s.lonAxis,s.latAxis,s.timeAxis],outar,mask)
 end
 
-function read{T}(s::SubCubeV{T})
+function readCubeData{T}(s::SubCubeV{T})
     grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid
     y1,i1,y2,i2,ntime,NpY           = s.sub_times
     outar=Array(T,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime,length(s.varAxis))
@@ -486,22 +471,9 @@ function readFromDataYear{T}(cube::Cube,outar::AbstractArray{T,3},mask::Abstract
   return fin,y,i1cur,itcur
 end
 
-using Base.Cartesian
-@generated function mypermutedims!{Q,T,S,N}(dest::AbstractArray{T,N},src::AbstractArray{S,N},perm::Type{Q})
-    ind1=ntuple(i->symbol("i_",i),N)
-    ind2=ntuple(i->symbol("i_",perm.parameters[1].parameters[1][i]),N)
-    ex1=Expr(:ref,:src,ind1...)
-    ex2=Expr(:ref,:dest,ind2...)
-    quote
-        @nloops $N i src begin
-            $ex2=$ex1
-        end
-    end
-end
+include("CachedArrays.jl")
+importall .CachedArrays
 
-@generated function Base.getindex{N}(t::NTuple{N},p::NTuple{N,Int})
-    :(@ntuple $N d->t[p[d]])
-end
 
 
 end

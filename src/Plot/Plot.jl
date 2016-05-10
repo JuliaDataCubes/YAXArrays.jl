@@ -1,11 +1,12 @@
 module Plot
 export axVal2Index, plotTS, plotMAP
-using ..DAT
-using ..CubeAPI
+importall ..Cubes
+importall ..CubeAPI
+import ..DAT
 using Reactive, Interact
 using Gadfly
 using Images, ImageMagick, Colors
-using ..CachedArrays
+using ..CubeAPI.CachedArrays
 import Patchwork.load_js_runtime
 ga=Array(CachedArray,0)
 axVal2Index(axis::Union{LatAxis,LonAxis},v)=round(Int,axis.values.step)*round(Int,v*axis.values.divisor-axis.values.start)+1

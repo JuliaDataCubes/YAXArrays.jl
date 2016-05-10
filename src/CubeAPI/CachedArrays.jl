@@ -1,6 +1,9 @@
 module CachedArrays
-export CachedArray, getSubRange, TempCube, openTempCube
-using ..CubeAPI
+importall ..Cubes
+importall ..Cubes.TempCubes
+import ..Cubes.TempCubes.tofilename
+export CachedArray, MaskedCacheBlock
+importall ..CubeAPI
 using Base.Cartesian
 
 abstract CacheBlock{T,N}
@@ -273,11 +276,6 @@ end
 
 write_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::Any,block_size::CartesianIndex{N},i::CartesianIndex{N})=error("$(typeof(y)) is not writeable. Please add a write_subblock method.")
 
-include("TempCubes.jl")
-import .TempCubes.tofilename
-import .TempCubes.TempCube
-import .TempCubes.TempCubePerm
-import .TempCubes.openTempCube
 function write_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::TempCube{T,N},block_size::CartesianIndex{N})
     filename=joinpath(y.folder,tofilename(x.position))
     #println("Writing to file $filename")
@@ -312,17 +310,6 @@ function sync(c::CachedArray)
     end
 end
 
-@generated function mypermutedims!{Q,T,S,N}(dest::AbstractArray{T,N},src::AbstractArray{S,N},perm::Type{Q})
-    ind1=ntuple(i->symbol("i_",i),N)
-    ind2=ntuple(i->symbol("i_",perm.parameters[1].parameters[1][i]),N)
-    ex1=Expr(:ref,:src,ind1...)
-    ex2=Expr(:ref,:dest,ind2...)
-    quote
-        @nloops $N i src begin
-            $ex2=$ex1
-        end
-    end
-end
 
 sync(c)=1
 
