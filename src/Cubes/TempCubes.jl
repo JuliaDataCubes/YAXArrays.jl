@@ -4,7 +4,7 @@ importall ..Cubes
 importall ...CABLABTools
 
 "This defines a temporary datacube, written on disk which is usually "
-abstract AbstractTempCube{T,N} <: AbstractCubeData{T}
+abstract AbstractTempCube{T,N} <: AbstractCubeData{T,N}
 type TempCube{T,N} <: AbstractTempCube{T,N}
   axes::Vector{CubeAxis}
   folder::UTF8String

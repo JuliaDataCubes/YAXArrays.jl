@@ -4,6 +4,7 @@ importall ..Cubes
 importall ..CubeAPI
 importall ..CubeAPI.CachedArrays
 importall ..CABLABTools
+importall ..Cubes.TempCubes
 import ...CABLAB
 using Base.Dates
 global const workdir=UTF8String["./"]
@@ -20,11 +21,13 @@ const fdimsout=Dict{UTF8String,Tuple}()
 const fargs=Dict{UTF8String,Tuple}()
 
 function Base.map{T}(fu::Function,cdata::AbstractCubeData{T},addargs...;max_cache=1e7,outfolder=joinpath(workdir[1],string(tempname()[2:end],fu)))
+
   isdir(outfolder) || mkpath(outfolder)
   axlist=axes(cdata)
   sfu=split(string(fu),".")[end]
   indims=collect(fdimsin[sfu])
   outdims=collect(fdimsout[sfu])
+
   #Test if we need to reshape
   reorder=false
   for (i,fi) in enumerate(indims)
@@ -35,6 +38,63 @@ function Base.map{T}(fu::Function,cdata::AbstractCubeData{T},addargs...;max_cach
     cdata=permutedims(cdata,perm)
     axlist=axlist[collect(perm)]
   end
+
+  loopinR,loopOutR,loopR,inAxes,outAxes,LoopAxes,axlistOut = analyzeAxes(axlist,indims,outdims)
+
+  ispar = nprocs()>1
+
+  isMem = isa(cdata,AbstractCubeMem)
+
+  ispar && !isMem && return run_disk_par(cdata, T, axlist, inAxes, outAxes,LoopAxes, max_cache, indims, loopinR, loopOutR, loopR, axlistOut,outfolder,sfu,addargs)
+  !ispar && !isMem && return run_disk_one(cdata, T, axlist, inAxes, outAxes,LoopAxes, max_cache, indims, loopinR, loopOutR, loopR, axlistOut,outfolder,sfu,addargs)
+  !ispar && isMem && return run_mem_one(cdata, T, axlist, inAxes, outAxes,LoopAxes, max_cache, indims, loopinR, loopOutR, loopR, axlistOut,outfolder,sfu,addargs)
+end
+
+function init_DATworkers()
+  freshworkermodule()
+end
+
+function run_disk_par(cdata::AbstractCubeData, T, axlist, inAxes, outAxes,LoopAxes, max_cache, indims, loopinR, loopOutR, loopR, axlistOut, outfolder,sfu,addargs)
+
+  loopCacheSize, CacheInSize = getLoopCacheSize(T,axlist,inAxes,outAxes,LoopAxes,max_cache,indims)
+
+  tc=TempCube(axlistOut,CartesianIndex(totuple([map(length,outAxes);loopCacheSize])),folder=outfolder)
+  global myExchangeObj
+  myExchangeObj=(outfolder,T,cdata,CacheInSize,axlist,sfu,loopinR,loopOutR,addargs)
+  try
+    passobj(1, workers(), [:myExchangeObj],from_mod=CABLAB.DAT,to_mod=Main.PMDATMODULE)
+  end
+  @everywhereelsem outfolder,T,cdata,CacheInSize,axlist,sfu,loopinR,loopOutR,addargs=Main.PMDATMODULE.myExchangeObj
+  @everywhereelsem tc=openTempCube(outfolder)
+  @everywhereelsem tca=CachedArray(tc,1,tc.block_size,MaskedCacheBlock{T,length(tc.block_size.I)});
+  @everywhereelsem cm=CachedArray(cdata,1,CartesianIndex(totuple(CacheInSize)),MaskedCacheBlock{T,length(axlist)});
+  allRanges=distributeLoopRanges(tc.block_size.I[(end-length(loopR)+1):end],loopR)
+  pmap(r->innerLoop(Val{Symbol(sfu)},Main.PMDATMODULE.cm,Main.PMDATMODULE.tca,CABLAB.DAT.totuple(Main.PMDATMODULE.loopinR),CABLAB.DAT.totuple(Main.PMDATMODULE.loopOutR),r,Main.PMDATMODULE.addargs),allRanges)
+  @everywhereelsem CachedArrays.sync(tca)
+  tc
+end
+
+function run_disk_one(cdata::AbstractCubeData, T, axlist, inAxes, outAxes,LoopAxes, max_cache, indims, loopinR, loopOutR, loopR, axlistOut,outfolder,sfu,addargs)
+
+  loopCacheSize, CacheInSize = getLoopCacheSize(T,axlist,inAxes,outAxes,LoopAxes,max_cache,indims)
+
+  tc=TempCube(axlistOut,CartesianIndex(totuple([map(length,outAxes);loopCacheSize])),folder=outfolder)
+  tca=CachedArray(tc,1,tc.block_size,MaskedCacheBlock{T,length(axlistOut)});
+  cm=CachedArray(cdata,1,CartesianIndex(totuple(CacheInSize)),MaskedCacheBlock{T,length(axlist)});
+  innerLoop(Val{Symbol(sfu)},cm,tca,totuple(loopinR),totuple(loopOutR),totuple(loopR),addargs)
+  CachedArrays.sync(tca)
+  tc
+end
+
+function run_mem_one(cdata::AbstractCubeData, T, axlist, inAxes, outAxes,LoopAxes, max_cache, indims, loopinR, loopOutR, loopR, axlistOut,outfolder,sfu,addargs)
+
+  newsize=map(length,axlistOut)
+  outCube = Cubes.CubeMem{T,length(newsize)}(axlistOut, zeros(T,newsize...),zeros(UInt8,newsize...))
+  innerLoop(Val{Symbol(sfu)},cdata,outCube,totuple(loopinR),totuple(loopOutR),totuple(loopR),addargs)
+  outCube
+end
+
+function analyzeAxes(axlist,indims,outdims)
   loopinR=[] #Values to pass to inner Loop
   loopOutR=[] #Values to pass to inner Loop
   loopR=[]   #Value to pass to inner Loop
@@ -42,19 +102,24 @@ function Base.map{T}(fu::Function,cdata::AbstractCubeData{T},addargs...;max_cach
   outAxes=[] #Axes to be operated on
   LoopAxes=[] #Axes to loop over
   for a in axlist
-    if typeof(a) in fdimsin[sfu]
+    if typeof(a) in indims
       push!(loopinR,Colon())
       push!(inAxes,a)
     else
       push!(loopR,length(a))
       push!(LoopAxes,a)
     end
-    if typeof(a) in fdimsout[sfu]
+    if typeof(a) in outdims
       push!(outAxes,a)
       push!(loopOutR,Colon())
     end
   end
-  axlistOut=[outAxes;LoopAxes]
+  axlistOut=CubeAxis[outAxes;LoopAxes]
+  return loopinR,loopOutR,loopR,inAxes,outAxes,LoopAxes,axlistOut
+end
+
+"Calculate optimal Cache size to DAT operation"
+function getLoopCacheSize(T,axlist,inAxes,outAxes,LoopAxes,max_cache,indims)
   totcachesize=max_cache
   inblocksize=length(inAxes)>0 ? sizeof(T)*prod(map(length,inAxes)) : 1
   outblocksize=length(outAxes)>0 ? sizeof(T)*prod(map(length,outAxes)) : 1
@@ -79,7 +144,7 @@ function Base.map{T}(fu::Function,cdata::AbstractCubeData{T},addargs...;max_cach
   j=1
   CacheInSize=Int[]
   for a in axlist
-    if typeof(a) in fdimsin[sfu]
+    if typeof(a) in indims
       push!(CacheInSize,length(a))
     else
       push!(CacheInSize,loopCacheSize[j])
@@ -87,37 +152,7 @@ function Base.map{T}(fu::Function,cdata::AbstractCubeData{T},addargs...;max_cach
     end
   end
   @assert j==length(loopCacheSize)+1
-  #Check if we get a number as a result
-  if length(outAxes)+length(LoopAxes)==0
-    tca=(zeros(T),zeros(UInt8))
-    tc=tca
-  else
-    tc=CABLAB.Cubes.TempCubes.TempCube(axlistOut,CartesianIndex(totuple([map(length,outAxes);loopCacheSize])),folder=outfolder)
-    if nprocs()>1
-      global myExchangeObj
-      myExchangeObj=(outfolder,T,cdata,CacheInSize,axlist,sfu,loopinR,loopOutR,addargs)
-      try
-        passobj(1, workers(), [:myExchangeObj],from_mod=CABLAB.DAT,to_mod=Main.PMDATMODULE)
-      end
-      @everywhereelsem outfolder,T,cdata,CacheInSize,axlist,sfu,loopinR,loopOutR,addargs=Main.PMDATMODULE.myExchangeObj
-      @everywhereelsem tc=openTempCube(outfolder)
-      @everywhereelsem tca=CachedArray(tc,1,tc.block_size,MaskedCacheBlock{T,length(tc.block_size.I)});
-      @everywhereelsem cm=CachedArray(cdata,1,CartesianIndex(totuple(CacheInSize)),MaskedCacheBlock{T,length(axlist)});
-      allRanges=distributeLoopRanges(tc.block_size.I[(end-length(loopR)+1):end],loopR)
-      pmap(r->innerLoop(Val{Symbol(sfu)},Main.PMDATMODULE.cm,Main.PMDATMODULE.tca,CABLAB.DAT.totuple(Main.PMDATMODULE.loopinR),CABLAB.DAT.totuple(Main.PMDATMODULE.loopOutR),r,Main.PMDATMODULE.addargs),allRanges)
-      @everywhereelsem CachedArrays.sync(tca)
-    else
-      tca=CachedArrays.CachedArray(tc,1,tc.block_size,CachedArrays.MaskedCacheBlock{T,length(axlistOut)});
-      cm=CachedArrays.CachedArray(cdata,1,CartesianIndex(totuple(CacheInSize)),CachedArrays.MaskedCacheBlock{T,length(axlist)});
-      innerLoop(Val{Symbol(sfu)},cm,tca,totuple(loopinR),totuple(loopOutR),totuple(loopR),addargs)
-      CachedArrays.sync(tca)
-    end
-  end
-  tc
-end
-
-function init_DATworkers()
-  freshworkermodule()
+  return loopCacheSize, CacheInSize
 end
 
 using Base.Cartesian
@@ -161,6 +196,7 @@ end
       aout,mout=$subOut
       Main.$(fT)(ain,aout,min,mout,addargs...)
     end
+    #println(Expr(:for,loopRangesE,loopBody))
     return Expr(:for,loopRangesE,loopBody)
   else
     loopBody=quote

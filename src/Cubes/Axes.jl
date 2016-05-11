@@ -3,29 +3,31 @@ export CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialP
 import NetCDF.NcDim
 importall ..Cubes
 
-abstract CubeAxis <: AbstractCubeMem
-immutable TimeAxis <: CubeAxis
+abstract CubeAxis{T} <: AbstractCubeMem{T,1}
+immutable TimeAxis <: CubeAxis{DateTime}
   values::Vector{DateTime}
 end
 
-immutable VariableAxis <: CubeAxis
+immutable VariableAxis <: CubeAxis{UTF8String}
   values::Vector{UTF8String}
 end
 
-immutable LonAxis <: CubeAxis
+immutable LonAxis <: CubeAxis{Float64}
   values::FloatRange{Float64}
 end
-immutable LatAxis <: CubeAxis
+immutable LatAxis <: CubeAxis{Float64}
   values::FloatRange{Float64}
 end
-immutable SpatialPointAxis <: CubeAxis
+immutable SpatialPointAxis <: CubeAxis{Tuple{Float64,Float64}}
   values::Vector{Tuple{Float64,Float64}}
 end
-immutable CountryAxis<: CubeAxis
+immutable CountryAxis<: CubeAxis{UTF8String}
   values::Vector{UTF8String}
 end
 Base.length(a::CubeAxis)=length(a.values)
 
+axes(x::CubeAxis)=CubeAxis[x]
+Base.ndims(::CubeAxis)=1
 
 axname(a::CubeAxis)=split(string(typeof(a)),'.')[end]
 axunits(::CubeAxis)="unknown"

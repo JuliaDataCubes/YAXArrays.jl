@@ -8,7 +8,7 @@ using Gadfly
 using Images, ImageMagick, Colors
 using ..CubeAPI.CachedArrays
 import Patchwork.load_js_runtime
-ga=Array(CachedArray,0)
+ga=[]
 axVal2Index(axis::Union{LatAxis,LonAxis},v)=round(Int,axis.values.step)*round(Int,v*axis.values.divisor-axis.values.start)+1
 function plotTS{T}(cube::AbstractCubeData{T})
   p=DAT.getFrontPerm(cube,(TimeAxis,))
@@ -54,7 +54,8 @@ function plotTS{T}(cube::AbstractCubeData{T})
     axlist=axes(cube)
   end
   #Generate CachedArray for plotting
-  push!(ga,CachedArray(cube,20,CartesianIndex(ntuple(i->subcubedims[i],length(subcubedims))),CachedArrays.MaskedCacheBlock{T,length(subcubedims)}))
+  ca=getMemHandle(cube,20,CartesianIndex(ntuple(i->subcubedims[i],length(subcubedims))))
+  push!(ga,ca)
   lga=length(ga)
 
   layerex=Array(Any,0)
@@ -78,7 +79,10 @@ function plotTS{T}(cube::AbstractCubeData{T})
     display(myfun(cube))
 end
 
-
+function getMemHandle{T}(cube::AbstractCubeData{T},nblock,block_size)
+  CachedArray(cube,nblock,block_size,CachedArrays.MaskedCacheBlock{T,length(block_size)})
+end
+getMemHandle(cube::AbstractCubeMem,nblock,block_size)=cube
 
 function getMinMax(x,mask)
   mi=typemax(eltype(x))
@@ -137,7 +141,7 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin::T=zero(T),dmax::T=ze
       display(varButtons)
     end
   end
-  push!(ga,CachedArray(cube,1,CartesianIndex(ntuple(i->subcubedims[i],length(axlist))),CachedArrays.MaskedCacheBlock{T,length(axlist)}))
+  push!(ga,getMemHandle(cube,1,CartesianIndex(ntuple(i->subcubedims[i],length(axlist)))))
   lga=length(ga)
   dataslice=Expr(:call,:getSubRange,:(ga[$lga]),sliceargs...)
   mimaex = dmin==dmax ? :((mi,ma)=getMinMax(a,m)) : :(mi=$(dmin);ma=$(dmax))

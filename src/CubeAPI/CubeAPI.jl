@@ -105,7 +105,7 @@ end
 
 
 "A SubCube is a representation of a certain region or time range returned by the getCube function."
-immutable SubCube{T} <: AbstractSubCube{T}
+immutable SubCube{T} <: AbstractSubCube{T,3}
   cube::Cube #Parent cube
   variable::UTF8String #Variable
   sub_grid::Tuple{Int,Int,Int,Int} #grid_y1,grid_y2,grid_x1,grid_x2
@@ -117,7 +117,7 @@ end
 axes(s::SubCube)=CubeAxis[s.lonAxis,s.latAxis,s.timeAxis]
 
 "A SubCubePerm is a representation of a permutation of region or time range returned by the getCube function."
-immutable SubCubePerm{T} <: AbstractSubCube{T}
+immutable SubCubePerm{T} <: AbstractSubCube{T,3}
   parent::SubCube{T}
   perm::Tuple{Int,Int,Int}
   iperm::Tuple{Int,Int,Int}
@@ -135,7 +135,7 @@ Base.size(s::SubCubePerm)=(s.perm[1]==1 ? length(s.parent.lonAxis) : s.perm[1]==
 
 
 "A SubCube containing several variables"
-immutable SubCubeV{T} <: AbstractSubCube{T}
+immutable SubCubeV{T} <: AbstractSubCube{T,4}
     cube::Cube #Parent cube
     variable::Vector{UTF8String} #Variable
     sub_grid::Tuple{Int,Int,Int,Int} #grid_y1,grid_y2,grid_x1,grid_x2
@@ -147,7 +147,7 @@ immutable SubCubeV{T} <: AbstractSubCube{T}
 end
 
 "A Permutation of a SubCube containing several variables"
-immutable SubCubeVPerm{T} <: AbstractSubCube{T}
+immutable SubCubeVPerm{T} <: AbstractSubCube{T,4}
     parent::SubCubeV{T}
     perm::NTuple{4,Int}
     iperm::NTuple{4,Int}
