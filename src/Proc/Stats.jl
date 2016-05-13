@@ -3,7 +3,7 @@ export normalize, timeVariance, timeMean, spatialMean
 importall ..DAT
 importall ..CubeAPI
 
-function normalize{T}(xin::AbstractVector{T},xout::AbstractVector,maskin::AbstractVector,maskout::AbstractVector)
+function normalize{T}(xout::AbstractVector,maskout::AbstractVector,xin::AbstractVector{T},maskin::AbstractVector)
   s=zero(T)
   s2=zero(T)*zero(T)
   n=0
@@ -22,7 +22,7 @@ function normalize{T}(xin::AbstractVector{T},xout::AbstractVector,maskin::Abstra
   copy!(maskout,maskin)
 end
 
-function timeVariance{T}(xin::AbstractVector{T},xout::AbstractArray{T,0},maskin::AbstractVector,maskout::AbstractArray{UInt8,0})
+function timeVariance{T}(xout::AbstractArray{T,0},maskout::AbstractArray{UInt8,0},xin::AbstractVector{T},maskin::AbstractVector)
   s=zero(T)
   s2=zero(T)*zero(T)
   n=0
@@ -38,7 +38,7 @@ function timeVariance{T}(xin::AbstractVector{T},xout::AbstractArray{T,0},maskin:
   xout[1]=v
 end
 
-function timeMean{T}(xin::AbstractVector{T},xout::AbstractArray{T,0},maskin::AbstractVector,maskout::AbstractArray{UInt8,0})
+function timeMean{T}(xout::AbstractArray{T,0},maskout::AbstractArray{UInt8,0},xin::AbstractVector{T},maskin::AbstractVector)
   s=zero(T)
   n=0
   for i in eachindex(xin)
@@ -51,7 +51,7 @@ function timeMean{T}(xin::AbstractVector{T},xout::AbstractArray{T,0},maskin::Abs
 end
 
 #TODO reimplement as soon as spatial weights are clarified
-function spatialMean{T}(xin::AbstractMatrix,xout::AbstractArray{T,0},maskin::AbstractArray{UInt8,2},maskout::AbstractArray{UInt8,0})
+function spatialMean{T}(xout::AbstractArray{T,0},maskout::AbstractArray{UInt8,0},xin::AbstractMatrix,maskin::AbstractArray{UInt8,2})
   s=zero(T)
   n=0
   for i in eachindex(xin)

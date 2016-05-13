@@ -5,7 +5,7 @@
 Some info on the project...
 """
 module CABLAB
-export Cube, getCubeData,getTimeRanges,CubeMem,CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis #From Cube module
+export Cube, getCubeData,readCubeData,CubeMem,CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis #From Cube module
 export @registerDATFunction, DATdir #From DAT module
 export axVal2Index, plotTS, plotMAP #From Plot module
 export removeMSC, gapFillMSC, recurrences, normalize, timeMean, spatialMean #From Proc module

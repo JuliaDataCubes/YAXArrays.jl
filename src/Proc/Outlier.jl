@@ -23,7 +23,7 @@ return(recurrence_num)
 end
 
 
-function recurrences(xin::AbstractMatrix, xout::AbstractVector, maskin::AbstractMatrix,maskout::AbstractVector,rec_threshold::Float64, temp_excl::Int,distmatspace::AbstractMatrix)
+function recurrences(xout::AbstractVector,maskout::AbstractVector,xin::AbstractMatrix,maskin::AbstractMatrix,rec_threshold::Float64, temp_excl::Int,distmatspace::AbstractMatrix)
   pairwise!(distmatspace,Euclidean(),xin)
   fill!(xout,zero(eltype(xout)))
   recurrences(xout,distmatspace,rec_threshold,temp_excl)

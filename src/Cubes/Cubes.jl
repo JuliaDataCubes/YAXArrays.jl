@@ -4,7 +4,7 @@ Data types that
 """
 module Cubes
 export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, axes,
-       AbstractSubCube, CubeMem, openTempCube
+       AbstractSubCube, CubeMem, openTempCube, EmptyCube
 
 """
 Supertype of all cubes. All map and plot functions are supposed to work on subtypes of these. This is done by implementing the following functions
@@ -40,6 +40,7 @@ abstract AbstractCubeMem{T,N} <: AbstractCubeData{T,N}
 include("Axes.jl")
 importall .Axes
 
+immutable EmptyCube{T}<:AbstractCubeData{T,0} end
 
 type CubeMem{T,N} <: AbstractCubeMem{T,N}
   axes::Vector{CubeAxis}

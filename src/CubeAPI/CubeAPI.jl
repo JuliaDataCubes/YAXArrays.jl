@@ -2,7 +2,7 @@ module CubeAPI
 importall ..Cubes
 importall ..Cubes.Axes
 importall ..CABLABTools
-export Cube, getCubeData,getTimeRanges
+export Cube, getCubeData,getTimeRanges,readCubeData
 export VALID, OCEAN, OUTOFPERIOD, MISSING, FILLED, isvalid, isinvalid, isvalid, isvalidorfilled
 
 include("Mask.jl")

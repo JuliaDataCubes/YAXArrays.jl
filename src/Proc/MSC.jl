@@ -4,7 +4,7 @@ importall ..DAT
 importall ..CubeAPI
 
 "Function that removes mean seasonal cycle from xin and writes the MSC to xout. The time dimension is specified in itimedim, NpY is the number of years"
-function removeMSC{T,ndim}(xin::AbstractArray{T,ndim},xout::AbstractArray{T,ndim},maskin::AbstractArray{UInt8,ndim},maskout::AbstractArray{UInt8,ndim},NpY::Integer)
+function removeMSC(xout::AbstractArray,maskout::AbstractArray{UInt8},xin::AbstractArray,maskin::AbstractArray{UInt8},NpY::Integer)
     #Start loop through all other variables
     msc=getMSC(xin,xout,maskin,NpY)
     subtractMSC(msc,xin,xout,NpY)
@@ -12,7 +12,7 @@ function removeMSC{T,ndim}(xin::AbstractArray{T,ndim},xout::AbstractArray{T,ndim
     xout
 end
 
-function gapFillMSC(xin::AbstractArray,xout::AbstractArray,maskin::AbstractArray{UInt8},maskout::AbstractArray{UInt8},NpY::Integer)
+function gapFillMSC(xout::AbstractArray,maskout::AbstractArray{UInt8},xin::AbstractArray,maskin::AbstractArray{UInt8},NpY::Integer)
 
   msc=getMSC(xin,xout,maskin,NpY)
   replaceMisswithMSC(msc,xin,xout,maskin,maskout,NpY)

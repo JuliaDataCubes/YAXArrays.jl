@@ -37,6 +37,9 @@ axname(::LatAxis)="latitude"
 axunits(::LatAxis)="degrees_north"
 axname(::TimeAxis)="time"
 
+getSubRange(x::CubeAxis,i)=x[i],nothing
+getSubRange(x::TimeAxis,i)=sub(x,i),nothing
+
 function NcDim(a::TimeAxis,start::Integer,count::Integer)
   if start + count - 1 > length(a.values)
     count = oftype(count,length(a.values) - start + 1)

@@ -20,6 +20,7 @@ totuple(x::AbstractArray)=ntuple(i->x[i],length(x))
 @generated function Base.getindex{N}(t::NTuple{N},p::NTuple{N,Int})
     :(@ntuple $N d->t[p[d]])
 end
+
 function passobj(src::Int, target::Vector{Int}, nm::Symbol;
                  from_mod=Main, to_mod=Main)
     r = RemoteRef(src)
