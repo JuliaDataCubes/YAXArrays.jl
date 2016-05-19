@@ -225,7 +225,10 @@ for N=1:5
   eval(exsetRange)
 end
 
+#TODO generate all these read_subblocks programmatically
+
 using NetCDF
+
 function read_subblock!{T,N}(x::CacheBlock{T,N},y::Array{T,N},block_size::CartesianIndex{N})
     istart = (x.position-CartesianIndex{N}()).*block_size
     ysmall = sub(y,asRanges(istart+CartesianIndex{N}(),block_size))
@@ -247,32 +250,48 @@ end
 import CABLAB.CubeAPI.SubCube, CABLAB.CubeAPI.SubCubePerm
 import CABLAB.CubeAPI._read
 import CABLAB.CubeAPI.SubCubeV, CABLAB.CubeAPI.SubCubeVPerm
-function read_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::SubCube{T},block_size::CartesianIndex{N})
-    istart = (x.position-CartesianIndex{N}()).*block_size
-    sx,sy,sz=size(y)
-    _read(y,x.data,x.mask,xoffs=istart[1],yoffs=istart[2],toffs=istart[3],nx=min(sx,block_size[1]),ny=min(sy,block_size[2]),nt=min(sz,block_size[3]))
-end
 
-function read_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::SubCubeV{T},block_size::CartesianIndex{N})
-    istart = (x.position-CartesianIndex{N}()).*block_size
-    sx,sy,sz,nvar=size(y)
-    _read(y,x.data,x.mask,xoffs=istart[1],yoffs=istart[2],toffs=istart[3],nx=min(sx,block_size[1]),ny=min(sy,block_size[2]),nt=min(sz,block_size[3]),voffs=istart[4],nv=min(sz,block_size[4]))
-end
+toSymbol(d::DataType)=symbol(split(replace(string(d),r"\{\S*\}",""),".")[end])
+getVarTuple(::Union{Type{SubCubeV},Type{SubCubeVPerm}})=:(sx,sy,sz,nvar)
+getVarTuple(::Union{Type{SubCube},Type{SubCubePerm}})=:(sx,sy,sz)
+getmainargs(::Type{MaskedCacheBlock})=Any[:y,:(x.data),:(x.mask)]
+getmainargs(::Type{SimpleCacheBlock})=Any[:y,:(x.data)]
+defiperm(::Union{Type{SubCubePerm},Type{SubCubeVPerm}})=:(iperm=y.iperm)
+defiperm(::Union{Type{SubCube},Type{SubCubeV}})=nothing
+getParent(::Union{Type{SubCubePerm},Type{SubCubeVPerm}})=:(y.parent)
+getParent(::Union{Type{SubCube},Type{SubCubeV}})=:y
 
-function read_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::SubCubeVPerm{T},block_size::CartesianIndex{N})
-    iperm=y.iperm
-    istart = (x.position-CartesianIndex{N}()).*block_size
-    sx,sy,sz,nvar=size(y.parent)
-    _read(y,x.data,x.mask,xoffs=istart[iperm[1]],yoffs=istart[iperm[2]],toffs=istart[iperm[3]],nx=min(sx,block_size[iperm[1]]),ny=min(sy,block_size[iperm[2]]),nt=min(sz,block_size[iperm[3]]),voffs=istart[iperm[4]],nv=min(sz,block_size[iperm[4]]))
+ifperm(::Union{Type{SubCube},Type{SubCubeV}},i)=i
+ifperm(::Union{Type{SubCubePerm},Type{SubCubeVPerm}},i)=:(iperm[$i])
+getkeyargs(x)=Any[Expr(:kw,:xoffs,:(istart[$(ifperm(x,1))])),
+    Expr(:kw,:yoffs,:(istart[$(ifperm(x,2))])),
+    Expr(:kw,:toffs,:(istart[$(ifperm(x,3))])),
+    Expr(:kw,:nx,   :(min(sx,block_size[$(ifperm(x,1))]))),
+    Expr(:kw,:ny,   :(min(sy,block_size[$(ifperm(x,2))]))),
+    Expr(:kw,:nt,   :(min(sz,block_size[$(ifperm(x,3))])))]
+function addvarkeysargs(x::Union{Type{SubCubeV},Type{SubCubeVPerm}},k)
+    push!(k,Expr(:kw,:voffs,:(istart[$(ifperm(x,4))])))
+    push!(k,Expr(:kw,:nv   ,:(min(nvar,block_size[$(ifperm(x,4))]))))
 end
-
-function read_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::SubCubePerm{T},block_size::CartesianIndex{N})
-    iperm=y.iperm
-    istart = (x.position-CartesianIndex{N}()).*block_size
-    sx,sy,sz=size(y.parent)
-    _read(y,x.data,x.mask,xoffs=istart[iperm[1]],yoffs=istart[iperm[2]],toffs=istart[iperm[3]],nx=min(sx,block_size[iperm[1]]),ny=min(sy,block_size[iperm[2]]),nt=min(sz,block_size[iperm[3]]),voffs=0,nv=1)
+addvarkeysargs(::Union{Type{SubCube},Type{SubCubePerm}},k)=nothing
+for blocktype in (MaskedCacheBlock, SimpleCacheBlock)
+    for cubetype in (SubCube,SubCubeV,SubCubePerm,SubCubeVPerm)
+        sb=toSymbol(blocktype)
+        sc=toSymbol(cubetype)
+        a=getmainargs(blocktype)
+        k=getkeyargs(cubetype)
+        addvarkeysargs(cubetype,k)
+        a=[a;k]
+        eval (quote
+            function read_subblock!{T,N}(x::$sb{T,N},y::$sc{T},block_size::CartesianIndex{N})
+                $(defiperm(cubetype))
+                istart = (x.position-CartesianIndex{N}()).*block_size
+                $(getVarTuple(cubetype))=size($(getParent(cubetype)))
+                _read($(a...))
+            end
+        end)
+    end
 end
-
 
 write_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::Any,block_size::CartesianIndex{N},i::CartesianIndex{N})=error("$(typeof(y)) is not writeable. Please add a write_subblock method.")
 

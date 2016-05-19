@@ -214,18 +214,7 @@ end
 "Returns a vector of DateTime objects giving the time indices returned by a respective call to getCubeData."
 function getTimeRanges(c::Cube,y1,y2,i1,i2)
     NpY    = ceil(Int,365/c.config.temporal_res)
-    yrange = y1:y2
-    a=DateTime[]
-    i=i1
-    for y=y1:y2
-      lasti= y==y2 ? i2 : NpY
-      while (i<=lasti)
-        push!(a,DateTime(y)+Dates.Day((i-1)*c.config.temporal_res))
-        i=i+1
-      end
-      i=1
-    end
-    a
+    YearStepRange(y1,i1,y2,i2,c.config.temporal_res,NpY)
 end
 
 #Convert single input to vectors
@@ -450,12 +439,16 @@ function readFromDataYear{T}(cube::Cube,outar::AbstractArray{T,3},mask::Abstract
   @assert size(outar)==size(mask)
   if isfile(filename)
     v=NetCDF.open(filename,variable);
+    scalefac::T = convert(T,get(v.atts,"scale_factor",one(T)))
+    offset::T   = convert(T,get(v.atts,"offset",zero(T)))
     outar[1:nx,1:ny,itcur:(itcur+nt-1)]=v[xr,yr,i1cur:(i1cur+nt-1)]
     missval::T=convert(T,ncgetatt(filename,variable,"_FillValue"))
     @inbounds for k=itcur:(itcur+nt-1),j=1:ny,i=1:nx
       if (outar[i,j,k] == missval) || isnan(outar[i,j,k])
         mask[i,j,k]=mask[i,j,k] | MISSING
         outar[i,j,k]=nanval
+      else
+        outar[i,j,k]=outar[i,j,k]*scalefac+offset
       end
     end
   else

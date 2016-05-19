@@ -1,5 +1,5 @@
 module DAT
-export @registerDATFunction, joinVars, DATdir, mapDAT
+export @registerDATFunction, joinVars, DATdir, mapCube
 importall ..Cubes
 importall ..CubeAPI
 importall ..CubeAPI.CachedArrays
@@ -9,6 +9,10 @@ import ...CABLAB
 using Base.Dates
 global const workdir=UTF8String["./"]
 global const debugDAT=true
+macro debug_print(e)
+  debugDAT && return(:(println($e)))
+  :()
+end
 
 haskey(ENV,"CABLAB_WORKDIR") && (workdir[1]=ENV["CABLAB_WORKDIR"])
 
@@ -34,11 +38,11 @@ It contains the following fields:
 - outCubeH
 
 """
-type DATConfig
+type DATConfig{N}
   NIN           :: Int
   incubes       :: Vector
   outcube       :: AbstractCubeData
-  indims        :: Vector
+  indims        :: NTuple{N,Tuple}
   outdims       :: Tuple
   axlists       :: Vector #Of vectors
   inAxes        :: Vector #Of vectors
@@ -57,9 +61,11 @@ type DATConfig
   sfu
   addargs
 end
-DATConfig(incubes,indims,outdims,outtype,max_cache,outfolder,sfu,addargs)=DATConfig(length(incubes),AbstractCubeData[c for c in incubes],EmptyCube{outtype}(),collect(indims),outdims,Vector{CubeAxis}[],Vector{CubeAxis}[],
-  Vector{Int}[],CubeAxis[],CubeAxis[],CubeAxis[],nprocs()>1,map(x->isa(x,AbstractCubeMem),incubes),Vector{Int}[],Int[],[],[],max_cache,outfolder,sfu,addargs)
-DATConfig(incubes::AbstractCubeData,indims,outdims,outtype,max_cache,outfolder,sfu,addargs)=DATConfig([incubes;],indims,outdims,outtype,max_cache,outfolder,sfu,addargs)
+function DATConfig(incubes,indims,outdims,outtype,max_cache,outfolder,sfu,addargs)
+  DATConfig(length(incubes),AbstractCubeData[c for c in incubes],EmptyCube{outtype}(),indims,outdims,Vector{CubeAxis}[],Vector{CubeAxis}[],
+  Vector{Int}[],CubeAxis[],CubeAxis[],CubeAxis[],nprocs()>1,Bool[isa(x,AbstractCubeMem) for x in incubes],Vector{Int}[],Int[],[],[],max_cache,outfolder,sfu,addargs)
+end
+DATConfig(incubes::AbstractCubeData,indims,outdims,outtype,max_cache,outfolder,sfu,addargs)=DATConfig((incubes,),indims,outdims,outtype,max_cache,outfolder,sfu,addargs)
 
 
 """
@@ -80,23 +86,23 @@ const fdimsout=Dict{UTF8String,Tuple}()
 const fargs=Dict{UTF8String,Tuple}()
 const fncubes=Dict{UTF8String,Tuple}()
 
-function Base.map(fu::Function,cdata::Union{Vector{AbstractCubeData},AbstractCubeData},addargs...;max_cache=1e7,outfolder=joinpath(workdir[1],string(tempname()[2:end],fu)),
-  sfu=split(string(fu),".")[end],indims=fdimsin[sfu],outdims=fdimsout[sfu],outtype=isa(cdata,Vector) ? eltype(cdata[1]) : eltype(cdata))
-
+function mapCube(fu::Function,cdata::Union{Tuple,AbstractCubeData},addargs...;max_cache=1e7,outfolder=joinpath(workdir[1],string(tempname()[2:end],fu)),
+  sfu=split(string(fu),".")[end],indims=fdimsin[sfu],outdims=fdimsout[sfu],outtype=isa(cdata,AbstractCubeData) ? eltype(cdata) : eltype(cdata[1]))
+  @debug_print "In map function"
   isdir(outfolder) || mkpath(outfolder)
-
+  @debug_print "Generating DATConfig"
   dc=DATConfig(cdata,indims,outdims,outtype,max_cache,outfolder,sfu,addargs)
-
+  @debug_print "Reordering Cubes"
   reOrderInCubes(dc)
-
+  @debug_print "Analysing Axes"
   analyzeAxes(dc)
-
+  @debug_print "Calculating Cache Sizes"
   getCacheSizes(dc)
-
+  @debug_print "Generating Output Cube"
   generateOutCube(dc)
-
+  @debug_print "Generating cube handles"
   getCubeHandles(dc)
-
+  @debug_print "Running main Loop"
   runLoop(dc)
 
   return dc.outcube
@@ -115,7 +121,7 @@ end
 function reOrderInCubes(dc::DATConfig)
   cdata=dc.incubes
   indims=dc.indims
-  for i in eachindex(cdata)
+  for i in 1:length(cdata)
     if mustReorder(cdata[i],indims[i])
       perm=getFrontPerm(cdata[i],indims[i])
       cdata[i]=permutedims(cdata[i],perm)
@@ -188,48 +194,12 @@ function init_DATworkers()
   freshworkermodule()
 end
 
-function run_disk_par(cdata::AbstractCubeData, T, axlist, inAxes, outAxes,LoopAxes, max_cache, indims, loopinR, loopOutR, loopR, axlistOut, outfolder,sfu,addargs)
-
-  tc=TempCube(axlistOut,CartesianIndex(totuple([map(length,outAxes);loopCacheSize])),folder=outfolder)
-  global myExchangeObj
-  myExchangeObj=(outfolder,T,cdata,CacheInSize,axlist,sfu,loopinR,loopOutR,addargs)
-  try
-    passobj(1, workers(), [:myExchangeObj],from_mod=CABLAB.DAT,to_mod=Main.PMDATMODULE)
-  end
-
-  @everywhereelsem tc=openTempCube(outfolder)
-  @everywhereelsem tca=CachedArray(tc,1,tc.block_size,MaskedCacheBlock{T,length(tc.block_size.I)});
-  @everywhereelsem cm=CachedArray(cdata,1,CartesianIndex(totuple(CacheInSize)),MaskedCacheBlock{T,length(axlist)});
-  allRanges=distributeLoopRanges(tc.block_size.I[(end-length(loopR)+1):end],loopR)
-  pmap(r->innerLoop(Val{Symbol(sfu)},Main.PMDATMODULE.cm,Main.PMDATMODULE.tca,CABLAB.DAT.totuple(Main.PMDATMODULE.loopinR),CABLAB.DAT.totuple(Main.PMDATMODULE.loopOutR),r,Main.PMDATMODULE.addargs),allRanges)
-  @everywhereelsem CachedArrays.sync(tca)
-  tc
-end
-
-function run_disk_one(cdata::AbstractCubeData, T, axlist, inAxes, outAxes,LoopAxes, max_cache, indims, loopinR, loopOutR, loopR, axlistOut,outfolder,sfu,addargs)
-
-  tc=TempCube(axlistOut,CartesianIndex(totuple([map(length,outAxes);loopCacheSize])),folder=outfolder)
-  tca=CachedArray(tc,1,tc.block_size,MaskedCacheBlock{T,length(axlistOut)});
-  cm=CachedArray(cdata,1,CartesianIndex(totuple(CacheInSize)),MaskedCacheBlock{T,length(axlist)});
-  innerLoop(Val{Symbol(sfu)},cm,tca,totuple(loopinR),totuple(loopOutR),totuple(loopR),addargs)
-  CachedArrays.sync(tca)
-  tc
-end
-
-function run_mem_one(cdata::AbstractCubeData, T, axlist, inAxes, outAxes,LoopAxes, max_cache, indims, loopinR, loopOutR, loopR, axlistOut,outfolder,sfu,addargs)
-
-  newsize=map(length,axlistOut)
-  outCube = Cubes.CubeMem{T,length(newsize)}(axlistOut, zeros(T,newsize...),zeros(UInt8,newsize...))
-  innerLoop(Val{Symbol(sfu)},cdata,outCube,totuple(loopinR),totuple(loopOutR),totuple(loopR),addargs)
-  outCube
-end
-
 function analyzeAxes(dc::DATConfig)
   for icube=1:dc.NIN
     push!(dc.inAxes,CubeAxis[])
     for a in dc.axlists[icube]
-      in(typeof(a),dc.indims[icube]) ?  push!(dc.inAxes[icube],a) : push!(dc.LoopAxes,a)
-      in(typeof(a),dc.outdims)       && push!(dc.outAxes,a)
+      in(typeof(a),dc.indims[icube]) ?  push!(dc.inAxes[icube],a) : (in(a,dc.LoopAxes) || push!(dc.LoopAxes,a))
+      in(typeof(a),dc.outdims)       && !in(a,dc.outAxes) && push!(dc.outAxes,a)
     end
   end
   dc.axlistOut=CubeAxis[dc.outAxes;dc.LoopAxes]
@@ -249,11 +219,12 @@ function getCacheSizes(dc::DATConfig)
     dc.loopCacheSize=Int[]
     return dc
   end
-  inAxlengths      = [map(length,dc.inAxes[i]) for i=1:length(dc.inAxes)]
+  inAxlengths      = [Int[length(dc.inAxes[i][j]) for j=1:length(dc.inAxes[i])] for i=1:length(dc.inAxes)]
   inblocksizes     = map((x,T)->prod(x)*sizeof(eltype(T)),inAxlengths,dc.incubes)
   inblocksize,imax = findmax(inblocksizes)
   outblocksize     = length(dc.outAxes)>0 ? sizeof(eltype(dc.outcube))*prod(map(length,dc.outAxes)) : 1
   loopCacheSize    = getLoopCacheSize(max(inblocksize,outblocksize),dc.LoopAxes,dc.max_cache)
+  @debug_print "Choosing Cache Size of $loopCacheSize"
   for icube=1:dc.NIN
     if dc.isMem[icube]
       push!(dc.inCacheSizes,Int[])
@@ -328,7 +299,10 @@ using Base.Cartesian
   broadcastvars = T4
   Nloopvars   = length(T3.parameters)
   loopRangesE = Expr(:block)
-  subIn=[Expr(:call,:(CachedArrays.getSubRange),:(xin[$i]),fill(:(:),NinCol)...) for i=1:NIN]
+  println(NIN)
+  println(NinCol)
+  println(NoutCol)
+  subIn=[Expr(:call,:(CachedArrays.getSubRange),:(xin[$i]),fill(:(:),NinCol[i])...) for i=1:NIN]
   subOut=Expr(:call,:(CachedArrays.getSubRange),:xout,fill(:(:),NoutCol)...)
   for i=1:Nloopvars
     isym=Symbol("i_$(i)")

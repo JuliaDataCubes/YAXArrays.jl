@@ -1,11 +1,46 @@
 module Axes
-export CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis,Axes
+export CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis,Axes,YearStepRange
 import NetCDF.NcDim
 importall ..Cubes
+using Base.Dates
+
+immutable YearStepRange <: Range{DateTime}
+    startyear::Int
+    startst::Int
+    stopyear::Int
+    stopst::Int
+    step::Int
+    NPY::Int
+end
+
+function YearStepRange(start::DateTime,stop::DateTime,step::Day)
+    startyear=year(start)
+    startday=dayofyear(start)
+    startst=ceil(Int,startday/Float64(step))
+    stopyear=year(stop)
+    stopday=dayofyear(stop)
+    stopst=ceil(Int,stopday/Float64(step))
+    NPY=ceil(Int,366/Float64(step))
+    YearStepRange(startyear,startst,stopyear,stopst,Int(step),NPY)
+end
+function Base.length(x::YearStepRange)
+    (-x.startst+1+x.stopst+(x.stopyear-x.startyear)*x.NPY)
+end
+Base.size(x::YearStepRange)=(length(x),)
+Base.start(x::YearStepRange)=(x.startyear,x.startst)
+Base.next(x::YearStepRange,st)=(DateTime(st[1])+Day((st[2]-1)*x.step),st[2]==x.NPY ? (st[1]+1,1) : (st[1],st[2]+1))
+Base.done(x::YearStepRange,st)=(st[1]==x.stopyear && st[2]==x.stopst+1) || (st[1]==x.stopyear+1 && st[2]==1)
+Base.step(x::YearStepRange)=Day(x.step)
+Base.first(x::YearStepRange)=DateTime(x.startyear)+Day((x.startst-1)*x.step)
+Base.last(x::YearStepRange)=DateTime(x.stopyear)+Day((x.stopst-1)*x.step)
+function Base.getindex(x::YearStepRange,ind::Integer)
+    y,d=divrem(ind-1+x.startst-1,x.NPY)
+    DateTime(y+x.startyear)+Day(d)*x.step
+end
 
 abstract CubeAxis{T} <: AbstractCubeMem{T,1}
 immutable TimeAxis <: CubeAxis{DateTime}
-  values::Vector{DateTime}
+  values::YearStepRange
 end
 
 immutable VariableAxis <: CubeAxis{UTF8String}
