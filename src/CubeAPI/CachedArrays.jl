@@ -13,8 +13,8 @@ type SimpleCacheBlock{T,N} <: CacheBlock{T,N}
     position::CartesianIndex{N}
     iswritten::Bool
 end
-emptyblock{T,N}(b::Type{SimpleCacheBlock{T,N}})=SimpleCacheBlock{T,N}(Array(T,ntuple(i->0,N)),0.0,CartesianIndex{N}()-CartesianIndex{N}())
-zeroblock{T,N}(b::Type{SimpleCacheBlock{T,N}},block_size,position)=SimpleCacheBlock{T,N}(zeros(T,block_size.I),0.0,position)
+emptyblock{T,N}(b::Type{SimpleCacheBlock{T,N}})=SimpleCacheBlock{T,N}(Array(T,ntuple(i->0,N)),0.0,CartesianIndex{N}()-CartesianIndex{N}(),false)
+zeroblock{T,N}(b::Type{SimpleCacheBlock{T,N}},block_size,position)=SimpleCacheBlock{T,N}(zeros(T,block_size.I),0.0,position,false)
 getValues(b::SimpleCacheBlock,I...)=slice(b.data,I...)
 import Base.<
 <(c1::CacheBlock,c2::CacheBlock)=c1.score<c2.score
@@ -180,8 +180,9 @@ end
 
 
 hi=Expr(:call,:(Base.getindex{T}),:(c::CachedArray{T,N}))
-hiRange=Expr(:call,:(getSubRange{T,S<:MaskedCacheBlock}),Expr(:parameters,Expr(:kw,:write,false)),:(c::CachedArray{T,N,S}))
+hiRange=Expr(:call,:(getSubRange{T,S<:CacheBlock}),Expr(:parameters,Expr(:kw,:write,false)),:(c::CachedArray{T,N,S}))
 hisetRange=Expr(:call,:(setSubRange{T,S<:MaskedCacheBlock}),Expr(:parameters,Expr(:kw,:write,false)),:(c::CachedArray{T,N,S}),:vals,:mask)
+hisetRange=Expr(:call,:(setSubRange{T,S<:SimpleCacheBlock}),Expr(:parameters,Expr(:kw,:write,false)),:(c::CachedArray{T,N,S}),:vals)
 higetVal=Expr(:call,:getValues,:blockx)
 hisetVal=Expr(:call,:setValues,:blockx,:vals,:mask)
 higetSub=Expr(:call,:getSubRange,:c)
@@ -225,7 +226,6 @@ for N=1:5
   eval(exsetRange)
 end
 
-#TODO generate all these read_subblocks programmatically
 
 using NetCDF
 
@@ -282,7 +282,7 @@ for blocktype in (MaskedCacheBlock, SimpleCacheBlock)
         k=getkeyargs(cubetype)
         addvarkeysargs(cubetype,k)
         a=[a;k]
-        eval (quote
+        eval(quote
             function read_subblock!{T,N}(x::$sb{T,N},y::$sc{T},block_size::CartesianIndex{N})
                 $(defiperm(cubetype))
                 istart = (x.position-CartesianIndex{N}()).*block_size

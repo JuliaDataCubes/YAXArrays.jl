@@ -299,9 +299,6 @@ using Base.Cartesian
   broadcastvars = T4
   Nloopvars   = length(T3.parameters)
   loopRangesE = Expr(:block)
-  println(NIN)
-  println(NinCol)
-  println(NoutCol)
   subIn=[Expr(:call,:(CachedArrays.getSubRange),:(xin[$i]),fill(:(:),NinCol[i])...) for i=1:NIN]
   subOut=Expr(:call,:(CachedArrays.getSubRange),:xout,fill(:(:),NoutCol)...)
   for i=1:Nloopvars
@@ -331,7 +328,7 @@ using Base.Cartesian
   end
   push!(callargs,Expr(:...,:addargs))
   push!(loopBody.args,Expr(:call,callargs...))
-  println(Expr(:for,loopRangesE,loopBody))
+  @debug_print Expr(:for,loopRangesE,loopBody)
   return Expr(:for,loopRangesE,loopBody)
 end
 
