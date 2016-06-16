@@ -1,23 +1,20 @@
 module DAT
-export @registerDATFunction, joinVars, DATdir, mapCube
+export registerDATFunction, registerDATFunctionN, joinVars, mapCube, getInAxes, getOutAxes
 importall ..Cubes
 importall ..CubeAPI
 importall ..CubeAPI.CachedArrays
 importall ..CABLABTools
 importall ..Cubes.TempCubes
 import ...CABLAB
+import ...CABLAB.workdir
 using Base.Dates
-global const workdir=UTF8String["./"]
-global const debugDAT=true
+global const debugDAT=false
 macro debug_print(e)
   debugDAT && return(:(println($e)))
   :()
 end
-
-haskey(ENV,"CABLAB_WORKDIR") && (workdir[1]=ENV["CABLAB_WORKDIR"])
-
-DATdir(x::AbstractString)=workdir[1]=x
-DATdir()=workdir[1]
+#Clear Temp Folder when loading
+#myid()==1 && isdir(joinpath(workdir[1],"tmp")) && rm(joinpath(workdir[1],"tmp"),recursive=true)
 
 """
 Configuration object of a DAT process. This holds all necessary information to perform the calculations
@@ -42,8 +39,6 @@ type DATConfig{N}
   NIN           :: Int
   incubes       :: Vector
   outcube       :: AbstractCubeData
-  indims        :: NTuple{N,Tuple}
-  outdims       :: Tuple
   axlists       :: Vector #Of vectors
   inAxes        :: Vector #Of vectors
   broadcastAxes :: Vector #Of Vectors
@@ -61,12 +56,10 @@ type DATConfig{N}
   sfu
   addargs
 end
-function DATConfig(incubes,indims,outdims,outtype,max_cache,outfolder,sfu,addargs)
-  DATConfig(length(incubes),AbstractCubeData[c for c in incubes],EmptyCube{outtype}(),indims,outdims,Vector{CubeAxis}[],Vector{CubeAxis}[],
-  Vector{Int}[],CubeAxis[],CubeAxis[],CubeAxis[],nprocs()>1,Bool[isa(x,AbstractCubeMem) for x in incubes],Vector{Int}[],Int[],[],[],max_cache,outfolder,sfu,addargs)
+function DATConfig(incubes::Tuple,inAxes,outAxes,outtype,max_cache,outfolder,sfu,addargs)
+  DATConfig{length(incubes)}(length(incubes),AbstractCubeData[c for c in incubes],EmptyCube{outtype}(),Vector{CubeAxis}[],inAxes,
+  Vector{Int}[],CubeAxis[a for a in outAxes],CubeAxis[],CubeAxis[],nprocs()>1,Bool[isa(x,AbstractCubeMem) for x in incubes],Vector{Int}[],Int[],[],[],max_cache,outfolder,sfu,addargs)
 end
-DATConfig(incubes::AbstractCubeData,indims,outdims,outtype,max_cache,outfolder,sfu,addargs)=DATConfig((incubes,),indims,outdims,outtype,max_cache,outfolder,sfu,addargs)
-
 
 """
 Object to pass to InnerLoop, this condenses the most important information about the calculation into a type so that
@@ -80,18 +73,43 @@ function InnerObj(dc::DATConfig)
   InnerObj{dc.NIN,T1,T2,T3}()
 end
 
+immutable DATFunction
+  indims
+  outdims
+  args
+end
+const regDict=Dict{UTF8String,DATFunction}()
 
-const fdimsin=Dict{UTF8String,Tuple}()
-const fdimsout=Dict{UTF8String,Tuple}()
-const fargs=Dict{UTF8String,Tuple}()
-const fncubes=Dict{UTF8String,Tuple}()
+getOuttype(sfu,cdata)=isa(cdata,AbstractCubeData) ? eltype(cdata) : eltype(cdata[1])
+getInAxes(sfu,cdata)=error("No input Axes provided")
+getOutAxes(sfu,cdata)=error("No output Axes provided")
+function getInAxes(sfu::DATFunction,cdata::Tuple)
+  inAxes=Vector{CubeAxis}[]
+  for (dat,dim) in zip(cdata,sfu.indims)
+    ii=collect(map(a->findAxis(a,axes(dat)),dim))
+    push!(inAxes,axes(dat)[ii])
+  end
+  inAxes
+end
+getOutAxes(sfu::DATFunction,cdata,pargs)=map(t->getOutAxes(cdata,t,pargs),sfu.outdims)
+function getOutAxes(cdata::Tuple,t::DataType,pargs)
+  for da in cdata
+    ii = findAxis(t,axes(da))
+    ii>0 && return axes(da)[ii]
+  end
+end
+getOutAxes(cdata::Tuple,t::Function,pargs)=t(cdata,pargs)
 
-function mapCube(fu::Function,cdata::Union{Tuple,AbstractCubeData},addargs...;max_cache=1e7,outfolder=joinpath(workdir[1],string(tempname()[2:end],fu)),
-  sfu=split(string(fu),".")[end],indims=fdimsin[sfu],outdims=fdimsout[sfu],outtype=isa(cdata,AbstractCubeData) ? eltype(cdata) : eltype(cdata[1]))
+
+mapCube(fu::Function,cdata::AbstractCubeData,addargs...;kwargs...)=mapCube(fu,(cdata,),addargs...;kwargs...)
+
+function mapCube(fu::Function,cdata::Tuple,addargs...;max_cache=1e7,outfolder=joinpath(workdir[1],string(tempname()[2:end],fu)),
+  sfu=split(string(fu),".")[end],fuObj=get(regDict,sfu,sfu),outtype=getOuttype(fuObj,cdata),inAxes=getInAxes(fuObj,cdata),outAxes=getOutAxes(fuObj,cdata,addargs))
   @debug_print "In map function"
   isdir(outfolder) || mkpath(outfolder)
   @debug_print "Generating DATConfig"
-  dc=DATConfig(cdata,indims,outdims,outtype,max_cache,outfolder,sfu,addargs)
+  dc=DATConfig(cdata,inAxes,outAxes,outtype,max_cache,outfolder,sfu,addargs)
+  analyseaddargs(fuObj,dc)
   @debug_print "Reordering Cubes"
   reOrderInCubes(dc)
   @debug_print "Analysing Axes"
@@ -102,6 +120,7 @@ function mapCube(fu::Function,cdata::Union{Tuple,AbstractCubeData},addargs...;ma
   generateOutCube(dc)
   @debug_print "Generating cube handles"
   getCubeHandles(dc)
+  println(dc.addargs)
   @debug_print "Running main Loop"
   runLoop(dc)
 
@@ -109,21 +128,26 @@ function mapCube(fu::Function,cdata::Union{Tuple,AbstractCubeData},addargs...;ma
 
 end
 
-function mustReorder(cdata,indims)
+function analyseaddargs(sfu::DATFunction,dc)
+    dc.addargs=isa(sfu.args,Function) ? sfu.args(dc.incubes,dc.addargs) : dc.addargs
+end
+analyseaddargs(sfu::AbstractString,dc)=nothing
+
+function mustReorder(cdata,inAxes)
   reorder=false
   axlist=axes(cdata)
-  for (i,fi) in enumerate(indims)
-    typeof(axlist[i])==fi || (reorder=true)
+  for (i,fi) in enumerate(inAxes)
+    axlist[i]==fi || return true
   end
-  reorder
+  return false
 end
 
 function reOrderInCubes(dc::DATConfig)
   cdata=dc.incubes
-  indims=dc.indims
+  inAxes=dc.inAxes
   for i in 1:length(cdata)
-    if mustReorder(cdata[i],indims[i])
-      perm=getFrontPerm(cdata[i],indims[i])
+    if mustReorder(cdata[i],inAxes[i])
+      perm=getFrontPerm(cdata[i],inAxes[i])
       cdata[i]=permutedims(cdata[i],perm)
     end
     push!(dc.axlists,axes(cdata[i]))
@@ -145,7 +169,7 @@ end
 
 function generateOutCube(dc::DATConfig)
   T=eltype(dc.outcube)
-  outsize=sizeof(T)*prod(map(length,dc.axlistOut))
+  outsize=sizeof(T)*(length(dc.axlistOut)>0 ? prod(map(length,dc.axlistOut)) : 1)
   if outsize>dc.max_cache || dc.ispar
     dc.outcube=TempCube(dc.axlistOut,CartesianIndex(totuple([map(length,dc.outAxes);dc.loopCacheSize])),folder=dc.outfolder,T=T)
   else
@@ -195,13 +219,18 @@ function init_DATworkers()
 end
 
 function analyzeAxes(dc::DATConfig)
+  #First check if one of the axes is a concrete type
   for icube=1:dc.NIN
-    push!(dc.inAxes,CubeAxis[])
     for a in dc.axlists[icube]
-      in(typeof(a),dc.indims[icube]) ?  push!(dc.inAxes[icube],a) : (in(a,dc.LoopAxes) || push!(dc.LoopAxes,a))
-      in(typeof(a),dc.outdims)       && !in(a,dc.outAxes) && push!(dc.outAxes,a)
+      in(a,dc.inAxes[icube]) || in(a,dc.LoopAxes) || push!(dc.LoopAxes,a)
     end
   end
+  #Try to construct outdims
+  outnotfound=find([!isdefined(dc.outAxes,ii) for ii in eachindex(dc.outAxes)])
+  for ii in outnotfound
+    dc.outAxes[ii]=dc.outdims[ii]()
+  end
+  length(dc.LoopAxes)==length(unique(map(typeof,dc.LoopAxes))) || error("Make sure that cube axes of different cubes match")
   dc.axlistOut=CubeAxis[dc.outAxes;dc.LoopAxes]
   for icube=1:dc.NIN
     push!(dc.broadcastAxes,Int[])
@@ -299,8 +328,8 @@ using Base.Cartesian
   broadcastvars = T4
   Nloopvars   = length(T3.parameters)
   loopRangesE = Expr(:block)
-  subIn=[Expr(:call,:(CachedArrays.getSubRange),:(xin[$i]),fill(:(:),NinCol[i])...) for i=1:NIN]
-  subOut=Expr(:call,:(CachedArrays.getSubRange),:xout,fill(:(:),NoutCol)...)
+  subIn=[Expr(:call,:(getSubRange),:(xin[$i]),fill(:(:),NinCol[i])...) for i=1:NIN]
+  subOut=Expr(:call,:(getSubRange),:xout,fill(:(:),NoutCol)...)
   for i=1:Nloopvars
     isym=Symbol("i_$(i)")
     for j=1:NIN
@@ -329,36 +358,37 @@ using Base.Cartesian
   push!(callargs,Expr(:...,:addargs))
   push!(loopBody.args,Expr(:call,callargs...))
   @debug_print Expr(:for,loopRangesE,loopBody)
-  return Expr(:for,loopRangesE,loopBody)
+  return length(loopRangesE.args)==0 ? loopBody : Expr(:for,loopRangesE,loopBody)
 end
 
-macro registerDATFunction(fname, dimsin,dimsout,args...)
-    @assert dimsin.head==:tuple
-    @assert dimsout.head==:tuple
-    sfname=isa(esc(fname),Symbol) ? string(esc(fname)) : string(esc(fname).args[end])
-    quote
-        fdimsin[$sfname]=($dimsin,)
-        fdimsout[$sfname]=$dimsout
-        fargs[$sfname]=$args
-    end
+#macro registerDATFunction(fname, dimsin,dimsout,args...)
+#    @assert dimsin.head==:tuple
+#    @assert dimsout.head==:tuple
+#    sfname=isa(esc(fname),Symbol) ? string(esc(fname)) : string(esc(fname).args[end])
+#    quote
+#        fdimsin[$sfname]=($dimsin,)
+#        fdimsout[$sfname]=$dimsout
+#        fargs[$sfname]=$args
+#    end
+#end
+function registerDATFunction(f, ::Tuple{}, dimsout::Tuple, addargs)
+  fname=utf8(split(string(f),".")[end])
+  regDict[fname]=DATFunction((),dimsout,addargs)
 end
 
-macro registerDATFunctionN(fname,N,dimsin,dimsout,args...)
-    @assert isa(N,Int)
-    @assert dimsin.head==:tuple
-    @assert length(dimsin.args)==N
-    @assert dimsout.head==:tuple
-    sfname=isa(esc(fname),Symbol) ? string(esc(fname)) : string(esc(fname).args[end])
-    quote
-        fdimsin[$sfname]=$dimsin
-        fdimsout[$sfname]=$dimsout
-        fargs[$sfname]=$args
-        fncubes[$sfname]=$N
-    end
+function registerDATFunction(f,dimsin::Tuple{Vararg{DataType}},dimsout::Tuple,addargs)
+    fname=utf8(split(string(f),".")[end])
+    regDict[fname]=DATFunction((dimsin,),dimsout,addargs)
 end
 
+function registerDATFunction(f,dimsin::Tuple{Vararg{Tuple{Vararg{DataType}}}},dimsout::Tuple,addargs)
+    fname=utf8(split(string(f),".")[end])
+    regDict[fname]=DATFunction(dimsin,dimsout,addargs)
+end
+registerDATFunction(f,dimsin,dimsout)=registerDATFunction(f,dimsin,dimsout,())
+registerDATFunction(f,dimsin)=registerDATFunction(f,dimsin,())
 
-"Find a certain axis type in a vector of Cube axes"
+"Find a certain axis type in a vector of Cube axes and returns the index"
 function findAxis{T<:CubeAxis}(a::Type{T},v)
     for i=1:length(v)
         isa(v[i],a) && return i
@@ -366,13 +396,14 @@ function findAxis{T<:CubeAxis}(a::Type{T},v)
     return 0
 end
 
+
 "Calculate an axis permutation that brings the wanted dimensions to the front"
 function getFrontPerm{T}(dc::AbstractCubeData{T},dims)
   ax=axes(dc)
   N=length(ax)
   perm=Int[i for i=1:length(ax)];
   iold=Int[]
-  for i=1:length(dims) push!(iold,findAxis(dims[i],ax)) end
+  for i=1:length(dims) push!(iold,findin(ax,[dims[i];])[1]) end
   iold2=sort(iold,rev=true)
   for i=1:length(iold) splice!(perm,iold2[i]) end
   perm=Int[iold;perm]

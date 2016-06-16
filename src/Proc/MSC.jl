@@ -1,11 +1,13 @@
 module MSC
 export removeMSC, gapFillMSC
+importall ..Cubes
 importall ..DAT
 importall ..CubeAPI
+importall ..Proc
 
-"Function that removes mean seasonal cycle from xin and writes the MSC to xout. The time dimension is specified in itimedim, NpY is the number of years"
 function removeMSC(xout::AbstractArray,maskout::AbstractArray{UInt8},xin::AbstractArray,maskin::AbstractArray{UInt8},NpY::Integer)
     #Start loop through all other variables
+    @no_ocean maskin maskout
     msc=getMSC(xin,xout,maskin,NpY)
     subtractMSC(msc,xin,xout,NpY)
     copy!(maskout,maskin)
@@ -14,6 +16,7 @@ end
 
 function gapFillMSC(xout::AbstractArray,maskout::AbstractArray{UInt8},xin::AbstractArray,maskin::AbstractArray{UInt8},NpY::Integer)
 
+  @no_ocean maskin maskout
   msc=getMSC(xin,xout,maskin,NpY)
   replaceMisswithMSC(msc,xin,xout,maskin,maskout,NpY)
 
@@ -71,6 +74,14 @@ function fillmsc{T}(imscstart::Integer,msc::AbstractVector{T},nmsc::AbstractVect
     for i in 1:NpY msc[i] = nmsc[i] > 0 ? msc[i]/nmsc[i] : NaN end # Get MSC by dividing by number of points
 end
 
-@registerDATFunction removeMSC (TimeAxis,) (TimeAxis,) NpY::Int
-@registerDATFunction gapFillMSC (TimeAxis,) (TimeAxis,) NpY::Int
+function getNpY(cube::AbstractCubeData)
+    axlist=axes(cube)
+    isTime=[isa(a,TimeAxis) for a in axlist]
+    return axlist[isTime][1].values.NPY
+end
+
+registerDATFunction(removeMSC,(TimeAxis,),(TimeAxis,),(cube,pargs)->getNpY(cube[1]))
+registerDATFunction(gapFillMSC,(TimeAxis,),(TimeAxis,),(cube,pargs)->getNpY(cube[1]))
+
+
 end

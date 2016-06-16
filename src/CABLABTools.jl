@@ -1,5 +1,5 @@
 module CABLABTools
-export mypermutedims!, totuple, freshworkermodule, passobj, @everywhereelsem
+export mypermutedims!, totuple, freshworkermodule, passobj, @everywhereelsem, toRange
 # SOme global function definitions
 
 using Base.Cartesian
@@ -20,6 +20,9 @@ totuple(x::AbstractArray)=ntuple(i->x[i],length(x))
 @generated function Base.getindex{N}(t::NTuple{N},p::NTuple{N,Int})
     :(@ntuple $N d->t[p[d]])
 end
+
+toRange(r::CartesianRange)=map(colon,r.start.I,r.stop.I)
+toRange(c1::CartesianIndex,c2::CartesianIndex)=map(colon,c1.I,c2.I)
 
 function passobj(src::Int, target::Vector{Int}, nm::Symbol;
                  from_mod=Main, to_mod=Main)

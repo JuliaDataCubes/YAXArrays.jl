@@ -4,7 +4,7 @@ Data types that
 """
 module Cubes
 export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, axes,
-       AbstractSubCube, CubeMem, openTempCube, EmptyCube, YearStepRange
+       AbstractSubCube, CubeMem, openTempCube, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis
 
 """
 Supertype of all cubes. All map and plot functions are supposed to work on subtypes of these. This is done by implementing the following functions
@@ -25,6 +25,11 @@ function readCubeData end
 This function calculates a subset of a cube's data
 """
 function subsetCubeData end
+
+"""
+Internal function to read a range from a datacube
+"""
+_read(c::AbstractCubeData,d,r::CartesianRange)=error("_read not implemented for $(typeof(c))")
 
 "Returns the axes of a Cube"
 axes(c::AbstractCubeData)=error("Axes function not implemented for $(typeof(c))")
@@ -64,9 +69,20 @@ function getSubRange{T,N}(c::CubeMem{T,N},i...;write::Bool=true)
   return (slice(c.data,i...),slice(c.mask,i...))
 end
 
+getSubRange{T}(c::CubeMem{T,0};write::Bool=true)=(c.data,c.mask)
+
 function getSubRange{T}(c::CubeAxis{T},i;write::Bool=true)
   r=c.values[i]
   return (r,zeros(UInt8,length(r)))
+end
+
+import ..CABLABTools.toRange
+function _read(c::CubeMem,thedata::NTuple{2},r::CartesianRange)
+  outar,outmask=thedata
+  data=slice(c.data,toRange(r)...)
+  mask=slice(c.data,toRange(r)...)
+  copy!(outar,data)
+  copy!(outmask,mask)
 end
 
 "This function creates a new view of the cube, joining longitude and latitude axes to a single spatial axis"
@@ -87,7 +103,7 @@ CubeMem(allNewAx,reshape(c.data,newShape),reshape(c.mask,newShape))
 end
 
 include("TempCubes.jl")
-
+importall .TempCubes
 
 
 end

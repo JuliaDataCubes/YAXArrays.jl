@@ -11,7 +11,9 @@ import Patchwork.load_js_runtime
 ga=[]
 axVal2Index(axis::Union{LatAxis,LonAxis},v)=round(Int,axis.values.step)*round(Int,v*axis.values.divisor-axis.values.start)+1
 function plotTS{T}(cube::AbstractCubeData{T})
-  p=DAT.getFrontPerm(cube,(TimeAxis,))
+  axlist=axes(cube)
+  i=findfirst(a->isa(a,TimeAxis),axlist)
+  p=DAT.getFrontPerm(cube,((axlist[i]),))
   p[1]==1 || (cube=permutedims(cube,p))
   axlist=axes(cube)
   sliders=Array(Any,0)
@@ -38,7 +40,7 @@ function plotTS{T}(cube::AbstractCubeData{T})
       push!(sliceargs,:(axVal2Index(axlist[$iax],lat)))
       push!(argvars,:lat)
       #display(sliders[end])
-    elseif isa(axlist[iax],VariableAxis)
+    elseif isa(axlist[iax],CategoricalAxis)
       ivarax=iax
       push!(sliceargs,:(error()))
       nvar=length(axlist[iax])
@@ -93,6 +95,11 @@ function getMinMax(x,mask)
       if x[ix]>ma ma=x[ix] end
     end
   end
+  if mi==typemax(eltype(x)) || ma==typemin(eltype(x))
+    mi,ma=(zero(eltype(x)),one(eltype(x)))
+  elseif mi==ma
+    mi,ma=(mi,mi+eps(mi))
+  end
   mi,ma
 end
 
@@ -109,9 +116,13 @@ function val2col(x,m,colorm,mi,ma,misscol,oceancol)
 end
 
 function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin::T=zero(T),dmax::T=zero(T))
-  p=DAT.getFrontPerm(cube,(LonAxis,LatAxis))
+  axlist=axes(cube)
+  ilon=findfirst(a->isa(a,LonAxis),axlist)
+  ilat=findfirst(a->isa(a,LatAxis),axlist)
+  p=DAT.getFrontPerm(cube,(axlist[ilon],axlist[ilat]))
   (p[1]==1 && p[2]==2) || (cube=permutedims(cube,p))
   axlist=axes(cube)
+  println(axlist)
   sliders=Any[]
   signals=Reactive.Signal[]
   argvars=Symbol[]
@@ -124,13 +135,13 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin::T=zero(T),dmax::T=ze
   subcubedims[2]=nlat
   sliceargs=Any[:(1:$nlon),:(1:$nlat)]
   for iax=3:length(axlist)
-    if isa(axlist[iax],TimeAxis)
+    if isa(axlist[iax],RangeAxis)
       push!(sliders,slider(1:length(axlist[iax].values),label="Time Step"))
       push!(signals,signal(sliders[end]))
       push!(sliceargs,:time)
       push!(argvars,:time)
       display(sliders[end])
-    elseif isa(axlist[iax],VariableAxis)
+    elseif isa(axlist[iax],CategoricalAxis)
       ivarax=iax
       push!(sliceargs,:variab)
       push!(argvars,:variab)
@@ -150,7 +161,7 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin::T=zero(T),dmax::T=ze
     nx,ny=size(a)
     $mimaex
     colorm=colormap("oranges")
-    oceancol=colorant"blue"
+    oceancol=colorant"darkblue"
     misscol=colorant"gray"
     rgbar=getRGBAR(a,m,colorm,mi,ma,misscol,oceancol,nx,ny)
     Image(rgbar,Dict("spatialorder"=>["x","y"]))

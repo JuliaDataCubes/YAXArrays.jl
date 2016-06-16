@@ -1,5 +1,5 @@
 module Axes
-export CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis,Axes,YearStepRange
+export CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis,Axes,YearStepRange,CategoricalAxis,RangeAxis
 import NetCDF.NcDim
 importall ..Cubes
 using Base.Dates
@@ -39,24 +39,26 @@ function Base.getindex(x::YearStepRange,ind::Integer)
 end
 
 abstract CubeAxis{T} <: AbstractCubeMem{T,1}
-immutable TimeAxis <: CubeAxis{DateTime}
+abstract CategoricalAxis{T} <: CubeAxis{T}
+abstract RangeAxis{T} <: CubeAxis{T}
+immutable TimeAxis <: RangeAxis{DateTime}
   values::YearStepRange
 end
 
-immutable VariableAxis <: CubeAxis{UTF8String}
+immutable VariableAxis <: CategoricalAxis{UTF8String}
   values::Vector{UTF8String}
 end
 
-immutable LonAxis <: CubeAxis{Float64}
+immutable LonAxis <: RangeAxis{Float64}
   values::FloatRange{Float64}
 end
-immutable LatAxis <: CubeAxis{Float64}
+immutable LatAxis <: RangeAxis{Float64}
   values::FloatRange{Float64}
 end
 immutable SpatialPointAxis <: CubeAxis{Tuple{Float64,Float64}}
   values::Vector{Tuple{Float64,Float64}}
 end
-immutable CountryAxis<: CubeAxis{UTF8String}
+immutable CountryAxis<: CategoricalAxis{UTF8String}
   values::Vector{UTF8String}
 end
 Base.length(a::CubeAxis)=length(a.values)

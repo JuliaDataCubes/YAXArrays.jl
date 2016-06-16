@@ -249,26 +249,29 @@ end
 
 
 
-function getLandSeaMask!(mask::Array{UInt8,3},cube::Cube,grid_x1,grid_x2,grid_y1,grid_y2)
+function getLandSeaMask!(mask::Array{UInt8,3},cube::Cube,grid_x1,nx,grid_y1,ny)
   filename=joinpath(cube.base_dir,"mask","mask.nc")
   if isfile(filename)
-      ncread!(filename,"mask",sub(mask,:,:,1),start=[grid_x1,grid_y1],count=[grid_x2-grid_x1+1,grid_y2-grid_y1+1])
+      ncread!(filename,"mask",sub(mask,:,:,1),start=[grid_x1,grid_y1],count=[nx,ny])
       nT=size(mask,3)
       for itime=2:nT,ilat=1:size(mask,2),ilon=1:size(mask,1)
           mask[ilon,ilat,itime]=mask[ilon,ilat,1]
       end
   end
+  ncclose(filename)
 end
 
-function getLandSeaMask!(mask::Array{UInt8,4},cube::Cube,grid_x1,grid_x2,grid_y1,grid_y2)
+function getLandSeaMask!(mask::Array{UInt8,4},cube::Cube,grid_x1,nx,grid_y1,ny)
   filename=joinpath(cube.base_dir,"mask","mask.nc")
   if isfile(filename)
-      ncread!(filename,"mask",sub(mask,:,:,1,1),start=[grid_x1,grid_y1],count=[grid_x2-grid_x1+1,grid_y2-grid_y1+1])
+      ncread!(filename,"mask",sub(mask,:,:,1,1),start=[grid_x1,grid_y1],count=[nx,ny])
       nT=size(mask,3)
       for ivar=1:size(mask,4),itime=2:nT,ilat=1:size(mask,2),ilon=1:size(mask,1)
           mask[ilon,ilat,itime,ivar]=mask[ilon,ilat,1,1]
       end
   end
+  ncclose(filename
+  )
 end
 
 function getCubeData(cube::Cube,
@@ -334,7 +337,7 @@ function readCubeData{T}(s::SubCube{T})
     y1,i1,y2,i2,ntime,NpY           = s.sub_times
     outar=Array(T,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)
     mask=zeros(UInt8,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)
-    _read(s,outar,mask)
+    _read(s,(outar,mask),CartesianRange((grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)))
     return CubeMem(CubeAxis[s.lonAxis,s.latAxis,s.timeAxis],outar,mask)
 end
 
@@ -343,41 +346,41 @@ function readCubeData{T}(s::SubCubeV{T})
     y1,i1,y2,i2,ntime,NpY           = s.sub_times
     outar=Array(T,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime,length(s.varAxis))
     mask=zeros(UInt8,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime,length(s.varAxis))
-    _read(s,outar,mask)
+    _read(s,(outar,mask),CartesianRange((grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime,length(s.varAxis))))
     return CubeMem(CubeAxis[s.lonAxis,s.latAxis,s.timeAxis,s.varAxis],outar,mask)
 end
 
 """
 Add a function to read some CubeData in a permuted way, we will make a copy here for simplicity, however, this might change in the future
 """
-function _read{T}(s::SubCubeVPerm{T},outar,mask;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,findin(s.perm,1)[1]),ny::Int=size(outar,findin(s.perm,2)[1]),nt::Int=size(outar,findin(s.perm,3)[1]),nv::Int=size(outar,findin(s.perm,4)[1]))
+function _read{T,N}(s::Union{SubCubeVPerm{T},SubCubePerm{T}},t::NTuple{2},r::CartesianRange{CartesianIndex{N}})  #;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,findin(s.perm,1)[1]),ny::Int=size(outar,findin(s.perm,2)[1]),nt::Int=size(outar,findin(s.perm,3)[1]),nv::Int=size(outar,findin(s.perm,4)[1]))
+  iperm=s.iperm
   perm=s.perm
+  outar,mask=t
+  sout=map(-,r.stop.I,(r.start-CartesianIndex{N}()).I)[iperm]
   #println("xoffs=$xoffs yoffs=$yoffs toffs=$toffs voffs=$voffs nx=$nx ny=$ny nt=$nt nv=$nv")
-  outartemp=Array(T,nx,ny,nt,nv)
-  masktemp=zeros(UInt8,nx,ny,nt,nv)
-  _read(s.parent,outartemp,masktemp,xoffs=xoffs,yoffs=yoffs,toffs=toffs,voffs=voffs,nx=nx,ny=ny,nt=nt,nv=nv)
+  outartemp=Array(T,sout...)
+  masktemp=zeros(UInt8,sout...)
+  _read(s.parent,(outartemp,masktemp),CartesianRange(CartesianIndex(r.start.I[iperm]),CartesianIndex(r.stop.I[iperm])))
   mypermutedims!(outar,outartemp,Val{perm})
   mypermutedims!(mask,masktemp,Val{perm})
 end
 
-function _read{T}(s::SubCubePerm{T},outar,mask;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,findin(s.perm,1)[1]),ny::Int=size(outar,findin(s.perm,2)[1]),nt::Int=size(outar,findin(s.perm,3)[1]),nv::Int=1)
-  perm=s.perm
-  outartemp=Array(T,nx,ny,nt)
-  masktemp=zeros(UInt8,nx,ny,nt)
-  _read(s.parent,outartemp,masktemp,xoffs=xoffs,yoffs=yoffs,toffs=toffs,voffs=voffs,nx=nx,ny=ny,nt=nt,nv=nv)
-  mypermutedims!(outar,outartemp,Val{perm})
-  mypermutedims!(mask,masktemp,Val{perm})
-end
+getNv(r::CartesianRange{CartesianIndex{3}})=(0,1)
+getNv(r::CartesianRange{CartesianIndex{4}})=(r.start.I[4]-1,r.stop.I[4]-r.start.I[4]+1)
 
-function _read{T}(s::AbstractSubCube{T},outar,mask;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,1),ny::Int=size(outar,2),nt::Int=size(outar,3),nv::Int=length(s.variable))
+function _read{T}(s::AbstractSubCube{T},t::NTuple{2},r::CartesianRange) #;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,1),ny::Int=size(outar,2),nt::Int=size(outar,3),nv::Int=length(s.variable))
 
+    outar,mask=t
     grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid
     y1,i1,y2,i2,ntime,NpY           = s.sub_times
 
-    grid_x1 = grid_x1 + xoffs
-    grid_x2 = grid_x1 + nx - 1
-    grid_y1 = grid_y1 + yoffs
-    grid_y2 = grid_y1 + ny - 1
+    grid_x1 = grid_x1 + r.start.I[1] - 1
+    nx      = r.stop.I[1] - r.start.I[1] + 1
+    grid_y1 = grid_y1 + r.start.I[2] - 1
+    ny      = r.stop.I[2] - r.start.I[2] +1
+    toffs   = r.start.I[3] - 1
+    nt      = r.stop.I[3]  - r.start.I[3]+1
     if toffs > 0
         i1 = i1 + toffs
         if i1 > NpY
@@ -388,14 +391,16 @@ function _read{T}(s::AbstractSubCube{T},outar,mask;xoffs::Int=0,yoffs::Int=0,tof
 
     #println("Year 1=",y1)
     #println("i1    =",i1)
-    #println("grid_x=",grid_x1:grid_x2)
-    #println("grid_y=",grid_y1:grid_y2)
+    #println("grid_x=",grid_x1:(grid_x1+nx-1))
+    #println("grid_y=",grid_y1:(grid_y1+ny-1))
+    #println("arsize=",size(mask))
+
+    voffs,nv = getNv(r)
 
     fill!(mask,zero(UInt8))
-    getLandSeaMask!(mask,s.cube,grid_x1,grid_x2,grid_y1,grid_y2)
+    getLandSeaMask!(mask,s.cube,grid_x1,nx,grid_y1,ny)
 
     readAllyears(s,outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
-    ncclose()
 end
 
 function readAllyears(s::SubCube,outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
@@ -406,7 +411,6 @@ function readAllyears(s::SubCube,outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs
   while !fin
     fin,ycur,i1cur,itcur = readFromDataYear(s.cube,outar,mask,s.variable,ycur,grid_x1,nx,grid_y1,ny,itcur,i1cur,nt,NpY)
   end
-  ncclose()
 end
 
 function readAllyears(s::SubCubeV,outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
@@ -420,7 +424,6 @@ function readAllyears(s::SubCubeV,outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voff
         while !fin
             fin,ycur,i1cur,itcur = readFromDataYear(s.cube,outar2,mask2,s.variable[iv],ycur,grid_x1,nx,grid_y1,ny,itcur,i1cur,nt,NpY)
         end
-        ncclose()
   end
 end
 
@@ -440,7 +443,7 @@ function readFromDataYear{T}(cube::Cube,outar::AbstractArray{T,3},mask::Abstract
   if isfile(filename)
     v=NetCDF.open(filename,variable);
     scalefac::T = convert(T,get(v.atts,"scale_factor",one(T)))
-    offset::T   = convert(T,get(v.atts,"offset",zero(T)))
+    offset::T   = convert(T,get(v.atts,"add_offset",zero(T)))
     outar[1:nx,1:ny,itcur:(itcur+nt-1)]=v[xr,yr,i1cur:(i1cur+nt-1)]
     missval::T=convert(T,ncgetatt(filename,variable,"_FillValue"))
     @inbounds for k=itcur:(itcur+nt-1),j=1:ny,i=1:nx
@@ -451,6 +454,7 @@ function readFromDataYear{T}(cube::Cube,outar::AbstractArray{T,3},mask::Abstract
         outar[i,j,k]=outar[i,j,k]*scalefac+offset
       end
     end
+    ncclose(filename)
   else
     @inbounds for k=itcur:(itcur+nt-1),j=1:ny,i=1:nx
       mask[i,j,k]=(mask[i,j,k] | OUTOFPERIOD)
