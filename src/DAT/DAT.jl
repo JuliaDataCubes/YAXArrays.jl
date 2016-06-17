@@ -1,5 +1,5 @@
 module DAT
-export registerDATFunction, registerDATFunctionN, joinVars, mapCube, getInAxes, getOutAxes
+export registerDATFunction, mapCube, getInAxes, getOutAxes
 importall ..Cubes
 importall ..CubeAPI
 importall ..CubeAPI.CachedArrays
@@ -87,7 +87,11 @@ function getInAxes(sfu::DATFunction,cdata::Tuple)
   inAxes=Vector{CubeAxis}[]
   for (dat,dim) in zip(cdata,sfu.indims)
     ii=collect(map(a->findAxis(a,axes(dat)),dim))
-    push!(inAxes,axes(dat)[ii])
+    if length(ii) > 0
+      push!(inAxes,axes(dat)[ii])
+    else
+      push!(inAxes,CubeAxis[])
+    end
   end
   inAxes
 end
@@ -120,7 +124,6 @@ function mapCube(fu::Function,cdata::Tuple,addargs...;max_cache=1e7,outfolder=jo
   generateOutCube(dc)
   @debug_print "Generating cube handles"
   getCubeHandles(dc)
-  println(dc.addargs)
   @debug_print "Running main Loop"
   runLoop(dc)
 

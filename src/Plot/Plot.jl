@@ -90,7 +90,7 @@ function getMinMax(x,mask)
   mi=typemax(eltype(x))
   ma=typemin(eltype(x))
   for ix in eachindex(x)
-    if mask[ix]==VALID
+        if mask[ix]==VALID
       if x[ix]<mi mi=x[ix] end
       if x[ix]>ma ma=x[ix] end
     end
@@ -105,7 +105,7 @@ end
 
 function val2col(x,m,colorm,mi,ma,misscol,oceancol)
   N=length(colorm)
-  if m==VALID || m==FILLED && !isnan(x)
+  if !isnan(x) && m==VALID || m==FILLED
     i=min(N,max(1,ceil(Int,(x-mi)/(ma-mi)*N)))
     return colorm[i]
   elseif (m & OCEAN)==OCEAN
@@ -122,7 +122,6 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin::T=zero(T),dmax::T=ze
   p=DAT.getFrontPerm(cube,(axlist[ilon],axlist[ilat]))
   (p[1]==1 && p[2]==2) || (cube=permutedims(cube,p))
   axlist=axes(cube)
-  println(axlist)
   sliders=Any[]
   signals=Reactive.Signal[]
   argvars=Symbol[]
