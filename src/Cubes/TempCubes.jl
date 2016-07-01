@@ -94,7 +94,7 @@ function _read{N}(y::TempCubePerm,thedata::NTuple{2},r::CartesianRange{Cartesian
   data,mask=thedata
   perm=y.perm
   blocksize_trans = CartesianIndex(ntuple(i->y.block_size.I[perm[i]],N))
-  iperm=NetCDF.getiperm(perm)
+  iperm=getiperm(perm)
   unit=CartesianIndex{N}()
   rsmall=CartesianRange(div(r.start-unit,blocksize_trans)+unit,div(r.stop-unit,blocksize_trans)+unit)
   for Ismall in rsmall

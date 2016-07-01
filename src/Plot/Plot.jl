@@ -1,5 +1,5 @@
 module Plot
-export axVal2Index, plotTS, plotMAP
+export plotTS, plotMAP
 importall ..Cubes
 importall ..CubeAPI
 import ..DAT
@@ -9,10 +9,9 @@ using Images, ImageMagick, Colors
 using ..CubeAPI.CachedArrays
 import Patchwork.load_js_runtime
 ga=[]
-axVal2Index(axis::Union{LatAxis,LonAxis},v)=round(Int,axis.values.step)*round(Int,v*axis.values.divisor-axis.values.start)+1
 function plotTS{T}(cube::AbstractCubeData{T})
   axlist=axes(cube)
-  i=findfirst(a->isa(a,TimeAxis),axlist)
+  i=findfirst(a->isa(a,RangeAxis{DateTime}),axlist)
   p=DAT.getFrontPerm(cube,((axlist[i]),))
   p[1]==1 || (cube=permutedims(cube,p))
   axlist=axes(cube)
@@ -35,11 +34,16 @@ function plotTS{T}(cube::AbstractCubeData{T})
       push!(argvars,:lon)
       #display(sliders[end])
     elseif isa(axlist[iax],LatAxis)
-            push!(sliders,slider(reverse(axlist[iax].values),label="Latitude"))
+      push!(sliders,slider(reverse(axlist[iax].values),label="Latitude"))
       push!(signals,signal(sliders[end]))
       push!(sliceargs,:(axVal2Index(axlist[$iax],lat)))
       push!(argvars,:lat)
       #display(sliders[end])
+    elseif isa(axlist[iax],SpatialPointAxis)
+      push!(sliders,slider(1:length(axlist[iax]),label="Point"))
+      push!(signals,signal(sliders[end]))
+      push!(sliceargs,:point)
+      push!(argvars,:point)
     elseif isa(axlist[iax],CategoricalAxis)
       ivarax=iax
       push!(sliceargs,:(error()))

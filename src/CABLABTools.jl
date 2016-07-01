@@ -1,6 +1,14 @@
 module CABLABTools
-export mypermutedims!, totuple, freshworkermodule, passobj, @everywhereelsem, toRange
+export mypermutedims!, totuple, freshworkermodule, passobj, @everywhereelsem, toRange, getiperm
 # SOme global function definitions
+
+function getiperm(perm)
+    iperm = Array(Int,length(perm))
+    for i = 1:length(perm)
+        iperm[perm[i]] = i
+    end
+    return ntuple(i->iperm[i],length(iperm))
+end
 
 using Base.Cartesian
 @generated function mypermutedims!{Q,T,S,N}(dest::AbstractArray{T,N},src::AbstractArray{S,N},perm::Type{Q})

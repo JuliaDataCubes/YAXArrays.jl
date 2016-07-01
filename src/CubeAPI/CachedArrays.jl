@@ -4,6 +4,7 @@ importall ..Cubes.TempCubes
 import ..Cubes.TempCubes.tofilename
 export CachedArray, MaskedCacheBlock
 importall ..CubeAPI
+importall ..CABLABTools
 using Base.Cartesian
 
 abstract CacheBlock{T,N}

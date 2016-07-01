@@ -1,9 +1,9 @@
 module Proc
-export removeMSC, gapFillMSC, recurrences, normalize, spatialMean, timeMean, @no_ocean
+export removeMSC, gapFillMSC, recurrences, normalize, spatialMean, timeMean, @no_ocean, sampleLandPoints, toPointAxis, getMSC
 importall ..DAT, ..CubeAPI, ..Cubes
 macro no_ocean(maskin,maskout)
     esc(quote
-        if ($(maskin)[1] & OCEAN) > 0
+        if ($(maskin)[1] == OCEAN)
             $maskout[:]=OCEAN
             return nothing
         end
@@ -13,7 +13,8 @@ end
 include("MSC.jl")
 include("Outlier.jl")
 include("Stats.jl")
-importall .MSC, .Outlier, .Stats
+include("CubeIO.jl")
+importall .MSC, .Outlier, .Stats, .CubeIO
 
 
 

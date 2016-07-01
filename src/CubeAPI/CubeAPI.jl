@@ -122,7 +122,7 @@ immutable SubCubePerm{T} <: AbstractSubCube{T,3}
   perm::Tuple{Int,Int,Int}
   iperm::Tuple{Int,Int,Int}
 end
-SubCubePerm(p::SubCube,perm::Tuple{Int,Int,Int})=SubCubePerm(p,perm,NetCDF.getiperm(perm))
+SubCubePerm(p::SubCube,perm::Tuple{Int,Int,Int})=SubCubePerm(p,perm,getiperm(perm))
 axes(s::SubCubePerm)=CubeAxis[s.parent.lonAxis,s.parent.latAxis,s.parent.timeAxis][collect(s.perm)]
 
 Base.eltype{T}(s::AbstractCubeData{T})=T
@@ -152,7 +152,7 @@ immutable SubCubeVPerm{T} <: AbstractSubCube{T,4}
     perm::NTuple{4,Int}
     iperm::NTuple{4,Int}
 end
-SubCubeVPerm{T}(p::SubCubeV{T},perm::Tuple{Int,Int,Int,Int})=SubCubeVPerm{T}(p,perm,NetCDF.getiperm(perm))
+SubCubeVPerm{T}(p::SubCubeV{T},perm::Tuple{Int,Int,Int,Int})=SubCubeVPerm{T}(p,perm,getiperm(perm))
 axes(s::SubCubeV)=CubeAxis[s.lonAxis,s.latAxis,s.timeAxis,s.varAxis]
 axes(s::SubCubeVPerm)=CubeAxis[s.parent.lonAxis,s.parent.latAxis,s.parent.timeAxis,s.parent.varAxis][collect(s.perm)]
 Base.ndims(s::SubCubeV)=4

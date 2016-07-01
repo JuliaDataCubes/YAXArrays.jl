@@ -6,10 +6,10 @@ Some info on the project...
 """
 module CABLAB
 export Cube, getCubeData,readCubeData,CubeMem,CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, saveCube, loadCube,
-        RangeAxis, CategoricalAxis#From Cube module
+        RangeAxis, CategoricalAxis, MSCAxis#From Cube module
 export registerDATFunction,registerDATFunctionN, mapCube #From DAT module
 export axVal2Index, plotTS, plotMAP #From Plot module
-export removeMSC, gapFillMSC, recurrences, normalize, timeMean, spatialMean #From Proc module
+export removeMSC, gapFillMSC, recurrences, normalize, timeMean, spatialMean, @no_ocean, sampleLandPoints, toPointAxis, getMSC #From Proc module
 export TempCube, openTempCube # From CachedArrays
 
 global const workdir=UTF8String["./"]

@@ -1,5 +1,5 @@
 module Axes
-export CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis,Axes,YearStepRange,CategoricalAxis,RangeAxis
+export CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis,Axes,YearStepRange,CategoricalAxis,RangeAxis,axVal2Index,MSCAxis
 import NetCDF.NcDim
 importall ..Cubes
 using Base.Dates
@@ -45,6 +45,11 @@ immutable TimeAxis <: RangeAxis{DateTime}
   values::YearStepRange
 end
 
+immutable MSCAxis <: RangeAxis{DateTime}
+  values::YearStepRange
+end
+MSCAxis(n::Int)=MSCAxis(YearStepRange(1900,1,1900,n,ceil(Int,366/n),n))
+
 immutable VariableAxis <: CategoricalAxis{UTF8String}
   values::Vector{UTF8String}
 end
@@ -74,23 +79,26 @@ axname(::LatAxis)="latitude"
 axunits(::LatAxis)="degrees_north"
 axname(::TimeAxis)="time"
 
+axVal2Index(axis::Union{LatAxis,LonAxis},v)=round(Int,axis.values.step)*round(Int,v*axis.values.divisor-axis.values.start-0.5*sign(axis.values.step))+1
+
 getSubRange(x::CubeAxis,i)=x[i],nothing
 getSubRange(x::TimeAxis,i)=sub(x,i),nothing
 
-function NcDim(a::TimeAxis,start::Integer,count::Integer)
+function NcDim(a::RangeAxis{DateTime},start::Integer,count::Integer)
   if start + count - 1 > length(a.values)
     count = oftype(count,length(a.values) - start + 1)
   end
   tv=a.values[start:(start+count-1)]
   starttime=a.values[1]
   startyear=Dates.year(starttime)
-  atts=Dict{Any,Any}("units"=>"days since $startyear")
+  atts=Dict{Any,Any}("units"=>"days since $startyear-01-01")
   d=map(x->(x-starttime).value/86400000,tv)
   NcDim(axname(a),length(d),values=d,atts=atts)
 end
 #Default constructor
 NcDim(a::CubeAxis,start::Integer,count::Integer)=NcDim(axname(a),count,values=collect(a.values[start:(start+count-1)]),atts=Dict{Any,Any}("units"=>axunits(a)))
 NcDim(a::VariableAxis,start::Integer,count::Integer)=NcDim(axname(a),count,values=Float64[start:(start+count-1);],atts=Dict{Any,Any}("units"=>axunits(a)))
-
+NcDim(a::SpatialPointAxis,start::Integer,count::Integer)=NcDim("Spatial Point",count,collect(start:(start+count-1)))
+NcDim(a::CubeAxis)=NcDim(a,1,length(a))
 
 end

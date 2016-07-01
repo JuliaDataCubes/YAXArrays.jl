@@ -4,7 +4,7 @@ Data types that
 """
 module Cubes
 export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, axes,
-       AbstractSubCube, CubeMem, openTempCube, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis
+       AbstractSubCube, CubeMem, openTempCube, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis, axVal2Index, MSCAxis
 
 """
 Supertype of all cubes. All map and plot functions are supposed to work on subtypes of these. This is done by implementing the following functions
@@ -73,7 +73,7 @@ getSubRange{T}(c::CubeMem{T,0};write::Bool=true)=(c.data,c.mask)
 
 function getSubRange{T}(c::CubeAxis{T},i;write::Bool=true)
   r=c.values[i]
-  return (r,zeros(UInt8,length(r)))
+  return (r,nothing)
 end
 
 import ..CABLABTools.toRange
