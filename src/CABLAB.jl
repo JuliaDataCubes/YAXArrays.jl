@@ -5,11 +5,18 @@
 Some info on the project...
 """
 module CABLAB
-export Cube, getCubeData,readCubeData,CubeMem,CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis #From Cube module
-export @registerDATFunction, DATdir,mapCube #From DAT module
-export axVal2Index, plotTS, plotMAP #From Plot module
-export removeMSC, gapFillMSC, recurrences, normalize, timeMean, spatialMean #From Proc module
+export Cube, getCubeData,readCubeData,CubeMem,CubeAxis, TimeAxis, VariableAxis, LonAxis, FitAxis, LatAxis, CountryAxis, SpatialPointAxis, saveCube, loadCube,
+        RangeAxis, CategoricalAxis, MSCAxis, getSingVal, TimeScaleAxis#From Cube module
+export registerDATFunction,registerDATFunctionN, mapCube #From DAT module
+export axVal2Index, plotTS, plotMAP, plotXY #From Plot module
+export removeMSC, gapFillMSC, recurrences, normalize, timeMean, spatialMean, timeVariance, @no_ocean, sampleLandPoints, toPointAxis, getMSC, filterTSFFT #From Proc module
 export TempCube, openTempCube # From CachedArrays
+
+global const workdir=UTF8String["./"]
+haskey(ENV,"CABLAB_WORKDIR") && (workdir[1]=ENV["CABLAB_WORKDIR"])
+CABLABdir(x::AbstractString)=workdir[1]=x
+CABLABdir()=workdir[1]
+export CABLABdir
 
 include("CABLABTools.jl")
 include("Cubes/Cubes.jl")

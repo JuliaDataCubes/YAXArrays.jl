@@ -1,35 +1,48 @@
 module MSC
-export removeMSC, gapFillMSC
+export removeMSC, gapFillMSC, getMSC, getMedSC
+importall ..Cubes
 importall ..DAT
 importall ..CubeAPI
+importall ..Proc
 
-"Function that removes mean seasonal cycle from xin and writes the MSC to xout. The time dimension is specified in itimedim, NpY is the number of years"
-function removeMSC(xout::AbstractArray,maskout::AbstractArray{UInt8},xin::AbstractArray,maskin::AbstractArray{UInt8},NpY::Integer)
+function removeMSC(xout::AbstractArray,maskout::AbstractArray{UInt8},xin::AbstractArray,maskin::AbstractArray{UInt8},NpY::Integer,tmsc,tnmsc)
     #Start loop through all other variables
-    msc=getMSC(xin,xout,maskin,NpY)
-    subtractMSC(msc,xin,xout,NpY)
+    @no_ocean maskin maskout
+    getMSC(tmsc,xin,tnmsc,NpY=NpY)
+    subtractMSC(tmsc,xin,xout,NpY)
     copy!(maskout,maskin)
     xout
 end
 
-function gapFillMSC(xout::AbstractArray,maskout::AbstractArray{UInt8},xin::AbstractArray,maskin::AbstractArray{UInt8},NpY::Integer)
+registerDATFunction(removeMSC,(TimeAxis,),(TimeAxis,),(cube,pargs)->begin
+    NpY=getNpY(cube[1])
+    (NpY,zeros(Float64,NpY),zeros(Int,NpY))
+end)
 
-  msc=getMSC(xin,xout,maskin,NpY)
-  replaceMisswithMSC(msc,xin,xout,maskin,maskout,NpY)
+function gapFillMSC(xout::AbstractArray,maskout::AbstractArray{UInt8},xin::AbstractArray,maskin::AbstractArray{UInt8},NpY::Integer,tmsc,tnmsc)
+
+  @no_ocean maskin maskout
+  getMSC(tmsc,xin,tnmsc,NpY=NpY)
+  replaceMisswithMSC(tmsc,xin,xout,maskin,maskout,NpY)
 
 end
+registerDATFunction(gapFillMSC,(TimeAxis,),(TimeAxis,),(cube,pargs)->begin
+    NpY=getNpY(cube[1])
+    (NpY,zeros(Float64,NpY),zeros(Int,NpY))
+end)
+
 
 
 "Calculate the mean seasonal cycle of xin and write the output to xout."
-function getMSC(xin::AbstractVector,xout::AbstractVector,mask,NpY::Integer;imscstart::Int=1)
+function getMSC(xout::AbstractVector,xin::AbstractVector,nmsc::Vector{Int}=zeros(Int,length(xout));imscstart::Int=1,NpY=length(xout))
     #Reshape the cube to squeeze unimportant variables
-    ntime=length(xin)
-    length(xin)==length(xout) || error("Length of input and output vectors must be the same")
-    msc=sub(xout,length(xout)-NpY+1:length(xout)) # This is the array where the temp msc is stored
-    nmsc=sub(xout,(length(xout)-2*NpY+1):(length(xout)-NpY)) # This is for counting how many values were added
-    fillmsc(imscstart,msc,nmsc,xin,mask,NpY)
-    msc
+    NpY=length(xout)
+    fillmsc(imscstart,xout,nmsc,xin,NpY)
 end
+registerDATFunction(getMSC,(TimeAxis,),((cube,pargs)->MSCAxis(getNpY(cube[1])),),(cube,pargs)->(zeros(Int,getNpY(cube[1])),),inmissing=(:nan,),outmissing=:nan)
+
+
+
 
 "Subtracts given msc from input vector"
 function subtractMSC(msc::AbstractVector,xin2::AbstractVector,xout2,NpY)
@@ -47,7 +60,7 @@ function replaceMisswithMSC(msc::AbstractVector,xin::AbstractArray,xout::Abstrac
   for i in eachindex(xin)
     if (maskin[i] & (MISSING | OUTOFPERIOD))>0 && !isnan(msc[imsc])
       xout[i]=msc[imsc]
-      maskout[i]=maskin[i] | FILLED
+      maskout[i]=FILLED
     else
       xout[i]=xin[i]
       maskout[i]=maskin[i]
@@ -56,14 +69,38 @@ function replaceMisswithMSC(msc::AbstractVector,xin::AbstractArray,xout::Abstrac
   end
 end
 
+"Calculate the median seasonal cycle of xin and write the output to xout."
+function getMedSC(xout::AbstractVector,maskout::AbstractVector{UInt8},xin::AbstractVector,maskin::AbstractVector{UInt8})
+    #Reshape the cube to squeeze unimportant variables
+    NpY=length(xout)
+    yvec=eltype(xout)[]
+    q=[convert(eltype(yvec),0.5)]
+    for doy=1:length(xout)
+        empty!(yvec)
+        for i=doy:NpY:length(xin)
+            maskin[i]==CABLAB.CubeAPI.VALID && push!(yvec,xin[i])
+        end
+        if length(yvec) > 0
+            xout[doy]=quantile!(yvec,q)[1]
+            maskout[doy]=CABLAB.CubeAPI.VALID
+        else
+            xout[doy]=NaN
+            maskout[doy]=CABLAB.CubeAPI.MISSING
+        end
+    end
+    xout
+end
+registerDATFunction(getMedSC,(TimeAxis,),((cube,pargs)->MSCAxis(getNpY(cube[1])),))
+
+
 "Calculates the mean seasonal cycle of a vector"
-function fillmsc{T}(imscstart::Integer,msc::AbstractVector{T},nmsc::AbstractVector{T},xin::AbstractVector{T},mask,NpY)
+function fillmsc{T1}(imscstart::Integer,msc::AbstractVector{T1},nmsc::AbstractVector{Int},xin::AbstractVector,NpY)
     imsc=imscstart
-    fill!(msc,zero(T))
-    fill!(nmsc,zero(T))
-    for itime=eachindex(xin)
-        if mask[itime]==VALID
-            msc[imsc]  += xin[itime]
+    fill!(msc,zero(T1))
+    fill!(nmsc,0)
+    for v in xin
+        if !isnan(v)
+            msc[imsc]  += v
             nmsc[imsc] += 1
         end
         imsc=imsc==NpY ? 1 : imsc+1 # Increase msc time step counter
@@ -71,6 +108,11 @@ function fillmsc{T}(imscstart::Integer,msc::AbstractVector{T},nmsc::AbstractVect
     for i in 1:NpY msc[i] = nmsc[i] > 0 ? msc[i]/nmsc[i] : NaN end # Get MSC by dividing by number of points
 end
 
-@registerDATFunction removeMSC (TimeAxis,) (TimeAxis,) NpY::Int
-@registerDATFunction gapFillMSC (TimeAxis,) (TimeAxis,) NpY::Int
+function getAxis{T<:CubeAxis}(cube::AbstractCubeData,a::Type{T})
+  for ax in axes(cube)
+      isa(ax,a) && return ax
+  end
+  error("Axis $a not found in $(axes(cube))")
+end
+
 end

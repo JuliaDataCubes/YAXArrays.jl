@@ -2,6 +2,7 @@ module Outlier
 export recurrences
 importall ..DAT
 importall ..CubeAPI
+importall ..Cubes
 using Distances
 
 function recurrences(recurrence_num::AbstractVector,D::AbstractArray, rec_threshold::Float64, temp_excl::Int = 5)
@@ -34,6 +35,10 @@ function recurrences(xout::AbstractVector,maskout::AbstractVector,xin::AbstractM
   xout
 end
 
-@registerDATFunction recurrences (VariableAxis,TimeAxis) (TimeAxis,) rec_threshold::Float64 temp_excl::Int distmatspace::AbstractMatrix
-
+registerDATFunction(recurrences,(VariableAxis,TimeAxis),(TimeAxis,),(cube,pargs)->begin
+    ax=axes(cube[1])
+    isTime=[isa(a,TimeAxis) for a in ax]
+    ntime=length(ax[isTime[1]])
+    (pargs[1],pargs[2],zeros(eltype(cube[1]),ntime,ntime))
+  end)
 end

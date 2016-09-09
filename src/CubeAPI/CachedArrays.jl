@@ -4,6 +4,7 @@ importall ..Cubes.TempCubes
 import ..Cubes.TempCubes.tofilename
 export CachedArray, MaskedCacheBlock
 importall ..CubeAPI
+importall ..CABLABTools
 using Base.Cartesian
 
 abstract CacheBlock{T,N}
@@ -13,8 +14,8 @@ type SimpleCacheBlock{T,N} <: CacheBlock{T,N}
     position::CartesianIndex{N}
     iswritten::Bool
 end
-emptyblock{T,N}(b::Type{SimpleCacheBlock{T,N}})=SimpleCacheBlock{T,N}(Array(T,ntuple(i->0,N)),0.0,CartesianIndex{N}()-CartesianIndex{N}())
-zeroblock{T,N}(b::Type{SimpleCacheBlock{T,N}},block_size,position)=SimpleCacheBlock{T,N}(zeros(T,block_size.I),0.0,position)
+emptyblock{T,N}(b::Type{SimpleCacheBlock{T,N}})=SimpleCacheBlock{T,N}(Array(T,ntuple(i->0,N)),0.0,CartesianIndex{N}()-CartesianIndex{N}(),false)
+zeroblock{T,N}(b::Type{SimpleCacheBlock{T,N}},block_size,position)=SimpleCacheBlock{T,N}(zeros(T,block_size.I),0.0,position,false)
 getValues(b::SimpleCacheBlock,I...)=slice(b.data,I...)
 import Base.<
 <(c1::CacheBlock,c2::CacheBlock)=c1.score<c2.score
@@ -177,11 +178,29 @@ function findminscore(c::CachedArray)
     todel,i=findmin(c.currentblocks)
 end
 
+@generated function getSingVal{N}(c::CachedArray,bI::NTuple{N,Integer},iI::NTuple{N,Integer})
+    sEx1=Expr(:ref,:(@nref($N,blocks,d->bI[d]).data),[:(iI[$i]) for i=1:N]...)
+    sEx2=Expr(:ref,:(@nref($N,blocks,d->bI[d]).mask),[:(iI[$i]) for i=1:N]...)
+    quote
+        blocks=c.blocks
+        if @nref($N,blocks,d->bI[d]) == c.emptyblock
+            blockx,i = findmin(c.currentblocks)
+            blockx.iswritten && write_subblock!(blockx,c.x,block_size)
+            blocks[blockx.position]=c.emptyblock
+            blockx.position=CartesianIndex{N}(bI)
+            @nref($N,blocks,d->bI[d])=blockx
+            read_subblock!(blockx,c.x,c.block_size)
+        end
+        ($sEx1,$sEx2)
+    end
+end
 
 
 hi=Expr(:call,:(Base.getindex{T}),:(c::CachedArray{T,N}))
-hiRange=Expr(:call,:(getSubRange{T,S<:MaskedCacheBlock}),Expr(:parameters,Expr(:kw,:write,false)),:(c::CachedArray{T,N,S}))
+hi2=Expr(:call,:(getSingVal{T}),:(c::CachedArray{T,N}))
+hiRange=Expr(:call,:(getSubRange{T,S<:CacheBlock}),Expr(:parameters,Expr(:kw,:write,false)),:(c::CachedArray{T,N,S}))
 hisetRange=Expr(:call,:(setSubRange{T,S<:MaskedCacheBlock}),Expr(:parameters,Expr(:kw,:write,false)),:(c::CachedArray{T,N,S}),:vals,:mask)
+hisetRange=Expr(:call,:(setSubRange{T,S<:SimpleCacheBlock}),Expr(:parameters,Expr(:kw,:write,false)),:(c::CachedArray{T,N,S}),:vals)
 higetVal=Expr(:call,:getValues,:blockx)
 hisetVal=Expr(:call,:setValues,:blockx,:vals,:mask)
 higetSub=Expr(:call,:getSubRange,:c)
@@ -208,24 +227,41 @@ for N=1:5
     d=blockx.data
     return @nref $N d iI
   end
+  funcbody2=quote
+    block_size=c.block_size
+    $(getBlockIndEx(N,"i","iI","bI"))
+    blocks=c.blocks
+    if @nref($N,blocks,bI) == c.emptyblock
+      $(getBlockExchangeEx(N))
+    else
+      blockx=@nref($N,blocks,bI)
+    end
+    blockx.score+=1.0
+    d=blockx.data
+    m=blockx.mask
+    return (@nref($N,d,iI),@nref($N,m,iI))
+  end
   funcbodyRange=funcbodyRangeEx(N,higetVal,higetSub)
   funcbodyRangeSet=funcbodyRangeEx(N,hisetVal,hisetSub)
   #Here is the function body if getindex is called on ranges.
   hi.args[2].args[2].args[3]=N
+  hi2.args[2].args[2].args[3]=N
   hiRange.args[3].args[2].args[3]=N
   hisetRange.args[3].args[2].args[3]=N
   push!(hi.args,:($(symbol(string("i_",N)))::Integer))
+  push!(hi2.args,:($(symbol(string("i_",N)))::Integer))
   push!(hiRange.args,:($(symbol(string("i_",N)))::Union{UnitRange,Integer,Colon}))
   push!(hisetRange.args,:($(symbol(string("i_",N)))::Union{UnitRange,Integer,Colon}))
   ex=Expr(:function,hi,funcbody)
+  ex2=Expr(:function,hi2,funcbody2)
   exRange=Expr(:function,hiRange,funcbodyRange)
   exsetRange=Expr(:function,hisetRange,funcbodyRangeSet)
   eval(ex)
+  eval(ex2)
   eval(exRange)
   eval(exsetRange)
 end
 
-#TODO generate all these read_subblocks programmatically
 
 using NetCDF
 
@@ -252,45 +288,15 @@ import CABLAB.CubeAPI._read
 import CABLAB.CubeAPI.SubCubeV, CABLAB.CubeAPI.SubCubeVPerm
 
 toSymbol(d::DataType)=symbol(split(replace(string(d),r"\{\S*\}",""),".")[end])
-getVarTuple(::Union{Type{SubCubeV},Type{SubCubeVPerm}})=:(sx,sy,sz,nvar)
-getVarTuple(::Union{Type{SubCube},Type{SubCubePerm}})=:(sx,sy,sz)
-getmainargs(::Type{MaskedCacheBlock})=Any[:y,:(x.data),:(x.mask)]
-getmainargs(::Type{SimpleCacheBlock})=Any[:y,:(x.data)]
-defiperm(::Union{Type{SubCubePerm},Type{SubCubeVPerm}})=:(iperm=y.iperm)
-defiperm(::Union{Type{SubCube},Type{SubCubeV}})=nothing
-getParent(::Union{Type{SubCubePerm},Type{SubCubeVPerm}})=:(y.parent)
-getParent(::Union{Type{SubCube},Type{SubCubeV}})=:y
 
-ifperm(::Union{Type{SubCube},Type{SubCubeV}},i)=i
-ifperm(::Union{Type{SubCubePerm},Type{SubCubeVPerm}},i)=:(iperm[$i])
-getkeyargs(x)=Any[Expr(:kw,:xoffs,:(istart[$(ifperm(x,1))])),
-    Expr(:kw,:yoffs,:(istart[$(ifperm(x,2))])),
-    Expr(:kw,:toffs,:(istart[$(ifperm(x,3))])),
-    Expr(:kw,:nx,   :(min(sx,block_size[$(ifperm(x,1))]))),
-    Expr(:kw,:ny,   :(min(sy,block_size[$(ifperm(x,2))]))),
-    Expr(:kw,:nt,   :(min(sz,block_size[$(ifperm(x,3))])))]
-function addvarkeysargs(x::Union{Type{SubCubeV},Type{SubCubeVPerm}},k)
-    push!(k,Expr(:kw,:voffs,:(istart[$(ifperm(x,4))])))
-    push!(k,Expr(:kw,:nv   ,:(min(nvar,block_size[$(ifperm(x,4))]))))
+function read_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::AbstractCubeData{T},block_size::CartesianIndex{N})
+    r = CartesianRange((x.position-CartesianIndex{N}()).*block_size+CartesianIndex{N}(),(x.position).*block_size)
+    _read(y,(x.data,x.mask),r)
 end
-addvarkeysargs(::Union{Type{SubCube},Type{SubCubePerm}},k)=nothing
-for blocktype in (MaskedCacheBlock, SimpleCacheBlock)
-    for cubetype in (SubCube,SubCubeV,SubCubePerm,SubCubeVPerm)
-        sb=toSymbol(blocktype)
-        sc=toSymbol(cubetype)
-        a=getmainargs(blocktype)
-        k=getkeyargs(cubetype)
-        addvarkeysargs(cubetype,k)
-        a=[a;k]
-        eval (quote
-            function read_subblock!{T,N}(x::$sb{T,N},y::$sc{T},block_size::CartesianIndex{N})
-                $(defiperm(cubetype))
-                istart = (x.position-CartesianIndex{N}()).*block_size
-                $(getVarTuple(cubetype))=size($(getParent(cubetype)))
-                _read($(a...))
-            end
-        end)
-    end
+
+function read_subblock!{T,N}(x::SimpleCacheBlock{T,N},y::AbstractCubeData{T},block_size::CartesianIndex{N})
+    r = CartesianRange((x.position-CartesianIndex{N}()).*block_size+CartesianIndex{N}(),(x.position).*block_size)
+    _read(y,x.data,r)
 end
 
 write_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::Any,block_size::CartesianIndex{N},i::CartesianIndex{N})=error("$(typeof(y)) is not writeable. Please add a write_subblock method.")
@@ -300,7 +306,7 @@ function write_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::TempCube{T,N},block_si
     #println("Writing to file $filename")
     ncwrite(x.data,filename,"cube")
     ncwrite(x.mask,filename,"mask")
-    ncclose()
+    ncclose(filename)
     x.iswritten=false
 end
 function read_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::TempCube{T,N},block_size::CartesianIndex{N})
@@ -309,16 +315,11 @@ function read_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::TempCube{T,N},block_siz
         #println("Reading from file $filename")
         ncread!(filename,"cube",x.data)
         ncread!(filename,"mask",x.mask)
-        ncclose()
+        ncclose(filename)
     else
         r = CartesianRange((x.position-CartesianIndex{N}()).*block_size+CartesianIndex{N}(),(x.position).*block_size)
-        TempCubes.readTempCube(y,x.data,x.mask,r)
+        _read(y,(x.data,x.mask),r)
     end
-end
-
-function read_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::TempCubePerm{T,N},block_size::CartesianIndex{N})
-    r = CartesianRange((x.position-CartesianIndex{N}()).*block_size+CartesianIndex{N}(),(x.position).*block_size)
-    TempCubes.readTempCube(y,x.data,x.mask,r)
 end
 
 function sync(c::CachedArray)
