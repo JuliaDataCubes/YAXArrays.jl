@@ -1,5 +1,6 @@
 module Axes
-export CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis,Axes,YearStepRange,CategoricalAxis,RangeAxis,axVal2Index,MSCAxis
+export CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis,
+FitAxis, SpatialPointAxis,Axes,YearStepRange,CategoricalAxis,RangeAxis,axVal2Index,MSCAxis, TimeScaleAxis
 import NetCDF.NcDim
 importall ..Cubes
 using Base.Dates
@@ -66,23 +67,38 @@ end
 immutable CountryAxis<: CategoricalAxis{UTF8String}
   values::Vector{UTF8String}
 end
+immutable FitAxis <: CategoricalAxis{UTF8String}
+    values::Vector{UTF8String}
+end
+FitAxis()=FitAxis(["Intercept","Slope"])
 Base.length(a::CubeAxis)=length(a.values)
+
+immutable TimeScaleAxis <: CategoricalAxis{ASCIIString}
+    values::Vector{ASCIIString}
+end
+TimeScaleAxis()=TimeScaleAxis(["Trend","LF-Variability","Seasonal Cycle","Fast Oscillations"])
 
 axes(x::CubeAxis)=CubeAxis[x]
 Base.ndims(::CubeAxis)=1
 
-axname(a::CubeAxis)=split(string(typeof(a)),'.')[end]
+axname(a::CubeAxis)=split(split(string(typeof(a)),'.')[end],'{')[1]
 axunits(::CubeAxis)="unknown"
 axname(::LonAxis)="longitude"
 axunits(::LonAxis)="degrees_east"
 axname(::LatAxis)="latitude"
 axunits(::LatAxis)="degrees_north"
 axname(::TimeAxis)="time"
+axname(::TimeScaleAxis)="time scale"
+axname(::SpatialPointAxis)="location"
 
-axVal2Index(axis::Union{LatAxis,LonAxis},v)=round(Int,axis.values.step)*round(Int,v*axis.values.divisor-axis.values.start-0.5*sign(axis.values.step))+1
+axVal2Index(axis::Union{LatAxis,LonAxis},v)=round(Int,axis.values.step)*round(Int,v*axis.values.divisor-axis.values.start-sign(axis.values.step))+2
+axVal2Index(x,v)=v
 
 getSubRange(x::CubeAxis,i)=x[i],nothing
 getSubRange(x::TimeAxis,i)=sub(x,i),nothing
+
+import Base.==
+==(a::CubeAxis,b::CubeAxis)=a.values==b.values
 
 function NcDim(a::RangeAxis{DateTime},start::Integer,count::Integer)
   if start + count - 1 > length(a.values)
@@ -98,6 +114,7 @@ end
 #Default constructor
 NcDim(a::CubeAxis,start::Integer,count::Integer)=NcDim(axname(a),count,values=collect(a.values[start:(start+count-1)]),atts=Dict{Any,Any}("units"=>axunits(a)))
 NcDim(a::VariableAxis,start::Integer,count::Integer)=NcDim(axname(a),count,values=Float64[start:(start+count-1);],atts=Dict{Any,Any}("units"=>axunits(a)))
+NcDim(a::CategoricalAxis,start::Integer,count::Integer)=NcDim(axname(a),count,values=Float64[start:(start+count-1);],atts=Dict{Any,Any}("units"=>axunits(a)))
 NcDim(a::SpatialPointAxis,start::Integer,count::Integer)=NcDim("Spatial Point",count,collect(start:(start+count-1)))
 NcDim(a::CubeAxis)=NcDim(a,1,length(a))
 

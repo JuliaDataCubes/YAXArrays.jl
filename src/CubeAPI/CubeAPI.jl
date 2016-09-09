@@ -257,6 +257,7 @@ function getLandSeaMask!(mask::Array{UInt8,3},cube::Cube,grid_x1,nx,grid_y1,ny)
       for itime=2:nT,ilat=1:size(mask,2),ilon=1:size(mask,1)
           mask[ilon,ilat,itime]=mask[ilon,ilat,1]
       end
+      scale!(mask,UInt8(5))
   end
   ncclose(filename)
 end
@@ -269,6 +270,7 @@ function getLandSeaMask!(mask::Array{UInt8,4},cube::Cube,grid_x1,nx,grid_y1,ny)
       for ivar=1:size(mask,4),itime=2:nT,ilat=1:size(mask,2),ilon=1:size(mask,1)
           mask[ilon,ilat,itime,ivar]=mask[ilon,ilat,1,1]
       end
+      scale!(mask,UInt8(5))
   end
   ncclose(filename
   )

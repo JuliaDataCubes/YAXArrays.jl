@@ -178,9 +178,26 @@ function findminscore(c::CachedArray)
     todel,i=findmin(c.currentblocks)
 end
 
+@generated function getSingVal{N}(c::CachedArray,bI::NTuple{N,Integer},iI::NTuple{N,Integer})
+    sEx1=Expr(:ref,:(@nref($N,blocks,d->bI[d]).data),[:(iI[$i]) for i=1:N]...)
+    sEx2=Expr(:ref,:(@nref($N,blocks,d->bI[d]).mask),[:(iI[$i]) for i=1:N]...)
+    quote
+        blocks=c.blocks
+        if @nref($N,blocks,d->bI[d]) == c.emptyblock
+            blockx,i = findmin(c.currentblocks)
+            blockx.iswritten && write_subblock!(blockx,c.x,block_size)
+            blocks[blockx.position]=c.emptyblock
+            blockx.position=CartesianIndex{N}(bI)
+            @nref($N,blocks,d->bI[d])=blockx
+            read_subblock!(blockx,c.x,c.block_size)
+        end
+        ($sEx1,$sEx2)
+    end
+end
 
 
 hi=Expr(:call,:(Base.getindex{T}),:(c::CachedArray{T,N}))
+hi2=Expr(:call,:(getSingVal{T}),:(c::CachedArray{T,N}))
 hiRange=Expr(:call,:(getSubRange{T,S<:CacheBlock}),Expr(:parameters,Expr(:kw,:write,false)),:(c::CachedArray{T,N,S}))
 hisetRange=Expr(:call,:(setSubRange{T,S<:MaskedCacheBlock}),Expr(:parameters,Expr(:kw,:write,false)),:(c::CachedArray{T,N,S}),:vals,:mask)
 hisetRange=Expr(:call,:(setSubRange{T,S<:SimpleCacheBlock}),Expr(:parameters,Expr(:kw,:write,false)),:(c::CachedArray{T,N,S}),:vals)
@@ -210,19 +227,37 @@ for N=1:5
     d=blockx.data
     return @nref $N d iI
   end
+  funcbody2=quote
+    block_size=c.block_size
+    $(getBlockIndEx(N,"i","iI","bI"))
+    blocks=c.blocks
+    if @nref($N,blocks,bI) == c.emptyblock
+      $(getBlockExchangeEx(N))
+    else
+      blockx=@nref($N,blocks,bI)
+    end
+    blockx.score+=1.0
+    d=blockx.data
+    m=blockx.mask
+    return (@nref($N,d,iI),@nref($N,m,iI))
+  end
   funcbodyRange=funcbodyRangeEx(N,higetVal,higetSub)
   funcbodyRangeSet=funcbodyRangeEx(N,hisetVal,hisetSub)
   #Here is the function body if getindex is called on ranges.
   hi.args[2].args[2].args[3]=N
+  hi2.args[2].args[2].args[3]=N
   hiRange.args[3].args[2].args[3]=N
   hisetRange.args[3].args[2].args[3]=N
   push!(hi.args,:($(symbol(string("i_",N)))::Integer))
+  push!(hi2.args,:($(symbol(string("i_",N)))::Integer))
   push!(hiRange.args,:($(symbol(string("i_",N)))::Union{UnitRange,Integer,Colon}))
   push!(hisetRange.args,:($(symbol(string("i_",N)))::Union{UnitRange,Integer,Colon}))
   ex=Expr(:function,hi,funcbody)
+  ex2=Expr(:function,hi2,funcbody2)
   exRange=Expr(:function,hiRange,funcbodyRange)
   exsetRange=Expr(:function,hisetRange,funcbodyRangeSet)
   eval(ex)
+  eval(ex2)
   eval(exRange)
   eval(exsetRange)
 end

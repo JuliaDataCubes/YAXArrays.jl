@@ -4,7 +4,8 @@ Data types that
 """
 module Cubes
 export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, axes,
-       AbstractSubCube, CubeMem, openTempCube, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis, axVal2Index, MSCAxis
+       AbstractSubCube, CubeMem, openTempCube, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis, axVal2Index, MSCAxis,
+       getSingVal, FitAxis, TimeScaleAxis
 
 """
 Supertype of all cubes. All map and plot functions are supposed to work on subtypes of these. This is done by implementing the following functions
@@ -15,6 +16,12 @@ abstract AbstractCubeData{T,N}
 getSubRange reads some Cube data and writes it to a pre-allocated memory.
 """
 getSubRange(c::AbstractCubeData,a...)=error("getSubrange called in the wrong way with argument types $(typeof(c)), $(map(typeof,a))")
+
+"""
+getSingVal reads a single point from the cube's data
+"""
+getSingVal(c::AbstractCubeData,a...)=error("getSingVal called in the wrong way with argument types $(typeof(c)), $(map(typeof,a))")
+
 
 """
 This function reads a Cube's data and returns it to memory
@@ -68,6 +75,11 @@ function getSubRange{T,N}(c::CubeMem{T,N},i...;write::Bool=true)
   length(i)==N || error("Wring number of slice arguments to getSubRange")
   return (slice(c.data,i...),slice(c.mask,i...))
 end
+
+getSingVal{T,N}(c::CubeMem{T,N},i...;write::Bool=true)=(c.data[i...],c.mask[i...])
+getSingVal{T,N}(c::CubeMem{T,0};write::Bool=true)=(c.data[1],c.mask[1])
+getSingVal{T}(c::CubeAxis{T},i;write::Bool=true)=(c.values[i],nothing)
+
 
 getSubRange{T}(c::CubeMem{T,0};write::Bool=true)=(c.data,c.mask)
 

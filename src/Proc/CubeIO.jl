@@ -23,6 +23,7 @@ import StatsBase.WeightVec
 import StatsBase.sample
 function readLandSea(c::Cube)
     m=ncread(joinpath(c.base_dir,"mask","mask.nc"),"mask")
+    scale!(m,OCEAN)
     a1=LonAxis((c.config.grid_x0:(c.config.grid_width-1))*c.config.spatial_res+c.config.spatial_res/2-180.0)
     a2=LatAxis(90.0-(c.config.grid_y0:(c.config.grid_height-1))*c.config.spatial_res-c.config.spatial_res/2)
     ncclose(joinpath(c.base_dir,"mask","mask.nc"))
@@ -64,7 +65,7 @@ function sampleLandPoints(cdata::CubeAPI.AbstractSubCube,nsample::Integer)
     axlist=axes(cdata)
     w=WeightVec(map(i->cosd(i[2]),sax.values))
     sax2=SpatialPointAxis(sample(sax.values,w,nsample,replace=false))
-    y=mapCube(toPointAxis,(cdata,axlist[1],axlist[2],sax2),max_cache=1e7);
+    y=mapCube(toPointAxis,(cdata,axlist[1],axlist[2],sax2),max_cache=1e8);
 end
 export sampleLandPoints
 end
