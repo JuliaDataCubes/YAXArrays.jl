@@ -11,11 +11,9 @@ import Interact: slider, dropdown, signal, togglebutton, togglebuttons
 import Vega: lineplot, barplot, groupedbar
 import Images: Image
 import Colors: RGB, @colorant_str, colormap, U8
-import ImageMagick
 import DataStructures: OrderedDict
 import Base.Cartesian: @ntuple,@nexprs
 import Patchwork.load_js_runtime
-load_js_runtime()
 
 import Patchwork.load_js_runtime
 ga=[]
