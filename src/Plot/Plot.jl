@@ -3,6 +3,7 @@ export plotTS, plotMAP, plotXY
 importall ..Cubes
 importall ..CubeAPI
 importall ..CubeAPI.CachedArrays
+import ..DAT
 import ..DAT: findAxis,getFrontPerm
 import ..Cubes.Axes.axname
 import Reactive: Signal
@@ -13,6 +14,8 @@ import Colors: RGB, @colorant_str, colormap, U8
 import ImageMagick
 import DataStructures: OrderedDict
 import Base.Cartesian: @ntuple,@nexprs
+import Patchwork.load_js_runtime
+load_js_runtime()
 
 import Patchwork.load_js_runtime
 ga=[]
