@@ -5,7 +5,7 @@ Data types that
 module Cubes
 export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, axes,
        AbstractSubCube, CubeMem, openTempCube, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis, axVal2Index, MSCAxis,
-       getSingVal, FitAxis, TimeScaleAxis
+       getSingVal, FitAxis, TimeScaleAxis, QuantileAxis
 
 """
 Supertype of all cubes. All map and plot functions are supposed to work on subtypes of these. This is done by implementing the following functions
@@ -77,7 +77,7 @@ function getSubRange{T,N}(c::CubeMem{T,N},i...;write::Bool=true)
 end
 
 getSingVal{T,N}(c::CubeMem{T,N},i...;write::Bool=true)=(c.data[i...],c.mask[i...])
-getSingVal{T,N}(c::CubeMem{T,0};write::Bool=true)=(c.data[1],c.mask[1])
+getSingVal{T}(c::CubeMem{T,0};write::Bool=true)=(c.data[1],c.mask[1])
 getSingVal{T}(c::CubeAxis{T},i;write::Bool=true)=(c.values[i],nothing)
 
 

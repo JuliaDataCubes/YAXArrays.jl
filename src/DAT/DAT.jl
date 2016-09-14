@@ -1,5 +1,5 @@
 module DAT
-export registerDATFunction, mapCube, getInAxes, getOutAxes
+export registerDATFunction, mapCube, getInAxes, getOutAxes, findAxis
 importall ..Cubes
 importall ..CubeAPI
 importall ..CubeAPI.CachedArrays
@@ -8,8 +8,8 @@ importall ..Cubes.TempCubes
 import ...CABLAB
 import ...CABLAB.workdir
 using Base.Dates
-import DataArrays.DataArray
-import DataArrays.isna
+#import DataArrays.DataArray
+#import DataArrays.isna
 global const debugDAT=false
 macro debug_print(e)
   debugDAT && return(:(println($e)))
@@ -147,7 +147,8 @@ end
 function enterDebug(fu::Function,cdata::Tuple,addargs...;max_cache=1e7,outfolder=joinpath(workdir[1],string(tempname()[2:end],fu)),
   sfu=split(string(fu),".")[end],fuObj=get(regDict,sfu,sfu),outtype=getOuttype(fuObj,cdata),inAxes=getInAxes(fuObj,cdata),outAxes=getOutAxes(fuObj,cdata,addargs),
   inmissing=isa(fuObj,DATFunction) ? fuObj.inmissing : ntuple(i->:mask,length(cdata)),outmissing=isa(fuObj,DATFunction) ? fuObj.outmissing : :mask, no_ocean=isa(fuObj,DATFunction) ? fuObj.no_ocean : 0)
-    return DATConfig(cdata,inAxes,outAxes,outtype,max_cache,outfolder,sfu,inmissing,outmissing,no_ocean,addargs)
+    isdir(outfolder) || mkpath(outfolder)
+    return DATConfig(cdata,inAxes,outAxes,outtype,max_cache,outfolder,sfu,inmissing,outmissing,no_ocean,addargs),fuObj
 end
 
 function analyseaddargs(sfu::DATFunction,dc)
@@ -267,7 +268,7 @@ function getCacheSizes(dc::DATConfig)
 
   if all(dc.isMem)
     dc.inCacheSizes=[Int[] for i=1:dc.NIN]
-    dc.loopCacheSize=Int[]
+    dc.loopCacheSize=Int[length(x) for x in dc.LoopAxes]
     return dc
   end
   inAxlengths      = [Int[length(dc.inAxes[i][j]) for j=1:length(dc.inAxes[i])] for i=1:length(dc.inAxes)]
@@ -381,9 +382,9 @@ using Base.Cartesian
     callargs=Any[:(Main.$(fT)),:aout,:mout]
   elseif outmissing==:nan
     callargs=Any[:(Main.$(fT)),:aout]
-  elseif outmissing==:dataarray
-    callargs=Any[:(Main.$(fT)),:aout]
-    push!(loopBody.args,:(aout=toDataArray(aout,mout)))
+#  elseif outmissing==:dataarray
+#    callargs=Any[:(Main.$(fT)),:aout]
+#    push!(loopBody.args,:(aout=toDataArray(aout,mout)))
   end
   for (i,s) in enumerate(subIn)
     ains=symbol("ain_$i");mins=symbol("min_$i")
@@ -393,8 +394,8 @@ using Base.Cartesian
       push!(callargs,mins)
     elseif inmissing[i]==:nan
       push!(loopBody.args,:(fillNaNs($(ains),$(mins))))
-    elseif inmissing[i]==:dataarray
-      push!(loopBody.args,:($(ains)=toDataArray($(ains),$(mins))))
+#    elseif inmissing[i]==:dataarray
+#      push!(loopBody.args,:($(ains)=toDataArray($(ains),$(mins))))
     end
   end
   if OC>0
@@ -410,8 +411,8 @@ using Base.Cartesian
   push!(loopBody.args,Expr(:call,callargs...))
   if outmissing==:nan
     push!(loopBody.args, :(fillNanMask(aout,mout)))
-  elseif outmissing==:dataarray
-    push!(loopBody.args,:(fillDataArrayMask(aout,mout)))
+#  elseif outmissing==:dataarray
+#    push!(loopBody.args,:(fillDataArrayMask(aout,mout)))
   end
   loopEx = length(loopRangesE.args)==0 ? loopBody : Expr(:for,loopRangesE,loopBody)
   @debug_print loopEx
@@ -432,9 +433,9 @@ function fillNanMask(x,m)
     m[i]=isnan(x[i]) ? 0x01 : 0x00
   end
 end
-"Converts data and Mask to a DataArray"
-toDataArray(x,m)=DataArray(pointer_to_array(pointer(x),size(x)),reinterpret(Bool,copy(m)))
-fillDataArrayMask(x,m)=for i in eachindex(x) m[i]=isna(x[i]) ? 0x01 : 0x00 end
+#"Converts data and Mask to a DataArray"
+#toDataArray(x,m)=DataArray(pointer_to_array(pointer(x),size(x)),reinterpret(Bool,copy(m)))
+#fillDataArrayMask(x,m)=for i in eachindex(x) m[i]=isna(x[i]) ? 0x01 : 0x00 end
 
 function registerDATFunction(f, ::Tuple{}, dimsout::Tuple, addargs;inmissing=(:mask,),outmissing=:mask,no_ocean=0)
   fname=utf8(split(string(f),".")[end])
@@ -490,16 +491,5 @@ function getFrontPerm{T}(dc::AbstractCubeData{T},dims)
   perm=Int[iold;perm]
   return ntuple(i->perm[i],N)
 end
-
-function getSubRange2(x...;kwargs...)
-  a,m=getSubRange(x...;kwargs...)
-  return toAr(a),toAr(m)
-end
-function toAr(a::SubArray)
-  Base.iscontiguous(a) || error("Array is not cont")
-  pointer_to_array(pointer(a),size(a))
-end
-toAr(a)=a
-toAr{T}(a::SubArray{T,0})=pointer_to_array(pointer(a),size(a))
 
 end

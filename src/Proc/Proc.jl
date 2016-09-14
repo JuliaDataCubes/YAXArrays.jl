@@ -1,5 +1,5 @@
 module Proc
-export removeMSC, gapFillMSC, recurrences, normalize, spatialMean, timeMean, timeVariance, @no_ocean, sampleLandPoints, toPointAxis, getMSC, filterTSFFT, getNpY
+export removeMSC, gapFillMSC, recurrences, normalize, spatialMean, timeMean, timeVariance, @no_ocean, sampleLandPoints, toPointAxis, getMSC, filterTSFFT, getNpY,timespacequantiles,timelonlatquantiles
 importall ..DAT, ..CubeAPI, ..Cubes
 macro no_ocean(maskin,maskout)
     esc(quote

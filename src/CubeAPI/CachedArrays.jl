@@ -2,7 +2,7 @@ module CachedArrays
 importall ..Cubes
 importall ..Cubes.TempCubes
 import ..Cubes.TempCubes.tofilename
-export CachedArray, MaskedCacheBlock
+export CachedArray, MaskedCacheBlock, getSubRange, getSubRange2
 importall ..CubeAPI
 importall ..CABLABTools
 using Base.Cartesian
@@ -173,6 +173,19 @@ function funcbodyRangeEx(N,higetVal,higetSub)
       end
     end
 end
+
+
+function getSubRange2(x...;kwargs...)
+  a,m=getSubRange(x...;kwargs...)
+  return toAr(a),toAr(m)
+end
+function toAr(a::SubArray)
+  Base.iscontiguous(a) || error("Array is not cont")
+  pointer_to_array(pointer(a),size(a))
+end
+toAr(a)=a
+toAr{T}(a::SubArray{T,0})=pointer_to_array(pointer(a),size(a))
+
 
 function findminscore(c::CachedArray)
     todel,i=findmin(c.currentblocks)

@@ -13,9 +13,9 @@ import Images: Image
 import Colors: RGB, @colorant_str, colormap, U8
 import DataStructures: OrderedDict
 import Base.Cartesian: @ntuple,@nexprs
-import Patchwork.load_js_runtime
+#import Patchwork.load_js_runtime
 
-import Patchwork.load_js_runtime
+#import Patchwork.load_js_runtime
 ga=[]
 function plotTS{T}(cube::AbstractCubeData{T})
   axlist=axes(cube)
@@ -115,6 +115,7 @@ end
 getWidget(x::CategoricalAxis)=dropdown(Dict(zip(x.values,1:length(x.values))),label=axname(x))
 getWidget{T<:Real}(x::RangeAxis{T})=step(x.values) > 0 ? slider(x.values,label=axname(x)) : slider(reverse(x.values),label=axname(x))
 getWidget(x::RangeAxis)=slider(1:length(x),label=axname(x))
+getWidget(x::SpatialPointAxis)=slider(1:length(x),label="Spatial Point")
 
 
 
@@ -167,7 +168,7 @@ function plotXY{T}(cube::AbstractCubeData{T};group=0,xaxis=-1,kwargs...)
       push!(signals,xax)
     end
     if igroup==0
-      groupmenu=dropdown(OrderedDict(zip(["None";axlabels[availableIndices]],[0;availableIndices])),label="X Axis",value=0,value_label="None")
+      groupmenu=dropdown(OrderedDict(zip(["None";axlabels[availableIndices]],[0;availableIndices])),label="Group",value=0,value_label="None")
       groupsig=signal(groupmenu)
       push!(widgets,groupmenu)
       push!(argvars,:igroup)
@@ -217,13 +218,6 @@ function plotXY{T}(cube::AbstractCubeData{T};group=0,xaxis=-1,kwargs...)
   for w in widgets display(w) end
   display(myfun(cube))
 end
-
-
-
-function getMemHandle{T}(cube::AbstractCubeData{T},nblock,block_size)
-  CachedArray(cube,nblock,block_size,CachedArrays.MaskedCacheBlock{T,length(block_size)})
-end
-getMemHandle(cube::AbstractCubeMem,nblock,block_size)=cube
 
 function getMinMax(x,mask)
   mi=typemax(eltype(x))

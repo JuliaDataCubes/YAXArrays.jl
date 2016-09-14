@@ -1,6 +1,6 @@
 module Axes
 export CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis,
-FitAxis, SpatialPointAxis,Axes,YearStepRange,CategoricalAxis,RangeAxis,axVal2Index,MSCAxis, TimeScaleAxis
+FitAxis, SpatialPointAxis,Axes,YearStepRange,CategoricalAxis,RangeAxis,axVal2Index,MSCAxis, TimeScaleAxis, QuantileAxis
 import NetCDF.NcDim
 importall ..Cubes
 using Base.Dates
@@ -70,6 +70,15 @@ end
 immutable FitAxis <: CategoricalAxis{UTF8String}
     values::Vector{UTF8String}
 end
+
+immutable QuantileAxis{T} <: CategoricalAxis{T}
+    values::Vector{T}
+end
+
+immutable CountAxis{T} <: CategoricalAxis{T}
+    values::Vector{T}
+end
+
 FitAxis()=FitAxis(["Intercept","Slope"])
 Base.length(a::CubeAxis)=length(a.values)
 
@@ -115,7 +124,7 @@ end
 NcDim(a::CubeAxis,start::Integer,count::Integer)=NcDim(axname(a),count,values=collect(a.values[start:(start+count-1)]),atts=Dict{Any,Any}("units"=>axunits(a)))
 NcDim(a::VariableAxis,start::Integer,count::Integer)=NcDim(axname(a),count,values=Float64[start:(start+count-1);],atts=Dict{Any,Any}("units"=>axunits(a)))
 NcDim(a::CategoricalAxis,start::Integer,count::Integer)=NcDim(axname(a),count,values=Float64[start:(start+count-1);],atts=Dict{Any,Any}("units"=>axunits(a)))
-NcDim(a::SpatialPointAxis,start::Integer,count::Integer)=NcDim("Spatial Point",count,collect(start:(start+count-1)))
+NcDim(a::SpatialPointAxis,start::Integer,count::Integer)=NcDim("Spatial Point",count,values=collect(start:(start+count-1)))
 NcDim(a::CubeAxis)=NcDim(a,1,length(a))
 
 end

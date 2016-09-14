@@ -2,7 +2,7 @@ module CubeAPI
 importall ..Cubes
 importall ..Cubes.Axes
 importall ..CABLABTools
-export Cube, getCubeData,getTimeRanges,readCubeData
+export Cube, getCubeData,getTimeRanges,readCubeData, getMemHandle
 export VALID, OCEAN, OUTOFPERIOD, MISSING, FILLED, isvalid, isinvalid, isvalid, isvalidorfilled
 
 include("Mask.jl")
@@ -473,6 +473,10 @@ end
 include("CachedArrays.jl")
 importall .CachedArrays
 
+function getMemHandle{T}(cube::AbstractCubeData{T},nblock,block_size)
+  CachedArray(cube,nblock,block_size,CachedArrays.MaskedCacheBlock{T,length(block_size)})
+end
+getMemHandle(cube::AbstractCubeMem,nblock,block_size)=cube
 
 
 end
