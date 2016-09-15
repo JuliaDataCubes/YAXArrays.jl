@@ -5,7 +5,7 @@ Data types that
 module Cubes
 export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, axes,
        AbstractSubCube, CubeMem, openTempCube, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis, axVal2Index, MSCAxis,
-       getSingVal, FitAxis, TimeScaleAxis, QuantileAxis
+       getSingVal, FitAxis, TimeScaleAxis, QuantileAxis, MethodAxis
 
 """
 Supertype of all cubes. All map and plot functions are supposed to work on subtypes of these. This is done by implementing the following functions
@@ -116,6 +116,27 @@ end
 
 include("TempCubes.jl")
 importall .TempCubes
+getCubeDes(c::AbstractSubCube)="Data Cube view"
+getCubeDes(c::TempCube)="Temporary Data Cube"
+getCubeDes(c::CubeMem)="In-Memory data cube"
+function Base.show(io::IO,c::AbstractCubeData)
+    println(io,getCubeDes(c), " with the following dimensions")
+    for a in axes(c)
+        println(io,a)
+    end
+end
+
+
+Base.show(io::IO,a::RangeAxis)=print(io,rpad(Axes.axname(a),20," "),"Axis with ",length(a)," Elements from ",first(a.values)," to ",last(a.values))
+function Base.show(io::IO,a::CategoricalAxis)
+    print(io,rpad(Axes.axname(a),20," "), "Axis with elements: ")
+    for v in a.values
+        print(io,v," ")
+    end
+end
+Base.show(io::IO,a::SpatialPointAxis)=print(io,"Spatial points axis with ",length(a.values)," points")
+
+
 
 
 end

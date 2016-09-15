@@ -1,6 +1,6 @@
 module Axes
 export CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis,
-FitAxis, SpatialPointAxis,Axes,YearStepRange,CategoricalAxis,RangeAxis,axVal2Index,MSCAxis, TimeScaleAxis, QuantileAxis
+FitAxis, SpatialPointAxis,Axes,YearStepRange,CategoricalAxis,RangeAxis,axVal2Index,MSCAxis, TimeScaleAxis, QuantileAxis, MethodAxis
 import NetCDF.NcDim
 importall ..Cubes
 using Base.Dates
@@ -69,6 +69,10 @@ immutable CountryAxis<: CategoricalAxis{UTF8String}
 end
 immutable FitAxis <: CategoricalAxis{UTF8String}
     values::Vector{UTF8String}
+end
+
+immutable MethodAxis <: CategoricalAxis{ASCIIString}
+    values::Vector{ASCIIString}
 end
 
 immutable QuantileAxis{T} <: CategoricalAxis{T}

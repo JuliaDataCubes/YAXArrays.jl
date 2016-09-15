@@ -189,7 +189,6 @@ function plotXY{T}(cube::AbstractCubeData{T};group=0,xaxis=-1,kwargs...)
     ndim=length(axlist)
     subcubedims=@ntuple $nax d->(d==ixaxis || d==igroup) ? length(axlist[d]) : 1
     sliceargs=@ntuple $nax d->(d==ixaxis || d==igroup) ? (1:length(axlist[d])) : axVal2Index(axlist[d],v_d)
-    println(sliceargs)
     ca = getMemHandle(cube,1,CartesianIndex(subcubedims))
     dataslice=getSubRange(ca,sliceargs...)[1]
     jxaxis=count_to(x->isa(x,Range),sliceargs,ixaxis)
@@ -248,7 +247,7 @@ function val2col(x,m,colorm,mi,ma,misscol,oceancol)
   end
 end
 
-function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin::T=zero(T),dmax::T=zero(T))
+function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin::T=zero(T),dmax::T=zero(T),kwargs...)
   axlist=axes(cube)
   ilon=findfirst(a->isa(a,LonAxis),axlist)
   ilat=findfirst(a->isa(a,LatAxis),axlist)
@@ -266,22 +265,35 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin::T=zero(T),dmax::T=ze
   subcubedims[1]=nlon
   subcubedims[2]=nlat
   sliceargs=Any[:(1:$nlon),:(1:$nlat)]
+  fixedvarsEx=quote end
+  fixedAxes=CubeAxis[]
+  for (sy,val) in kwargs
+    ivalaxis=findAxis(string(sy),axlist)
+    ivalaxis>2 || error("Axis $sy not found")
+    s=Symbol(Cubes.Axes.axname(axlist[ivalaxis]))
+    push!(fixedvarsEx.args,:($s=$val))
+    push!(fixedAxes,axlist[ivalaxis])
+  end
   for iax=3:length(axlist)
-    if isa(axlist[iax],RangeAxis)
-      push!(sliders,slider(1:length(axlist[iax].values),label="Time Step"))
-      push!(signals,signal(sliders[end]))
-      push!(sliceargs,:time)
-      push!(argvars,:time)
-      display(sliders[end])
-    elseif isa(axlist[iax],CategoricalAxis)
-      ivarax=iax
-      push!(sliceargs,symbol(Cubes.Axes.axname(axlist[iax])))
-      push!(argvars,symbol(Cubes.Axes.axname(axlist[iax])))
-      nvar=length(axlist[iax])
-      varButtons=togglebuttons([(axlist[iax].values[i],i) for i=1:length(axlist[iax].values)])
-      push!(sliders,varButtons)
-      push!(signals,signal(varButtons))
-      display(varButtons)
+    if in(axlist[iax],fixedAxes)
+      push!(sliceargs,Symbol(Cubes.Axes.axname(axlist[iax])))
+    else
+      if isa(axlist[iax],RangeAxis)
+        push!(sliders,slider(1:length(axlist[iax].values),label="Time Step"))
+        push!(signals,signal(sliders[end]))
+        push!(sliceargs,:time)
+        push!(argvars,:time)
+        display(sliders[end])
+      elseif isa(axlist[iax],CategoricalAxis)
+        ivarax=iax
+        push!(sliceargs,symbol(Cubes.Axes.axname(axlist[iax])))
+        push!(argvars,symbol(Cubes.Axes.axname(axlist[iax])))
+        nvar=length(axlist[iax])
+        varButtons=togglebuttons([(axlist[iax].values[i],i) for i=1:length(axlist[iax].values)])
+        push!(sliders,varButtons)
+        push!(signals,signal(varButtons))
+        display(varButtons)
+      end
     end
   end
   push!(ga,getMemHandle(cube,1,CartesianIndex(ntuple(i->subcubedims[i],length(axlist)))))
@@ -289,6 +301,7 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin::T=zero(T),dmax::T=ze
   dataslice=Expr(:call,:getSubRange,:(ga[$lga]),sliceargs...)
   mimaex = dmin==dmax ? :((mi,ma)=getMinMax(a,m)) : :(mi=$(dmin);ma=$(dmax))
   plotfun=quote
+    $fixedvarsEx
     a,m=$dataslice
     nx,ny=size(a)
     $mimaex

@@ -102,6 +102,16 @@ function Cube(base_dir::AbstractString)
   Cube(base_dir,cubeconfig,data_dir_entries,var_name_to_var_index,firstYearOffset)
 end
 
+function Base.show(io::IO,c::Cube)
+    println(io,"CABLAB data cube at ",c.base_dir)
+    println(io,"Spatial resolution:  ",c.config.grid_width,"x",c.config.grid_height," at ",c.config.spatial_res," degrees.")
+    println(io,"Temporal resolution: ",c.config.start_time," to ",c.config.end_time," at ",c.config.temporal_res,"daily time steps")
+    print(  io,"Variables:           ")
+    for v in c.dataset_files
+        print(io,v," ")
+    end
+    println(io)
+end
 
 
 "A SubCube is a representation of a certain region or time range returned by the getCube function."
