@@ -247,7 +247,15 @@ function val2col(x,m,colorm,mi,ma,misscol,oceancol)
   end
 end
 
-function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin::T=zero(T),dmax::T=zero(T),kwargs...)
+import PlotUtils.optimize_ticks
+import Colors.@colorant_str
+import Compose: rectangle, text, line, compose, context, stroke, svgattribute, bitmap, HCenter, VBottom
+
+typed_dminmax{T<:Integer}(::Type{T},dmin,dmax)=(Int(dmin),Int(dmax))
+typed_dminmax{T<:AbstractFloat}(::Type{T},dmin,dmax)=(Float64(dmin),Float64(dmax))
+function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
+  colorm=colormap("oranges"),oceancol=colorant"darkblue",misscol=colorant"gray",kwargs...)
+  dmin,dmax=typed_dminmax(T,dmin,dmax)
   axlist=axes(cube)
   ilon=findfirst(a->isa(a,LonAxis),axlist)
   ilat=findfirst(a->isa(a,LatAxis),axlist)
@@ -305,11 +313,15 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin::T=zero(T),dmax::T=ze
     a,m=$dataslice
     nx,ny=size(a)
     $mimaex
-    colorm=colormap("oranges")
-    oceancol=colorant"darkblue"
-    misscol=colorant"gray"
-    rgbar=getRGBAR(a,m,colorm,mi,ma,misscol,oceancol,nx,ny)
-    Image(rgbar,Dict("spatialorder"=>["x","y"]))
+    colorm=$colorm
+    oceancol=$oceancol
+    misscol=$misscol
+    rgbar=getRGBAR(a,m,colorm,convert($T,mi),convert($T,ma),misscol,oceancol,nx,ny)
+    pngbuf=IOBuffer()
+    writemime(pngbuf,"image/png",Image(rgbar,Dict("spatialorder"=>["x","y"])))
+    themap=obj=compose(context(0,0,1,0.9),bitmap("image/png",pngbuf.data,0,0,1,1))
+    theleg=getlegend(mi,ma,colorm)
+    compose(context(),themap,theleg)
   end
   lambda = Expr(:(->), Expr(:tuple, argvars...),plotfun)
   if length(argvars)==0
@@ -318,7 +330,20 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin::T=zero(T),dmax::T=ze
   end
   liftex = Expr(:call,:map,lambda,signals...)
   myfun=eval(:(li()=$liftex))
-  display(myfun())
+  myfun()
 end
 @noinline getRGBAR(a,m,colorm,mi,ma,misscol,oceancol,nx,ny)=RGB{U8}[val2col(a[i,j],m[i,j],colorm,mi,ma,misscol,oceancol) for i=1:nx,j=1:ny]
+
+function getlegend(xmin,xmax,colm)
+    xoffs=0.05
+    xl=1-2xoffs
+    tlabs,smin,smax=optimize_ticks(xmin,xmax,extend_ticks=true,k_min=4)
+    tpos=[(tlabs[i]-xmin)/(xmax-xmin) for i=1:length(tlabs)]
+    r=rectangle([(i-1)/length(colm) for i in 1:length(colm)],[0],[1/(length(colm)-1)],[1])
+    f=fill([colm[div((i-1)*length(colm),length(colm))+1] for i=1:length(colm)])
+    bar=compose(context(xoffs,0.35,xl,0.55),r,f,stroke(nothing),svgattribute("shape-rendering","crispEdges"))
+    tlabels=compose(context(xoffs,0,xl,0.2),text(tpos,[1],map(string,tlabs),[HCenter()],[VBottom()]))
+    dlines=compose(context(xoffs,0.25,xl,0.1),line([[(tpx,0.1),(tpx,0.9)] for tpx in tpos]),stroke(colorant"black"))
+    compose(context(0,0.9,1,0.1),bar,tlabels,dlines)
+end
 end
