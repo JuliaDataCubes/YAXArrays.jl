@@ -119,6 +119,11 @@ getOutAxes(cdata::Tuple,t::Function,pargs)=t(cdata,pargs)
 
 mapCube(fu::Function,cdata::AbstractCubeData,addargs...;kwargs...)=mapCube(fu,(cdata,),addargs...;kwargs...)
 
+"""
+    mapCube(fun, cube)
+
+Map a given function `fun` over slices of the data cube `cube`. 
+"""
 function mapCube(fu::Function,cdata::Tuple,addargs...;max_cache=1e7,outfolder=joinpath(workdir[1],string(tempname()[2:end],fu)),
   sfu=split(string(fu),".")[end],fuObj=get(regDict,sfu,sfu),outtype=getOuttype(fuObj,cdata),inAxes=getInAxes(fuObj,cdata),outAxes=getOutAxes(fuObj,cdata,addargs),
   inmissing=isa(fuObj,DATFunction) ? fuObj.inmissing : ntuple(i->:mask,length(cdata)),outmissing=isa(fuObj,DATFunction) ? fuObj.outmissing : :mask, no_ocean=isa(fuObj,DATFunction) ? fuObj.no_ocean : 0)
