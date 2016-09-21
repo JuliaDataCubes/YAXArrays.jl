@@ -17,3 +17,9 @@ makedocs(
         ]
         ]
 )
+
+deploydocs(
+    #deps   = Deps.pip("mkdocs", "python-markdown-math"),
+    repo   = "github.com/CAB-LAB/CABLAB.jl.git",
+    julia  = "0.4"
+)

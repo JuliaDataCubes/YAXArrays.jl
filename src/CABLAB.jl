@@ -7,7 +7,7 @@ Some info on the project...
 module CABLAB
 export Cube, getCubeData,readCubeData,CubeMem,CubeAxis, TimeAxis, VariableAxis, LonAxis, FitAxis, LatAxis, CountryAxis, SpatialPointAxis, saveCube, loadCube,
         RangeAxis, CategoricalAxis, MSCAxis, getSingVal, TimeScaleAxis, QuantileAxis, MethodAxis #From Cube module
-export registerDATFunction,registerDATFunctionN, mapCube #From DAT module
+export registerDATFunction, mapCube #From DAT module
 export axVal2Index, plotTS, plotMAP, plotXY #From Plot module
 export removeMSC, gapFillMSC, recurrences, normalize, timeMean, spatialMean, timeVariance, @no_ocean, sampleLandPoints, toPointAxis, getMSC, filterTSFFT,
          timespacequantiles, timelonlatquantiles, DAT_detectAnomalies! #From Proc module

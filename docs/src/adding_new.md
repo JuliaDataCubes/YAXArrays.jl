@@ -27,6 +27,7 @@ In order to understand better what happens, lets look at some examples. Let's as
 and returns time series of the same length. We register the function the following way:                  
 
 ```@example
+using CABLAB
 function fillGaps(xout::AbstractVector, mout::AbstractVector, xin::AbstractVector, min::AbstractVector)
   # code goes here
 end
