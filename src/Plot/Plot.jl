@@ -57,7 +57,7 @@ function plotTS{T}(cube::AbstractCubeData{T})
       push!(sliceargs,:(error()))
       nvar=length(axlist[iax])
       varButtons=map(x->togglebutton(x,value=true),axlist[iax].values)
-      push!(argvars,map(x->symbol(string("s_",x)),1:length(axlist[iax]))...)
+      push!(argvars,map(x->Symbol(string("s_",x)),1:length(axlist[iax]))...)
       push!(buttons,varButtons...)
       push!(signals,map(signal,varButtons)...)
     end
@@ -83,7 +83,7 @@ function plotTS{T}(cube::AbstractCubeData{T})
       push!(layerex,:(layer(x=axlist[1].values,y=@sync($(dataslice)[1]),Geom.line,color=fill($(axlist[ivarax].values[ivar]),$ntime))))
     end
   end
-  for i=1:nvar push!(plotfun2.args,:($(symbol(string("s_",i))) && push!(lay,$(layerex[i])))) end
+  for i=1:nvar push!(plotfun2.args,:($(Symbol(string("s_",i))) && push!(lay,$(layerex[i])))) end
   push!(plotfun2.args,plotfun)
   lambda = Expr(:(->), Expr(:tuple, argvars...),plotfun2)
   liftex = Expr(:call,:map,lambda,signals...)
@@ -294,8 +294,8 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
         display(sliders[end])
       elseif isa(axlist[iax],CategoricalAxis)
         ivarax=iax
-        push!(sliceargs,symbol(Cubes.Axes.axname(axlist[iax])))
-        push!(argvars,symbol(Cubes.Axes.axname(axlist[iax])))
+        push!(sliceargs,Symbol(Cubes.Axes.axname(axlist[iax])))
+        push!(argvars,Symbol(Cubes.Axes.axname(axlist[iax])))
         nvar=length(axlist[iax])
         varButtons=togglebuttons([(axlist[iax].values[i],i) for i=1:length(axlist[iax].values)])
         push!(sliders,varButtons)

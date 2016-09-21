@@ -72,7 +72,7 @@ function parseConfig(cubepath)
   for ix in x
     s1,s2=split(ix,'=')
     s1=strip(s1);s2=strip(s2)
-    e=ConfigEntry{symbol(s1)}(s1,s2)
+    e=ConfigEntry{Symbol(s1)}(s1,s2)
     parseEntry(d,e)
   end
   d

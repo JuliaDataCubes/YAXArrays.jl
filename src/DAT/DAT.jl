@@ -392,7 +392,7 @@ using Base.Cartesian
     push!(loopBody.args,:(aout=toDataArray(aout,mout)))
   end
   for (i,s) in enumerate(subIn)
-    ains=symbol("ain_$i");mins=symbol("min_$i")
+    ains=Symbol("ain_$i");mins=Symbol("min_$i")
     push!(loopBody.args,:(($(ains),$(mins))=$s))
     push!(callargs,ains)
     if inmissing[i]==:mask
@@ -405,7 +405,7 @@ using Base.Cartesian
   end
   if OC>0
     ocex=quote
-      if ($(symbol(string("min_",OC)))[1] & OCEAN) == OCEAN
+      if ($(Symbol(string("min_",OC)))[1] & OCEAN) == OCEAN
           mout[:]=OCEAN
           continue
       end

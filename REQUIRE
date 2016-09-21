@@ -2,6 +2,7 @@ julia 0.4
 DataStructures
 NetCDF
 PlotUtils
+Compose
 Images
 StatsBase
 ImageMagick
@@ -11,3 +12,4 @@ Distances
 JLD
 Patchwork
 Vega
+Compat

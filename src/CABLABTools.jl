@@ -12,8 +12,8 @@ end
 
 using Base.Cartesian
 @generated function mypermutedims!{Q,T,S,N}(dest::AbstractArray{T,N},src::AbstractArray{S,N},perm::Type{Q})
-    ind1=ntuple(i->symbol("i_",i),N)
-    ind2=ntuple(i->symbol("i_",perm.parameters[1].parameters[1][i]),N)
+    ind1=ntuple(i->Symbol("i_",i),N)
+    ind2=ntuple(i->Symbol("i_",perm.parameters[1].parameters[1][i]),N)
     ex1=Expr(:ref,:src,ind1...)
     ex2=Expr(:ref,:dest,ind2...)
     quote

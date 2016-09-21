@@ -95,9 +95,9 @@ Base.size(c::CachedArray)=size(c.x)
 Base.similar(c::CachedArray)=similar(c.x)
 
 function getBlockIndEx(N,isym,iIsym,bIsym)
-    isym_d=symbol(string(isym,"_d"))
-    iIsym_d=symbol(string(iIsym,"_d"))
-    bIsym_d=symbol(string(bIsym,"_d"))
+    isym_d=Symbol(string(isym,"_d"))
+    iIsym_d=Symbol(string(iIsym,"_d"))
+    bIsym_d=Symbol(string(bIsym,"_d"))
     quote
       @nexprs $N d->($(bIsym_d) = div($(isym_d)-1,block_size[d]))
       @nexprs $N d->(offs_d     = $(bIsym_d)*block_size[d])
@@ -220,10 +220,10 @@ higetSub=Expr(:call,:getSubRange,:c)
 hisetSub=Expr(:call,:setSubRange,:c,:vals,:mask)
 ex=5
 for N=1:5
-  push!(higetVal.args,symbol("iI_$N"))
-  push!(higetSub.args,:($(symbol("iL_$N"))-1+$(symbol("istart_$N"))))
-  push!(hisetVal.args,symbol("iI_$N"))
-  push!(hisetSub.args,:($(symbol("iL_$N"))-1+$(symbol("istart_$N"))))
+  push!(higetVal.args,Symbol("iI_$N"))
+  push!(higetSub.args,:($(Symbol("iL_$N"))-1+$(Symbol("istart_$N"))))
+  push!(hisetVal.args,Symbol("iI_$N"))
+  push!(hisetSub.args,:($(Symbol("iL_$N"))-1+$(Symbol("istart_$N"))))
   # This is the function body that first determines the subblock to read,
   # then check if this is in cache and returns the value. bI refers to the index of the
   # block and iI refers to the index inside the block
@@ -261,10 +261,10 @@ for N=1:5
   hi2.args[2].args[2].args[3]=N
   hiRange.args[3].args[2].args[3]=N
   hisetRange.args[3].args[2].args[3]=N
-  push!(hi.args,:($(symbol(string("i_",N)))::Integer))
-  push!(hi2.args,:($(symbol(string("i_",N)))::Integer))
-  push!(hiRange.args,:($(symbol(string("i_",N)))::Union{UnitRange,Integer,Colon}))
-  push!(hisetRange.args,:($(symbol(string("i_",N)))::Union{UnitRange,Integer,Colon}))
+  push!(hi.args,:($(Symbol(string("i_",N)))::Integer))
+  push!(hi2.args,:($(Symbol(string("i_",N)))::Integer))
+  push!(hiRange.args,:($(Symbol(string("i_",N)))::Union{UnitRange,Integer,Colon}))
+  push!(hisetRange.args,:($(Symbol(string("i_",N)))::Union{UnitRange,Integer,Colon}))
   ex=Expr(:function,hi,funcbody)
   ex2=Expr(:function,hi2,funcbody2)
   exRange=Expr(:function,hiRange,funcbodyRange)
@@ -300,7 +300,7 @@ import CABLAB.CubeAPI.SubCube, CABLAB.CubeAPI.SubCubePerm
 import CABLAB.CubeAPI._read
 import CABLAB.CubeAPI.SubCubeV, CABLAB.CubeAPI.SubCubeVPerm
 
-toSymbol(d::DataType)=symbol(split(replace(string(d),r"\{\S*\}",""),".")[end])
+toSymbol(d::DataType)=Symbol(split(replace(string(d),r"\{\S*\}",""),".")[end])
 
 function read_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::AbstractCubeData{T},block_size::CartesianIndex{N})
     r = CartesianRange((x.position-CartesianIndex{N}()).*block_size+CartesianIndex{N}(),(x.position).*block_size)
