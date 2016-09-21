@@ -14,7 +14,6 @@ script:
   - julia -e 'Pkg.clone("https://github.com/milanflach/LIBSVM.jl.git"); Pkg.checkout("LIBSVM", "mutating_versions"); Pkg.build("LIBSVM")'
   - julia -e 'Pkg.clone("https://github.com/milanflach/MultivariateAnomalies.jl")'
   - julia -e 'Pkg.clone(pwd()); Pkg.build("CABLAB"); Pkg.test("CABLAB"; coverage=true)'
-
 after_success:
   - julia -e 'Pkg.add("Documenter")'
   - julia -e 'cd(Pkg.dir("CABLAB")); include(joinpath("docs", "make.jl"))'
