@@ -12,6 +12,7 @@ export axVal2Index, plotTS, plotMAP, plotXY #From Plot module
 export removeMSC, gapFillMSC, recurrences, normalize, timeMean, spatialMean, timeVariance, @no_ocean, sampleLandPoints, toPointAxis, getMSC, filterTSFFT,
          timespacequantiles, timelonlatquantiles, DAT_detectAnomalies! #From Proc module
 export TempCube, openTempCube # From CachedArrays
+import Compat.UTF8String
 
 global const workdir=UTF8String["./"]
 haskey(ENV,"CABLAB_WORKDIR") && (workdir[1]=ENV["CABLAB_WORKDIR"])

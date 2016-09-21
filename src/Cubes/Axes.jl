@@ -2,6 +2,8 @@ module Axes
 export CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis,
 FitAxis, SpatialPointAxis,Axes,YearStepRange,CategoricalAxis,RangeAxis,axVal2Index,MSCAxis, TimeScaleAxis, QuantileAxis, MethodAxis
 import NetCDF.NcDim
+import Compat.UTF8String
+import Compat.ASCIIString
 importall ..Cubes
 using Base.Dates
 

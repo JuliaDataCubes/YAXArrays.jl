@@ -7,6 +7,7 @@ importall ..CABLABTools
 importall ..Cubes.TempCubes
 import ...CABLAB
 import ...CABLAB.workdir
+import Compat.UTF8String
 using Base.Dates
 import DataArrays.DataArray
 import DataArrays.isna
@@ -443,12 +444,12 @@ toDataArray(x,m)=DataArray(pointer_to_array(pointer(x),size(x)),reinterpret(Bool
 fillDataArrayMask(x,m)=for i in eachindex(x) m[i]=isna(x[i]) ? 0x01 : 0x00 end
 
 function registerDATFunction(f, ::Tuple{}, dimsout::Tuple, addargs;inmissing=(:mask,),outmissing=:mask,no_ocean=0)
-  fname=utf8(split(string(f),".")[end])
+  fname=string(split(string(f),".")[end])
   regDict[fname]=DATFunction((),dimsout,addargs,inmissing,outmissing,no_ocean)
 end
 
 function registerDATFunction(f,dimsin::Tuple{Vararg{DataType}},dimsout::Tuple,addargs;inmissing=ntuple(i->:mask,length(dimsin)),outmissing=:mask,no_ocean=0)
-    fname=utf8(split(string(f),".")[end])
+    fname=string(split(string(f),".")[end])
     regDict[fname]=DATFunction((dimsin,),dimsout,addargs,inmissing,outmissing,no_ocean)
 end
 
@@ -466,7 +467,7 @@ Registers a function so that it can be applied to the whole data cube through ma
 
 """
 function registerDATFunction(f,dimsin::Tuple{Vararg{Tuple{Vararg{DataType}}}},dimsout::Tuple,addargs;inmissing=ntuple(i->:mask,length(dimsin)),outmissing=:mask,no_ocean=0)
-    fname=utf8(split(string(f),".")[end])
+    fname=string(split(string(f),".")[end])
     regDict[fname]=DATFunction(dimsin,dimsout,addargs,inmissing,outmissing,no_ocean)
 end
 registerDATFunction(f,dimsin,dimsout;inmissing=ntuple(i->:mask,length(dimsin)),outmissing=:mask,no_ocean=0)=registerDATFunction(f,dimsin,dimsout,(),inmissing=inmissing,outmissing=outmissing,no_ocean=no_ocean)
