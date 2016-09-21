@@ -8,8 +8,8 @@ importall ..Cubes.TempCubes
 import ...CABLAB
 import ...CABLAB.workdir
 using Base.Dates
-#import DataArrays.DataArray
-#import DataArrays.isna
+import DataArrays.DataArray
+import DataArrays.isna
 global const debugDAT=false
 macro debug_print(e)
   debugDAT && return(:(println($e)))
@@ -122,7 +122,7 @@ mapCube(fu::Function,cdata::AbstractCubeData,addargs...;kwargs...)=mapCube(fu,(c
 """
     mapCube(fun, cube)
 
-Map a given function `fun` over slices of the data cube `cube`. 
+Map a given function `fun` over slices of the data cube `cube`.
 """
 function mapCube(fu::Function,cdata::Tuple,addargs...;max_cache=1e7,outfolder=joinpath(workdir[1],string(tempname()[2:end],fu)),
   sfu=split(string(fu),".")[end],fuObj=get(regDict,sfu,sfu),outtype=getOuttype(fuObj,cdata),inAxes=getInAxes(fuObj,cdata),outAxes=getOutAxes(fuObj,cdata,addargs),
@@ -387,9 +387,9 @@ using Base.Cartesian
     callargs=Any[:(Main.$(fT)),:aout,:mout]
   elseif outmissing==:nan
     callargs=Any[:(Main.$(fT)),:aout]
-#  elseif outmissing==:dataarray
-#    callargs=Any[:(Main.$(fT)),:aout]
-#    push!(loopBody.args,:(aout=toDataArray(aout,mout)))
+  elseif outmissing==:dataarray
+    callargs=Any[:(Main.$(fT)),:aout]
+    push!(loopBody.args,:(aout=toDataArray(aout,mout)))
   end
   for (i,s) in enumerate(subIn)
     ains=symbol("ain_$i");mins=symbol("min_$i")
@@ -399,8 +399,8 @@ using Base.Cartesian
       push!(callargs,mins)
     elseif inmissing[i]==:nan
       push!(loopBody.args,:(fillNaNs($(ains),$(mins))))
-#    elseif inmissing[i]==:dataarray
-#      push!(loopBody.args,:($(ains)=toDataArray($(ains),$(mins))))
+    elseif inmissing[i]==:dataarray
+      push!(loopBody.args,:($(ains)=toDataArray($(ains),$(mins))))
     end
   end
   if OC>0
@@ -416,8 +416,8 @@ using Base.Cartesian
   push!(loopBody.args,Expr(:call,callargs...))
   if outmissing==:nan
     push!(loopBody.args, :(fillNanMask(aout,mout)))
-#  elseif outmissing==:dataarray
-#    push!(loopBody.args,:(fillDataArrayMask(aout,mout)))
+  elseif outmissing==:dataarray
+    push!(loopBody.args,:(fillDataArrayMask(aout,mout)))
   end
   loopEx = length(loopRangesE.args)==0 ? loopBody : Expr(:for,loopRangesE,loopBody)
   @debug_print loopEx
@@ -439,8 +439,8 @@ function fillNanMask(x,m)
   end
 end
 #"Converts data and Mask to a DataArray"
-#toDataArray(x,m)=DataArray(pointer_to_array(pointer(x),size(x)),reinterpret(Bool,copy(m)))
-#fillDataArrayMask(x,m)=for i in eachindex(x) m[i]=isna(x[i]) ? 0x01 : 0x00 end
+toDataArray(x,m)=DataArray(pointer_to_array(pointer(x),size(x)),reinterpret(Bool,copy(m)))
+fillDataArrayMask(x,m)=for i in eachindex(x) m[i]=isna(x[i]) ? 0x01 : 0x00 end
 
 function registerDATFunction(f, ::Tuple{}, dimsout::Tuple, addargs;inmissing=(:mask,),outmissing=:mask,no_ocean=0)
   fname=utf8(split(string(f),".")[end])
@@ -452,6 +452,19 @@ function registerDATFunction(f,dimsin::Tuple{Vararg{DataType}},dimsout::Tuple,ad
     regDict[fname]=DATFunction((dimsin,),dimsout,addargs,inmissing,outmissing,no_ocean)
 end
 
+"""
+    registerDATFunction(f, dimsin, [dimsout, [addargs]]; inmissing=(:mask,...), outmissing=:mask, no_ocean=0)
+
+Registers a function so that it can be applied to the whole data cube through mapCube.
+
+  - `f` the function to register
+  - `dimsin` a tuple containing the Axes Types that the function is supposed to work on. If multiple input cubes are needed, then a tuple of tuples must be provided
+  - `dimsout` a tuple of output Axes types. If omitted, it is assumed that the output is a single value. Can also be a function with the signature (cube,pargs)-> ... which returns the output Axis. This is useful if the output axis can only be constructed based on runtime input.
+  - `addargs` an optional function with the signature (cube,pargs)-> ... , to calculate function arguments that are passed to f which are only known when the function is called. Here `cube` is a tuple of input cubes provided when `mapCube` is called and `pargs` is a list of trailing arguments passed to `mapCube`. For example `(cube,pargs)->(length(getAxis(cube[1],"TimeAxis")),pargs[1])` would pass the length of the time axis and the first trailing argument of the mapCube call to each invocation of `f`
+  - `inmissing` tuple of symbols, determines how to deal with missing data for each input cube. `:mask` means that masks are explicitly passed to the function call, `:nan` replaces all missing data with NaNs, and `:dataarray` passes a DataArray to `f`
+  - `outmissing` symbol, determines how missing values is the output are interpreted. Same values as for `inmissing are allowed`
+
+"""
 function registerDATFunction(f,dimsin::Tuple{Vararg{Tuple{Vararg{DataType}}}},dimsout::Tuple,addargs;inmissing=ntuple(i->:mask,length(dimsin)),outmissing=:mask,no_ocean=0)
     fname=utf8(split(string(f),".")[end])
     regDict[fname]=DATFunction(dimsin,dimsout,addargs,inmissing,outmissing,no_ocean)
