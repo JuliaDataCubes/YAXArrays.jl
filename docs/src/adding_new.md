@@ -23,6 +23,10 @@ It is not (yet) possible to perform operations requiring random array access on 
 registerDATFunction
 ```
 
+## Examples
+
+### Simple registration
+
 In order to understand better what happens, lets look at some examples. Let's assume we want to register a gap filling function which accepts single time series
 and returns time series of the same length. We register the function the following way:                  
 
@@ -34,3 +38,7 @@ end
 
 registerDATFunction(fillGaps,(TimeAxis,),(TimeAxis,))
 ```
+
+### Using Data Arrays
+
+In the next example we assume
