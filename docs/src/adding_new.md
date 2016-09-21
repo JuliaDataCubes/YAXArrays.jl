@@ -39,6 +39,6 @@ end
 registerDATFunction(fillGaps,(TimeAxis,),(TimeAxis,))
 ```
 
-### Using Data Arrays
+### Using Data Arrays for missing data
 
 In the next example we assume
