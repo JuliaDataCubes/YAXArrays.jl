@@ -27,18 +27,66 @@ registerDATFunction
 
 ### Simple registration
 
-In order to understand better what happens, lets look at some examples. Let's assume we want to register a gap filling function which accepts single time series
+In order to understand better what happens, lets look at some examples. We want to register a gap filling function which accepts single time series
 and returns time series of the same length. We register the function the following way:                  
 
 ```@example
-using CABLAB
-function fillGaps(xout::AbstractVector, mout::AbstractVector, xin::AbstractVector, min::AbstractVector)
+using CABLAB #hide
+function fillGaps(xout::Vector, mout::Vector{UInt8}, xin::Vector, min::Vector{UInt8})
   # code goes here
 end
 
-registerDATFunction(fillGaps,(TimeAxis,),(TimeAxis,))
+inAxes  = (TimeAxis,)
+outAxes = (TimeAxis,)
+registerDATFunction(fillGaps,inAxes,outAxes)
 ```
+
+After this you can apply your function like this `mapCube(fillGaps, cubedata)`, where `cubedata` can be any type of cube, the only condition is that it must contain a `TimeAxis`.  
 
 ### Using Data Arrays for missing data
 
-In the next example we assume
+In the next example we assume want to register a function that calculates the time variance of a variable. Internally we want to use the `StatsBase` methods to
+calculate the variance in the presence of missing data. To do this, the input data is best represented as a `DataArray`. We register the function in the following way:
+
+```@example
+using CABLAB
+using DataArrays
+function timeVariance{T}(xout::DataArray{T,0}, xin::DataVector)
+  xout[1]=var(xin)
+end
+
+inAxes  = (TimeAxis,)
+
+registerDATFunction(timeVariance, inAxes, (), inmissing=(:dataarray,), outmissing=:dataarray, no_ocean=1)
+```
+
+Here, the only input axis is again the time axis. However, the output axis is an empty tuple, which means that a single value is returned by the function and written
+to the 0-dimensional array `xout`. The optional argument `inmissing` is a tuple of symbols, here it is length one because there is only a single input cube.
+When `:dataarray` is chosen, missing values in the cube will be converted to `NA`s in the function's input array. The same hold true for the `outmissing` argument.
+Any `NA` value in the output array will be converted to a missing value in the resulting cube's mask.
+
+There is one additional optional argument set, `no_ocean=1`. This tells the kernel to check the landsea mask if a certain value is an ocean point and not enter
+the calculation for these points, but to just set the resulting mask to `OCEAN`.
+
+### Passing additional arguments
+
+If a function call needs additional arguments, they are simple appended to the `mapCube` call and then get passed to the registered function. For example, if one wants
+to register a multivariate extreme event detection method `detectExtremes`, where one can choose from several methods, the function signature would look like this:
+
+```@example
+using CABLAB
+function detectExtremes(xout::Vector, xin::Matrix, method)
+  #code goes here
+end
+
+inAxes  = (TimeAxis,VariableAxis)
+outAxes = (TimeAxis,)
+registerDATFunction(detectExtremes, inAxes, outAxes, inmissing=(:nan,), outmissing=:nan, no_ocean=1)
+```
+
+The method would then be called e.g. with `mapCube(fillGaps, cubedata, "KDE")` which would pass the String `"KDE"` as the third positional argument to the registered function.
+
+### Determine additional arguments from cube properties
+
+Sometimes the registered function depends on additional arguments that are not user-supplied, but determined based on some properties of the input data cube. For example, a function that
+removes the mean annual cycle from a time series might have the following signature
