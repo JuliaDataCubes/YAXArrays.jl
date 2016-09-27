@@ -17,81 +17,81 @@ import Base.Cartesian: @ntuple,@nexprs
 
 #import Patchwork.load_js_runtime
 ga=[]
-function plotTS{T}(cube::AbstractCubeData{T})
-  axlist=axes(cube)
-  i=findfirst(a->isa(a,RangeAxis{DateTime}),axlist)
-  p=DAT.getFrontPerm(cube,((axlist[i]),))
-  p[1]==1 || (cube=permutedims(cube,p))
-  axlist=axes(cube)
-  sliders=Array(Any,0)
-  buttons=Array(Any,0)
-  signals=Array(Signal,0)
-  argvars=Array(Symbol,0)
-  cacheblocksize=Int[]
-  ivarax=0
-  nvar=0
-  ntime=length(axlist[1])
-  sliceargs=Any[:(1:$ntime)]
-  subcubedims=ones(Int,length(axlist))
-  subcubedims[1]=ntime
-  for iax=1:length(axlist)
-    if isa(axlist[iax],LonAxis)
-      push!(sliders,slider(axlist[iax].values,label="Longitude"))
-      push!(signals,signal(sliders[end]))
-      push!(sliceargs,:(axVal2Index(axlist[$iax],lon)))
-      push!(argvars,:lon)
-      #display(sliders[end])
-    elseif isa(axlist[iax],LatAxis)
-      push!(sliders,slider(reverse(axlist[iax].values),label="Latitude"))
-      push!(signals,signal(sliders[end]))
-      push!(sliceargs,:(axVal2Index(axlist[$iax],lat)))
-      push!(argvars,:lat)
-      #display(sliders[end])
-    elseif isa(axlist[iax],SpatialPointAxis)
-      push!(sliders,slider(1:length(axlist[iax]),label="Point"))
-      push!(signals,signal(sliders[end]))
-      push!(sliceargs,:point)
-      push!(argvars,:point)
-    elseif isa(axlist[iax],CategoricalAxis)
-      ivarax=iax
-      push!(sliceargs,:(error()))
-      nvar=length(axlist[iax])
-      varButtons=map(x->togglebutton(x,value=true),axlist[iax].values)
-      push!(argvars,map(x->Symbol(string("s_",x)),1:length(axlist[iax]))...)
-      push!(buttons,varButtons...)
-      push!(signals,map(signal,varButtons)...)
-    end
-  end
-  plotfun=Expr(:call,:plot,Expr(:...,:lay),:(Scale.color_discrete()))
-  plotfun2=quote
-    lay=Array(Any,0)
-    axlist=axes(cube)
-  end
-  #Generate CachedArray for plotting
-  ca=getMemHandle(cube,20,CartesianIndex(ntuple(i->subcubedims[i],length(subcubedims))))
-  push!(ga,ca)
-  lga=length(ga)
-
-  layerex=Array(Any,0)
-  if nvar==0
-    dataslice=Expr(:call,:getSubRange,:(ga[$lga]),sliceargs...)
-    push!(plotfun2.args,:(push!(lay,layer(x=axlist[1].values,y=$(dataslice)[1],Geom.line))))
-  else
-    for ivar=1:nvar
-      sliceargs[ivarax]=ivar
-      dataslice=Expr(:call,:getSubRange,:(ga[$lga]),sliceargs...)
-      push!(layerex,:(layer(x=axlist[1].values,y=@sync($(dataslice)[1]),Geom.line,color=fill($(axlist[ivarax].values[ivar]),$ntime))))
-    end
-  end
-  for i=1:nvar push!(plotfun2.args,:($(Symbol(string("s_",i))) && push!(lay,$(layerex[i])))) end
-  push!(plotfun2.args,plotfun)
-  lambda = Expr(:(->), Expr(:tuple, argvars...),plotfun2)
-  liftex = Expr(:call,:map,lambda,signals...)
-    myfun=eval(:(li(cube)=$liftex))
-    for b in buttons display(b) end
-    for s in sliders display(s) end
-    display(myfun(cube))
-end
+#function plotTS{T}(cube::AbstractCubeData{T})
+#  axlist=axes(cube)
+#  i=findfirst(a->isa(a,RangeAxis{DateTime}),axlist)
+#  p=DAT.getFrontPerm(cube,((axlist[i]),))
+#  p[1]==1 || (cube=permutedims(cube,p))
+#  axlist=axes(cube)
+#   sliders=Array(Any,0)
+#   buttons=Array(Any,0)
+#   signals=Array(Signal,0)
+#   argvars=Array(Symbol,0)
+#   cacheblocksize=Int[]
+#   ivarax=0
+#   nvar=0
+#   ntime=length(axlist[1])
+#   sliceargs=Any[:(1:$ntime)]
+#   subcubedims=ones(Int,length(axlist))
+#   subcubedims[1]=ntime
+#   for iax=1:length(axlist)
+#     if isa(axlist[iax],LonAxis)
+#       push!(sliders,slider(axlist[iax].values,label="Longitude"))
+#       push!(signals,signal(sliders[end]))
+#       push!(sliceargs,:(axVal2Index(axlist[$iax],lon)))
+#       push!(argvars,:lon)
+#       #display(sliders[end])
+#     elseif isa(axlist[iax],LatAxis)
+#       push!(sliders,slider(reverse(axlist[iax].values),label="Latitude"))
+#       push!(signals,signal(sliders[end]))
+#       push!(sliceargs,:(axVal2Index(axlist[$iax],lat)))
+#       push!(argvars,:lat)
+#       #display(sliders[end])
+#     elseif isa(axlist[iax],SpatialPointAxis)
+#       push!(sliders,slider(1:length(axlist[iax]),label="Point"))
+#       push!(signals,signal(sliders[end]))
+#       push!(sliceargs,:point)
+#       push!(argvars,:point)
+#     elseif isa(axlist[iax],CategoricalAxis)
+#       ivarax=iax
+#       push!(sliceargs,:(error()))
+#       nvar=length(axlist[iax])
+#       varButtons=map(x->togglebutton(x,value=true),axlist[iax].values)
+#       push!(argvars,map(x->Symbol(string("s_",x)),1:length(axlist[iax]))...)
+#       push!(buttons,varButtons...)
+#       push!(signals,map(signal,varButtons)...)
+#     end
+#   end
+#   plotfun=Expr(:call,:plot,Expr(:...,:lay),:(Scale.color_discrete()))
+#   plotfun2=quote
+#     lay=Array(Any,0)
+#     axlist=axes(cube)
+#   end
+#   #Generate CachedArray for plotting
+#   ca=getMemHandle(cube,20,CartesianIndex(ntuple(i->subcubedims[i],length(subcubedims))))
+#   push!(ga,ca)
+#   lga=length(ga)
+#
+#   layerex=Array(Any,0)
+#   if nvar==0
+#     dataslice=Expr(:call,:getSubRange,:(ga[$lga]),sliceargs...)
+#     push!(plotfun2.args,:(push!(lay,layer(x=axlist[1].values,y=$(dataslice)[1],Geom.line))))
+#   else
+#     for ivar=1:nvar
+#       sliceargs[ivarax]=ivar
+#       dataslice=Expr(:call,:getSubRange,:(ga[$lga]),sliceargs...)
+#       push!(layerex,:(layer(x=axlist[1].values,y=@sync($(dataslice)[1]),Geom.line,color=fill($(axlist[ivarax].values[ivar]),$ntime))))
+#     end
+#   end
+#   for i=1:nvar push!(plotfun2.args,:($(Symbol(string("s_",i))) && push!(lay,$(layerex[i])))) end
+#   push!(plotfun2.args,plotfun)
+#   lambda = Expr(:(->), Expr(:tuple, argvars...),plotfun2)
+#   liftex = Expr(:call,:map,lambda,signals...)
+#     myfun=eval(:(li(cube)=$liftex))
+#     for b in buttons display(b) end
+#     for s in sliders display(s) end
+#     display(myfun(cube))
+# end
 
 toYr(tx::TimeAxis)=((tx.values.startyear+(tx.values.startst-1)/tx.values.NPY):(1.0/tx.values.NPY):(tx.values.stopyear+(tx.values.stopst-1)/tx.values.NPY))-(tx.values.startyear+(tx.values.startst-1)/tx.values.NPY)
 
@@ -117,8 +117,21 @@ getWidget{T<:Real}(x::RangeAxis{T})=step(x.values) > 0 ? slider(x.values,label=a
 getWidget(x::RangeAxis)=slider(1:length(x),label=axname(x))
 getWidget(x::SpatialPointAxis)=slider(1:length(x),label="Spatial Point")
 
+plotTS(x;kwargs...)=plotXY(x,xaxis=TimeAxis;kwargs...)
 
+"""
+`plotXY(cube::AbstractCubeData; group=0, xaxis=-1, kwargs...)`
 
+Generic plotting tool for cube objects, can be called on any type of cube data.
+
+### Keyword arguments
+
+* `xaxis` which axis is to be used as x axis. Can be either an axis Datatype or a string. Short versions of axes names are possible as long as the axis can be uniquely determined.
+* `group` it is possible to group the plot by a categorical axis. Can be either an axis data type or a string.
+* `dim=value` can set other dimensions to certain values, for example `lon=51.5` will fix the longitude for the resulting plot
+
+If a dimension is not the x axis or group variable and is not fixed through an additional keyword, a slider or dropdown menu will appear to select the axis value.
+"""
 function plotXY{T}(cube::AbstractCubeData{T};group=0,xaxis=-1,kwargs...)
   axlist=axes(cube)
   axlabels=map(axname,axlist)
@@ -253,6 +266,22 @@ import Compose: rectangle, text, line, compose, context, stroke, svgattribute, b
 
 typed_dminmax{T<:Integer}(::Type{T},dmin,dmax)=(Int(dmin),Int(dmax))
 typed_dminmax{T<:AbstractFloat}(::Type{T},dmin,dmax)=(Float64(dmin),Float64(dmax))
+
+"""
+`plotMAP(cube::AbstractCubeData; dmin=datamin, dmax=datamax, colorm=colormap("oranges"), oceancol=colorant"darkblue", misscol=colorant"gray", kwargs...)`
+
+Map plotting tool for cube objects, can be called on any type of cube data
+
+### Keyword arguments
+
+* `dmin, dmax` Minimum and maximum value to be used for color transformation
+* `colorm` colormap to be used. Find a list of colormaps in the [Colors.jl](https://github.com/JuliaGraphics/Colors.jl) package
+* `oceancol` color to fill the ocean with, defaults to `colorant"darkblue"`
+* `misscol` color to represent missing values, defaults to `colorant"gray"`
+* `dim=value` can set other dimensions to certain values, for example `var="air_temperature_2m"` will fix the variable for the resulting plot
+
+If a dimension is neither longitude or latitude and is not fixed through an additional keyword, a slider or dropdown menu will appear to select the axis value.
+"""
 function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
   colorm=colormap("oranges"),oceancol=colorant"darkblue",misscol=colorant"gray",kwargs...)
   dmin,dmax=typed_dminmax(T,dmin,dmax)

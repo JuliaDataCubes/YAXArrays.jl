@@ -68,7 +68,7 @@ function spatialMean{T}(xout::AbstractArray{T,0},maskout::AbstractArray{UInt8,0}
     w    = cosd(lat[ilat])
     for ilon = 1:size(xin,1)
       if maskin[ilon,ilat]==VALID
-        s+=xin[ilon,ilat]
+        s+=xin[ilon,ilat]*w
         sw+=w
       end
     end
