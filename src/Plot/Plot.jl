@@ -347,7 +347,7 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
     misscol=$misscol
     rgbar=getRGBAR(a,m,colorm,convert($T,mi),convert($T,ma),misscol,oceancol,nx,ny)
     pngbuf=IOBuffer()
-    writemime(pngbuf,"image/png",Image(rgbar,Dict("spatialorder"=>["x","y"])))
+    show(pngbuf,"image/png",Image(rgbar,Dict("spatialorder"=>["x","y"])))
     themap=obj=compose(context(0,0,1,0.9),bitmap("image/png",pngbuf.data,0,0,1,1))
     theleg=getlegend(mi,ma,colorm)
     compose(context(),themap,theleg)

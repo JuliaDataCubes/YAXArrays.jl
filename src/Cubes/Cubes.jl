@@ -72,8 +72,8 @@ Base.similar(c::CubeMem)=cubeMem(c.axes,similar(c.data),copy(c.mask))
 Base.ndims{T,N}(c::CubeMem{T,N})=N
 
 function getSubRange{T,N}(c::CubeMem{T,N},i...;write::Bool=true)
-  length(i)==N || error("Wring number of slice arguments to getSubRange")
-  return (slice(c.data,i...),slice(c.mask,i...))
+  length(i)==N || error("Wrong number of view arguments to getSubRange")
+  return (view(c.data,i...),view(c.mask,i...))
 end
 
 getSingVal{T,N}(c::CubeMem{T,N},i...;write::Bool=true)=(c.data[i...],c.mask[i...])
@@ -91,8 +91,8 @@ end
 import ..CABLABTools.toRange
 function _read(c::CubeMem,thedata::NTuple{2},r::CartesianRange)
   outar,outmask=thedata
-  data=slice(c.data,toRange(r)...)
-  mask=slice(c.data,toRange(r)...)
+  data=view(c.data,toRange(r)...)
+  mask=view(c.data,toRange(r)...)
   copy!(outar,data)
   copy!(outmask,mask)
 end
