@@ -1,5 +1,5 @@
 module DAT
-export registerDATFunction, mapCube, getInAxes, getOutAxes, findAxis
+export registerDATFunction, mapCube, getInAxes, getOutAxes, findAxis, reduceCube
 importall ..Cubes
 importall ..CubeAPI
 importall ..CubeAPI.CachedArrays
@@ -28,7 +28,7 @@ It contains the following fields:
 - `indims::Vector{Tuple}` Tuples of input axis types
 - `outdims::Tuple` Tuple of output axis types
 - `axlists::Vector{Vector{CubeAxis}}` Axes of the input data cubes
-- inAxes::Vector{Vector{CubeAxis}}
+- `inAxes::Vector{Vector{CubeAxis}}`
 - outAxes::Vector{CubeAxis}
 - LoopAxes::Vector{CubeAxis}
 - axlistOut::Vector{CubeAxis}
@@ -141,6 +141,24 @@ function getReg(sfu,name::Symbol,cdata)
   elseif name==:inplace    return true
   end
 end
+
+"""
+    reduceCube(f::Function, cube, dim::Type{T<:CubeAxis};kwargs...)
+
+Apply a reduction function `f` on slices of the cube `cube`. The dimension(s) are specified through `dim`, which is
+either an Axis type or a tuple of axis types. Keyword arguments are passed to `mapCube` or, if not known to `f`.
+It is assumed that `f` takes an array input and returns a single value.
+"""
+reduceCube{T<:CubeAxis}(f::Function,c::CABLAB.Cubes.AbstractCubeData,dim::Type{T};kwargs...)=reduceCube(f,c,dim;kwargs...)
+function reduceCube(f::Function,c::CABLAB.Cubes.AbstractCubeData,dim::Tuple,no_ocean=any(i->isa(i,LonAxis) || isa(i,LatAxis),axes(c)) ? 0 : 1;kwargs...)
+  axlist=axes(c)
+  if any(i->isa(i,LatAxis),axlist)
+
+  else
+    mapCube(f,c,indims=dim,outdims=(),inmissing=(:dataarray,),outmissing=(:dataarray),inplace=false;kwargs...)
+  end
+end
+
 
 """
     mapCube(fun, cube)
@@ -519,6 +537,8 @@ Registers a function so that it can be applied to the whole data cube through ma
   - `addargs` an optional function with the signature (cube,pargs)-> ... , to calculate function arguments that are passed to f which are only known when the function is called. Here `cube` is a tuple of input cubes provided when `mapCube` is called and `pargs` is a list of trailing arguments passed to `mapCube`. For example `(cube,pargs)->(length(getAxis(cube[1],"TimeAxis")),pargs[1])` would pass the length of the time axis and the first trailing argument of the mapCube call to each invocation of `f`
   - `inmissing` tuple of symbols, determines how to deal with missing data for each input cube. `:mask` means that masks are explicitly passed to the function call, `:nan` replaces all missing data with NaNs, and `:dataarray` passes a DataArray to `f`
   - `outmissing` symbol, determines how missing values is the output are interpreted. Same values as for `inmissing are allowed`
+  - `no_ocean` integer, if set to a value > 0, omit function calls that would act on grid cells where the first value in the mask is set to `OCEAN`.
+  - `inplace::Bool` defaults to true. If `f` returns a single value, instead of writing into an output array, one can set `inplace=false`.
 
 """
 function registerDATFunction(f,dimsin::Tuple{Vararg{Tuple{Vararg{DataType}}}},dimsout::Tuple,addargs;outtype=Any,inmissing=ntuple(i->:mask,length(dimsin)),outmissing=:mask,no_ocean=0,inplace=true)
@@ -552,6 +572,13 @@ function getAxis{T<:CubeAxis}(a::Type{T},v)
       isa(v[i],a) && return a
   end
   return 0
+end
+
+function getAxis{T<:CubeAxis}(a::Type{T},cube::AbstractCubeData,)
+  for ax in axes(cube)
+      isa(ax,a) && return ax
+  end
+  error("Axis $a not found in $(axes(cube))")
 end
 
 
