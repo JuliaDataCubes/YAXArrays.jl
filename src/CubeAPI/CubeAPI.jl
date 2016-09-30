@@ -11,7 +11,7 @@ include("Mask.jl")
 importall .Mask
 using DataStructures
 using Base.Dates
-using Requests
+import Requests.get
 using LightXML
 
 type ConfigEntry{LHS}
@@ -128,7 +128,10 @@ function RemoteCube(;resolution="low",url="http://www.brockmann-consult.de/cabla
   paths=String[]
   for c in child_elements(ds)  # c is an instance of XMLNode
     a=attributes_dict(c)
-    push!(files,a["ID"])
+    varname=a["ID"]
+    endswith(varname,"_low") && (varname=String(varname[1:end-4]))
+    endswith(varname,"_high") && (varname=String(varname[1:end-5]))
+    push!(files,varname)
     push!(paths,string(url,"dodsC/",a["urlPath"]))
   end
   vtoInd=OrderedDict(files[i]=>i for i=1:length(files))
@@ -245,10 +248,10 @@ function getCubeData(cube::UCube;variable=Int[],time=[],latitude=[],longitude=[]
   getCubeData(cube,variable,time,latitude,longitude)
 end
 
-defaulttime(cube::Cube)=cube.config.start_time,cube.config.end_time-Day(1)
-defaultvariable(cube::Cube)=cube.dataset_files
-defaultlatitude(cube::Cube)=(-90.0,90.0)
-defaultlongitude(cube::Cube)=(-180.0,180.0)
+defaulttime(cube::UCube)=cube.config.start_time,cube.config.end_time-Day(1)
+defaultvariable(cube::UCube)=cube.dataset_files
+defaultlatitude(cube::UCube)=(-90.0,90.0)
+defaultlongitude(cube::UCube)=(-180.0,180.0)
 
 using NetCDF
 vartype{T,N}(v::NcVar{T,N})=T
@@ -266,13 +269,13 @@ function getTimesToRead(time1,time2,config)
 end
 
 "Returns a vector of DateTime objects giving the time indices returned by a respective call to getCubeData."
-function getTimeRanges(c::Cube,y1,y2,i1,i2)
+function getTimeRanges(c::UCube,y1,y2,i1,i2)
   NpY    = ceil(Int,365/c.config.temporal_res)
   YearStepRange(y1,i1,y2,i2,c.config.temporal_res,NpY)
 end
 
 #Convert single input to vectors
-function getCubeData{T<:Union{Integer,AbstractString}}(cube::Cube,
+function getCubeData{T<:Union{Integer,AbstractString}}(cube::UCube,
   variable::Union{AbstractString,Integer,AbstractVector{T}},
   time::Union{Tuple{TimeType,TimeType},TimeType},
   latitude::Union{Tuple{Real,Real},Real},
@@ -301,38 +304,51 @@ function getLonLatsToRead(config,longitude,latitude)
   grid_y1,grid_y2,grid_x1,grid_x2
 end
 
-
-
-function getLandSeaMask!(mask::Array{UInt8,3},cube::Cube,grid_x1,nx,grid_y1,ny)
+function getMaskFile(cube::Cube)
   filename=joinpath(cube.base_dir,"mask","mask.nc")
-  if isfile(filename)
-    ncread!(filename,"mask",sub(mask,:,:,1),start=[grid_x1,grid_y1],count=[nx,ny])
+  isfile(filename) && return(filename)
+  return ""
+end
+getMaskFile(cube::UCube)=""
+
+function getLandSeaMask!(mask::Array{UInt8,3},cube::UCube,grid_x1,nx,grid_y1,ny)
+  filename=getMaskFile(cube)
+  if !isempty(filename)
+    ncread!(filename,"mask",view(mask,:,:,1),start=[grid_x1,grid_y1],count=[nx,ny])
     nT=size(mask,3)
     for itime=2:nT,ilat=1:size(mask,2),ilon=1:size(mask,1)
       mask[ilon,ilat,itime]=mask[ilon,ilat,1]
     end
     scale!(mask,UInt8(5))
+    ncclose(filename)
   end
-  ncclose(filename)
 end
 
-function getLandSeaMask!(mask::Array{UInt8,4},cube::Cube,grid_x1,nx,grid_y1,ny)
-  filename=joinpath(cube.base_dir,"mask","mask.nc")
-  if isfile(filename)
-    ncread!(filename,"mask",sub(mask,:,:,1,1),start=[grid_x1,grid_y1],count=[nx,ny])
+function getLandSeaMask!(mask::Array{UInt8,4},cube::UCube,grid_x1,nx,grid_y1,ny)
+  filename=filename=getMaskFile(cube)
+  if !isempty(filename)
+    ncread!(filename,"mask",view(mask,:,:,1,1),start=[grid_x1,grid_y1],count=[nx,ny])
     nT=size(mask,3)
     for ivar=1:size(mask,4),itime=2:nT,ilat=1:size(mask,2),ilon=1:size(mask,1)
       mask[ilon,ilat,itime,ivar]=mask[ilon,ilat,1,1]
     end
     scale!(mask,UInt8(5))
+    ncclose(filename)
   end
-  ncclose(filename
-  )
 end
 
-getvartype(cube::Cube,variable,datafile)=vartype(NetCDF.open(joinpath(cube.base_dir,"data",variable,datafile),variable))
+function getvartype(cube::Cube,variable)
+  datafiles=sort!(readdir(joinpath(cube.base_dir,"data",variable)))
+  eltype(NetCDF.open(joinpath(cube.base_dir,"data",variable,datafiles[1]),variable))
+end
 
-function getCubeData(cube::Cube,
+function getvartype(cube::RemoteCube,variable)
+  datafile=cube.dataset_paths[cube.var_name_to_var_index[variable]]
+  eltype(NetCDF.open(datafile,variable))
+end
+
+
+function getCubeData(cube::UCube,
   variable::AbstractString,
   time::Tuple{TimeType,TimeType},
   latitude::Tuple{Real,Real},
@@ -343,12 +359,9 @@ function getCubeData(cube::Cube,
   grid_y1,grid_y2,grid_x1,grid_x2 = getLonLatsToRead(config,longitude,latitude)
   y1,i1,y2,i2,ntime,NpY = getTimesToRead(time[1],time[2],config)
 
-  datafiles=sort!(readdir(joinpath(cube.base_dir,"data",variable)))
-  #yfirst=parse(Int,datafiles[1][1:4])
+  t=getvartype(cube,variable)
 
-  t=getvartype(cube,variable,datafiles[1])
-
-  return SubCube{t}(cube,variable,
+  return SubCube{t,typeof(cube)}(cube,variable,
   (grid_y1,grid_y2,grid_x1,grid_x2),
   (y1,i1,y2,i2,ntime,NpY),
   LonAxis(x2lon(grid_x1,config):config.spatial_res:x2lon(grid_x2,config)),
@@ -357,7 +370,7 @@ function getCubeData(cube::Cube,
 end
 
 "Construct a subcube with many variables"
-function getCubeData{T<:AbstractString}(cube::Cube,
+function getCubeData{T<:AbstractString}(cube::UCube,
   variable::Vector{T},
   time::Tuple{TimeType,TimeType},
   latitude::Tuple{Real,Real},
@@ -371,9 +384,7 @@ function getCubeData{T<:AbstractString}(cube::Cube,
   varTypes=DataType[]
   for i=1:length(variable)
     if haskey(cube.var_name_to_var_index,variable[i])
-      datafiles=sort!(readdir(joinpath(cube.base_dir,"data",variable[i])))
-      #yfirst=parse(Int,datafiles[1][1:4])
-      t=getvartype(cube,variable[i],datafiles[1])
+      t=getvartype(cube,variable[i])
       push!(variableNew,variable[i])
       push!(varTypes,t)
     else
@@ -381,7 +392,7 @@ function getCubeData{T<:AbstractString}(cube::Cube,
     end
   end
   tnew=reduce(promote_type,varTypes[1],varTypes)
-  return SubCubeV{tnew}(cube,variable,
+  return SubCubeV{tnew,typeof(cube)}(cube,variable,
   (grid_y1,grid_y2,grid_x1,grid_x2),
   (y1,i1,y2,i2,ntime,NpY),
   LonAxis(x2lon(grid_x1,config):config.spatial_res:x2lon(grid_x2,config)),
@@ -428,20 +439,21 @@ getNv(r::CartesianRange{CartesianIndex{3}})=(0,1)
 getNv(r::CartesianRange{CartesianIndex{4}})=(r.start.I[4]-1,r.stop.I[4]-r.start.I[4]+1)
 
 function readAllyears{T}(s::SubCube{T,RemoteCube},outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
-  tstart  = (y1 - year(s.cube.config.start_time))*NpY + i1 + toffs
-  readRemote(s.cube,outar,mask,s.variable,grid_x1,nx,grid_y1,ny,tstart,nt,NpY)
+  tstart  = (y1 - year(s.cube.config.start_time))*NpY + i1
+  readRemote(s.cube,outar,mask,s.variable,grid_x1,nx,grid_y1,ny,tstart,nt)
 end
 
 function readAllyears{T}(s::SubCubeV{T,RemoteCube},outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
-  tstart  = (y1 - year(s.cube.config.start_time))*NpY + i1 + toffs
+  tstart  = (y1 - year(s.cube.config.start_time))*NpY + i1
   for iv in (voffs+1):(nv+voffs)
-    outar2=sub(outar,:,:,:,iv-voffs)
-    mask2=sub(mask,:,:,:,iv-voffs)
-    readRemote(s.cube,outar2,mask2,s.variable[iv],grid_x1,nx,grid_y1,ny,tstart,nt,NpY)
+    outar2=view(outar,:,:,:,iv-voffs)
+    mask2=view(mask,:,:,:,iv-voffs)
+    readRemote(s.cube,outar2,mask2,s.variable[iv],grid_x1,nx,grid_y1,ny,tstart,nt)
   end
 end
 
 function readRemote{T}(cube::RemoteCube,outar::AbstractArray{T,3},mask::AbstractArray{UInt8,3},variable,grid_x1,nx,grid_y1,ny,tstart,nt)
+  @assert size(outar)==(nx,ny,nt)
   filename=cube.dataset_paths[cube.var_name_to_var_index[variable]]
   xr = grid_x1:(grid_x1+nx-1)
   yr = grid_y1:(grid_y1+ny-1)
@@ -449,14 +461,14 @@ function readRemote{T}(cube::RemoteCube,outar::AbstractArray{T,3},mask::Abstract
   nanval=convert(T,NaN)
   #Make some assertions for inbounds
   @assert tstart>0
-  @assert (tstart+nt-1)<=size(outar,3)
+  @assert nt<=size(outar,3)
   @assert ny<=size(outar,2)
   @assert nx<=size(outar,1)
   @assert size(outar)==size(mask)
-  try
-    v=NetCDF.open(filename,variable);
+  v=try
+    NetCDF.open(filename,variable);
   catch
-    @inbounds for k=itcur:(itcur+nt-1),j=1:ny,i=1:nx
+    @inbounds for k=1:nt,j=1:ny,i=1:nx
       mask[i,j,k]=(mask[i,j,k] | OUTOFPERIOD)
       outar[i,j,k]=nanval
     end
@@ -464,9 +476,9 @@ function readRemote{T}(cube::RemoteCube,outar::AbstractArray{T,3},mask::Abstract
   end
   scalefac::T = convert(T,get(v.atts,"scale_factor",one(T)))
   offset::T   = convert(T,get(v.atts,"add_offset",zero(T)))
-  outar[1:nx,1:ny,itcur:(itcur+nt-1)]=v[xr,yr,i1cur:(i1cur+nt-1)]
+  outar[1:nx,1:ny,1:nt]=v[xr,yr,tstart:(tstart+nt-1)]
   missval::T=convert(T,ncgetatt(filename,variable,"_FillValue"))
-  @inbounds for k=itcur:(itcur+nt-1),j=1:ny,i=1:nx
+  @inbounds for k=1:nt,j=1:ny,i=1:nx
     if (outar[i,j,k] == missval) || isnan(outar[i,j,k])
       mask[i,j,k]=mask[i,j,k] | MISSING
       outar[i,j,k]=nanval
@@ -525,8 +537,8 @@ end
 
   function readAllyears(s::SubCubeV,outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
     for iv in (voffs+1):(nv+voffs)
-      outar2=sub(outar,:,:,:,iv-voffs)
-      mask2=sub(mask,:,:,:,iv-voffs)
+      outar2=view(outar,:,:,:,iv-voffs)
+      mask2=view(mask,:,:,:,iv-voffs)
       ycur=y1   #Current year to read
       i1cur=i1  #Current time step in year
       itcur=1   #Current time step in output file

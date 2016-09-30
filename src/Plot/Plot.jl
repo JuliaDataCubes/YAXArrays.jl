@@ -358,7 +358,7 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
     return x()
   end
   liftex = Expr(:call,:map,lambda,signals...)
-  myfun=eval(:(li()=$liftex))
+  myfun=eval(:(()->$liftex))
   myfun()
 end
 @noinline getRGBAR(a,m,colorm,mi,ma,misscol,oceancol,nx,ny)=RGB{U8}[val2col(a[i,j],m[i,j],colorm,mi,ma,misscol,oceancol) for i=1:nx,j=1:ny]

@@ -16,7 +16,7 @@ type SimpleCacheBlock{T,N} <: CacheBlock{T,N}
 end
 emptyblock{T,N}(b::Type{SimpleCacheBlock{T,N}})=SimpleCacheBlock{T,N}(Array(T,ntuple(i->0,N)),0.0,CartesianIndex{N}()-CartesianIndex{N}(),false)
 zeroblock{T,N}(b::Type{SimpleCacheBlock{T,N}},block_size,position)=SimpleCacheBlock{T,N}(zeros(T,block_size.I),0.0,position,false)
-getValues(b::SimpleCacheBlock,I...)=slice(b.data,I...)
+getValues(b::SimpleCacheBlock,I...)=view(b.data,I...)
 import Base.<
 <(c1::CacheBlock,c2::CacheBlock)=c1.score<c2.score
 
@@ -29,7 +29,7 @@ type MaskedCacheBlock{T,N} <: CacheBlock{T,N}
 end
 emptyblock{T,N}(b::Type{MaskedCacheBlock{T,N}})=MaskedCacheBlock{T,N}(Array(T,ntuple(i->0,N)),Array(UInt8,ntuple(i->0,N)),0.0,CartesianIndex{N}()-CartesianIndex{N}(),false)
 zeroblock{T,N}(b::Type{MaskedCacheBlock{T,N}},block_size,position)=MaskedCacheBlock{T,N}(zeros(T,block_size.I),zeros(UInt8,block_size.I),0.0,position,false)
-getValues(b::MaskedCacheBlock,I::Union{Integer,UnitRange,Colon}...)=(slice(b.data,I...),slice(b.mask,I...))
+getValues(b::MaskedCacheBlock,I::Union{Integer,UnitRange,Colon}...)=(view(b.data,I...),view(b.mask,I...))
 #getValues(b::MaskedCacheBlock,I::Integer...)=(b.data[I...],b.mask[I...])
 function setValues(b::MaskedCacheBlock,vals,mask,I::Union{Integer,UnitRange,Colon}...)
     b.data[I...]=vals
@@ -280,13 +280,13 @@ using NetCDF
 
 function read_subblock!{T,N}(x::CacheBlock{T,N},y::Array{T,N},block_size::CartesianIndex{N})
     istart = (x.position-CartesianIndex{N}()).*block_size
-    ysmall = sub(y,asRanges(istart+CartesianIndex{N}(),block_size))
+    ysmall = view(y,asRanges(istart+CartesianIndex{N}(),block_size))
     copy!(x.data,ysmall)
 end
 
 function write_subblock!{T,N}(x::CacheBlock{T,N},y::Array{T,N},block_size::CartesianIndex{N})
     istart = (x.position-CartesianIndex{N}()).*block_size
-    ysmall = sub(y,asRanges(istart+CartesianIndex{N}(),block_size))
+    ysmall = view(y,asRanges(istart+CartesianIndex{N}(),block_size))
     copy!(ysmall,x.data)
     x.iswritten=false
 end
