@@ -107,8 +107,8 @@ function _read{N}(y::TempCubePerm,thedata::NTuple{2},r::CartesianRange{Cartesian
       vmask0=NetCDF.open(filename,"mask")
       v=NetCDF.readvar(v0,toRange(iToread)[iperm]...)
       vmask=NetCDF.readvar(vmask0,toRange(iToread)[iperm]...)
-      mypermutedims!(sub(data,toRange(bBig1-r.start+unit,bBig2-r.start+unit)...),v,Val{perm})
-      mypermutedims!(sub(mask,toRange(bBig1-r.start+unit,bBig2-r.start+unit)...),vmask,Val{perm})
+      mypermutedims!(view(data,toRange(bBig1-r.start+unit,bBig2-r.start+unit)...),v,Val{perm})
+      mypermutedims!(view(mask,toRange(bBig1-r.start+unit,bBig2-r.start+unit)...),vmask,Val{perm})
       ncclose(filename)
   end
   return nothing

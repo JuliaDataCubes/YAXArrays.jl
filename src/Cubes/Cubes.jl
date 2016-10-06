@@ -88,6 +88,26 @@ function getSubRange{T}(c::CubeAxis{T},i;write::Bool=true)
   return (r,nothing)
 end
 
+"""
+    saveCube(cube,name::String)
+
+Save a `TempCube` or `CubeMem` to the folder `name` in the CABLAB working directory.
+
+See also loadCube, CABLABdir
+"""
+function saveCube(c::CubeMem,name::AbstractString)
+  newfolder=joinpath(workdir[1],name)
+  isdir(newfolder) && error("$(name) alreaday exists, please pick another name")
+  mkdir(newfolder)
+  tc=CABLAB.Cubes.TempCube(c.axes,CartesianIndex(size(c)),folder=newfolder)
+  files=readdir(newfolder)
+  filter!(i->startswith(i,"file"),files)
+  @assert length(files)==1
+  ncwrite(c.data,joinpath(newfolder,files[1]),"cube")
+  ncwrite(c.mask,joinpath(newfolder,files[1]),"mask")
+  ncclose(joinpath(newfolder,files[1]))
+end
+
 import ..CABLABTools.toRange
 function _read(c::CubeMem,thedata::NTuple{2},r::CartesianRange)
   outar,outmask=thedata
@@ -125,6 +145,8 @@ function Base.show(io::IO,c::AbstractCubeData)
         println(io,a)
     end
 end
+
+
 
 
 Base.show(io::IO,a::RangeAxis)=print(io,rpad(Axes.axname(a),20," "),"Axis with ",length(a)," Elements from ",first(a.values)," to ",last(a.values))

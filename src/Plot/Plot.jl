@@ -226,7 +226,10 @@ function plotXY{T}(cube::AbstractCubeData{T};group=0,xaxis=-1,kwargs...)
   end
   lambda = Expr(:(->), Expr(:tuple, argvars...),plotfun2)
   liftex = Expr(:call,:map,lambda,signals...)
-  myfun=eval(:(li(cube)=$liftex))
+  myfun=eval(quote
+    local li
+    li(cube)=$liftex
+  end)
   for w in widgets display(w) end
   display(myfun(cube))
 end
