@@ -231,7 +231,7 @@ function plotXY{T}(cube::AbstractCubeData{T};group=0,xaxis=-1,kwargs...)
   display(myfun(cube))
 end
 
-function getMinMax(x,mask)
+function getMinMax(x,mask;symmetric=false,squeeze=1.0)
   mi=typemax(eltype(x))
   ma=typemin(eltype(x))
   for ix in eachindex(x)
@@ -244,6 +244,11 @@ function getMinMax(x,mask)
     mi,ma=(zero(eltype(x)),one(eltype(x)))
   elseif mi==ma
     mi,ma=(mi,mi+eps(mi))
+  end
+  if symmetric
+    m=max(abs(mi),abs(ma))
+    mi=-m
+    ma=m
   end
   mi,ma
 end
@@ -283,7 +288,7 @@ Map plotting tool for cube objects, can be called on any type of cube data
 If a dimension is neither longitude or latitude and is not fixed through an additional keyword, a slider or dropdown menu will appear to select the axis value.
 """
 function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
-  colorm=colormap("oranges"),oceancol=colorant"darkblue",misscol=colorant"gray",kwargs...)
+  colorm=colormap("oranges"),oceancol=colorant"darkblue",misscol=colorant"gray",symmetric=false,kwargs...)
   dmin,dmax=typed_dminmax(T,dmin,dmax)
   axlist=axes(cube)
   ilon=findfirst(a->isa(a,LonAxis),axlist)
@@ -336,7 +341,7 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
   push!(ga,getMemHandle(cube,1,CartesianIndex(ntuple(i->subcubedims[i],length(axlist)))))
   lga=length(ga)
   dataslice=Expr(:call,:getSubRange,:(ga[$lga]),sliceargs...)
-  mimaex = dmin==dmax ? :((mi,ma)=getMinMax(a,m)) : :(mi=$(dmin);ma=$(dmax))
+  mimaex = dmin==dmax ? :((mi,ma)=getMinMax(a,m,symmetric=$symmetric)) : :(mi=$(dmin);ma=$(dmax))
   plotfun=quote
     $fixedvarsEx
     a,m=$dataslice
@@ -358,7 +363,8 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
     return x()
   end
   liftex = Expr(:call,:map,lambda,signals...)
-  myfun=eval(:(()->$liftex))
+  pf = gensym()
+  myfun=eval(:($(pf)()=$liftex))
   myfun()
 end
 @noinline getRGBAR(a,m,colorm,mi,ma,misscol,oceancol,nx,ny)=RGB{U8}[val2col(a[i,j],m[i,j],colorm,mi,ma,misscol,oceancol) for i=1:nx,j=1:ny]

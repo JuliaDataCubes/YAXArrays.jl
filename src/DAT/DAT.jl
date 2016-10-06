@@ -11,7 +11,7 @@ import Compat.UTF8String
 using Base.Dates
 import DataArrays.DataArray
 import DataArrays.isna
-global const debugDAT=true
+global const debugDAT=false
 macro debug_print(e)
   debugDAT && return(:(println($e)))
   :()
@@ -126,12 +126,9 @@ getOutAxes(cdata::Tuple,t::Function,pargs)=t(cdata,pargs)
 mapCube(fu::Function,cdata::AbstractCubeData,addargs...;kwargs...)=mapCube(fu,(cdata,),addargs...;kwargs...)
 
 function getReg(fuObj::DATFunction,name::Symbol,cdata)
-  println(name)
   return getfield(fuObj,name)
 end
 function getReg(sfu,name::Symbol,cdata)
-  println("In generic")
-  println(name)
   if     name==:outtype    return Any
   elseif name==:inAxes     return ntuple(i->(),length(cdata))
   elseif name==:outAxes    return ()
