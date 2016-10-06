@@ -18,7 +18,7 @@ import Compat.UTF8String
 
 global const workdir=UTF8String["./"]
 haskey(ENV,"CABLAB_WORKDIR") && (workdir[1]=ENV["CABLAB_WORKDIR"])
-CABLABdir(x::AbstractString)=workdir[1]=x
+CABLABdir(x::String)=workdir[1]=x
 CABLABdir()=workdir[1]
 export CABLABdir
 
@@ -29,6 +29,12 @@ include("DAT/DAT.jl")
 include("Proc/Proc.jl")
 include("Plot/Plot.jl")
 
+import Vega.VegaVisualization
+import Vega.patchwork_repr
+#Patch Vega
+function Base.show(io::IO, m::MIME"text/html", v::VegaVisualization)
+    show(io, m, patchwork_repr(v))
+end
 
 importall .Cubes, .CubeAPI, .DAT, .Proc, .Plot
 
