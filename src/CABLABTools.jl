@@ -34,7 +34,7 @@ toRange(c1::CartesianIndex,c2::CartesianIndex)=map(colon,c1.I,c2.I)
 
 function passobj(src::Int, target::Vector{Int}, nm::Symbol;
                  from_mod=Main, to_mod=Main)
-    r = RemoteRef(src)
+    r = RemoteChannel(src)
     @spawnat(src, put!(r, getfield(from_mod, nm)))
     @sync for to in target
         @spawnat(to, eval(to_mod, Expr(:(=), nm, fetch(r))))
@@ -76,19 +76,19 @@ function freshworkermodule()
         using CABLAB
     end))
     eval(Main,quote
-      rs=RemoteRef[]
+      rs=Future[]
       for pid in workers()
-        n=remotecall_fetch(pid,()->in(:PMDATMODULE,names(Main)))
+        n=remotecall_fetch(()->in(:PMDATMODULE,names(Main)),pid)
         if !n
-          r1=remotecall(pid,()->(eval(Main,:(using CABLAB));nothing))
-          r2=remotecall(pid,()->(eval(Main,:(module PMDATMODULE
+          r1=remotecall(()->(eval(Main,:(using CABLAB));nothing),pid)
+          r2=remotecall(()->(eval(Main,:(module PMDATMODULE
           using CABLAB
           import CABLAB.Cubes.TempCubes.openTempCube
           import CABLAB.CubeAPI.CachedArrays.CachedArray
           import CABLAB.CubeAPI.CachedArrays.MaskedCacheBlock
           import CABLAB.CubeAPI.CachedArrays
           import CABLAB.CABLABTools.totuple
-          end));nothing))
+        end));nothing),pid)
           push!(rs,r1)
           push!(rs,r2)
         end
@@ -106,7 +106,7 @@ macro everywhereelsem(ex)
         Base.sync_begin()
         thunk = ()->(eval(Main.PMDATMODULE,$(Expr(:quote,ex))); nothing)
         for pid in workers()
-            Base.async_run_thunk(()->remotecall_fetch(pid, thunk))
+            Base.async_run_thunk(()->remotecall_fetch(thunk,pid))
             yield() # ensure that the remotecall_fetch has been started
         end
 

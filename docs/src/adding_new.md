@@ -10,7 +10,7 @@ f(x_out,m_out,x_in,m_in,addargs...), where `x_out` is the output array, `m_mout`
 This can be followed by an arbitrary number of additional arguments `addargs`.
 
 You can read about cube masks here [Cube Masks](@ref). In case you don't want to treat the cube's mask individually, you can leave out the `m_out` arguments
-and have missing values treated through DataArrays or using NaNs. Once you have defined your function, you can register it whith `registerDATFunction`
+and have missing values treated through NullableArrays or using NaNs. Once you have defined your function, you can register it whith `registerDATFunction`
 
 In most processing frameworks of this kind, you have some kind of apply function that you pass your function to and specify the dimension number of your
 array that you want to slice. Here we take a different approach. Our datacubes have named axes and usually a function is supposed to be applied on slices
@@ -48,24 +48,24 @@ After this you can apply your function like this `mapCube(fillGaps, cubedata)`, 
 ### Using Data Arrays for missing data
 
 In the next example we assume want to register a function that calculates the time variance of a variable. Internally we want to use the `StatsBase` methods to
-calculate the variance in the presence of missing data. To do this, the input data is best represented as a `DataArray`. We register the function in the following way:
+calculate the variance in the presence of missing data. To do this, the input data is best represented as a `NullableArray`. We register the function in the following way:
 
 ```@example
 using CABLAB # hide
-using DataArrays
-function timeVariance{T}(xout::DataArray{T,0}, xin::DataVector)
+using NullableArrays
+function timeVariance{T}(xout::NullableArray{T,0}, xin::NullableVector)
   xout[1]=var(xin)
 end
 
 inAxes  = (TimeAxis,)
 
-registerDATFunction(timeVariance, inAxes, (), inmissing=(:dataarray,), outmissing=:dataarray, no_ocean=1);
+registerDATFunction(timeVariance, inAxes, (), inmissing=(:nullable,), outmissing=:nullable, no_ocean=1);
 ```
 
 Here, the only input axis is again the time axis. However, the output axis is an empty tuple, which means that a single value is returned by the function and written
 to the 0-dimensional array `xout`. The optional argument `inmissing` is a tuple of symbols, here it is length one because there is only a single input cube.
-When `:dataarray` is chosen, missing values in the cube will be converted to `NA`s in the function's input array. The same hold true for the `outmissing` argument.
-Any `NA` value in the output array will be converted to a missing value in the resulting cube's mask.
+When `:nullable` is chosen, missing values in the cube will be converted to `null`s in the function's input array. The same hold true for the `outmissing` argument.
+Any `null` value in the output array will be converted to a missing value in the resulting cube's mask.
 
 There is one additional optional argument set, `no_ocean=1`. This tells the kernel to check the landsea mask if a certain value is an ocean point and not enter
 the calculation for these points, but to just set the resulting mask to `OCEAN`.
@@ -167,7 +167,7 @@ end
 
 inAxes=((LonAxis, LatAxis), (LatAxis,))
 outAxes=()
-registerDATFunction(spatialAggregation, inAxes, outAxes, inmissing=(:dataarray,:nan), outmissing=:dataarray);
+registerDATFunction(spatialAggregation, inAxes, outAxes, inmissing=(:nullable,:nan), outmissing=:nullable);
 ```
 
 Here, the function will operate on a lon x lat matrix and one has access to the latitude values inside the function.
