@@ -106,7 +106,7 @@ function getBlockIndEx(N,isym,iIsym,bIsym)
     end
 end
 
-@generated function exchangeBlock{T,N}(c::CachedArray{T,N},bI)
+function getBlockExchangeEx(N)
     quote
         blockx,i = findmin(c.currentblocks)
         blockx.iswritten && write_subblock!(blockx,c.x,block_size)
@@ -158,7 +158,7 @@ function funcbodyRangeEx(N,higetVal,higetSub)
       blocks=c.blocks
       if @nall $N d->(iIstart_d+l_d-1<=block_size[d])
           if @nref($N,blocks,bI) == c.emptyblock
-              exchangeBlock(c,bI)
+              $(getBlockExchangeEx(N))
           else
               blockx=@nref($N,blocks,bI)
           end
@@ -232,7 +232,7 @@ for N=1:5
     $(getBlockIndEx(N,"i","iI","bI"))
     blocks=c.blocks
     if @nref($N,blocks,bI) == c.emptyblock
-      exchangeBlock(c,bI)
+      $(getBlockExchangeEx(N))
     else
       blockx=@nref($N,blocks,bI)
     end
@@ -245,7 +245,7 @@ for N=1:5
     $(getBlockIndEx(N,"i","iI","bI"))
     blocks=c.blocks
     if @nref($N,blocks,bI) == c.emptyblock
-      exchangeBlock(c,BI)
+      $(getBlockExchangeEx(N))
     else
       blockx=@nref($N,blocks,bI)
     end

@@ -105,9 +105,10 @@ axunits(::LatAxis)="degrees_north"
 axname(::TimeAxis)="time"
 axname(::TimeScaleAxis)="time scale"
 axname(::SpatialPointAxis)="location"
+axname(::VariableAxis)="variable"
 
-axVal2Index(axis::Union{LatAxis,LonAxis},v)=round(Int,axis.values.step)*round(Int,v*axis.values.divisor-axis.values.start-sign(axis.values.step))+2
-axVal2Index(x,v)=v
+axVal2Index(axis::Union{LatAxis,LonAxis},v)=min(max(round(Int,axis.values.step)*round(Int,v*axis.values.divisor-axis.values.start-sign(axis.values.step))+2,1),length(axis))
+axVal2Index(x,v)=min(max(v,1),length(x))
 
 getSubRange(x::CubeAxis,i)=x[i],nothing
 getSubRange(x::TimeAxis,i)=sub(x,i),nothing
