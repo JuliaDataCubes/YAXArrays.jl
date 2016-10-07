@@ -7,6 +7,7 @@ Documenter.Documents.RawHTML("<script>$(Patchwork.js_runtime())</script>")
 
 ```@setup 1
 using CABLAB # hide
+import Documenter
 ds=RemoteCube() # hide
 ```
 
@@ -43,3 +44,45 @@ Generating x-y type plots is done with the generic plotXY function.
 ```@docs
 plotXY
 ```
+
+Here are two examples for using this function:
+
+```julia
+cdata=getCubeData(ds,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
+longitude=(30.0,30.0),latitude=(50.0,52.0))
+nothing # hide
+```
+
+````@eval
+using CABLAB # hide
+import Documenter # hide
+ds=RemoteCube() # hide
+cdata=getCubeData(ds,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
+longitude=(30.0,30.0),latitude=(50.0,52.0))
+p=plotXY(cdata,xaxis="time",group="variable",lon=31,lat=51)
+b=IOBuffer()
+show(b,MIME"text/html"(),p)
+Documenter.Documents.RawHTML(takebuf_string(b))
+````
+
+This is a time series plot, grouped by variables for a specific longitude/latitude.
+
+
+```julia
+m=reduceCube(mean,cdata,TimeAxis)
+plotXY(m,xaxis="variable",group="lat",lon=30)
+nothing # hide
+```
+
+````@eval
+using CABLAB # hide
+import Documenter # hide
+ds=RemoteCube() # hide
+cdata=getCubeData(ds,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
+longitude=(30.0,30.0),latitude=(50.0,52.0))
+m=reduceCube(mean,cdata,TimeAxis, max_cache=1e8)
+p=plotXY(m,xaxis="variable",group="lat",lon=30)
+b=IOBuffer()
+show(b,MIME"text/html"(),p)
+Documenter.Documents.RawHTML(takebuf_string(b))
+````

@@ -147,7 +147,7 @@ Apply a reduction function `f` on slices of the cube `cube`. The dimension(s) ar
 either an Axis type or a tuple of axis types. Keyword arguments are passed to `mapCube` or, if not known to `f`.
 It is assumed that `f` takes an array input and returns a single value.
 """
-reduceCube{T<:CubeAxis}(f::Function,c::CABLAB.Cubes.AbstractCubeData,dim::Type{T};kwargs...)=reduceCube(f,c,dim;kwargs...)
+reduceCube{T<:CubeAxis}(f::Function,c::CABLAB.Cubes.AbstractCubeData,dim::Type{T};kwargs...)=reduceCube(f,c,(dim,);kwargs...)
 function reduceCube(f::Function,c::CABLAB.Cubes.AbstractCubeData,dim::Tuple,no_ocean=any(i->isa(i,LonAxis) || isa(i,LatAxis),axes(c)) ? 0 : 1;kwargs...)
   axlist=axes(c)
   if any(i->isa(i,LatAxis),axlist)
@@ -527,7 +527,7 @@ end
 fillNanMask(m)=m[:]=0x01
 #"Converts data and Mask to a NullableArray"
 toNullableArray(x,m)=NullableArray(x,reinterpret(Bool,m))
-fillNullableArrayMask(x,m)=for i in eachindex(x.data) m[i]=isnull(x[i]) ? 0x01 : 0x00 end
+fillNullableArrayMask(x,m)=for i in eachindex(x.values) m[i]=isnull(x[i]) ? 0x01 : 0x00 end
 
 """
     registerDATFunction(f, dimsin, [dimsout, [addargs]]; inmissing=(:mask,...), outmissing=:mask, no_ocean=0)
