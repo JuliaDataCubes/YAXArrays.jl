@@ -1,5 +1,5 @@
 module DAT
-export registerDATFunction, mapCube, getInAxes, getOutAxes, findAxis, reduceCube
+export registerDATFunction, mapCube, getInAxes, getOutAxes, findAxis, reduceCube, getAxis
 importall ..Cubes
 importall ..CubeAPI
 importall ..CubeAPI.CachedArrays
