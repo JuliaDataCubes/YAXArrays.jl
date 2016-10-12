@@ -74,7 +74,7 @@ function sampleLandPoints(cdata::CubeAPI.AbstractCubeData,nsample::Integer)
   sax=getSpatiaPointAxis(cm);
   w=WeightVec(map(i->cosd(i[2]),sax.values))
   sax2=SpatialPointAxis(sample(sax.values,w,nsample,replace=false))
-  y=mapCube(toPointAxis,(cdata,axlist[1],axlist[2],sax2),max_cache=1e8);
+  y=mapCube(toPointAxis,(cdata,axlist[ilon],axlist[ilat],sax2),max_cache=1e8);
 end
 export sampleLandPoints
 end
