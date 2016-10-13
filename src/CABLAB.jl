@@ -9,10 +9,10 @@ Some info on the project...
 module CABLAB
 export Cube, getCubeData,readCubeData,CubeMem,CubeAxis, TimeAxis, VariableAxis, LonAxis, FitAxis, LatAxis, CountryAxis, SpatialPointAxis, saveCube, loadCube,
         RangeAxis, CategoricalAxis, MSCAxis, getSingVal, TimeScaleAxis, QuantileAxis, MethodAxis, RemoteCube #From Cube module
-export registerDATFunction, mapCube, reduceCube #From DAT module
+export registerDATFunction, mapCube, reduceCube, getAxis #From DAT module
 export axVal2Index, plotTS, plotMAP, plotXY #From Plot module
-export removeMSC, gapFillMSC, recurrences, normalize, timeMean, spatialMean, timeVariance, @no_ocean, sampleLandPoints, toPointAxis, getMSC, filterTSFFT,
-         timespacequantiles, timelonlatquantiles, DAT_detectAnomalies! #From Proc module
+export DAT_detectAnomalies!, removeMSC, gapFillMSC, normalizeTS,
+  sampleLandPoints, toPointAxis, getMSC, filterTSFFT, getNpY,timespacequantiles,timelonlatquantiles, getMedSC #From Proc module
 export TempCube, openTempCube # From CachedArrays
 import Compat.UTF8String
 

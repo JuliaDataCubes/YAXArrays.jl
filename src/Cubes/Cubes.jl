@@ -8,7 +8,13 @@ export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesC
        getSingVal, FitAxis, TimeScaleAxis, QuantileAxis, MethodAxis
 
 """
-Supertype of all cubes. All map and plot functions are supposed to work on subtypes of these. This is done by implementing the following functions
+    AbstractCubeData{T,N}
+
+Supertype of all cubes. `T` is the data type of the cube and `N` the number of
+dimensions. Beware that an `AbstractCubeData` does not implement the `AbstractArray`
+interface. However, the `CABLAB` functions [mapCube](@ref), [reduceCube](@ref),
+[readCubeData](@ref), [plotMAP](@ref) and [plotXY](@ref) will work on any subtype
+of `AbstractCubeData`
 """
 abstract AbstractCubeData{T,N}
 
@@ -24,7 +30,7 @@ getSingVal(c::AbstractCubeData,a...)=error("getSingVal called in the wrong way w
 
 
 """
-This function reads a Cube's data and returns it to memory
+    readCubeData(cube::AbstractCubeData)
 """
 function readCubeData end
 
@@ -54,6 +60,15 @@ importall .Axes
 
 immutable EmptyCube{T}<:AbstractCubeData{T,0} end
 
+"""
+    CubeMem{T,N} <: AbstractCubeMem{T,N}
+
+An in-memory data cube. It
+
+###
+
+
+"""
 type CubeMem{T,N} <: AbstractCubeMem{T,N}
   axes::Vector{CubeAxis}
   data::Array{T,N}
@@ -80,6 +95,7 @@ getSingVal{T,N}(c::CubeMem{T,N},i...;write::Bool=true)=(c.data[i...],c.mask[i...
 getSingVal{T}(c::CubeMem{T,0};write::Bool=true)=(c.data[1],c.mask[1])
 getSingVal{T}(c::CubeAxis{T},i;write::Bool=true)=(c.values[i],nothing)
 
+readCubeData(c::CubeMem)=c
 
 getSubRange{T}(c::CubeMem{T,0};write::Bool=true)=(c.data,c.mask)
 

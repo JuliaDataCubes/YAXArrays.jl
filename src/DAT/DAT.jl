@@ -11,6 +11,7 @@ import Compat.UTF8String
 using Base.Dates
 import NullableArrays.NullableArray
 import NullableArrays.isnull
+import StatsBase.WeightVec
 global const debugDAT=false
 macro debug_print(e)
   debugDAT && return(:(println($e)))
@@ -114,14 +115,16 @@ function getInAxes(indims::Tuple{Vararg{Tuple{Vararg{DataType}}}},cdata::Tuple)
   end
   inAxes
 end
-getOutAxes(outdims,cdata,pargs)=map(t->getOutAxes(cdata,t,pargs),outdims)
-function getOutAxes(cdata::Tuple,t::DataType,pargs)
+getOutAxes(outdims,cdata,pargs)=getOutAxes((outdims,),cdata,pargs)
+getOutAxes(outdims::Tuple,cdata,pargs)=map(t->getOutAxes2(cdata,t,pargs),outdims)
+function getOutAxes2(cdata::Tuple,t::DataType,pargs)
   for da in cdata
     ii = findAxis(t,axes(da))
     ii>0 && return axes(da)[ii]
   end
 end
-getOutAxes(cdata::Tuple,t::Function,pargs)=t(cdata,pargs)
+getOutAxes2(cdata::Tuple,t::Function,pargs)=t(cdata,pargs)
+getOutAxes2(cdata::Tuple,t::CubeAxis,pargs)=t
 
 
 mapCube(fu::Function,cdata::AbstractCubeData,addargs...;kwargs...)=mapCube(fu,(cdata,),addargs...;kwargs...)
@@ -149,9 +152,16 @@ It is assumed that `f` takes an array input and returns a single value.
 """
 reduceCube{T<:CubeAxis}(f::Function,c::CABLAB.Cubes.AbstractCubeData,dim::Type{T};kwargs...)=reduceCube(f,c,(dim,);kwargs...)
 function reduceCube(f::Function,c::CABLAB.Cubes.AbstractCubeData,dim::Tuple,no_ocean=any(i->isa(i,LonAxis) || isa(i,LatAxis),axes(c)) ? 0 : 1;kwargs...)
-  axlist=axes(c)
-  if any(i->isa(i,LatAxis),axlist)
-    return mapCube(f,c,indims=dim,outdims=(),inmissing=(:nullable,),outmissing=(:nullable),inplace=false;kwargs...)
+  if in(LatAxis,dim)
+    axlist=axes(c)
+    inAxes=map(i->getAxis(i,axlist),dim)
+    latAxis=getAxis(LatAxis,axlist)
+    sfull=map(length,inAxes)
+    ssmall=map(i->isa(i,LatAxis) ? length(i) : 1,inAxes)
+    wone=reshape(cosd(latAxis.values),ssmall)
+    ww=zeros(sfull).+wone
+    wv=WeightVec(reshape(ww,length(ww)))
+    return mapCube(f,c,wv,indims=dim,outdims=(),inmissing=(:nullable,),outmissing=(:nullable),inplace=false;kwargs...)
   else
     return mapCube(f,c,indims=dim,outdims=(),inmissing=(:nullable,),outmissing=(:nullable),inplace=false;kwargs...)
   end
@@ -178,8 +188,6 @@ function mapCube(fu::Function,
     no_ocean=getReg(fuObj,:no_ocean,cdata),
     inplace=getReg(fuObj,:inplace,cdata),
     kwargs...)
-  @debug_print "In map function"
-  isdir(outfolder) || mkpath(outfolder)
   @debug_print "Generating DATConfig"
   dc=DATConfig(cdata,getInAxes(indims,cdata),getOutAxes(outdims,cdata,addargs),getOuttype(outtype,cdata),max_cache,outfolder,sfu,inmissing,outmissing,no_ocean,inplace,addargs,kwargs)
   analyseaddargs(fuObj,dc)
@@ -261,7 +269,8 @@ function generateOutCube(dc::DATConfig)
   T=eltype(dc.outcube)
   outsize=sizeof(T)*(length(dc.axlistOut)>0 ? prod(map(length,dc.axlistOut)) : 1)
   if outsize>dc.max_cache || dc.ispar
-    dc.outcube=TempCube(dc.axlistOut,CartesianIndex(totuple([map(length,dc.outAxes);dc.loopCacheSize])),folder=dc.outfolder,T=T)
+    isdir(dc.outfolder) || mkpath(dc.outfolder)
+    dc.outcube=TempCube(dc.axlistOut,CartesianIndex(totuple([map(length,dc.outAxes);dc.loopCacheSize])),folder=dc.outfolder,T=T,persist=false)
   else
     newsize=map(length,dc.axlistOut)
     dc.outcube = Cubes.CubeMem{T,length(newsize)}(dc.axlistOut, zeros(T,newsize...),zeros(UInt8,newsize...))
@@ -457,12 +466,16 @@ using Base.Cartesian
     ains=Symbol("ain_$i");mins=Symbol("min_$i")
     push!(loopBody.args,:(($(ains),$(mins))=$s))
     push!(callargs,ains)
-    if inmissing[i]==:mask
-      push!(callargs,mins)
-    elseif inmissing[i]==:nan
-      push!(loopBody.args,:(fillNaNs($(ains),$(mins))))
-    elseif inmissing[i]==:nullable
-      push!(loopBody.args,:($(ains)=toNullableArray($(ains),$(mins))))
+    if isa(inmissing[i],Symbol)
+      if inmissing[i]==:mask
+        push!(callargs,mins)
+      elseif inmissing[i]==:nan
+        push!(loopBody.args,:(fillVals($(ains),$(mins),NaN)))
+      elseif inmissing[i]==:nullable
+        push!(loopBody.args,:($(ains)=toNullableArray($(ains),$(mins))))
+      end
+    else
+      push!(loopBody.args,:(fillVals($(ains),$(mins),$(inmissing))))
     end
   end
   if OC>0
@@ -507,17 +520,17 @@ using Base.Cartesian
 end
 
 "This function sets the values of x to NaN if the mask is missing"
-function fillNaNs(x::AbstractArray,m::AbstractArray{UInt8})
+function fillVals(x::AbstractArray,m::AbstractArray{UInt8},v)
   nmiss=0
   @inbounds for i in eachindex(x)
     if (m[i] & 0x01)==0x01
-      x[i]=NaN
+      x[i]=v
       nmiss+=1
     end
   end
   return nmiss==length(x) ? true : false
 end
-fillNaNs(x,::Void)=nothing
+fillVals(x,::Void,v)=nothing
 "Sets the mask to missing if values are NaN"
 function fillNanMask(x,m)
   for i in eachindex(x)
@@ -572,7 +585,7 @@ end
 
 function getAxis{T<:CubeAxis}(a::Type{T},v)
   for i=1:length(v)
-      isa(v[i],a) && return a
+      isa(v[i],a) && return v[i]
   end
   return 0
 end

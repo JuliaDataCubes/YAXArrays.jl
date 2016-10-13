@@ -24,21 +24,22 @@ end
 "
 A data cube's static configuration information.
 
-- `spatial_res`: The spatial image resolution in degree.
-- `grid_x0`: The fixed grid X offset (longitude direction).
-- `grid_y0`: The fixed grid Y offset (latitude direction).
-- `grid_width`: The fixed grid width in pixels (longitude direction).
-- `grid_height`: The fixed grid height in pixels (latitude direction).
-- `temporal_res`: The temporal resolution in days.
-- `ref_time`: A datetime value which defines the units in which time values are given, namely days since *ref_time*.
-- `start_time`: The start time of the first image of any variable in the cube given as datetime value.
+* `spatial_res`: The spatial image resolution in degree.
+* `grid_x0`: The fixed grid X offset (longitude direction).
+* `grid_y0`: The fixed grid Y offset (latitude direction).
+* `grid_width`: The fixed grid width in pixels (longitude direction).
+* `grid_height`: The fixed grid height in pixels (latitude direction).
+* `static_data`:
+* `temporal_res`: The temporal resolution in days.
+* `ref_time`: A datetime value which defines the units in which time values are given, namely days since *ref_time*.
+* `start_time`: The start time of the first image of any variable in the cube given as datetime value.
 ``None`` means unlimited.
-- `end_time`: The end time of the last image of any variable in the cube given as datetime value.
+* `end_time`: The end time of the last image of any variable in the cube given as datetime value.
 ``None`` means unlimited.
-- `variables`: A list of variable names to be included in the cube.
-- `file_format`: The file format used. Must be one of 'NETCDF4', 'NETCDF4_CLASSIC', 'NETCDF3_CLASSIC'
+* `variables`: A list of variable names to be included in the cube.
+* `file_format`: The file format used. Must be one of 'NETCDF4', 'NETCDF4_CLASSIC', 'NETCDF3_CLASSIC'
 or 'NETCDF3_64BIT'.
-- `compression`: Whether the data should be compressed.
+* `compression`: Whether the data should be compressed.
 "
 type CubeConfig
   end_time::DateTime
@@ -80,19 +81,26 @@ function parseConfig(x)
   d
 end
 
-"
-Represents a data cube. The default constructor is
+"""
+Represents a data cube accessible though the file system. The default constructor is
 
 Cube(base_dir)
 
 where `base_dir` is the datacube's base directory.
-"
+
+### Fields
+
+* `base_dir` the cube parent directory
+* `config` the cube's static configuration [CubeConfig](@ref)
+* `dataset_files` a list of datasets in the cube
+* `var_name_to_var_index` basically the inverse of `dataset_files`
+
+"""
 type Cube
   base_dir::UTF8String
   config::CubeConfig
   dataset_files::Vector{UTF8String}
   var_name_to_var_index::OrderedDict{UTF8String,Int}
-  firstYearOffset::Int
 end
 
 function Cube(base_dir::AbstractString)
@@ -104,10 +112,25 @@ function Cube(base_dir::AbstractString)
   sort!(data_dir_entries)
   var_name_to_var_index=OrderedDict{UTF8String,Int}()
   for i=1:length(data_dir_entries) var_name_to_var_index[data_dir_entries[i]]=i end
-  firstYearOffset=div(dayofyear(cubeconfig.start_time)-1,cubeconfig.temporal_res)
-  Cube(base_dir,cubeconfig,data_dir_entries,var_name_to_var_index,firstYearOffset)
+  Cube(base_dir,cubeconfig,data_dir_entries,var_name_to_var_index)
 end
 
+"""
+Represents a remote data cube accessible through THREDDS. The default constructor is
+
+RemoteCube(base_url)
+
+where `base_url` is the datacube's base url.
+
+### Fields
+
+* `base_url` the cube parent directory
+* `var_name_to_var_index` basically the inverse of `dataset_files`
+* `dataset_files` a list of datasets in the cube
+* `dataset_paths` a list of urls pointing to the different data sets
+* `config` the cube's static configuration [CubeConfig](@ref)
+
+"""
 type RemoteCube
   base_url::String
   var_name_to_var_index::OrderedDict{String,Int}
@@ -117,8 +140,9 @@ type RemoteCube
 end
 
 function RemoteCube(;resolution="low",url="http://www.brockmann-consult.de/cablab-thredds/")
+  resExt=resolution=="high" ? "fileServer/datacube/high-res/cube.config" : "fileServer/datacube/low-res/cube.config"
   res=get(string(url,"catalog.xml"))
-  xconfig=split(readall(get(string(url,"fileServer/datacube/low-res/cube.config"))),"\n")
+  xconfig=split(readall(get(string(url,resExt))),"\n")
   config=parseConfig(xconfig)
   xmldoc=parse_string(readall(res));
   xroot=root(xmldoc)
@@ -161,7 +185,23 @@ function Base.show(io::IO,c::RemoteCube)
 end
 typealias UCube Union{Cube,RemoteCube}
 
-"A SubCube is a representation of a certain region or time range returned by the getCube function."
+"""
+    immutable SubCube{T,C} <: AbstractCubeData{T,4}
+
+A view into the data cube of a single variable. Is the type returned by the `mapCube`
+function.
+
+### Fields
+
+* `cube::C` Parent cube
+* `variable` selected variable
+* `sub_grid` representation of the subgrid indices
+* `sub_times` representation of the selected time steps
+* `lonAxis`
+* `latAxis`
+* `timeAxis`
+
+"""
 immutable SubCube{T,C} <: AbstractSubCube{T,3}
   cube::C #Parent cube
   variable::UTF8String #Variable
@@ -173,7 +213,18 @@ immutable SubCube{T,C} <: AbstractSubCube{T,3}
 end
 axes(s::SubCube)=CubeAxis[s.lonAxis,s.latAxis,s.timeAxis]
 
-"A SubCubePerm is a representation of a permutation of region or time range returned by the getCube function."
+
+"""
+    immutable SubCubePerm{T} <: AbstractCubeData{T,3}
+
+Representation of a `SubCube` with perumted dimensions
+
+### Fields
+
+* `parent` Parent SubCube
+* `perm` the permutation
+* `iperm` the inverse permutation
+"""
 immutable SubCubePerm{T} <: AbstractSubCube{T,3}
   parent::SubCube{T}
   perm::Tuple{Int,Int,Int}
@@ -191,7 +242,24 @@ s.perm[3]==1 ? length(s.parent.lonAxis) : s.perm[3]==2 ? length(s.parent.latAxis
 
 
 
-"A SubCube containing several variables"
+"""
+    immutable SubCubeV{T, C} <: AbstractCubeData{T,4}
+
+A view into the data cube with multiple variables. Returned by the `mapCube`
+function.
+
+### Fields
+
+* `cube::C` Parent cube
+* `variable` list of selected variables
+* `sub_grid` representation of the subgrid indices
+* `sub_times` representation of the selected time steps
+* `lonAxis`
+* `latAxis`
+* `timeAxis`
+* `varAxis`
+
+"""
 immutable SubCubeV{T,C} <: AbstractSubCube{T,4}
   cube::C #Parent cube
   variable::Vector{UTF8String} #Variable
@@ -203,7 +271,11 @@ immutable SubCubeV{T,C} <: AbstractSubCube{T,4}
   varAxis::VariableAxis
 end
 
-"A Permutation of a SubCube containing several variables"
+"""
+    immutable SubCubeVPerm{T} <: AbstractCubeData{T,4}
+
+Representation of a `SubCubeV` with permuted dimensions.
+"""
 immutable SubCubeVPerm{T} <: AbstractSubCube{T,4}
   parent::SubCubeV{T}
   perm::NTuple{4,Int}
@@ -228,7 +300,7 @@ Base.permutedims{T}(c::SubCubeV{T},perm::NTuple{4,Int})=SubCubeVPerm(c,perm)
 
 getCubeData(cube::Cube;variable,time,latitude,longitude)
 
-The following keyword arguments are accepted:
+Returns a view into the data cube. The following keyword arguments are accepted:
 
 - *variable*: an variable index or name or an iterable returning multiple of these (var1, var2, ...)
 - *time*: a single datetime.datetime object or a 2-element iterable (time_start, time_end)
@@ -237,7 +309,7 @@ The following keyword arguments are accepted:
 
 Returns a `SubCube` object which represents a view into the original data cube.
 
-http://earthsystemdatacube.org
+
 """
 function getCubeData(cube::UCube;variable=Int[],time=[],latitude=[],longitude=[])
   #First fill empty inputs
@@ -311,7 +383,7 @@ function getMaskFile(cube::Cube)
 end
 function getMaskFile(cube::RemoteCube)
 
-  filename=string(cube.base_url,"dodsC/datacube/low-res/data/water_mask/2001_water_mask.nc")
+  filename=cube.config.spatial_res==0.25 ? string(cube.base_url,"dodsC/datacube/low-res/data/water_mask/2001_water_mask.nc") : string(cube.base_url,"dodsC/datacube/high-res/data/water_mask/2001_water_mask.nc")
   try
     ncinfo(filename)
     return filename
@@ -384,7 +456,6 @@ function getCubeData(cube::UCube,
   TimeAxis(getTimeRanges(cube,y1,y2,i1,i2)))
 end
 
-"Construct a subcube with many variables"
 function getCubeData{T<:AbstractString}(cube::UCube,
   variable::Vector{T},
   time::Tuple{TimeType,TimeType},

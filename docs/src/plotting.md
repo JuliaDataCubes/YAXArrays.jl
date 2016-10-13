@@ -71,7 +71,6 @@ This is a time series plot, grouped by variables for a specific longitude/latitu
 ```julia
 m=reduceCube(mean,cdata,TimeAxis)
 plotXY(m,xaxis="variable",group="lat",lon=30)
-nothing # hide
 ```
 
 ````@eval

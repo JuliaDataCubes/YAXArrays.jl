@@ -7,7 +7,6 @@ importall ..Proc
 
 function removeMSC(xout::AbstractArray,maskout::AbstractArray{UInt8},xin::AbstractArray,maskin::AbstractArray{UInt8},NpY::Integer,tmsc,tnmsc)
     #Start loop through all other variables
-    @no_ocean maskin maskout
     getMSC(tmsc,xin,tnmsc,NpY=NpY)
     subtractMSC(tmsc,xin,xout,NpY)
     copy!(maskout,maskin)
@@ -17,11 +16,10 @@ end
 registerDATFunction(removeMSC,(TimeAxis,),(TimeAxis,),(cube,pargs)->begin
     NpY=getNpY(cube[1])
     (NpY,zeros(Float64,NpY),zeros(Int,NpY))
-end)
+end,no_ocean=1)
 
 function gapFillMSC(xout::AbstractArray,maskout::AbstractArray{UInt8},xin::AbstractArray,maskin::AbstractArray{UInt8},NpY::Integer,tmsc,tnmsc)
 
-  @no_ocean maskin maskout
   getMSC(tmsc,xin,tnmsc,NpY=NpY)
   replaceMisswithMSC(tmsc,xin,xout,maskin,maskout,NpY)
 
@@ -29,7 +27,7 @@ end
 registerDATFunction(gapFillMSC,(TimeAxis,),(TimeAxis,),(cube,pargs)->begin
     NpY=getNpY(cube[1])
     (NpY,zeros(Float64,NpY),zeros(Int,NpY))
-end)
+end,no_ocean=1)
 
 
 
@@ -39,7 +37,7 @@ function getMSC(xout::AbstractVector,xin::AbstractVector,nmsc::Vector{Int}=zeros
     NpY=length(xout)
     fillmsc(imscstart,xout,nmsc,xin,NpY)
 end
-registerDATFunction(getMSC,(TimeAxis,),((cube,pargs)->MSCAxis(getNpY(cube[1])),),(cube,pargs)->(zeros(Int,getNpY(cube[1])),),inmissing=(:nan,),outmissing=:nan)
+registerDATFunction(getMSC,(TimeAxis,),((cube,pargs)->MSCAxis(getNpY(cube[1])),),(cube,pargs)->(zeros(Int,getNpY(cube[1])),),inmissing=(:nan,),outmissing=:nan,no_ocean=1)
 
 
 
@@ -78,11 +76,11 @@ function getMedSC(xout::AbstractVector,maskout::AbstractVector{UInt8},xin::Abstr
     for doy=1:length(xout)
         empty!(yvec)
         for i=doy:NpY:length(xin)
-            maskin[i]==CABLAB.CubeAPI.VALID && push!(yvec,xin[i])
+            maskin[i]==VALID && push!(yvec,xin[i])
         end
         if length(yvec) > 0
             xout[doy]=quantile!(yvec,q)[1]
-            maskout[doy]=CABLAB.CubeAPI.VALID
+            maskout[doy]=VALID
         else
             xout[doy]=NaN
             maskout[doy]=CABLAB.CubeAPI.MISSING
@@ -90,7 +88,7 @@ function getMedSC(xout::AbstractVector,maskout::AbstractVector{UInt8},xin::Abstr
     end
     xout
 end
-registerDATFunction(getMedSC,(TimeAxis,),((cube,pargs)->MSCAxis(getNpY(cube[1])),))
+registerDATFunction(getMedSC,(TimeAxis,),((cube,pargs)->MSCAxis(getNpY(cube[1])),),no_ocean=1)
 
 
 "Calculates the mean seasonal cycle of a vector"
@@ -108,11 +106,5 @@ function fillmsc{T1}(imscstart::Integer,msc::AbstractVector{T1},nmsc::AbstractVe
     for i in 1:NpY msc[i] = nmsc[i] > 0 ? msc[i]/nmsc[i] : NaN end # Get MSC by dividing by number of points
 end
 
-function getAxis{T<:CubeAxis}(cube::AbstractCubeData,a::Type{T})
-  for ax in axes(cube)
-      isa(ax,a) && return ax
-  end
-  error("Axis $a not found in $(axes(cube))")
-end
 
 end

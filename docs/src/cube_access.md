@@ -20,8 +20,60 @@ This returns a `Cube` object that contains some basics information about the cub
 
 ## Getting a data handle
 
+```@setup 1
+using CABLAB
+c=RemoteCube()
+```
+
+```@example 1
+var=["c_emissions","air_temperature_2m"]
+time=(DateTime("2001-01-01"),DateTime("2001-12-31"))
+cubedata = getCubeData(c,longitude=(30,31),latitude=(50,51),variable=var)
+```
+
+This returns a view into the Data Cube, on which further calculations can be applied.
+All keyword arguments default to the full range, so calling `getCubeData` without
+keyword arguments will return a view
+No data is read yet. Here you can start to do some calculations on your sub-cube, see either
+[Analysis](@ref) for a list of methods provided by this framework or
+[Applying custom functions](@ref) to apply your own functions on the cube. If you just
+want to visualize the cube see this section [Plotting](@ref).
 
 ## Cube Types
+
+```@meta
+CurrentModule=Main.CABLAB.Cubes
+```
+
+```@doc
+AbstractCubeData
+```
+
+```@doc
+CubeMem
+```
+
+```@meta
+CurrentModule=Main.CABLAB.CubeAPI
+```
+
+
+```@doc
+SubCube
+```
+
+```@doc
+SubCubeV
+```
+
+```@meta
+CurrentModule=Main.CABLAB.Cubes.TempCubes
+```
+
+```@doc
+TempCube
+```
+
 
 ## Cube Axes
 ```@autodocs

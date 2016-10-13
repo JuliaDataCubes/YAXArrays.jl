@@ -1,5 +1,6 @@
 module Proc
-export DAT_detectAnomalies!, removeMSC, gapFillMSC, recurrences, normalize, spatialMean, timeMean, timeVariance, @no_ocean, sampleLandPoints, toPointAxis, getMSC, filterTSFFT, getNpY,timespacequantiles,timelonlatquantiles
+export DAT_detectAnomalies!, removeMSC, gapFillMSC, normalizeTS,
+  sampleLandPoints, toPointAxis, getMSC, filterTSFFT, getNpY,timespacequantiles,timelonlatquantiles, getMedSC
 importall ..DAT, ..CubeAPI, ..Cubes
 macro no_ocean(maskin,maskout)
     esc(quote

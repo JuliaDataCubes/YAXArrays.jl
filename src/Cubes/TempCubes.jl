@@ -6,15 +6,35 @@ import Compat.UTF8String
 
 "This defines a temporary datacube, written on disk which is usually "
 abstract AbstractTempCube{T,N} <: AbstractCubeData{T,N}
+
+"""
+    type TempCube{T,N} <: AbstractCubeData{T,N}
+
+The main data structure for storing temporary results from cube operations. Is
+usually returned by [mapCube](@ref), if the result is larger than `max_cache`
+
+### Fields
+
+* `axes` a vector of [CubeAxis](@ref) containing the axes
+* `folder` folder containing the data
+* `block_size` dimension of the files that the cube is split into
+
+Each `TempCube` is stored in a single `folder`, but can contain several files. The
+rule is that one file is small enough to be read into memory and the `block_size`
+determines the size and shape of each sub-file. This data structure is quite convenient
+for parrallel access, because different processes can write their results at the same
+time.
+"""
 type TempCube{T,N} <: AbstractTempCube{T,N}
   axes::Vector{CubeAxis}
-  folder::UTF8String
+  folder::String
   block_size::CartesianIndex{N}
+  persist::Bool
 end
 "This defines a perumtation of a temporary datacube, as a result from perumtedims on a TempCube"
 type TempCubePerm{T,N} <: AbstractTempCube{T,N}
   axes::Vector{CubeAxis}
-  folder::UTF8String
+  folder::String
   block_size::CartesianIndex{N}
   perm::NTuple{N,Int}
 end
@@ -37,7 +57,7 @@ end
 
 using JLD
 
-function TempCube{N}(axlist,block_size::CartesianIndex{N};folder=mktempdir(),T=Float32)
+function TempCube{N}(axlist,block_size::CartesianIndex{N};folder=mktempdir(),T=Float32,persist=true)
   s=map(length,axlist)
   ssmall=map(div,s,block_size.I)
   for ii in CartesianRange(totuple(ssmall))
@@ -48,17 +68,19 @@ function TempCube{N}(axlist,block_size::CartesianIndex{N};folder=mktempdir(),T=F
     NetCDF.close(nc)
   end
   save(joinpath(folder,"axinfo.jld"),"axlist",axlist)
-  return TempCube{T,N}(axlist,folder,block_size)
+  ntc=TempCube{T,N}(axlist,folder,block_size,persist)
+  finalizer(ntc,cleanTempCube)
+  return ntc
 end
 
-function openTempCube(folder)
+function openTempCube(folder;persist=true)
   axlist=load(joinpath(folder,"axinfo.jld"),"axlist")
   N=length(axlist)
   v=NetCDF.open(joinpath(folder,tofilename(CartesianIndex{N}())),"cube")
   T=eltype(v)
   block_size=CartesianIndex(size(v))
   ncclose(joinpath(folder,tofilename(CartesianIndex{N}())))
-  return TempCube{T,N}(axlist,folder,block_size)
+  return TempCube{T,N}(axlist,folder,block_size,persist)
 end
 
 function readCubeData{T}(y::AbstractTempCube{T})
@@ -69,6 +91,17 @@ function readCubeData{T}(y::AbstractTempCube{T})
   CubeMem(y.axes,data,mask)
 end
 
+function cleanTempCube(y::TempCube)
+  if !y.persist && myid()==1
+    f=readdir(y.folder)
+    filter!(i->startswith(i,"file"),f)
+    for fi in f
+      fn=joinpath(y.folder,fi)
+      haskey(NetCDF.currentNcFiles,abspath(fn)) && ncclose(fn)
+    end
+    rm(y.folder,recursive=true)
+  end
+end
 
 function _read{N}(y::TempCube,thedata::NTuple{2},r::CartesianRange{CartesianIndex{N}})
   data,mask=thedata
@@ -120,6 +153,7 @@ function saveCube(c::TempCube,name::AbstractString)
   isdir(newfolder) && error("$(name) alreaday exists, please pick another name")
   mv(c.folder,newfolder)
   c.folder=newfolder
+  c.persist=true
 end
 
 function loadCube(name::AbstractString)
