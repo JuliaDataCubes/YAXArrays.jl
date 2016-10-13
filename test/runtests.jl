@@ -1,4 +1,7 @@
 using CABLAB
 using Base.Test
 
-@test 1==1
+include("access.jl")
+include("axes.jl")
+include("tempcubes.jl")
+include("analysis.jl")
