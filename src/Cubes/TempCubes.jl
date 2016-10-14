@@ -2,7 +2,6 @@ module TempCubes
 export TempCube, openTempCube, TempCubePerm, saveCube, loadCube
 importall ..Cubes
 importall ...CABLABTools
-import Main.CABLAB.mapCube
 
 "This defines a temporary datacube, written on disk which is usually "
 abstract AbstractTempCube{T,N} <: AbstractCubeData{T,N}

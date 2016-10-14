@@ -43,10 +43,10 @@ function doTests()
   # Test gap filling
   cube_filled=readCubeData(mapCube(gapFillMSC,d))
   imiss=findfirst(d.mask)
-  @test cube_filled.mask[imiss]==CABLAB.FILLED
+  @test cube_filled.mask[imiss]==CABLAB.Mask.FILLED
   its=div(imiss-1,46)+1
   @test cube_filled.data[imiss]==readCubeData(x2).data[its]
-  @test !any(cube_filled.mask.==CABLAB.MISSING)
+  @test !any(cube_filled.mask.==CABLAB.Mask.MISSING)
 
   # Test removal of MSC
 
@@ -54,7 +54,7 @@ function doTests()
   @test isapprox(cube_anomalies.data[47:92],(cube_filled.data[47:92].-readCubeData(x2).data[1:46]))
 
   # Test normalization
-  anom_normalized=mapCube(normalizeTS,cube_anomalies)
+  anom_normalized=readCubeData(mapCube(normalizeTS,cube_anomalies))
   @test mean(anom_normalized.data)<1e7
   @test 1.0-1e-6 <= std(anom_normalized.data) <= 1.0+1e-6
   #test anomaly detection

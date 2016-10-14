@@ -41,7 +41,7 @@ want to visualize the cube see this section [Plotting](@ref).
 
 ## Cube Types
 
-In CABLAB, you will 
+In CABLAB, you will
 
 ```@docs
 CABLAB.Cubes.AbstractCubeData
@@ -100,4 +100,4 @@ CABLAB masks are represented as `UInt8`-arrays, where each value can be one of t
 
 These names can be imported by `using CABLAB.Mask`. The user can decide if he wants to use
 the masks in his analyses or rather wants to refer to a different representation with
-`NullableArray`s or just representing missings with `NaN`s.
+`NullableArray`s or just representing missings with `NaN`s. See [registerDATFunction](@ref) for details. 
