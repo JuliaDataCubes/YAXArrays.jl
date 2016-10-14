@@ -5,15 +5,15 @@ Data types that
 module Cubes
 export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, axes,
        AbstractSubCube, CubeMem, openTempCube, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis, axVal2Index, MSCAxis,
-       getSingVal, FitAxis, TimeScaleAxis, QuantileAxis, MethodAxis
+       getSingVal, TimeScaleAxis, axname
 
 """
     AbstractCubeData{T,N}
 
 Supertype of all cubes. `T` is the data type of the cube and `N` the number of
 dimensions. Beware that an `AbstractCubeData` does not implement the `AbstractArray`
-interface. However, the `CABLAB` functions [mapCube](@ref), [reduceCube](@ref),
-[readCubeData](@ref), [plotMAP](@ref) and [plotXY](@ref) will work on any subtype
+interface. However, the `CABLAB` functions [`mapCube`](@ref), [`reduceCube`](@ref),
+[`readCubeData`](@ref), [`plotMAP`](@ref) and [`plotXY`](@ref) will work on any subtype
 of `AbstractCubeData`
 """
 abstract AbstractCubeData{T,N}
@@ -63,10 +63,15 @@ immutable EmptyCube{T}<:AbstractCubeData{T,0} end
 """
     CubeMem{T,N} <: AbstractCubeMem{T,N}
 
-An in-memory data cube. It
+An in-memory data cube. It is returned by applying [`mapCube`](@ref) when
+the output cube is small enough to fit in memory or by explicitly calling
+`readCubeData` on any type of cube.
 
-###
+### Fields
 
+* `axes` a `Vector{CubeAxis}` containing the Axes of the Cube
+* `data` N-D array containing the data
+* `mask` N-D array containgin the mask
 
 """
 type CubeMem{T,N} <: AbstractCubeMem{T,N}

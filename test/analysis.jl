@@ -51,16 +51,18 @@ function doTests()
   # Test removal of MSC
 
   cube_anomalies=readCubeData(mapCube(removeMSC,cube_filled))
-  isapprox(cube_anomalies.data[47:92],(cube_filled.data[47:92].-readCubeData(x2).data[1:46]))
+  @test isapprox(cube_anomalies.data[47:92],(cube_filled.data[47:92].-readCubeData(x2).data[1:46]))
 
   # Test normalization
-
-  anom_normalized=readCubeData(mapCube(normalizeTS,cube_anomalies))
+  anom_normalized=mapCube(normalizeTS,cube_anomalies)
   @test mean(anom_normalized.data)<1e7
   @test 1.0-1e-6 <= std(anom_normalized.data) <= 1.0+1e-6
   #test anomaly detection
 
-
+  d3=getCubeData(c,variable=["gross_primary_productivity","air_temperature_2m"],longitude=(30,30),latitude=(50.75,50.75))
+  anom_new=mapCube(removeMSC,d3)
+  anom_norm=readCubeData(mapCube(normalizeTS,anom_new))
+  anoms_detected = mapCube(DAT_detectAnomalies!,anom_norm,["KDE","T2","REC"],reshape(Float64.(anom_norm.data),(506,2)))
 
 # Test generation of new axes
 

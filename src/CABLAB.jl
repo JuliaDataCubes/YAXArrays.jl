@@ -14,9 +14,8 @@ export axVal2Index, plotTS, plotMAP, plotXY #From Plot module
 export DAT_detectAnomalies!, removeMSC, gapFillMSC, normalizeTS,
   sampleLandPoints, toPointAxis, getMSC, filterTSFFT, getNpY,timespacequantiles,timelonlatquantiles, getMedSC #From Proc module
 export TempCube, openTempCube # From CachedArrays
-import Compat.UTF8String
 
-global const workdir=UTF8String["./"]
+global const workdir=String["./"]
 haskey(ENV,"CABLAB_WORKDIR") && (workdir[1]=ENV["CABLAB_WORKDIR"])
 CABLABdir(x::String)=workdir[1]=x
 CABLABdir()=workdir[1]

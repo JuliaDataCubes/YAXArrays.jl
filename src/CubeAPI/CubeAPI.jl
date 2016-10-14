@@ -2,9 +2,8 @@ module CubeAPI
 importall ..Cubes
 importall ..Cubes.Axes
 importall ..CABLABTools
-import Compat.UTF8String
 export Cube, getCubeData,getTimeRanges,readCubeData, getMemHandle, RemoteCube
-export VALID, OCEAN, OUTOFPERIOD, MISSING, FILLED, isvalid, isinvalid, isvalid, isvalidorfilled
+export isvalid, isinvalid, isvalid, isvalidorfilled, Mask
 
 include("Mask.jl")
 
@@ -91,16 +90,16 @@ where `base_dir` is the datacube's base directory.
 ### Fields
 
 * `base_dir` the cube parent directory
-* `config` the cube's static configuration [CubeConfig](@ref)
+* `config` the cube's static configuration [`CubeConfig`](@ref)
 * `dataset_files` a list of datasets in the cube
 * `var_name_to_var_index` basically the inverse of `dataset_files`
 
 """
 type Cube
-  base_dir::UTF8String
+  base_dir::String
   config::CubeConfig
-  dataset_files::Vector{UTF8String}
-  var_name_to_var_index::OrderedDict{UTF8String,Int}
+  dataset_files::Vector{String}
+  var_name_to_var_index::OrderedDict{String,Int}
 end
 
 function Cube(base_dir::AbstractString)
@@ -110,7 +109,7 @@ function Cube(base_dir::AbstractString)
   data_dir=joinpath(base_dir,"data")
   data_dir_entries=readdir(data_dir)
   sort!(data_dir_entries)
-  var_name_to_var_index=OrderedDict{UTF8String,Int}()
+  var_name_to_var_index=OrderedDict{String,Int}()
   for i=1:length(data_dir_entries) var_name_to_var_index[data_dir_entries[i]]=i end
   Cube(base_dir,cubeconfig,data_dir_entries,var_name_to_var_index)
 end
@@ -128,7 +127,7 @@ where `base_url` is the datacube's base url.
 * `var_name_to_var_index` basically the inverse of `dataset_files`
 * `dataset_files` a list of datasets in the cube
 * `dataset_paths` a list of urls pointing to the different data sets
-* `config` the cube's static configuration [CubeConfig](@ref)
+* `config` the cube's static configuration [`CubeConfig`](@ref)
 
 """
 type RemoteCube
@@ -204,7 +203,7 @@ function.
 """
 immutable SubCube{T,C} <: AbstractSubCube{T,3}
   cube::C #Parent cube
-  variable::UTF8String #Variable
+  variable::String #Variable
   sub_grid::Tuple{Int,Int,Int,Int} #grid_y1,grid_y2,grid_x1,grid_x2
   sub_times::NTuple{6,Int} #y1,i1,y2,i2,ntime,NpY
   lonAxis::LonAxis
@@ -262,7 +261,7 @@ function.
 """
 immutable SubCubeV{T,C} <: AbstractSubCube{T,4}
   cube::C #Parent cube
-  variable::Vector{UTF8String} #Variable
+  variable::Vector{String} #Variable
   sub_grid::Tuple{Int,Int,Int,Int} #grid_y1,grid_y2,grid_x1,grid_x2
   sub_times::NTuple{6,Int} #y1,i1,y2,i2,ntime,NpY
   lonAxis::LonAxis
@@ -466,7 +465,7 @@ function getCubeData{T<:AbstractString}(cube::UCube,
 
   grid_y1,grid_y2,grid_x1,grid_x2 = getLonLatsToRead(config,longitude,latitude)
   y1,i1,y2,i2,ntime,NpY = getTimesToRead(time[1],time[2],config)
-  variableNew=UTF8String[]
+  variableNew=String[]
   varTypes=DataType[]
   for i=1:length(variable)
     if haskey(cube.var_name_to_var_index,variable[i])

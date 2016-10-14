@@ -41,48 +41,63 @@ want to visualize the cube see this section [Plotting](@ref).
 
 ## Cube Types
 
-```@meta
-CurrentModule=Main.CABLAB.Cubes
+In CABLAB, you will 
+
+```@docs
+CABLAB.Cubes.AbstractCubeData
 ```
 
-```@doc
-AbstractCubeData
-```
-
-```@doc
-CubeMem
-```
-
-```@meta
-CurrentModule=Main.CABLAB.CubeAPI
+```@docs
+CABLAB.Cubes.CubeMem
 ```
 
 
-```@doc
-SubCube
+```@docs
+CABLAB.CubeAPI.SubCube
 ```
 
-```@doc
-SubCubeV
+```@docs
+CABLAB.CubeAPI.SubCubeV
 ```
 
-```@meta
-CurrentModule=Main.CABLAB.Cubes.TempCubes
-```
 
-```@doc
-TempCube
+```@docs
+CABLAB.Cubes.TempCubes.TempCube
 ```
 
 
 ## Cube Axes
-```@autodocs
-Modules = [CABLAB.Cubes.Axes]
-Private = false
+
+Axes are an essential part of each Cube in CABLAB. Every dimension that a cube has is associated
+with an axis that stores the values of the dimension. For example, a `LatitudeAxis` will contains a
+field `values` representing the chosen latitudes. Similarly, a `VariableAxis` will contain a list of
+Variable names. Axes types are divided in categorical axes and axes represented by ranges. All of them
+are subtypes of the abstract type `CubeAxis`.
+
+```@docs
+CABLAB.Cubes.Axes.CubeAxis
+```
+
+```@docs
+CABLAB.Cubes.Axes.CategoricalAxis
+```
+
+```@docs
+CABLAB.Cubes.Axes.RangeAxis
 ```
 
 # Cube Masks
-```@autodocs
-Modules = [CABLAB.CubeAPI.Mask]
-Private = false
-```
+
+Every data cube type in CABLAB contains has a representation for the mask, which
+has the primary purpose of describing missing values and the reason for missingness.
+CABLAB masks are represented as `UInt8`-arrays, where each value can be one of the following:
+
+* `VALID` a regular data entry
+* `MISSING` classical missing value
+* `OCEAN` masked out by the land-sea mask
+* `OUTOFPERIOD` current time step is not inside the measurement period
+* `FILLED` does not count as missing, but still denotes that the value is gap filled and not measured
+
+These names can be imported by `using CABLAB.Mask`. The user can decide if he wants to use
+the masks in his analyses or rather wants to refer to a different representation with
+`NullableArray`s or just representing missings with `NaN`s.

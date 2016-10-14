@@ -2,7 +2,7 @@ module TempCubes
 export TempCube, openTempCube, TempCubePerm, saveCube, loadCube
 importall ..Cubes
 importall ...CABLABTools
-import Compat.UTF8String
+import Main.CABLAB.mapCube
 
 "This defines a temporary datacube, written on disk which is usually "
 abstract AbstractTempCube{T,N} <: AbstractCubeData{T,N}
@@ -11,11 +11,11 @@ abstract AbstractTempCube{T,N} <: AbstractCubeData{T,N}
     type TempCube{T,N} <: AbstractCubeData{T,N}
 
 The main data structure for storing temporary results from cube operations. Is
-usually returned by [mapCube](@ref), if the result is larger than `max_cache`
+usually returned by [`mapCube`](@ref), if the result is larger than `max_cache`
 
 ### Fields
 
-* `axes` a vector of [CubeAxis](@ref) containing the axes
+* `axes` a vector of [`CubeAxis`](@ref) containing the axes
 * `folder` folder containing the data
 * `block_size` dimension of the files that the cube is split into
 

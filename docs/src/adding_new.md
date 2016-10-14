@@ -45,7 +45,7 @@ registerDATFunction(fillGaps,inAxes,outAxes);
 
 After this you can apply your function like this `mapCube(fillGaps, cubedata)`, where `cubedata` can be any type of cube, the only condition is that it must contain a `TimeAxis`.  
 
-### Using Data Arrays for missing data
+### Using Nullable Arrays for missing data
 
 In the next example we assume want to register a function that calculates the time variance of a variable. Internally we want to use the `StatsBase` methods to
 calculate the variance in the presence of missing data. To do this, the input data is best represented as a `NullableArray`. We register the function in the following way:
@@ -68,7 +68,8 @@ When `:nullable` is chosen, missing values in the cube will be converted to `nul
 Any `null` value in the output array will be converted to a missing value in the resulting cube's mask.
 
 There is one additional optional argument set, `no_ocean=1`. This tells the kernel to check the landsea mask if a certain value is an ocean point and not enter
-the calculation for these points, but to just set the resulting mask to `OCEAN`.
+the calculation for these points, but to just set the resulting mask to `OCEAN`. Please notice also that simple statistics can be done more conveniently using the
+[`reduceCube`](@ref) function.
 
 ### Passing additional arguments
 
@@ -180,17 +181,14 @@ user-supplied cube and pass it to the calculation as a second input cube. So we 
 For some calculations the output axis does not equal any of the input axis, but has to be generated before the cube calculation starts.
 You can probably guess that this will happen through callback functions again, which have the same form as in the other examples.
 In this example we want to register a function that does a polynomial regression between time series of two variables. The result of this calculation
-are the regression parameters, so the output axis will be a newly created `ParameterAxis`. For the axis we define a default constructor which names
+are the regression parameters, so the output axis will be a newly created `Parameter`-axis (see [Cube Axes](@ref)). For the axis we define a default constructor which names
 the fitting parameters. In this example we create a ParameterAxis for a quadratic regression.
 
 ```@example
 using CABLAB # hide
-immutable ParameterAxis{T} <: CategoricalAxis{T}
-  values::Vector{T}
-end
 function ParameterAxis(order::Integer)
   order > 0 || error("Regression must be at least linear")
-  ParameterAxis(["offset";["p$i" for i=1:order]])
+  CategoricalAxis("Parameter",["offset";["p$i" for i=1:order]])
 end
 ParameterAxis(2)
 ```
@@ -199,14 +197,10 @@ Now we can go and register the function, while we specify the output axis with a
 
 ```@example
 using CABLAB # hide
-immutable ParameterAxis{T} <: CategoricalAxis{T} # hide
-  values::Vector{T} # hide
-end
 function ParameterAxis(order::Integer) # hide
   order > 0 || error("Regression must be at least linear") # hide
   ParameterAxis(["offset";["p$i" for i=1:order]]) # hide
 end # hide
-ParameterAxis(2) # hide
 function polyRegression(xout::Vector, xin::Matrix, order::Integer)
   #code here
 end

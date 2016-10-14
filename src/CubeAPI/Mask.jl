@@ -1,6 +1,7 @@
 module Mask
 export VALID, OCEAN, OUTOFPERIOD, MISSING, FILLED, isvalid, isinvalid,
   isvalid, isvalidorfilled
+
 const VALID=0x00
 const MISSING=0x01
 const OCEAN=0x05

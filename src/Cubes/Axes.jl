@@ -1,7 +1,7 @@
 module Axes
 export CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis,
 SpatialPointAxis,Axes,YearStepRange,CategoricalAxis,RangeAxis,axVal2Index,MSCAxis,
-TimeScaleAxis
+TimeScaleAxis, axname
 import NetCDF.NcDim
 importall ..Cubes
 using Base.Dates
@@ -59,7 +59,7 @@ end
 
 Supertype of all axes. Every `CubeAxis` is 1D Cube itself and can be passed
 to mapCube operationes. Although all cube axes are instances of the parametric typealias
-[CategoricalAxis](@ref) and [RangeAxis](@ref), there are some typealiases defined
+[`CategoricalAxis`](@ref) and [`RangeAxis`](@ref), there are some typealiases defined
 to provide shorter and more convenient names for commonly used cube axes. Here is a list
 of the aliases:
 

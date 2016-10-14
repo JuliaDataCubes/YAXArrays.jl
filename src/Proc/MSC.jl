@@ -5,6 +5,22 @@ importall ..DAT
 importall ..CubeAPI
 importall ..Proc
 
+"""
+    removeMSC
+
+Removes the mean annual cycle from each time series.
+
+### Call signature
+
+    mapCube(removeMSC, cube)
+
+* `cube` data cube with a axes: `TimeAxis`
+
+**Input Axes** `Time`axis
+
+**Output Axes** `Time`axis
+
+"""
 function removeMSC(xout::AbstractArray,maskout::AbstractArray{UInt8},xin::AbstractArray,maskin::AbstractArray{UInt8},NpY::Integer,tmsc,tnmsc)
     #Start loop through all other variables
     getMSC(tmsc,xin,tnmsc,NpY=NpY)

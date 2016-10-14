@@ -7,7 +7,6 @@ importall ..CABLABTools
 importall ..Cubes.TempCubes
 import ...CABLAB
 import ...CABLAB.workdir
-import Compat.UTF8String
 using Base.Dates
 import NullableArrays.NullableArray
 import NullableArrays.isnull
@@ -97,7 +96,7 @@ immutable DATFunction
   no_ocean::Int
   inplace::Bool
 end
-const regDict=Dict{UTF8String,DATFunction}()
+const regDict=Dict{String,DATFunction}()
 
 getOuttype(outtype::Type{Any},cdata)=isa(cdata,AbstractCubeData) ? eltype(cdata) : eltype(cdata[1])
 getOuttype(outtype,cdata)=outtype
@@ -575,7 +574,7 @@ function findAxis{T<:CubeAxis}(a::Type{T},v)
 end
 
 function findAxis(matchstr::AbstractString,axlist)
-    ism=map(i->startswith(lowercase(split(string(typeof(i)),".")[end]),lowercase(matchstr)),axlist)
+  ism=map(i->startswith(lowercase(axname(i)),lowercase(matchstr)),axlist)
   sism=sum(ism)
   sism==0 && error("No axis found matching string $matchstr")
   sism>1 && error("Multiple axes found matching string $matchstr")
