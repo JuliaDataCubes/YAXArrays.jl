@@ -86,7 +86,7 @@ CABLAB.Cubes.Axes.CategoricalAxis
 CABLAB.Cubes.Axes.RangeAxis
 ```
 
-# Cube Masks
+## Cube Masks
 
 Every data cube type in CABLAB contains has a representation for the mask, which
 has the primary purpose of describing missing values and the reason for missingness.
@@ -100,4 +100,19 @@ CABLAB masks are represented as `UInt8`-arrays, where each value can be one of t
 
 These names can be imported by `using CABLAB.Mask`. The user can decide if he wants to use
 the masks in his analyses or rather wants to refer to a different representation with
-`NullableArray`s or just representing missings with `NaN`s. See [registerDATFunction](@ref) for details. 
+`NullableArray`s or just representing missings with `NaN`s. See [registerDATFunction](@ref) for details.
+
+## Opening Remote Data Cubes
+
+If you just want to try the CABLAB data cube and don't have access to the full data set, you can open a remote cube through
+a THREDDS server. All you need is a working internet connection to do this:
+
+```@docs
+RemoteCube
+```
+
+This will open the remote cube and calling `getCubeData` will return a cube view that you can process.
+
+**Important** In order to avoid unnecessary traffic, be nice to our servers.
+Please use this only for testing the cube software for very limited amount of data (reading maps at single time steps)
+or time series in lon-lat boxes of size 1degx1deg. 

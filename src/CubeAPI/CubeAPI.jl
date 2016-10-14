@@ -129,6 +129,11 @@ where `base_url` is the datacube's base url.
 * `dataset_paths` a list of urls pointing to the different data sets
 * `config` the cube's static configuration [`CubeConfig`](@ref)
 
+```@example
+using CABLAB
+ds=remoteCube()
+```
+
 """
 type RemoteCube
   base_url::String

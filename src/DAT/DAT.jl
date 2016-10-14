@@ -147,7 +147,7 @@ end
     reduceCube(f::Function, cube, dim::Type{T<:CubeAxis};kwargs...)
 
 Apply a reduction function `f` on slices of the cube `cube`. The dimension(s) are specified through `dim`, which is
-either an Axis type or a tuple of axis types. Keyword arguments are passed to `mapCube` or, if not known to `f`.
+either an Axis type or a tuple of axis types. Keyword arguments are passed to `mapCube` or, if unknown passed again to `f`.
 It is assumed that `f` takes an array input and returns a single value.
 """
 reduceCube{T<:CubeAxis}(f::Function,c::CABLAB.Cubes.AbstractCubeData,dim::Type{T};kwargs...)=reduceCube(f,c,(dim,);kwargs...)
@@ -169,9 +169,30 @@ end
 
 
 """
-    mapCube(fun, cube)
+    mapCube(fun, cube, addargs...;kwargs)
 
 Map a given function `fun` over slices of the data cube `cube`.
+
+### Keyword arguments
+
+* `max_cache=1e7` maximum size of blocks that are read into memory, defaults to approx 10Mb
+* `outfolder` folder to write output to if a `TempCube is created`, defaults to `joinpath(CABLABdir(),"tmp",SomeRandomName)`
+* `outtype::DataType` output data type of the operation
+* `indims::Tuple{Tuple{Vararg{CubeAxis}}}` List of input axis types for each input data cube
+* `outdims::Tuple` List of output axes, can be either an axis type that has a default constructor or an instance of a `CubeAxis`
+* `inmissing::Tuple` How to treat missing values in input data for each input cube. Possible values are `:nullable` `:mask` `:nan` or a value that is inserted for missing data, defaults to `:mask`
+* `outmissing` How are missing values written to the output array, possible values are `:nullable`, `:mask`, `:nan`, defaults to `:mask`
+* `no_ocean` should values containing ocean data be omitted
+* `inplace` does the function write to an output array inplace or return a single value> defaults to `true`
+* `kwargs` additional keyword arguments passed to the inner function
+
+The first argument is always the function to be applied, the second is the input cube or
+a tuple input cubes if needed. If the function to be applied is registered (either as part of CABLAB or through [registerDATFunction](@ref)),
+all of the keyword arguments have reasonable defaults and don't need to be supplied. Some of the function still need additional arguments or keyword
+arguments as is stated in the documentation.
+
+If you want to call mapCube directly on an unregistered function, please have a look at [Applying custom functions](@ref) to get an idea about the usage of the
+input and output dimensions etc.
 """
 function mapCube(fu::Function,
     cdata::Tuple,addargs...;

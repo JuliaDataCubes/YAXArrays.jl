@@ -19,6 +19,23 @@ function tscale2ind(b::Float64,l::Int)
 end
 mirror(i,l)=l-i+2
 
+"""
+    filterTSFFT
+
+Filter each time series using a Fourier filter and return the decomposed series
+in 4 time windows (Trend, Long-Term Variability, Annual Cycle, Fast Oscillations)
+
+### Call signature
+
+    mapCube(filterTSFFT, cube)
+
+* `cube` data cube with a axes: `TimeAxis`
+
+**Input Axes** `Time`axis
+
+**Output Axes** `Time`axis, `TimeScale`axis
+
+"""
 function filterTSFFT{T<:Real}(outar::Matrix{T},y::Vector{T}, annfreq::Number;nharm::Int=3)
 
     size(outar) == (length(y),4) || error("Wrong size of output array")
@@ -73,6 +90,6 @@ function filterTSFFT{T<:Real}(outar::Matrix{T},y::Vector{T}, annfreq::Number;nha
     end
     outar
 end
-registerDATFunction(filterTSFFT,(TimeAxis,),(TimeAxis,(c,p)->TimeScaleAxis()),(c,p)->getNpY(c[1]),inmissing=(:nan,),outmissing=:nan,no_ocean=1)
+registerDATFunction(filterTSFFT,(TimeAxis,),(TimeAxis,(c,p)->TimeScaleAxis(["Trend", "Long-Term Variability", "Annual Cycle", "Fast Oscillations"])),(c,p)->getNpY(c[1]),inmissing=(:nan,),outmissing=:nan,no_ocean=1)
 
 end

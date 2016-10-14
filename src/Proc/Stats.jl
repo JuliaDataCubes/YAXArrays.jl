@@ -7,6 +7,22 @@ importall ..Cubes
 using NullableArrays
 using StatsBase
 
+"""
+    normalizeTS
+
+Normalize a time series to zeros mean and unit variance
+
+### Call signature
+
+    mapCube(normalizeTS, cube)
+
+* `cube` data cube with a axes: `TimeAxis`
+
+**Input Axes** `TimeAxis`
+
+**Output Axes** `TimeAxis`
+
+"""
 function normalizeTS(xout::AbstractVector,xin::AbstractVector)
   m=mean(xin,skipnull=true)
   s=std(xin,skipnull=true)
@@ -32,18 +48,42 @@ function nanquantile!(qout,x,q,xtest)
     end
 end
 
+"""
+    timespacequantiles
+
+Calculate quantiles from a space time data cube. This is usually called on a subset
+of data returned by [`sampleLandPoints`](@ref).
+
+### Call signature
+
+    mapCube(timespacequantiles, cube, quantiles)
+
+* `cube` data cube with a axes: `TimeAxis`, `SpatialPointAxis`
+* `quantiles` a vector of quantile values to calculate
+
+**Input Axes** `TimeAxis`, `SpatialPointAxis`
+
+**Output Axes** `QuantileAxis`
+
+Calculating exact quantiles from data that don't fit into memory is quite a problem. One solution we provide
+here is to simply subsample your data and then get the quantiles from a smaller dataset.
+
+For an example on how to apply this function, see [this notebook](https://github.com/CAB-LAB/JuliaDatDemo/blob/master/eventdetection2.ipynb).
+"""
 function timespacequantiles(xout::AbstractVector,xin::AbstractArray,q::AbstractVector,xtest)
     nanquantile!(xout,xin,q,xtest)
 end
+
 function timelonlatquantiles(xout::AbstractVector,xin::AbstractArray,q::AbstractVector,xtest)
     nanquantile!(xout,xin,q,xtest)
 end
+
 import CABLAB.Proc.MSC.getNpY
 
 
 registerDATFunction(timelonlatquantiles,(TimeAxis,LonAxis,LatAxis),
   ((cube,pargs)->begin
-    length(pargs)==0 ? QuantileAxis([0.25,0.5,0.75]) : QuantileAxis(pargs[1])
+    length(pargs)==0 ? CategoricalAxis("Quantile",[0.25,0.5,0.75]) : CategoricalAxis("Quantile",pargs[1])
   end,),
   (cube,pargs)->begin
     tax=getAxis(TimeAxis,cube[1])
@@ -54,7 +94,7 @@ registerDATFunction(timelonlatquantiles,(TimeAxis,LonAxis,LatAxis),
 
 registerDATFunction(timespacequantiles,(TimeAxis,SpatialPointAxis),
   ((cube,pargs)->begin
-    length(pargs)==0 ? QuantileAxis([0.25,0.5,0.75]) : QuantileAxis(pargs[1])
+    length(pargs)==0 ? CategoricalAxis("Quantile",[0.25,0.5,0.75]) : CategoricalAxis("Quantile",pargs[1])
   end,),
   (cube,pargs)->begin
     tax=getAxis(TimeAxis,cube[1])

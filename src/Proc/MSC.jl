@@ -34,6 +34,22 @@ registerDATFunction(removeMSC,(TimeAxis,),(TimeAxis,),(cube,pargs)->begin
     (NpY,zeros(Float64,NpY),zeros(Int,NpY))
 end,no_ocean=1)
 
+"""
+    gapFillMSC
+
+Fills missing values of each time series with the mean annual cycle.
+
+### Call signature
+
+    mapCube(gapFillMSC, cube)
+
+* `cube` data cube with a axes: `TimeAxis`
+
+**Input Axes** `Time`axis
+
+**Output Axes** `Time`axis
+
+"""
 function gapFillMSC(xout::AbstractArray,maskout::AbstractArray{UInt8},xin::AbstractArray,maskin::AbstractArray{UInt8},NpY::Integer,tmsc,tnmsc)
 
   getMSC(tmsc,xin,tnmsc,NpY=NpY)
@@ -46,8 +62,22 @@ registerDATFunction(gapFillMSC,(TimeAxis,),(TimeAxis,),(cube,pargs)->begin
 end,no_ocean=1)
 
 
+"""
+    getMSC
 
-"Calculate the mean seasonal cycle of xin and write the output to xout."
+Returns the mean annual cycle from each time series.
+
+### Call signature
+
+    mapCube(getMSC, cube)
+
+* `cube` data cube with a axes: `TimeAxis`
+
+**Input Axes** `Time`axis
+
+**Output Axes** `MSC`axis
+
+"""
 function getMSC(xout::AbstractVector,xin::AbstractVector,nmsc::Vector{Int}=zeros(Int,length(xout));imscstart::Int=1,NpY=length(xout))
     #Reshape the cube to squeeze unimportant variables
     NpY=length(xout)
@@ -83,7 +113,22 @@ function replaceMisswithMSC(msc::AbstractVector,xin::AbstractArray,xout::Abstrac
   end
 end
 
-"Calculate the median seasonal cycle of xin and write the output to xout."
+"""
+    getMedMSC
+
+Returns the median annual cycle from each time series.
+
+### Call signature
+
+    mapCube(getMedMSC, cube)
+
+* `cube` data cube with a axes: `TimeAxis`
+
+**Input Axes** `Time`axis
+
+**Output Axes** `MSC`axis
+
+"""
 function getMedSC(xout::AbstractVector,maskout::AbstractVector{UInt8},xin::AbstractVector,maskin::AbstractVector{UInt8})
     #Reshape the cube to squeeze unimportant variables
     NpY=length(xout)
