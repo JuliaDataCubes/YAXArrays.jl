@@ -4,6 +4,7 @@ importall ..DAT
 importall ..CubeAPI
 importall ..CubeAPI.CachedArrays
 importall ..Proc
+importall ..Mask
 exportmissval(x::AbstractFloat)=oftype(x,NaN)
 exportmissval(x::Integer)=typemax(x)
 

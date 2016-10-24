@@ -99,7 +99,7 @@ CategoricalAxis{T}(s::Symbol,v::Vector{T})=CategoricalAxis{T,s}(v)
 CategoricalAxis(s::AbstractString,v::Vector)=CategoricalAxis(Symbol(s),v)
 
 @defineCatAxis Variable String
-@defineCatAxis SpatialPoint String
+@defineCatAxis SpatialPoint Tuple{Float64,Float64}
 @defineCatAxis Country String
 @defineCatAxis TimeScale String
 
