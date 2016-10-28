@@ -84,6 +84,7 @@ function freshworkermodule()
           r2=remotecall(()->(eval(Main,:(module PMDATMODULE
           using CABLAB
           import CABLAB.Cubes.TempCubes.openTempCube
+          import CABLAB.Cubes.TempCubes.TempCube
           import CABLAB.CubeAPI.CachedArrays.CachedArray
           import CABLAB.CubeAPI.CachedArrays.MaskedCacheBlock
           import CABLAB.CubeAPI.CachedArrays

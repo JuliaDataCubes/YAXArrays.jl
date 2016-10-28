@@ -68,7 +68,7 @@ of the aliases:
 * `VariableAxis` represents different variables
 * `SpatialPointAxis` represents a list of coordinates
 * `CountryAxis` countries
-* `TimeScaleAxis` time scasles after time series decomposition
+* `TimeScaleAxis` time scales after time series decomposition
 
 ### Cotinuous Axes
 

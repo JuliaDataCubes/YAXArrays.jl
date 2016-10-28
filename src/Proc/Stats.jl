@@ -31,23 +31,6 @@ function normalizeTS(xout::AbstractVector,xin::AbstractVector)
   end
 end
 
-
-function nanquantile!(qout,x,q,xtest)
-    copy!(xtest,x)
-    nNaN  = 0; for i=1:length(xtest) nNaN = isnan(xtest[i]) ? nNaN+1 : nNaN end
-    lv=length(xtest)-nNaN
-    lv==0 && return(qout[:]=convert(eltype(x),NaN))
-    sort!(reshape(x,length(x)))
-    for iq=1:length(q)
-        index = 1 + (lv-1)*q[iq]
-        lo = floor(Int,index)
-        hi = ceil(Int,index)
-        h=index - lo
-        lo==hi && return(qout[iq])
-        qout[iq] = (1.0-h)*x[lo] + h*x[hi]
-    end
-end
-
 """
     timespacequantiles
 
@@ -71,11 +54,19 @@ here is to simply subsample your data and then get the quantiles from a smaller 
 For an example on how to apply this function, see [this notebook](https://github.com/CAB-LAB/JuliaDatDemo/blob/master/eventdetection2.ipynb).
 """
 function timespacequantiles(xout::AbstractVector,xin::AbstractArray,q::AbstractVector,xtest)
-    nanquantile!(xout,xin,q,xtest)
+    empty!(xtest)
+    @inbounds for i=1:length(xin)
+      !isnan(xin[i]) && push!(xtest,xin[i])
+    end
+    quantile!(xout,xtest,q)
 end
 
 function timelonlatquantiles(xout::AbstractVector,xin::AbstractArray,q::AbstractVector,xtest)
-    nanquantile!(xout,xin,q,xtest)
+  empty!(xtest)
+  @inbounds for i=1:length(xin)
+    !isnan(xin[i]) && push!(xtest,xin[i])
+  end
+  quantile!(xout,xtest,q)
 end
 
 import CABLAB.Proc.MSC.getNpY
@@ -89,7 +80,7 @@ registerDATFunction(timelonlatquantiles,(TimeAxis,LonAxis,LatAxis),
     tax=getAxis(TimeAxis,cube[1])
     lonax=getAxis(LonAxis,cube[1])
     latax=getAxis(LatAxis,cube[1])
-    return length(pargs)==1 ? pargs[1] : [0.25,0.5,0.75],zeros(eltype(cube[1]),length(tax),length(lonax),length(latax))
+    return length(pargs)==1 ? pargs[1] : [0.25,0.5,0.75],zeros(eltype(cube[1]),length(tax)*length(lonax)*length(latax))
   end,inmissing=(:nan,),outmissing=:nan)
 
 registerDATFunction(timespacequantiles,(TimeAxis,SpatialPointAxis),
@@ -99,7 +90,7 @@ registerDATFunction(timespacequantiles,(TimeAxis,SpatialPointAxis),
   (cube,pargs)->begin
     tax=getAxis(TimeAxis,cube[1])
     sax=getAxis(SpatialPointAxis,cube[1])
-    return length(pargs)==1 ? pargs[1] : [0.25,0.5,0.75],zeros(eltype(cube[1]),length(tax),length(sax))
+    return length(pargs)==1 ? pargs[1] : [0.25,0.5,0.75],zeros(eltype(cube[1]),length(tax)*length(sax))
   end,inmissing=(:nan,),outmissing=:nan)
 
 registerDATFunction(normalizeTS,(TimeAxis,),(TimeAxis,),inmissing=(:nullable,),outmissing=:nullable,no_ocean=1)
@@ -112,14 +103,14 @@ Base.mean(X::NullableArray; skipnull::Bool = false) =
     sum(X; skipnull = skipnull) /
         Nullable(length(X.isnull) - (skipnull * countnz(X.isnull)))
 
-function Base.mean{T, W, V}(X::NullableArray{T}, w::WeightVec{W, V};
+function Base.mean(X::NullableArray, w::WeightVec;
                             skipnull::Bool=false)
     if skipnull
         _X = NullableArray(X.values .* reshape(w.values,size(X)), X.isnull)
         _w = NullableArray(reshape(w.values,size(X)), X.isnull)
         return sum(_X; skipnull=true) / sum(_w; skipnull=true)
     else
-        anynull(X) ? Nullable{T}() : Nullable(mean(X.values, w))
+        anynull(X) ? Nullable{eltype(X)}() : Nullable(mean(X.values, w))
     end
 end
 

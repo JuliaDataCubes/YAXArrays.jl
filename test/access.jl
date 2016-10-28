@@ -39,3 +39,12 @@ data2=readCubeData(d2)
 @test CABLAB.axes(data1)==CubeAxis[LonAxis(30.0:0.25:30.75),LatAxis(51.0:-0.25:50.25),TimeAxis(CABLAB.Cubes.Axes.YearStepRange(2002,1,2008,46,8,46))]
 
 @test CABLAB.axes(data2)==CubeAxis[LonAxis(30.0:0.25:30.75),LatAxis(51.0:-0.25:50.25),TimeAxis(CABLAB.Cubes.Axes.YearStepRange(2002,1,2008,46,8,46)),VariableAxis(["air_temperature_2m","gross_primary_productivity"])]
+
+#Test saving cubes
+dire=mktempdir()
+CABLABdir(dire)
+saveCube(data1,"mySavedCube")
+data3=readCubeData(loadCube("mySavedCube"))
+@test data1.axes==data3.axes
+@test data1.data==data3.data
+@test data1.mask==data3.mask

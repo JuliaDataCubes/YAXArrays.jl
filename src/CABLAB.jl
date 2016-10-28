@@ -11,7 +11,7 @@ export Cube, getCubeData,readCubeData,CubeMem,CubeAxis, TimeAxis, VariableAxis, 
         RangeAxis, CategoricalAxis, MSCAxis, getSingVal, TimeScaleAxis, QuantileAxis, MethodAxis, RemoteCube #From Cube module
 export registerDATFunction, mapCube, reduceCube, getAxis #From DAT module
 export axVal2Index, plotTS, plotMAP, plotXY #From Plot module
-export DAT_detectAnomalies!, removeMSC, gapFillMSC, normalizeTS,
+export DAT_detectAnomalies!, removeMSC, gapFillMSC, normalizeTS,DATfitOnline,
   sampleLandPoints, toPointAxis, getMSC, filterTSFFT, getNpY,timespacequantiles,timelonlatquantiles, getMedSC #From Proc module
 export TempCube, openTempCube # From CachedArrays
 
