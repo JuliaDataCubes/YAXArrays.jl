@@ -1,6 +1,6 @@
 module Proc
 export DAT_detectAnomalies!, removeMSC, gapFillMSC, normalizeTS,
-  sampleLandPoints, toPointAxis, getMSC, filterTSFFT, getNpY,timespacequantiles,timelonlatquantiles, getMedSC
+  sampleLandPoints, toPointAxis, getMSC, filterTSFFT, getNpY,timespacequantiles,timelonlatquantiles, getMedSC,DATfitOnline
 importall ..DAT, ..CubeAPI, ..Cubes
 macro no_ocean(maskin,maskout)
     esc(quote
@@ -17,12 +17,13 @@ function getNpY(cube::AbstractCubeData)
     return axlist[isTime][1].values.NPY
 end
 
+include("OnlineStats.jl")
 include("MSC.jl")
 include("Outlier.jl")
 include("Stats.jl")
 include("CubeIO.jl")
 include("TSDecomposition.jl")
-importall .MSC, .Outlier, .Stats, .CubeIO, .TSDecomposition
+importall .MSC, .Outlier, .Stats, .CubeIO, .TSDecomposition, .DATOnlineStats
 
 
 

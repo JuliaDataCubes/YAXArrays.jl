@@ -179,12 +179,12 @@ function getSubRange2(x...;kwargs...)
   a,m=getSubRange(x...;kwargs...)
   return toAr(a),toAr(m)
 end
-function toAr{T,N}(a::SubArray{T,N})
+function toAr{T<:Number,N}(a::SubArray{T,N})
   Base.iscontiguous(a) || error("Array is not cont")
   unsafe_wrap(Array{T,N},pointer(a),size(a))
 end
 toAr(a)=a
-toAr{T}(a::SubArray{T,0})=unsafe_wrap(Array{T,0},pointer(a),size(a))
+toAr{T<:Number}(a::SubArray{T,0})=unsafe_wrap(Array{T,0},pointer(a),size(a))
 
 
 function findminscore(c::CachedArray)

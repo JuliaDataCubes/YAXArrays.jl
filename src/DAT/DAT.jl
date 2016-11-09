@@ -62,13 +62,17 @@ type DATConfig{N}
   outmissing    :: Symbol
   no_ocean      :: Int
   inplace      :: Bool
+  genOut      :: Function
+  finalizeOut :: Function
+  retCubeType
+  outBroadCastAxes
   addargs
   kwargs
 end
-function DATConfig(incubes::Tuple,inAxes,outAxes,outtype,max_cache,outfolder,sfu,inmissing,outmissing,no_ocean,inplace,addargs,kwargs)
+function DATConfig(incubes::Tuple,inAxes,outAxes,outtype,max_cache,outfolder,sfu,inmissing,outmissing,no_ocean,inplace,genOut,finalizeOut,retCubeType,outBroadCastAxes,addargs,kwargs)
   DATConfig{length(incubes)}(length(incubes),AbstractCubeData[c for c in incubes],EmptyCube{outtype}(),Vector{CubeAxis}[],inAxes,
   Vector{Int}[],CubeAxis[a for a in outAxes],CubeAxis[],CubeAxis[],nprocs()>1,Bool[isa(x,AbstractCubeMem) for x in incubes],
-  Vector{Int}[],Int[],[],[],max_cache,outfolder,sfu,inmissing,outmissing,no_ocean,inplace,addargs,kwargs)
+  Vector{Int}[],Int[],[],[],max_cache,outfolder,sfu,inmissing,outmissing,no_ocean,inplace,genOut,finalizeOut,retCubeType,outBroadCastAxes,addargs,kwargs)
 end
 
 """
@@ -96,6 +100,9 @@ immutable DATFunction
   outmissing
   no_ocean::Int
   inplace::Bool
+  genOut::Function
+  finalizeOut::Function
+  retCubeType
 end
 const regDict=Dict{String,DATFunction}()
 
@@ -134,12 +141,15 @@ function getReg(fuObj::DATFunction,name::Symbol,cdata)
 end
 function getReg(sfu,name::Symbol,cdata)
   if     name==:outtype    return Any
-  elseif name==:inAxes     return ntuple(i->(),length(cdata))
-  elseif name==:outAxes    return ()
+  elseif name==:indims     return ntuple(i->(),length(cdata))
+  elseif name==:outdims   return ()
   elseif name==:inmissing  return ntuple(i->:mask,length(cdata))
   elseif name==:outmissing return :mask
   elseif name==:no_ocean   return 0
   elseif name==:inplace    return true
+  elseif name==:genOut     return zero
+  elseif name==:finalizeOut return identity
+  elseif name==:retCubeType return "auto"
   end
 end
 
@@ -208,9 +218,14 @@ function mapCube(fu::Function,
     outmissing=getReg(fuObj,:outmissing,cdata),
     no_ocean=getReg(fuObj,:no_ocean,cdata),
     inplace=getReg(fuObj,:inplace,cdata),
+    genOut=getReg(fuObj,:genOut,cdata),
+    finalizeOut=getReg(fuObj,:finalizeOut,cdata),
+    retCubeType=getReg(fuObj,:retCubeType,cdata),
+    #ispar=false
+    outBroadCastAxes=CubeAxis[],
     kwargs...)
   @debug_print "Generating DATConfig"
-  dc=DATConfig(cdata,getInAxes(indims,cdata),getOutAxes(outdims,cdata,addargs),getOuttype(outtype,cdata),max_cache,outfolder,sfu,inmissing,outmissing,no_ocean,inplace,addargs,kwargs)
+  dc=DATConfig(cdata,getInAxes(indims,cdata),getOutAxes(outdims,cdata,addargs),getOuttype(outtype,cdata),max_cache,outfolder,sfu,inmissing,outmissing,no_ocean,inplace,genOut,finalizeOut,retCubeType,outBroadCastAxes,addargs,kwargs)
   analyseaddargs(fuObj,dc)
   @debug_print "Reordering Cubes"
   reOrderInCubes(dc)
@@ -224,27 +239,32 @@ function mapCube(fu::Function,
   getCubeHandles(dc)
   @debug_print "Running main Loop"
   runLoop(dc)
+  @debug_print "Finalizing Output Cube"
 
-  return dc.outcube
+  return dc.finalizeOut(dc.outcube)
 
 end
 
 function enterDebug(fu::Function,
-    cdata::Tuple,addargs...;
-    max_cache=1e7,
-    outfolder=joinpath(workdir[1],
-    string(tempname()[2:end],fu)),
-    sfu=split(string(fu),".")[end],
-    fuObj=get(regDict,sfu,sfu),
-    outtype=getOuttype(fuObj,cdata),
-    inAxes=getInAxes(fuObj,cdata),
-    outAxes=getOutAxes(fuObj,cdata,addargs),
-    inmissing=isa(fuObj,DATFunction) ? fuObj.inmissing : ntuple(i->:mask,length(cdata)),
-    outmissing=isa(fuObj,DATFunction) ? fuObj.outmissing : :mask,
-    no_ocean=isa(fuObj,DATFunction) ? fuObj.no_ocean : 0,
-    inplace=isa(fuObj,DATFunction) ? fuObj.inplace : true)
-    isdir(outfolder) || mkpath(outfolder)
-    return DATConfig(cdata,inAxes,outAxes,outtype,max_cache,outfolder,sfu,inmissing,outmissing,no_ocean,inplace,addargs,kwargs),fuObj
+  cdata::Tuple,addargs...;
+  max_cache=1e7,
+  outfolder=joinpath(workdir[1],
+  string(tempname()[2:end],fu)),
+  sfu=split(string(fu),".")[end],
+  fuObj=get(regDict,sfu,sfu),
+  outtype=getReg(fuObj,:outtype,cdata),
+  indims=getReg(fuObj,:indims,cdata),
+  outdims=getReg(fuObj,:outdims,cdata),
+  inmissing=getReg(fuObj,:inmissing,cdata),
+  outmissing=getReg(fuObj,:outmissing,cdata),
+  no_ocean=getReg(fuObj,:no_ocean,cdata),
+  inplace=getReg(fuObj,:inplace,cdata),
+  genOut=getReg(fuObj,:genOut,cdata),
+  finalizeOut=getReg(fuObj,:finalizeOut,cdata),
+  retCubeType=getReg(fuObj,:retCubeType,cdata),
+  outBroadCastAxes=CubeAxis[],
+  kwargs...)
+  DATConfig(cdata,getInAxes(indims,cdata),getOutAxes(outdims,cdata,addargs),getOuttype(outtype,cdata),max_cache,outfolder,sfu,inmissing,outmissing,no_ocean,inplace,genOut,finalizeOut,retCubeType,outBroadCastAxes,addargs,kwargs)
 end
 
 function analyseaddargs(sfu::DATFunction,dc)
@@ -286,15 +306,29 @@ function runLoop(dc::DATConfig)
   dc.outcube
 end
 
-function generateOutCube(dc::DATConfig)
-  T=eltype(dc.outcube)
+@noinline generateOutCube(dc::DATConfig)=generateOutCube(dc,dc.genOut,eltype(dc.outcube))
+function generateOutCube(dc::DATConfig,gfun,T1)
+  T=typeof(gfun(T1))
   outsize=sizeof(T)*(length(dc.axlistOut)>0 ? prod(map(length,dc.axlistOut)) : 1)
-  if outsize>dc.max_cache || dc.ispar
+  if dc.retCubeType=="auto"
+    if dc.ispar || outsize>dc.max_cache
+      dc.retCubeType=TempCube
+    else
+      dc.retCubeType=CubeMem
+    end
+  end
+  if dc.retCubeType==TempCube
     isdir(dc.outfolder) || mkpath(dc.outfolder)
     dc.outcube=TempCube(dc.axlistOut,CartesianIndex(totuple([map(length,dc.outAxes);dc.loopCacheSize])),folder=dc.outfolder,T=T,persist=false)
-  else
+  elseif dc.retCubeType==CubeMem
     newsize=map(length,dc.axlistOut)
-    dc.outcube = Cubes.CubeMem{T,length(newsize)}(dc.axlistOut, zeros(T,newsize...),zeros(UInt8,newsize...))
+    outar=Array{T}(newsize...)
+    @inbounds for i in eachindex(outar)
+      outar[i]=gfun(T1)
+    end
+    dc.outcube = Cubes.CubeMem{T,length(newsize)}(dc.axlistOut, outar,zeros(UInt8,newsize...))
+  else
+    error("return cube type not defined")
   end
 end
 
@@ -307,8 +341,14 @@ function getCubeHandles(dc::DATConfig)
     end
     @everywhereelsem begin
       dc=Main.PMDATMODULE.dcg
-      tc=openTempCube(dc.outfolder)
-      push!(dc.outCubeH,CachedArray(tc,1,tc.block_size,MaskedCacheBlock{eltype(tc),length(tc.block_size.I)}))
+      if isa(dc.outcube,CubeMem)
+        push!(dc.outCubeH,dc.outcube)
+      elseif isa(dc.outcube,TempCube)
+        tc=openTempCube(dc.outfolder)
+        push!(dc.outCubeH,CachedArray(tc,1,tc.block_size,MaskedCacheBlock{eltype(tc),length(tc.block_size.I)}))
+      else
+        error("Output cube type unknown")
+      end
       for icube=1:dc.NIN
         if dc.isMem[icube]
           push!(dc.inCubesH,dc.incubes[icube])
@@ -328,8 +368,10 @@ function getCubeHandles(dc::DATConfig)
     end
     if isa(dc.outcube,TempCube)
       push!(dc.outCubeH,CachedArray(dc.outcube,1,dc.outcube.block_size,MaskedCacheBlock{eltype(dc.outcube),length(dc.axlistOut)}))
-    else
+    elseif isa(dc.outcube,CubeMem)
       push!(dc.outCubeH,dc.outcube)
+    else
+      error("Output cube type unknown")
     end
   end
 end
@@ -351,13 +393,23 @@ function analyzeAxes(dc::DATConfig)
     dc.outAxes[ii]=dc.outdims[ii]()
   end
   length(dc.LoopAxes)==length(unique(map(typeof,dc.LoopAxes))) || error("Make sure that cube axes of different cubes match")
-  dc.axlistOut=CubeAxis[dc.outAxes;dc.LoopAxes]
   for icube=1:dc.NIN
     push!(dc.broadcastAxes,Int[])
     for iLoopAx=1:length(dc.LoopAxes)
       !in(typeof(dc.LoopAxes[iLoopAx]),map(typeof,dc.axlists[icube])) && push!(dc.broadcastAxes[icube],iLoopAx)
     end
   end
+  #Add output broadcast axes
+  push!(dc.broadcastAxes,Int[])
+  LoopAxes2=CubeAxis[]
+  for iLoopAx=1:length(dc.LoopAxes)
+    if typeof(dc.LoopAxes[iLoopAx]) in dc.outBroadCastAxes
+      push!(dc.broadcastAxes[end],iLoopAx)
+    else
+      push!(LoopAxes2,dc.LoopAxes[iLoopAx])
+    end
+  end
+  dc.axlistOut=CubeAxis[dc.outAxes;LoopAxes2]
   return dc
 end
 
@@ -462,7 +514,7 @@ using Base.Cartesian
     for j=1:NIN
       in(i,broadcastvars[j]) || push!(subIn[j].args,isym)
     end
-    push!(subOut.args,isym)
+    in(i,broadcastvars[end]) || push!(subOut.args,isym)
     if T3.parameters[i]==UnitRange{Int}
       unshift!(loopRangesE.args,:($isym=loopRanges[$i]))
     elseif T3.parameters[i]==Int
@@ -578,9 +630,9 @@ Registers a function so that it can be applied to the whole data cube through ma
   - `inplace::Bool` defaults to true. If `f` returns a single value, instead of writing into an output array, one can set `inplace=false`.
 
 """
-function registerDATFunction(f,dimsin::Tuple{Vararg{Tuple{Vararg{DataType}}}},dimsout::Tuple,addargs;outtype=Any,inmissing=ntuple(i->:mask,length(dimsin)),outmissing=:mask,no_ocean=0,inplace=true)
+function registerDATFunction(f,dimsin::Tuple{Vararg{Tuple{Vararg{DataType}}}},dimsout::Tuple,addargs;outtype=Any,inmissing=ntuple(i->:mask,length(dimsin)),outmissing=:mask,no_ocean=0,inplace=true,genOut=zero,finalizeOut=identity,retCubeType="auto")
     fname=string(split(string(f),".")[end])
-    regDict[fname]=DATFunction(dimsin,dimsout,addargs,outtype,inmissing,outmissing,no_ocean,inplace)
+    regDict[fname]=DATFunction(dimsin,dimsout,addargs,outtype,inmissing,outmissing,no_ocean,inplace,genOut,finalizeOut,retCubeType)
 end
 registerDATFunction(f, ::Tuple{}, dimsout::Tuple, addargs)=registerDATFunction(f,((),),dimsout,addargs;kwargs...)
 registerDATFunction(f,dimsin::Tuple{Vararg{DataType}},dimsout::Tuple,addargs;kwargs...)=registerDATFunction(f,(dimsin,),dimsout,addargs;kwargs...)

@@ -8,11 +8,11 @@ StatsBase
 ImageMagick
 Interact
 Reactive
-Distances
 JLD
 Patchwork
 Vega
-Compat
 Requests
 LightXML
 NullableArrays
+OnlineStats
+Combinatorics

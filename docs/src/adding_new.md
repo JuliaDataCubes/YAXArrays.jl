@@ -6,7 +6,7 @@ It is possible for the user to register their own functions into the data cube
 so that they can easily be applied through the mapCube function as if it was a built-in function.
 
 First of all one needs to define the function that is supposed to be applied on the cube. In general, it should have the following signature:
-f(x_out,m_out,x_in,m_in,addargs...), where `x_out` is the output array, `m_mout` the output mask, `x_in` is the input array and `m_in` the input mask.
+`f(x_out,m_out,x_in,m_in,addargs...)`, where `x_out` is the output array, `m_mout` the output mask, `x_in` is the input array and `m_in` the input mask.
 This can be followed by an arbitrary number of additional arguments `addargs`.
 
 You can read about cube masks here [Cube Masks](@ref). In case you don't want to treat the cube's mask individually, you can leave out the `m_out` arguments

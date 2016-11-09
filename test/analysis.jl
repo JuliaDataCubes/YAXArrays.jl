@@ -87,6 +87,14 @@ function doTests()
 
   ccube=mapCube(catCubes,(d1,d2))
 
+  #Test Quantiles
+  cdata=getCubeData(c,variable=["soil_moisture","gross_primary_productivity"],longitude=(30,30),latitude=(50.75,50.75))
+  o=readCubeData(mapCube(timelonlatquantiles,cdata,[0.1,0.5,0.9]))
+  o2=readCubeData(cdata)
+  size(o2.data)
+  o2=o2.data[:,:,:,1][o2.mask[:,:,:,1].==0x00]
+  @test quantile(o2,[0.1,0.5,0.9])==o.data[:,1]
+
   nothing
 end
 
