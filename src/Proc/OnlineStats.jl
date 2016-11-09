@@ -60,6 +60,6 @@ function mapCube{T<:OnlineStat}(f::Type{T},cdata::AbstractCubeData;by=CubeAxis[]
     indims=length(bycubes)==0 ? () : ((),())
   end
   outBroad=map(typeof,outBroad)
-  return mapCube(DATfitOnline,indata,cfun,outtype=f,indims=indims,outdims=outdims,outBroadCastAxes=outBroad,finalizeOut=finalizeOnlineCube,genOut=i->f())
+  return mapCube(DATfitOnline,indata,cfun;outtype=typeof(f()),indims=indims,outdims=outdims,outBroadCastAxes=outBroad,finalizeOut=finalizeOnlineCube,genOut=i->f(),kwargs...)
 end
 end

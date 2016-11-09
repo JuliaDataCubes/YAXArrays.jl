@@ -2,8 +2,10 @@ module CubeAPI
 importall ..Cubes
 importall ..Cubes.Axes
 importall ..CABLABTools
+import Base.Markdown.@md_str
 export Cube, getCubeData,getTimeRanges,readCubeData, getMemHandle, RemoteCube
 export isvalid, isinvalid, isvalid, isvalidorfilled, Mask
+export showVarInfo
 
 include("Mask.jl")
 
@@ -638,6 +640,60 @@ end
       end
     end
   end
+
+
+immutable CABLABVarInfo
+  longname::String
+  units::String
+  url::String
+  comment::String
+  reference::String
+end
+        
+getremFileName(cube::RemoteCube,variable::String)=cube.dataset_paths[cube.var_name_to_var_index[variable]][1]
+function getremFileName(cube::Cube,variable::String)
+    filepath=joinpath(cube.base_dir,"data",variable)
+    filelist=readdir(filepath)
+    isempty(filelist) && error("Could not retrieve METADATA for variable $variable")
+    return joinpath(filepath,filelist[1])
+end
+
+showVarInfo(cube::SubCube)=showVarInfo(cube,cube.variable)
+showVarInfo(cube::SubCubeV)=[showVarInfo(cube,v) for v in cube.variable]
+function showVarInfo(cube, variable::String)
+    filename=getremFileName(cube.cube,variable)
+    v=NetCDF.open(filename,variable)
+    vi=CABLABVarInfo(
+      get(v.atts,"long_name",variable),
+      get(v.atts,"units","unknown"),                    
+      get(v.atts,"url","no link"),
+      get(v.atts,"comment",variable),
+      get(v.atts,"references","no reference")
+    )
+    ncclose(filename)
+    return vi
+end
+
+import Base.show
+function show(io::IO,::MIME"text/markdown",v::CABLABVarInfo)
+    un=v.units
+    url=v.url
+    re=v.reference
+    mdt=md"""
+### $(v.longname)
+*$(v.comment)*
+
+* **units** $un
+* **Link** $url
+* **Reference** $re
+"""
+    mdt[3].items[1][1].content[3]=[" $un"]
+    mdt[3].items[2][1].content[3]=[" [$url]"]
+    mdt[3].items[3][1].content[3]=[" $re"]
+    show(io,MIME"text/markdown"(),mdt)
+end
+show(io::IO,::MIME"text/markdown",v::Vector{CABLABVarInfo})=foreach(x->show(io,MIME"text/markdown"(),x),v)
+     
 
   function readFromDataYear{T}(cube::Cube,outar::AbstractArray{T,3},mask::AbstractArray{UInt8,3},variable,y,grid_x1,nx,grid_y1,ny,itcur,i1cur,ntime,NpY)
     filename=joinpath(cube.base_dir,"data",variable,string(y,"_",variable,".nc"))
