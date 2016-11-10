@@ -83,8 +83,7 @@ function getMSC(xout::AbstractVector,xin::AbstractVector,nmsc::Vector{Int}=zeros
     NpY=length(xout)
     fillmsc(imscstart,xout,nmsc,xin,NpY)
 end
-registerDATFunction(getMSC,(TimeAxis,),((cube,pargs)->MSCAxis(getNpY(cube[1])),),(cube,pargs)->(zeros(Int,getNpY(cube[1])),),inmissing=(:nan,),outmissing=:nan,no_ocean=1)
-
+registerDATFunction(getMSC,(TimeAxis,),((cube,pargs)->MSCAxis(getNpY(cube[1])),),(cube,pargs)->(zeros(Int,getNpY(cube[1])),),inmissing=:nan,outmissing=:nan,no_ocean=1)
 
 
 

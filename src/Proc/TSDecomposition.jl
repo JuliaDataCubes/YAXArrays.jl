@@ -90,6 +90,6 @@ function filterTSFFT{T<:Real}(outar::Matrix{T},y::Vector{T}, annfreq::Number;nha
     end
     outar
 end
-registerDATFunction(filterTSFFT,(TimeAxis,),(TimeAxis,(c,p)->TimeScaleAxis(["Trend", "Long-Term Variability", "Annual Cycle", "Fast Oscillations"])),(c,p)->getNpY(c[1]),inmissing=(:nan,),outmissing=:nan,no_ocean=1)
+registerDATFunction(filterTSFFT,(TimeAxis,),(TimeAxis,(c,p)->TimeScaleAxis(["Trend", "Long-Term Variability", "Annual Cycle", "Fast Oscillations"])),(c,p)->getNpY(c[1]),inmissing=:nan,outmissing=:nan,no_ocean=1)
 
 end

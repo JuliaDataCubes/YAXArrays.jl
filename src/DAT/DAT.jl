@@ -632,12 +632,16 @@ Registers a function so that it can be applied to the whole data cube through ma
 """
 function registerDATFunction(f,dimsin::Tuple{Vararg{Tuple{Vararg{DataType}}}},dimsout::Tuple,addargs;outtype=Any,inmissing=ntuple(i->:mask,length(dimsin)),outmissing=:mask,no_ocean=0,inplace=true,genOut=zero,finalizeOut=identity,retCubeType="auto")
     fname=string(split(string(f),".")[end])
+    nIn=length(dimsin)
+    inmissing=expandTuple(inmissing,nIn)
     regDict[fname]=DATFunction(dimsin,dimsout,addargs,outtype,inmissing,outmissing,no_ocean,inplace,genOut,finalizeOut,retCubeType)
 end
 registerDATFunction(f, ::Tuple{}, dimsout::Tuple, addargs)=registerDATFunction(f,((),),dimsout,addargs;kwargs...)
 registerDATFunction(f,dimsin::Tuple{Vararg{DataType}},dimsout::Tuple,addargs;kwargs...)=registerDATFunction(f,(dimsin,),dimsout,addargs;kwargs...)
 registerDATFunction(f,dimsin,dimsout;kwargs...)=registerDATFunction(f,dimsin,dimsout,();kwargs...)
 registerDATFunction(f,dimsin;kwargs...)=registerDATFunction(f,dimsin,();kwargs...)
+expandTuple(x,nin)=ntuple(i->x,nin)
+expandTuple{T}(x::Tuple{Vararg{T}},nin)=x
 
 "Find a certain axis type in a vector of Cube axes and returns the index"
 function findAxis{T<:CubeAxis}(a::Type{T},v)
