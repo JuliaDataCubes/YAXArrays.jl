@@ -49,16 +49,10 @@ type CachedArray{T,N,B,S}<:AbstractArray{T,N}
     emptyblock::B
 end
 
-import Base: .*
-@generated function Base.div{N}(index1::CartesianIndex{N}, index2::CartesianIndex{N})
-    I = index1
-    args = [:(Base.div(index1[$d],index2[$d])) for d = 1:N]
-    :($I($(args...)))
-end
-@generated function .*{N}(index1::CartesianIndex{N}, index2::CartesianIndex{N})
-    I = index1
-    args = [:(.*(index1[$d],index2[$d])) for d = 1:N]
-    :($I($(args...)))
+import Base.show
+function show(io::IO,s::MIME"text/plain",x::CachedArray)
+  println(io,"Cached Array with cache size $(x.block_size.I) around the following Array:")
+  show(io,s,x.x)
 end
 @generated function asRanges{N}(start::CartesianIndex{N},count::CartesianIndex{N})
     args=[Expr(:(:),:(start.I[$i]),:(start.I[$i]+count.I[$i]-1)) for i=1:N]
@@ -278,21 +272,22 @@ end
 
 using NetCDF
 
+
 function read_subblock!{T,N}(x::CacheBlock{T,N},y::Array{T,N},block_size::CartesianIndex{N})
-    istart = (x.position-CartesianIndex{N}()).*block_size
+    istart = CItimes((x.position-CartesianIndex{N}()),block_size)
     ysmall = view(y,asRanges(istart+CartesianIndex{N}(),block_size))
     copy!(x.data,ysmall)
 end
 
 function write_subblock!{T,N}(x::CacheBlock{T,N},y::Array{T,N},block_size::CartesianIndex{N})
-    istart = (x.position-CartesianIndex{N}()).*block_size
+    istart = CItimes((x.position-CartesianIndex{N}()),block_size)
     ysmall = view(y,asRanges(istart+CartesianIndex{N}(),block_size))
     copy!(ysmall,x.data)
     x.iswritten=false
 end
 
 function read_subblock!{T,N}(x::SimpleCacheBlock{T,N},y::NcVar{T,N},block_size::CartesianIndex{N})
-    istart = (x.position-CartesianIndex{N}()).*block_size
+    istart = CItimes((x.position-CartesianIndex{N}()),block_size)
     NetCDF.readvar!(y,x.data,asRanges(istart+CartesianIndex{N}(),block_size)...)
 end
 
@@ -303,12 +298,12 @@ import CABLAB.CubeAPI.SubCubeV, CABLAB.CubeAPI.SubCubeVPerm
 toSymbol(d::DataType)=Symbol(split(replace(string(d),r"\{\S*\}",""),".")[end])
 
 function read_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::AbstractCubeData{T},block_size::CartesianIndex{N})
-    r = CartesianRange((x.position-CartesianIndex{N}()).*block_size+CartesianIndex{N}(),(x.position).*block_size)
+    r = CartesianRange(CItimes((x.position-CartesianIndex{N}()),block_size)+CartesianIndex{N}(),CItimes((x.position),block_size))
     _read(y,(x.data,x.mask),r)
 end
 
 function read_subblock!{T,N}(x::SimpleCacheBlock{T,N},y::AbstractCubeData{T},block_size::CartesianIndex{N})
-    r = CartesianRange((x.position-CartesianIndex{N}()).*block_size+CartesianIndex{N}(),(x.position).*block_size)
+    r = CartesianRange(CItimes((x.position-CartesianIndex{N}()),block_size)+CartesianIndex{N}(),CItimes((x.position),block_size))
     _read(y,x.data,r)
 end
 
@@ -330,7 +325,7 @@ function read_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::TempCube{T,N},block_siz
         ncread!(filename,"mask",x.mask)
         ncclose(filename)
     else
-        r = CartesianRange((x.position-CartesianIndex{N}()).*block_size+CartesianIndex{N}(),(x.position).*block_size)
+        r = CartesianRange(CItimes((x.position-CartesianIndex{N}()),block_size)+CartesianIndex{N}(),CItimes((x.position),block_size))
         _read(y,(x.data,x.mask),r)
     end
 end

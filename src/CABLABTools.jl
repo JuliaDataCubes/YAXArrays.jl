@@ -1,5 +1,5 @@
 module CABLABTools
-export mypermutedims!, totuple, freshworkermodule, passobj, @everywhereelsem, toRange, getiperm
+export mypermutedims!, totuple, freshworkermodule, passobj, @everywhereelsem, toRange, getiperm, CItimes, CIdiv
 # SOme global function definitions
 
 function getiperm(perm)
@@ -21,6 +21,17 @@ using Base.Cartesian
             $ex2=$ex1
         end
     end
+end
+
+@generated function CIdiv{N}(index1::CartesianIndex{N}, index2::CartesianIndex{N})
+    I = index1
+    args = [:(Base.div(index1[$d],index2[$d])) for d = 1:N]
+    :($I($(args...)))
+end
+@generated function CItimes{N}(index1::CartesianIndex{N}, index2::CartesianIndex{N})
+    I = index1
+    args = [:(.*(index1[$d],index2[$d])) for d = 1:N]
+    :($I($(args...)))
 end
 
 totuple(x::AbstractArray)=ntuple(i->x[i],length(x))
