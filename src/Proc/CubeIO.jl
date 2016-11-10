@@ -62,16 +62,33 @@ end
 export toPointAxis
 registerDATFunction(toPointAxis,((LonAxis,LatAxis),(LonAxis,),(LatAxis,),(SpatialPointAxis,)),(SpatialPointAxis,))
 
-function sampleLandPoints(cdata::CubeAPI.AbstractCubeData,nsample::Integer)
+"""
+    sampleLandPoints(cube, nsample;nomissing=false)
+
+Get an area-weighted sample from all non-ocean grid cells. This will return a new Cube
+where the `LonAxis` and `LatAxis` are condensed into a single `SpatialPointAxis` of
+length `nsample`. If `nomissing=true` only grid cells will be selected which don't contain any missing values.
+This makes sense for gap-filled cubes to make sure that grid cells with systematic seasonal gaps are not selected
+in the sample. 
+"""
+function sampleLandPoints(cdata::CubeAPI.AbstractCubeData,nsample::Integer,nomissing=false)
   axlist=axes(cdata)
-  ilon=findAxis(LonAxis,axlist)
-  ilat=findAxis(LatAxis,axlist)
-  bs=ntuple(i->in(i,(ilon,ilat)) ? length(axlist[i]) : 1,length(axlist))
-  sargs=ntuple(i->ifelse(in(i,(ilon,ilat)),1:length(axlist[i]),1),length(axlist))
-  mh=getMemHandle(cdata,1,CartesianIndex(bs))
-  a,m=getSubRange(mh,sargs...)
-  m=copy(m)
-  cm=CubeMem(CubeAxis[axlist[ilon],axlist[ilat]],m,m)
+  if nomissing
+    remAxes=filter(i->!(isa(i,LonAxis) || isa(i,LatAxis)),axlist)
+    cm=reduceCube(anynull,cdata,ntuple(i->remAxes[i],length(remAxes)),outtype=Bool)
+    m=map(i->i ? VALID : OCEAN)
+    cm.data=m
+    cm.mask=m
+  else
+    ilon=findAxis(LonAxis,axlist)
+    ilat=findAxis(LatAxis,axlist)
+    bs=ntuple(i->in(i,(ilon,ilat)) ? length(axlist[i]) : 1,length(axlist))
+    sargs=ntuple(i->ifelse(in(i,(ilon,ilat)),1:length(axlist[i]),1),length(axlist))
+    mh=getMemHandle(cdata,1,CartesianIndex(bs))
+    a,m=getSubRange(mh,sargs...)
+    m=copy(m)
+    cm=CubeMem(CubeAxis[axlist[ilon],axlist[ilat]],m,m)
+  end
   sax=getSpatiaPointAxis(cm);
   w=WeightVec(map(i->cosd(i[2]),sax.values))
   sax2=SpatialPointAxis(sample(sax.values,w,nsample,replace=false))

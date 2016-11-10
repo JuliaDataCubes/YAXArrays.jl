@@ -50,6 +50,7 @@ Here are two examples for using this function:
 ```julia
 cdata=getCubeData(ds,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
 longitude=(30.0,30.0),latitude=(50.0,52.0))
+plotXY(cdata,xaxis="time",group="variable",lon=31,lat=51)
 nothing # hide
 ```
 

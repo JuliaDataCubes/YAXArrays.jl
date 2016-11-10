@@ -115,4 +115,10 @@ This will open the remote cube and calling `getCubeData` will return a cube view
 
 **Important** In order to avoid unnecessary traffic, be nice to our servers.
 Please use this only for testing the cube software for very limited amount of data (reading maps at single time steps)
-or time series in lon-lat boxes of size 1degx1deg. 
+or time series in lon-lat boxes of size 1degx1deg.
+
+## Point-wise access
+
+```@docs
+sampleLandPoints
+```

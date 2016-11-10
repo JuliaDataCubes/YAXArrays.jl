@@ -43,6 +43,10 @@ We provide a convenience function `reduceCube`
 reduceCube
 ```
 
+Applying these functions makes sense if the slices one wants to reduce fit in memory. However,
+if one wants to calculate some statistics on e.g. a time*lon*lat cube, one would preferably
+call one of the [OnlineStats](@ref) methods.  
+
 Additional simple statistics functions are:
 
 ```@autodocs
@@ -61,4 +65,67 @@ Private = false
 ```@autodocs
 Modules = [CABLAB.Proc.CubeIO]
 Private = false
+```
+
+## OnlineStats
+
+It is possible to directly apply statistics included in the [OnlineStats.jl package](https://github.com/joshday/OnlineStats.jl)
+on the data cube. This makes it possible to calculate statistics on data too big to fit into memory. The general syntax is
+
+```
+mapCube(f ,cube; by=CubeAxis[], cfun=identity, outAxis=nothing,kwargs...)
+```
+
+where `f` is an OnlineStat data type and `cube` is the cube you want to apply the statistics to.
+By default this function will reduce all values over all axes of the cube, so if you want to do
+statistics by a certain axis, it has to be specified using the `by` keyword argument.
+`by` accepts a vector of axes types and up to one datacube that can serve as a mask. If such
+a data cube is supplied, the statistics are split by the unique values in the mask. One can pass
+a function `cfun` that transforms the mask values into an index in the range `1..N` that defines the   
+index where the new value is going to be put to. If a mask is supplied, one also needs to supply an
+`outAxis` argument that describes the resulting output axis.
+
+This all gets clearer with a little example. suppose we want to calculate the mean of GPP, NEE and TER
+under the condition that Tair<280K and Tair>280K over all time steps and grid cells. This is achieved through the
+following lines of code:
+
+```julia
+import OnlineStats
+lons  = (30,31)
+lats  = (50,51)
+vars  = ["gross_primary_productivity","net_ecosystem_exchange","terrestrial_ecosystem_respiration"]
+t     = getCubeData(ds,variable="air_temperature_2m",longitude=lons,latitude=lats)
+cube  = getCubeData(ds,variable=vars,longitude=lons,latitude=lats)
+
+splitTemp(t) = ifelse(t>280,2,1)                            # Define the classification function
+outAxis      = CategoricalAxis("TempClass",["< 7C",">7C"])  # A two-length output axis, because there are two possible values
+mT    = mapCube(OnlineStats.Mean,cube,by=[t,VariableAxis], cfun=splitTemp, outAxis=outAxis) # Of course we want to split by variable, too
+
+plotXY(mT,xaxis="var",group="tempclass")
+```
+```@eval
+#Load Javascript env
+import Patchwork
+import Documenter
+Documenter.Documents.RawHTML("<script>$(Patchwork.js_runtime())</script>")
+```
+```@eval
+using CABLAB
+import OnlineStats
+import Documenter
+ds    = RemoteCube()
+lons  = (30,31)
+lats  = (50,51)
+vars  = ["gross_primary_productivity","net_ecosystem_exchange","terrestrial_ecosystem_respiration"]
+t     = getCubeData(ds,variable="air_temperature_2m",longitude=lons,latitude=lats)
+cube  = getCubeData(ds,variable=vars,longitude=lons,latitude=lats)
+
+splitTemp(t) = ifelse(t>280,2,1)
+outAxis      = CategoricalAxis("TempClass",["< 7C",">7C"])
+mT    = mapCube(OnlineStats.Mean,cube,by=[t,VariableAxis], cfun=splitTemp, outAxis=outAxis)
+
+p=plotXY(mT,xaxis="var",group="tempclass")
+b=IOBuffer()
+show(b,MIME"text/html"(),p)
+Documenter.Documents.RawHTML(takebuf_string(b))
 ```
