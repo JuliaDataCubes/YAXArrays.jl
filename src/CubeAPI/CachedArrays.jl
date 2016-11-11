@@ -202,8 +202,19 @@ end
     end
 end
 
+missval(::Float64)=NaN64
+missval(::Float32)=NaN32
+missval{T<:Integer}(::T)=typemax(T)
 
-hi=Expr(:call,:(Base.getindex{T}),:(c::CachedArray{T,N}))
+function Base.getindex(c::CachedArray,i::Integer...)
+  v,m = getSingVal(c,i...)
+  if (m & MISSVAL) == MISSVAL
+    return missval(v)
+  else
+    return v
+  end
+end 
+
 hi2=Expr(:call,:(getSingVal{T}),:(c::CachedArray{T,N}))
 hiRange=Expr(:call,:(getSubRange{T,S<:CacheBlock}),Expr(:parameters,Expr(:kw,:write,false)),:(c::CachedArray{T,N,S}))
 hisetRange=Expr(:call,:(setSubRange{T,S<:MaskedCacheBlock}),Expr(:parameters,Expr(:kw,:write,false)),:(c::CachedArray{T,N,S}),:vals,:mask)
@@ -221,19 +232,6 @@ for N=1:5
   # This is the function body that first determines the subblock to read,
   # then check if this is in cache and returns the value. bI refers to the index of the
   # block and iI refers to the index inside the block
-  funcbody=quote
-    block_size=c.block_size
-    $(getBlockIndEx(N,"i","iI","bI"))
-    blocks=c.blocks
-    if @nref($N,blocks,bI) == c.emptyblock
-      $(getBlockExchangeEx(N))
-    else
-      blockx=@nref($N,blocks,bI)
-    end
-    blockx.score+=1.0
-    d=blockx.data
-    return @nref $N d iI
-  end
   funcbody2=quote
     block_size=c.block_size
     $(getBlockIndEx(N,"i","iI","bI"))
@@ -251,19 +249,15 @@ for N=1:5
   funcbodyRange=funcbodyRangeEx(N,higetVal,higetSub)
   funcbodyRangeSet=funcbodyRangeEx(N,hisetVal,hisetSub)
   #Here is the function body if getindex is called on ranges.
-  hi.args[2].args[2].args[3]=N
   hi2.args[2].args[2].args[3]=N
   hiRange.args[3].args[2].args[3]=N
   hisetRange.args[3].args[2].args[3]=N
-  push!(hi.args,:($(Symbol(string("i_",N)))::Integer))
   push!(hi2.args,:($(Symbol(string("i_",N)))::Integer))
   push!(hiRange.args,:($(Symbol(string("i_",N)))::Union{UnitRange,Integer,Colon}))
   push!(hisetRange.args,:($(Symbol(string("i_",N)))::Union{UnitRange,Integer,Colon}))
-  ex=Expr(:function,hi,funcbody)
   ex2=Expr(:function,hi2,funcbody2)
   exRange=Expr(:function,hiRange,funcbodyRange)
   exsetRange=Expr(:function,hisetRange,funcbodyRangeSet)
-  eval(ex)
   eval(ex2)
   eval(exRange)
   eval(exsetRange)
