@@ -69,6 +69,7 @@ of the aliases:
 * `SpatialPointAxis` represents a list of coordinates
 * `CountryAxis` countries
 * `TimeScaleAxis` time scales after time series decomposition
+* `QuantileAxis` represents different quantiles
 
 ### Cotinuous Axes
 
