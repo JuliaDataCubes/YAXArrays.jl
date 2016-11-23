@@ -1,5 +1,5 @@
 module Axes
-export CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis,
+export CubeAxis, QuantileAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis,
 SpatialPointAxis,Axes,YearStepRange,CategoricalAxis,RangeAxis,axVal2Index,MSCAxis,
 TimeScaleAxis, axname
 import NetCDF.NcDim
@@ -69,6 +69,7 @@ of the aliases:
 * `SpatialPointAxis` represents a list of coordinates
 * `CountryAxis` countries
 * `TimeScaleAxis` time scales after time series decomposition
+* `QuantileAxis` represents different quantiles
 
 ### Cotinuous Axes
 
@@ -102,6 +103,7 @@ CategoricalAxis(s::AbstractString,v::Vector)=CategoricalAxis(Symbol(s),v)
 @defineCatAxis SpatialPoint Tuple{Float64,Float64}
 @defineCatAxis Country String
 @defineCatAxis TimeScale String
+@defineCatAxis Quantile Float64
 
 """
     RangeAxis{T,S,R}
