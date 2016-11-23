@@ -56,7 +56,32 @@ end
 
 using JLD
 
-function TempCube{N}(axlist,block_size::CartesianIndex{N};folder=mktempdir(),T=Float32,persist=true)
+"""
+    TempCube(axlist, block_size)
+
+Creates a new temporary Data Cube with the axes specified by `axlist`, a Vector{CubeAxis}. `block_size` is a Tuple
+containing the dimensions of each sub-file the cube is split into.
+
+### Keyword arguments
+
+- `folder=mktempdir()` a folder where the new Cube is stored
+- `T=Float32` the cubes data type
+- `persist=true` shall the cubes disk representation be kept or deleted when the cube gets out of scope
+- `overwrite=false` shall the data in an existing folder be overwritten
+"""
+function TempCube{N}(axlist,block_size::CartesianIndex{N};folder=mktempdir(),T=Float32,persist::Bool=true,overwrite::Bool=false)
+  isdir(folder) || mkpath(folder)
+  if !isempty(readdir(folder))
+    if overwrite
+      isfile(joinpath(folder,"axinfo.jld")) && rm(joinpath(folder,"axinfo.jld"))
+      ncfiles=filter(f->endswith(f,".nc") && startswith(f,"file_"),readdir(folder))
+      foreach(ncfiles) do f
+        rm(joinpath(folder,f))
+      end
+    else
+      error("Folder $folder is not empty, set overwrite=true to overwrite.")
+    end
+  end
   s=map(length,axlist)
   ssmall=map(div,s,block_size.I)
   for ii in CartesianRange(totuple(ssmall))
@@ -64,6 +89,8 @@ function TempCube{N}(axlist,block_size::CartesianIndex{N};folder=mktempdir(),T=F
     ncdims = NcDim[NcDim(axlist[i],istart[i],block_size[i]) for i=1:N]
     vars   = NcVar[NcVar("cube",ncdims,t=T),NcVar("mask",ncdims,t=UInt8)]
     nc     = NetCDF.create(joinpath(folder,tofilename(ii)),vars)
+#    NetCDF.putvar(nc["cube"],fill(iniVal,block_size))
+#    NetCDF.putvar(nc["mask"],fill(MISSING,block_size))
     NetCDF.close(nc)
   end
   save(joinpath(folder,"axinfo.jld"),"axlist",axlist)
@@ -71,6 +98,8 @@ function TempCube{N}(axlist,block_size::CartesianIndex{N};folder=mktempdir(),T=F
   finalizer(ntc,cleanTempCube)
   return ntc
 end
+
+TempCube(axlist,block_size::Tuple;kwargs...)=TempCube(axlist,CartesianIndex(block_size))
 
 function openTempCube(folder;persist=true)
   axlist=load(joinpath(folder,"axinfo.jld"),"axlist")

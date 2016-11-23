@@ -173,7 +173,7 @@ function getMinMax(x,mask;symmetric=false,squeeze=1.0)
   if mi==typemax(eltype(x)) || ma==typemin(eltype(x))
     mi,ma=(zero(eltype(x)),one(eltype(x)))
   elseif mi==ma
-    mi,ma=(mi,mi+eps(mi))
+    mi,ma=(mi,mi+1)
   end
   if symmetric
     m=max(abs(mi),abs(ma))
@@ -302,7 +302,7 @@ end
 function getlegend(xmin,xmax,colm)
     xoffs=0.05
     xl=1-2xoffs
-    tlabs,smin,smax=optimize_ticks(xmin,xmax,extend_ticks=false,k_min=4)
+    tlabs,smin,smax=optimize_ticks(Float64(xmin),Float64(xmax),extend_ticks=false,k_min=4)
     tpos=[(tlabs[i]-xmin)/(xmax-xmin) for i=1:length(tlabs)]
     r=rectangle([(i-1)/length(colm) for i in 1:length(colm)],[0],[1/(length(colm)-1)],[1])
     f=fill([colm[div((i-1)*length(colm),length(colm))+1] for i=1:length(colm)])

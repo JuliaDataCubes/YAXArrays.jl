@@ -5,6 +5,7 @@ import ..Cubes.TempCubes.tofilename
 export CachedArray, MaskedCacheBlock, getSubRange, getSubRange2
 importall ..CubeAPI
 importall ..CABLABTools
+importall ..Mask
 using Base.Cartesian
 
 abstract CacheBlock{T,N}
@@ -84,7 +85,7 @@ function CachedArray(x,max_blocks::Int,block_size::CartesianIndex,blocktype::Dat
     CachedArray{T,N,blocktype,vtype}(x,max_blocks,block_size,blocks,currentblocks,nullblock)
 end
 Base.linearindexing(::CachedArray)=Base.LinearSlow()
-Base.setindex!{T,N}(c::CachedArray{T,N},v,i::CartesianIndex{N})=0.0
+#Base.setindex!{T,N}(c::CachedArray{T,N},v,i::CartesianIndex{N})=0.0
 Base.size(c::CachedArray)=size(c.x)
 Base.similar(c::CachedArray)=similar(c.x)
 
@@ -145,6 +146,9 @@ setWriteEx(e::Expr)=e.args[1]==:setSubRange ? :(blockx.iswritten=true) : :()
 
 
 function funcbodyRangeEx(N,higetVal,higetSub)
+
+    t2=Expr(:tuple,:AbstractArray,ntuple(d->Any,N)...)
+    t1=Expr(:call,:invoke,:getindex,t2,:c,[Symbol("i_$d") for d=1:N]...)
     quote
       block_size=c.block_size
       @nexprs $N d->(istart_d=firstval(i_d);l_d=llength(i_d,size(c,d)))
@@ -162,8 +166,7 @@ function funcbodyRangeEx(N,higetVal,higetSub)
           blockx.iswritten=write
           return o
       else
-          #$(slowgetRangeEx(N,higetVal,higetSub))
-          error("trying to access subrange at wrong indices")
+          return $t1
       end
     end
 end
@@ -202,18 +205,47 @@ end
     end
 end
 
-missval(::Float64)=NaN64
-missval(::Float32)=NaN32
-missval{T<:Integer}(::T)=typemax(T)
+missval(::Float64)::Float64=NaN64
+missval(::Float32)::Float32=NaN32
+missval{T<:Integer}(::T)::T=typemax(T)-1
 
+function Base.setindex!{T}(c::CachedArray{T},v::Number,i::Integer...)
+  vout,m = getSubRange(c,i...,write=true)
+  mv=missval(zero(T))
+  if v==mv
+    vout[1]=mv
+    m[1]=MISSING
+  else
+    vout[1]=v
+    m[1]=VALID
+  end
+end
 function Base.getindex(c::CachedArray,i::Integer...)
   v,m = getSingVal(c,i...)
-  if (m & MISSVAL) == MISSVAL
+  if (m & MISSING) == MISSING
     return missval(v)
   else
     return v
   end
-end 
+end
+@noinline function fillVals(x::AbstractArray,m::AbstractArray{UInt8},v)
+  nmiss=0
+  @inbounds for i in eachindex(x)
+    if (m[i] & 0x01)==0x01
+      x[i]=v
+      nmiss+=1
+    end
+  end
+  return nmiss==length(x) ? true : false
+end
+function Base.getindex(c::CachedArray,i::Union{Integer,Range,Colon}...)
+  v,m = getSubRange2(c,i...)
+  v2=copy(v)
+  mv=missval(v[1])
+  fillVals(v2,m,mv)
+  v2
+end
+
 
 hi2=Expr(:call,:(getSingVal{T}),:(c::CachedArray{T,N}))
 hiRange=Expr(:call,:(getSubRange{T,S<:CacheBlock}),Expr(:parameters,Expr(:kw,:write,false)),:(c::CachedArray{T,N,S}))
