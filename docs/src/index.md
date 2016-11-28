@@ -4,9 +4,9 @@
 
 ## Package features
 
-
 ## Example Notebooks
 
+You can find some example Jupyter Notebooks that using *CABLAB.jl* [here](https://github.com/CAB-LAB/JuliaDatDemo)
 
 ## Manual Outline
 

@@ -1,4 +1,4 @@
-# Accessing the Datat Cube
+# Accessing the Data Cube
 
 ## Open a datacube
 
