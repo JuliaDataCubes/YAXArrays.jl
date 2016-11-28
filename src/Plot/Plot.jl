@@ -14,7 +14,7 @@ import Images: Image
 import Colors: RGB, @colorant_str, colormap, U8
 import DataStructures: OrderedDict
 import Base.Cartesian: @ntuple,@nexprs
-#import Patchwork.load_js_runtime
+import Patchwork.load_js_runtime
 
 #import Patchwork.load_js_runtime
 ga=[]
