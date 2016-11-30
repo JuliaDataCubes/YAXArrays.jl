@@ -101,7 +101,6 @@ end
 doTests()
 
 addprocs(2)
-CABLAB.DAT.init_DATworkers()
 
 doTests()
 rmprocs(workers())
