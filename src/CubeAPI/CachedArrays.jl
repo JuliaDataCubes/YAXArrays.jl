@@ -5,6 +5,7 @@ import ..Cubes.TempCubes.tofilename
 export CachedArray, MaskedCacheBlock, getSubRange, getSubRange2
 importall ..CubeAPI
 importall ..CABLABTools
+importall ..Mask
 using Base.Cartesian
 
 abstract CacheBlock{T,N}
@@ -49,16 +50,10 @@ type CachedArray{T,N,B,S}<:AbstractArray{T,N}
     emptyblock::B
 end
 
-import Base: .*
-@generated function Base.div{N}(index1::CartesianIndex{N}, index2::CartesianIndex{N})
-    I = index1
-    args = [:(Base.div(index1[$d],index2[$d])) for d = 1:N]
-    :($I($(args...)))
-end
-@generated function .*{N}(index1::CartesianIndex{N}, index2::CartesianIndex{N})
-    I = index1
-    args = [:(.*(index1[$d],index2[$d])) for d = 1:N]
-    :($I($(args...)))
+import Base.show
+function show(io::IO,s::MIME"text/plain",x::CachedArray)
+  println(io,"Cached Array with cache size $(x.block_size.I) around the following Array:")
+  show(io,s,x.x)
 end
 @generated function asRanges{N}(start::CartesianIndex{N},count::CartesianIndex{N})
     args=[Expr(:(:),:(start.I[$i]),:(start.I[$i]+count.I[$i]-1)) for i=1:N]
@@ -90,7 +85,7 @@ function CachedArray(x,max_blocks::Int,block_size::CartesianIndex,blocktype::Dat
     CachedArray{T,N,blocktype,vtype}(x,max_blocks,block_size,blocks,currentblocks,nullblock)
 end
 Base.linearindexing(::CachedArray)=Base.LinearSlow()
-Base.setindex!{T,N}(c::CachedArray{T,N},v,i::CartesianIndex{N})=0.0
+#Base.setindex!{T,N}(c::CachedArray{T,N},v,i::CartesianIndex{N})=0.0
 Base.size(c::CachedArray)=size(c.x)
 Base.similar(c::CachedArray)=similar(c.x)
 
@@ -151,6 +146,9 @@ setWriteEx(e::Expr)=e.args[1]==:setSubRange ? :(blockx.iswritten=true) : :()
 
 
 function funcbodyRangeEx(N,higetVal,higetSub)
+
+    t2=Expr(:tuple,:AbstractArray,ntuple(d->Any,N)...)
+    t1=Expr(:call,:invoke,:getindex,t2,:c,[Symbol("i_$d") for d=1:N]...)
     quote
       block_size=c.block_size
       @nexprs $N d->(istart_d=firstval(i_d);l_d=llength(i_d,size(c,d)))
@@ -168,8 +166,7 @@ function funcbodyRangeEx(N,higetVal,higetSub)
           blockx.iswritten=write
           return o
       else
-          #$(slowgetRangeEx(N,higetVal,higetSub))
-          error("trying to access subrange at wrong indices")
+          return $t1
       end
     end
 end
@@ -208,8 +205,48 @@ end
     end
 end
 
+missval(::Float64)::Float64=NaN64
+missval(::Float32)::Float32=NaN32
+missval{T<:Integer}(::T)::T=typemax(T)-1
 
-hi=Expr(:call,:(Base.getindex{T}),:(c::CachedArray{T,N}))
+function Base.setindex!{T}(c::CachedArray{T},v::Number,i::Integer...)
+  vout,m = getSubRange(c,i...,write=true)
+  mv=missval(zero(T))
+  if v==mv
+    vout[1]=mv
+    m[1]=MISSING
+  else
+    vout[1]=v
+    m[1]=VALID
+  end
+end
+function Base.getindex(c::CachedArray,i::Integer...)
+  v,m = getSingVal(c,i...)
+  if (m & MISSING) == MISSING
+    return missval(v)
+  else
+    return v
+  end
+end
+@noinline function fillVals(x::AbstractArray,m::AbstractArray{UInt8},v)
+  nmiss=0
+  @inbounds for i in eachindex(x)
+    if (m[i] & 0x01)==0x01
+      x[i]=v
+      nmiss+=1
+    end
+  end
+  return nmiss==length(x) ? true : false
+end
+function Base.getindex(c::CachedArray,i::Union{Integer,Range,Colon}...)
+  v,m = getSubRange2(c,i...)
+  v2=copy(v)
+  mv=missval(v[1])
+  fillVals(v2,m,mv)
+  v2
+end
+
+
 hi2=Expr(:call,:(getSingVal{T}),:(c::CachedArray{T,N}))
 hiRange=Expr(:call,:(getSubRange{T,S<:CacheBlock}),Expr(:parameters,Expr(:kw,:write,false)),:(c::CachedArray{T,N,S}))
 hisetRange=Expr(:call,:(setSubRange{T,S<:MaskedCacheBlock}),Expr(:parameters,Expr(:kw,:write,false)),:(c::CachedArray{T,N,S}),:vals,:mask)
@@ -227,19 +264,6 @@ for N=1:5
   # This is the function body that first determines the subblock to read,
   # then check if this is in cache and returns the value. bI refers to the index of the
   # block and iI refers to the index inside the block
-  funcbody=quote
-    block_size=c.block_size
-    $(getBlockIndEx(N,"i","iI","bI"))
-    blocks=c.blocks
-    if @nref($N,blocks,bI) == c.emptyblock
-      $(getBlockExchangeEx(N))
-    else
-      blockx=@nref($N,blocks,bI)
-    end
-    blockx.score+=1.0
-    d=blockx.data
-    return @nref $N d iI
-  end
   funcbody2=quote
     block_size=c.block_size
     $(getBlockIndEx(N,"i","iI","bI"))
@@ -257,19 +281,15 @@ for N=1:5
   funcbodyRange=funcbodyRangeEx(N,higetVal,higetSub)
   funcbodyRangeSet=funcbodyRangeEx(N,hisetVal,hisetSub)
   #Here is the function body if getindex is called on ranges.
-  hi.args[2].args[2].args[3]=N
   hi2.args[2].args[2].args[3]=N
   hiRange.args[3].args[2].args[3]=N
   hisetRange.args[3].args[2].args[3]=N
-  push!(hi.args,:($(Symbol(string("i_",N)))::Integer))
   push!(hi2.args,:($(Symbol(string("i_",N)))::Integer))
   push!(hiRange.args,:($(Symbol(string("i_",N)))::Union{UnitRange,Integer,Colon}))
   push!(hisetRange.args,:($(Symbol(string("i_",N)))::Union{UnitRange,Integer,Colon}))
-  ex=Expr(:function,hi,funcbody)
   ex2=Expr(:function,hi2,funcbody2)
   exRange=Expr(:function,hiRange,funcbodyRange)
   exsetRange=Expr(:function,hisetRange,funcbodyRangeSet)
-  eval(ex)
   eval(ex2)
   eval(exRange)
   eval(exsetRange)
@@ -278,21 +298,22 @@ end
 
 using NetCDF
 
+
 function read_subblock!{T,N}(x::CacheBlock{T,N},y::Array{T,N},block_size::CartesianIndex{N})
-    istart = (x.position-CartesianIndex{N}()).*block_size
+    istart = CItimes((x.position-CartesianIndex{N}()),block_size)
     ysmall = view(y,asRanges(istart+CartesianIndex{N}(),block_size))
     copy!(x.data,ysmall)
 end
 
 function write_subblock!{T,N}(x::CacheBlock{T,N},y::Array{T,N},block_size::CartesianIndex{N})
-    istart = (x.position-CartesianIndex{N}()).*block_size
+    istart = CItimes((x.position-CartesianIndex{N}()),block_size)
     ysmall = view(y,asRanges(istart+CartesianIndex{N}(),block_size))
     copy!(ysmall,x.data)
     x.iswritten=false
 end
 
 function read_subblock!{T,N}(x::SimpleCacheBlock{T,N},y::NcVar{T,N},block_size::CartesianIndex{N})
-    istart = (x.position-CartesianIndex{N}()).*block_size
+    istart = CItimes((x.position-CartesianIndex{N}()),block_size)
     NetCDF.readvar!(y,x.data,asRanges(istart+CartesianIndex{N}(),block_size)...)
 end
 
@@ -303,12 +324,12 @@ import CABLAB.CubeAPI.SubCubeV, CABLAB.CubeAPI.SubCubeVPerm
 toSymbol(d::DataType)=Symbol(split(replace(string(d),r"\{\S*\}",""),".")[end])
 
 function read_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::AbstractCubeData{T},block_size::CartesianIndex{N})
-    r = CartesianRange((x.position-CartesianIndex{N}()).*block_size+CartesianIndex{N}(),(x.position).*block_size)
+    r = CartesianRange(CItimes((x.position-CartesianIndex{N}()),block_size)+CartesianIndex{N}(),CItimes((x.position),block_size))
     _read(y,(x.data,x.mask),r)
 end
 
 function read_subblock!{T,N}(x::SimpleCacheBlock{T,N},y::AbstractCubeData{T},block_size::CartesianIndex{N})
-    r = CartesianRange((x.position-CartesianIndex{N}()).*block_size+CartesianIndex{N}(),(x.position).*block_size)
+    r = CartesianRange(CItimes((x.position-CartesianIndex{N}()),block_size)+CartesianIndex{N}(),CItimes((x.position),block_size))
     _read(y,x.data,r)
 end
 
@@ -330,7 +351,7 @@ function read_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::TempCube{T,N},block_siz
         ncread!(filename,"mask",x.mask)
         ncclose(filename)
     else
-        r = CartesianRange((x.position-CartesianIndex{N}()).*block_size+CartesianIndex{N}(),(x.position).*block_size)
+        r = CartesianRange(CItimes((x.position-CartesianIndex{N}()),block_size)+CartesianIndex{N}(),CItimes((x.position),block_size))
         _read(y,(x.data,x.mask),r)
     end
 end

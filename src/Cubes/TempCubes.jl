@@ -56,14 +56,41 @@ end
 
 using JLD
 
-function TempCube{N}(axlist,block_size::CartesianIndex{N};folder=mktempdir(),T=Float32,persist=true)
+"""
+    TempCube(axlist, block_size)
+
+Creates a new temporary Data Cube with the axes specified by `axlist`, a Vector{CubeAxis}. `block_size` is a Tuple
+containing the dimensions of each sub-file the cube is split into.
+
+### Keyword arguments
+
+- `folder=mktempdir()` a folder where the new Cube is stored
+- `T=Float32` the cubes data type
+- `persist=true` shall the cubes disk representation be kept or deleted when the cube gets out of scope
+- `overwrite=false` shall the data in an existing folder be overwritten
+"""
+function TempCube{N}(axlist,block_size::CartesianIndex{N};folder=mktempdir(),T=Float32,persist::Bool=true,overwrite::Bool=false)
+  isdir(folder) || mkpath(folder)
+  if !isempty(readdir(folder))
+    if overwrite
+      isfile(joinpath(folder,"axinfo.jld")) && rm(joinpath(folder,"axinfo.jld"))
+      ncfiles=filter(f->endswith(f,".nc") && startswith(f,"file_"),readdir(folder))
+      foreach(ncfiles) do f
+        rm(joinpath(folder,f))
+      end
+    else
+      error("Folder $folder is not empty, set overwrite=true to overwrite.")
+    end
+  end
   s=map(length,axlist)
   ssmall=map(div,s,block_size.I)
   for ii in CartesianRange(totuple(ssmall))
-    istart = ((ii-CartesianIndex{N}()).*block_size)+CartesianIndex{N}()
+    istart = (CItimes((ii-CartesianIndex{N}()),block_size))+CartesianIndex{N}()
     ncdims = NcDim[NcDim(axlist[i],istart[i],block_size[i]) for i=1:N]
     vars   = NcVar[NcVar("cube",ncdims,t=T),NcVar("mask",ncdims,t=UInt8)]
     nc     = NetCDF.create(joinpath(folder,tofilename(ii)),vars)
+#    NetCDF.putvar(nc["cube"],fill(iniVal,block_size))
+#    NetCDF.putvar(nc["mask"],fill(MISSING,block_size))
     NetCDF.close(nc)
   end
   save(joinpath(folder,"axinfo.jld"),"axlist",axlist)
@@ -71,6 +98,8 @@ function TempCube{N}(axlist,block_size::CartesianIndex{N};folder=mktempdir(),T=F
   finalizer(ntc,cleanTempCube)
   return ntc
 end
+
+TempCube(axlist,block_size::Tuple;kwargs...)=TempCube(axlist,CartesianIndex(block_size))
 
 function openTempCube(folder;persist=true)
   axlist=load(joinpath(folder,"axinfo.jld"),"axlist")
@@ -105,11 +134,11 @@ end
 function _read{N}(y::TempCube,thedata::NTuple{2},r::CartesianRange{CartesianIndex{N}})
   data,mask=thedata
   unit=CartesianIndex{N}()
-  rsmall=CartesianRange(div(r.start-unit,y.block_size)+unit,div(r.stop-unit,y.block_size)+unit)
+  rsmall=CartesianRange(CIdiv(r.start-unit,y.block_size)+unit,CIdiv(r.stop-unit,y.block_size)+unit)
   for Ismall in rsmall
-      bBig1=max((Ismall-unit).*y.block_size+unit,r.start)
-      bBig2=min(Ismall.*y.block_size,r.stop)
-      iToread=CartesianRange(bBig1-(Ismall-unit).*y.block_size,bBig2-(Ismall-unit).*y.block_size)
+      bBig1=max(CItimes((Ismall-unit),y.block_size)+unit,r.start)
+      bBig2=min(CItimes(Ismall,y.block_size),r.stop)
+      iToread=CartesianRange(bBig1-CItimes((Ismall-unit),y.block_size),bBig2-CItimes((Ismall-unit),y.block_size))
       filename=joinpath(y.folder,tofilename(Ismall))
       v=NetCDF.open(filename,"cube")
       vmask=NetCDF.open(filename,"mask")
@@ -129,11 +158,11 @@ function _read{N}(y::TempCubePerm,thedata::NTuple{2},r::CartesianRange{Cartesian
   blocksize_trans = CartesianIndex(ntuple(i->y.block_size.I[perm[i]],N))
   iperm=getiperm(perm)
   unit=CartesianIndex{N}()
-  rsmall=CartesianRange(div(r.start-unit,blocksize_trans)+unit,div(r.stop-unit,blocksize_trans)+unit)
+  rsmall=CartesianRange(CIdiv(r.start-unit,blocksize_trans)+unit,CIdiv(r.stop-unit,blocksize_trans)+unit)
   for Ismall in rsmall
-      bBig1=max((Ismall-unit).*blocksize_trans+unit,r.start)
-      bBig2=min(Ismall.*blocksize_trans,r.stop)
-      iToread=CartesianRange(bBig1-(Ismall-unit).*blocksize_trans,bBig2-(Ismall-unit).*blocksize_trans)
+      bBig1=max(CItimes((Ismall-unit),blocksize_trans)+unit,r.start)
+      bBig2=min(CItimes(Ismall,blocksize_trans),r.stop)
+      iToread=CartesianRange(bBig1-CItimes((Ismall-unit),blocksize_trans),bBig2-CItimes((Ismall-unit),blocksize_trans))
       filename=joinpath(y.folder,tofilename(CartesianIndex(ntuple(i->Ismall.I[iperm[i]],N))))
       v0=NetCDF.open(filename,"cube")
       vmask0=NetCDF.open(filename,"mask")

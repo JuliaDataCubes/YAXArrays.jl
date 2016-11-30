@@ -59,7 +59,7 @@ type DATConfig{N}
   outfolder
   sfu
   inmissing     :: Tuple
-  outmissing    :: Symbol
+  outmissing
   no_ocean      :: Int
   inplace      :: Bool
   genOut      :: Function
@@ -318,7 +318,6 @@ function generateOutCube(dc::DATConfig,gfun,T1)
     end
   end
   if dc.retCubeType==TempCube
-    isdir(dc.outfolder) || mkpath(dc.outfolder)
     dc.outcube=TempCube(dc.axlistOut,CartesianIndex(totuple([map(length,dc.outAxes);dc.loopCacheSize])),folder=dc.outfolder,T=T,persist=false)
   elseif dc.retCubeType==CubeMem
     newsize=map(length,dc.axlistOut)
@@ -613,7 +612,11 @@ end
 fillNanMask(m)=m[:]=0x01
 #"Converts data and Mask to a NullableArray"
 toNullableArray(x,m)=NullableArray(x,reinterpret(Bool,m))
-fillNullableArrayMask(x,m)=for i in eachindex(x.values) m[i]=isnull(x[i]) ? 0x01 : 0x00 end
+function fillNullableArrayMask(x,m)
+  for i in eachindex(x.values)
+    m[i]=isnull(x[i]) ? 0x01 : 0x00
+  end
+end
 
 """
     registerDATFunction(f, dimsin, [dimsout, [addargs]]; inmissing=(:mask,...), outmissing=:mask, no_ocean=0)
