@@ -335,9 +335,7 @@ function getCubeHandles(dc::DATConfig)
   if dc.ispar
     freshworkermodule()
     global dcg=dc
-    try
       passobj(1, workers(), [:dcg],from_mod=CABLAB.DAT,to_mod=Main.PMDATMODULE)
-    end
     @everywhereelsem begin
       dc=Main.PMDATMODULE.dcg
       if isa(dc.outcube,CubeMem)
