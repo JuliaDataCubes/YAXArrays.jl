@@ -15,6 +15,7 @@ import Colors: RGB, @colorant_str, colormap, U8
 import DataStructures: OrderedDict
 import Base.Cartesian: @ntuple,@nexprs
 import Patchwork.load_js_runtime
+import Measures
 
 #import Patchwork.load_js_runtime
 ga=[]
@@ -196,9 +197,14 @@ function val2col(x,m,colorm,mi,ma,misscol,oceancol)
 end
 
 import PlotUtils.optimize_ticks
+import PlotUtils.cgrad
 import Colors.@colorant_str
 import Compose: rectangle, text, line, compose, context, stroke, svgattribute, bitmap, HCenter, VBottom
-
+const namedcolms=Dict(
+  :viridis=>[cgrad(:viridis)[ix] for ix in linspace(0,1,100)],
+  :magma=>[cgrad(:magma)[ix] for ix in linspace(0,1,100)],
+  :inferno=>[cgrad(:inferno)[ix] for ix in linspace(0,1,100)],
+  :plasma=>[cgrad(:plasma)[ix] for ix in linspace(0,1,100)])
 typed_dminmax{T<:Integer}(::Type{T},dmin,dmax)=(Int(dmin),Int(dmax))
 typed_dminmax{T<:AbstractFloat}(::Type{T},dmin,dmax)=(Float64(dmin),Float64(dmax))
 
@@ -218,7 +224,8 @@ Map plotting tool for cube objects, can be called on any type of cube data
 If a dimension is neither longitude or latitude and is not fixed through an additional keyword, a slider or dropdown menu will appear to select the axis value.
 """
 function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
-  colorm=colormap("oranges"),oceancol=colorant"darkblue",misscol=colorant"gray",symmetric=false,kwargs...)
+  colorm=:inferno,oceancol=colorant"darkblue",misscol=colorant"gray",symmetric=false,kwargs...)
+  isa(colorm,Symbol) && (colorm=namedcolms[colorm])
   dmin,dmax=typed_dminmax(T,dmin,dmax)
   axlist=axes(cube)
   ilon=findfirst(a->isa(a,LonAxis),axlist)
@@ -283,8 +290,9 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
     rgbar=getRGBAR(a,m,colorm,convert($T,mi),convert($T,ma),misscol,oceancol,nx,ny)
     pngbuf=IOBuffer()
     show(pngbuf,"image/png",Image(rgbar,Dict("spatialorder"=>["x","y"])))
-    themap=obj=compose(context(0,0,1,0.9),bitmap("image/png",pngbuf.data,0,0,1,1))
-    theleg=getlegend(mi,ma,colorm)
+    legheight=max(0.1*Measures.h,1.6Measures.cm)
+    themap=obj=compose(context(0,0,1,1Measures.h-legheight),bitmap("image/png",pngbuf.data,0,0,1,1))
+    theleg=getlegend(mi,ma,colorm,legheight)
     compose(context(),themap,theleg)
   end
   lambda = Expr(:(->), Expr(:tuple, argvars...),plotfun)
@@ -299,7 +307,8 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
 end
 @noinline getRGBAR(a,m,colorm,mi,ma,misscol,oceancol,nx,ny)=RGB{U8}[val2col(a[i,j],m[i,j],colorm,mi,ma,misscol,oceancol) for i=1:nx,j=1:ny]
 
-function getlegend(xmin,xmax,colm)
+import Showoff.showoff
+function getlegend(xmin,xmax,colm,legheight)
     xoffs=0.05
     xl=1-2xoffs
     tlabs,smin,smax=optimize_ticks(Float64(xmin),Float64(xmax),extend_ticks=false,k_min=4)
@@ -307,8 +316,8 @@ function getlegend(xmin,xmax,colm)
     r=rectangle([(i-1)/length(colm) for i in 1:length(colm)],[0],[1/(length(colm)-1)],[1])
     f=fill([colm[div((i-1)*length(colm),length(colm))+1] for i=1:length(colm)])
     bar=compose(context(xoffs,0.35,xl,0.55),r,f,stroke(nothing),svgattribute("shape-rendering","crispEdges"))
-    tlabels=compose(context(xoffs,0,xl,0.2),text(tpos,[1],map(string,tlabs),[HCenter()],[VBottom()]))
+    tlabels=compose(context(xoffs,0,xl,0.2),text(tpos,[1],showoff(tlabs),[HCenter()],[VBottom()]))
     dlines=compose(context(xoffs,0.25,xl,0.1),line([[(tpx,0.1),(tpx,0.9)] for tpx in tpos]),stroke(colorant"black"))
-    compose(context(0,0.9,1,0.1),bar,tlabels,dlines)
+    compose(context(0,1Measures.h-legheight,1,legheight),bar,tlabels,dlines)
 end
 end
