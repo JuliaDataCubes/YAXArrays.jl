@@ -319,10 +319,10 @@ Returns a `SubCube` object which represents a view into the original data cube.
 """
 function getCubeData(cube::UCube;variable=Int[],time=[],latitude=[],longitude=[])
   #First fill empty inputs
-  isempty(variable) && (variable = defaultvariable(cube))
-  isempty(time)     && (time     = defaulttime(cube))
-  isempty(latitude) && (latitude = defaultlatitude(cube))
-  isempty(longitude)&& (longitude= defaultlongitude(cube))
+  isempty(variable)  && (variable = defaultvariable(cube))
+  isempty(time)      && (time     = defaulttime(cube))
+  isempty(latitude)  && (latitude = defaultlatitude(cube))
+  isempty(longitude) && (longitude= defaultlongitude(cube))
   getCubeData(cube,variable,time,latitude,longitude)
 end
 
@@ -449,6 +449,10 @@ function getCubeData(cube::UCube,
   # This function is doing the actual reading
   config=cube.config
 
+  longitude[1]>longitude[2] && throw(ArgumentError("Longitudes must be passed in West-to-East order."))
+
+  latitude[1]>latitude[2] && (latitude=(latitude[2],latitude[1]))
+
   grid_y1,grid_y2,grid_x1,grid_x2 = getLonLatsToRead(config,longitude,latitude)
   y1,i1,y2,i2,ntime,NpY = getTimesToRead(time[1],time[2],config)
 
@@ -469,6 +473,8 @@ function getCubeData{T<:AbstractString}(cube::UCube,
   longitude::Tuple{Real,Real})
 
   config=cube.config
+
+  longitude[1]>longitude[2] && throw(ArgumentError("Longitudes must be passed in West-to-East order."))
 
   grid_y1,grid_y2,grid_x1,grid_x2 = getLonLatsToRead(config,longitude,latitude)
   y1,i1,y2,i2,ntime,NpY = getTimesToRead(time[1],time[2],config)
@@ -649,7 +655,7 @@ immutable CABLABVarInfo
   comment::String
   reference::String
 end
-        
+
 getremFileName(cube::RemoteCube,variable::String)=cube.dataset_paths[cube.var_name_to_var_index[variable]][1]
 function getremFileName(cube::Cube,variable::String)
     filepath=joinpath(cube.base_dir,"data",variable)
@@ -665,7 +671,7 @@ function showVarInfo(cube, variable::String)
     v=NetCDF.open(filename,variable)
     vi=CABLABVarInfo(
       get(v.atts,"long_name",variable),
-      get(v.atts,"units","unknown"),                    
+      get(v.atts,"units","unknown"),
       get(v.atts,"url","no link"),
       get(v.atts,"comment",variable),
       get(v.atts,"references","no reference")
@@ -693,7 +699,7 @@ function show(io::IO,::MIME"text/markdown",v::CABLABVarInfo)
     show(io,MIME"text/markdown"(),mdt)
 end
 show(io::IO,::MIME"text/markdown",v::Vector{CABLABVarInfo})=foreach(x->show(io,MIME"text/markdown"(),x),v)
-     
+
 
   function readFromDataYear{T}(cube::Cube,outar::AbstractArray{T,3},mask::AbstractArray{UInt8,3},variable,y,grid_x1,nx,grid_y1,ny,itcur,i1cur,ntime,NpY)
     filename=joinpath(cube.base_dir,"data",variable,string(y,"_",variable,".nc"))

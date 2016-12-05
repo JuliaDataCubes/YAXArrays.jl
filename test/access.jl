@@ -3,7 +3,7 @@ using Base.Test
 #Open a remote cube
 c=RemoteCube()
 
-d = getCubeData(c,variable="air_temperature_2m",longitude=(30,31),latitude=(50,51),
+d = getCubeData(c,variable="air_temperature_2m",longitude=(30,31),latitude=(51,50),
                 time=(DateTime("2002-01-01"),DateTime("2008-12-31")))
 
 @test typeof(c)==RemoteCube
@@ -39,6 +39,8 @@ data2=readCubeData(d2)
 @test CABLAB.axes(data1)==CubeAxis[LonAxis(30.0:0.25:30.75),LatAxis(51.0:-0.25:50.25),TimeAxis(CABLAB.Cubes.Axes.YearStepRange(2002,1,2008,46,8,46))]
 
 @test CABLAB.axes(data2)==CubeAxis[LonAxis(30.0:0.25:30.75),LatAxis(51.0:-0.25:50.25),TimeAxis(CABLAB.Cubes.Axes.YearStepRange(2002,1,2008,46,8,46)),VariableAxis(["air_temperature_2m","gross_primary_productivity"])]
+
+@test_throws ArgumentError getCubeData(c,longitude=(10,-10))
 
 #Test saving cubes
 dire=mktempdir()
