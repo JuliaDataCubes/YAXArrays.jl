@@ -145,7 +145,10 @@ type RemoteCube
   config::CubeConfig
 end
 
+testDAP()=`nc-config --has-dap` |> readstring |> chomp =="yes"
+
 function RemoteCube(;resolution="low",url="http://www.brockmann-consult.de/cablab-thredds/")
+  testDAP() || error("NetCDF built without DAP support. Accessing remote cubes is not possible.")
   resExt=resolution=="high" ? "fileServer/datacube/high-res/cube.config" : "fileServer/datacube/low-res/cube.config"
   res=get(string(url,"catalog.xml"))
   xconfig=split(readall(get(string(url,resExt))),"\n")
