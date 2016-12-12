@@ -56,7 +56,6 @@ type DATConfig{N}
   inCubesH
   outCubeH
   max_cache
-  outfolder
   fu
   inmissing     :: Tuple
   outmissing
@@ -69,10 +68,10 @@ type DATConfig{N}
   addargs
   kwargs
 end
-function DATConfig(incubes::Tuple,inAxes,outAxes,outtype,max_cache,outfolder,fu,inmissing,outmissing,no_ocean,inplace,genOut,finalizeOut,retCubeType,outBroadCastAxes,addargs,kwargs)
+function DATConfig(incubes::Tuple,inAxes,outAxes,outtype,max_cache,fu,inmissing,outmissing,no_ocean,inplace,genOut,finalizeOut,retCubeType,outBroadCastAxes,addargs,kwargs)
   DATConfig{length(incubes)}(length(incubes),AbstractCubeData[c for c in incubes],EmptyCube{outtype}(),Vector{CubeAxis}[],inAxes,
   Vector{Int}[],CubeAxis[a for a in outAxes],CubeAxis[],CubeAxis[],nprocs()>1,Bool[isa(x,AbstractCubeMem) for x in incubes],
-  Vector{Int}[],Int[],[],[],max_cache,outfolder,fu,inmissing,outmissing,no_ocean,inplace,genOut,finalizeOut,retCubeType,outBroadCastAxes,addargs,kwargs)
+  Vector{Int}[],Int[],[],[],max_cache,fu,inmissing,outmissing,no_ocean,inplace,genOut,finalizeOut,retCubeType,outBroadCastAxes,addargs,kwargs)
 end
 
 """
@@ -186,7 +185,6 @@ Map a given function `fun` over slices of the data cube `cube`.
 ### Keyword arguments
 
 * `max_cache=1e7` maximum size of blocks that are read into memory, defaults to approx 10Mb
-* `outfolder` folder to write output to if a `TempCube is created`, defaults to `joinpath(CABLABdir(),"tmp",SomeRandomName)`
 * `outtype::DataType` output data type of the operation
 * `indims::Tuple{Tuple{Vararg{CubeAxis}}}` List of input axis types for each input data cube
 * `outdims::Tuple` List of output axes, can be either an axis type that has a default constructor or an instance of a `CubeAxis`
@@ -207,8 +205,6 @@ input and output dimensions etc.
 function mapCube(fu::Function,
     cdata::Tuple,addargs...;
     max_cache=1e7,
-    outfolder=joinpath(workdir[1],
-    string(tempname()[2:end],fu)),
     fuObj=get(regDict,fu,fu),
     outtype=getReg(fuObj,:outtype,cdata),
     indims=getReg(fuObj,:indims,cdata),
@@ -224,7 +220,7 @@ function mapCube(fu::Function,
     outBroadCastAxes=CubeAxis[],
     kwargs...)
   @debug_print "Generating DATConfig"
-  dc=DATConfig(cdata,getInAxes(indims,cdata),getOutAxes(outdims,cdata,addargs),getOuttype(outtype,cdata),max_cache,outfolder,fu,inmissing,outmissing,no_ocean,inplace,genOut,finalizeOut,retCubeType,outBroadCastAxes,addargs,kwargs)
+  dc=DATConfig(cdata,getInAxes(indims,cdata),getOutAxes(outdims,cdata,addargs),getOuttype(outtype,cdata),max_cache,fu,inmissing,outmissing,no_ocean,inplace,genOut,finalizeOut,retCubeType,outBroadCastAxes,addargs,kwargs)
   analyseaddargs(fuObj,dc)
   @debug_print "Reordering Cubes"
   reOrderInCubes(dc)
@@ -233,7 +229,7 @@ function mapCube(fu::Function,
   @debug_print "Calculating Cache Sizes"
   getCacheSizes(dc)
   @debug_print "Generating Output Cube"
-  generateOutCube(dc)
+  generateOutCubes(dc)
   @debug_print "Generating cube handles"
   getCubeHandles(dc)
   @debug_print "Running main Loop"
@@ -247,8 +243,6 @@ end
 function enterDebug(fu::Function,
   cdata::Tuple,addargs...;
   max_cache=1e7,
-  outfolder=joinpath(workdir[1],
-  string(tempname()[2:end],fu)),
   sfu=string(fu),
   fuObj=get(regDict,sfu,sfu),
   outtype=getReg(fuObj,:outtype,cdata),
@@ -263,7 +257,7 @@ function enterDebug(fu::Function,
   retCubeType=getReg(fuObj,:retCubeType,cdata),
   outBroadCastAxes=CubeAxis[],
   kwargs...)
-  DATConfig(cdata,getInAxes(indims,cdata),getOutAxes(outdims,cdata,addargs),getOuttype(outtype,cdata),max_cache,outfolder,sfu,inmissing,outmissing,no_ocean,inplace,genOut,finalizeOut,retCubeType,outBroadCastAxes,addargs,kwargs)
+  DATConfig(cdata,getInAxes(indims,cdata),getOutAxes(outdims,cdata,addargs),getOuttype(outtype,cdata),max_cache,sfu,inmissing,outmissing,no_ocean,inplace,genOut,finalizeOut,retCubeType,outBroadCastAxes,addargs,kwargs)
 end
 
 function analyseaddargs(sfu::DATFunction,dc)
@@ -305,8 +299,8 @@ function runLoop(dc::DATConfig)
   dc.outcube
 end
 
-@noinline generateOutCube(dc::DATConfig)=generateOutCube(dc,dc.genOut,eltype(dc.outcube))
-function generateOutCube(dc::DATConfig,gfun,T1)
+generateOutCubes(dc::DATConfig)=[generateOutCube(dc,dc.genOut[i],eltype(dc.outcubes[i]),i) for i=1:length(dc.outcubes)]
+function generateOutCube(dc::DATConfig,gfun,T1,i)
   T=typeof(gfun(T1))
   outsize=sizeof(T)*(length(dc.axlistOut)>0 ? prod(map(length,dc.axlistOut)) : 1)
   if dc.retCubeType=="auto"
@@ -317,14 +311,14 @@ function generateOutCube(dc::DATConfig,gfun,T1)
     end
   end
   if dc.retCubeType==TempCube
-    dc.outcube=TempCube(dc.axlistOut,CartesianIndex(totuple([map(length,dc.outAxes);dc.loopCacheSize])),folder=dc.outfolder,T=T,persist=false)
+    dc.outcube[i]=TempCube(dc.axlistOut[i],CartesianIndex(totuple([map(length,dc.outAxes[i]);dc.loopCacheSize])),folder=string(dc.outfolder,"_$i"),T=T,persist=false)
   elseif dc.retCubeType==CubeMem
-    newsize=map(length,dc.axlistOut)
+    newsize=map(length,dc.axlistOut[i])
     outar=Array{T}(newsize...)
     @inbounds for i in eachindex(outar)
       outar[i]=gfun(T1)
     end
-    dc.outcube = Cubes.CubeMem{T,length(newsize)}(dc.axlistOut, outar,zeros(UInt8,newsize...))
+    dc.outcube[i] = Cubes.CubeMem{T,length(newsize)}(dc.axlistOut[i], outar,zeros(UInt8,newsize...))
   else
     error("return cube type not defined")
   end
@@ -385,9 +379,11 @@ function analyzeAxes(dc::DATConfig)
     end
   end
   #Try to construct outdims
-  outnotfound=find([!isdefined(dc.outAxes,ii) for ii in eachindex(dc.outAxes)])
-  for ii in outnotfound
-    dc.outAxes[ii]=dc.outdims[ii]()
+  for ioutcube=1:length(dc.outAxes)
+    outnotfound=find([!isdefined(dc.outAxes[ioutcube],ii) for ii in eachindex(dc.outAxes[ioutcube])])
+    for ii in outnotfound
+      dc.outAxes[ioutcube][ii]=dc.outdims[ioutcube][ii]()
+    end
   end
   length(dc.LoopAxes)==length(unique(map(typeof,dc.LoopAxes))) || error("Make sure that cube axes of different cubes match")
   for icube=1:dc.NIN
@@ -397,16 +393,18 @@ function analyzeAxes(dc::DATConfig)
     end
   end
   #Add output broadcast axes
-  push!(dc.broadcastAxes,Int[])
-  LoopAxes2=CubeAxis[]
-  for iLoopAx=1:length(dc.LoopAxes)
-    if typeof(dc.LoopAxes[iLoopAx]) in dc.outBroadCastAxes
-      push!(dc.broadcastAxes[end],iLoopAx)
-    else
-      push!(LoopAxes2,dc.LoopAxes[iLoopAx])
+  for ioutcube=1:length(dc.outAxes)
+    push!(dc.broadcastAxes,Int[])
+    LoopAxes2=CubeAxis[]
+    for iLoopAx=1:length(dc.LoopAxes)
+      if typeof(dc.LoopAxes[iLoopAx]) in dc.outBroadCastAxes[ioutcube]
+        push!(dc.broadcastAxes[end],iLoopAx)
+      else
+        push!(LoopAxes2,dc.LoopAxes[iLoopAx])
+      end
     end
+    dc.axlistOut[ioutcube]=CubeAxis[dc.outAxes;LoopAxes2]
   end
-  dc.axlistOut=CubeAxis[dc.outAxes;LoopAxes2]
   return dc
 end
 
@@ -420,7 +418,7 @@ function getCacheSizes(dc::DATConfig)
   inAxlengths      = [Int[length(dc.inAxes[i][j]) for j=1:length(dc.inAxes[i])] for i=1:length(dc.inAxes)]
   inblocksizes     = map((x,T)->prod(x)*sizeof(eltype(T)),inAxlengths,dc.incubes)
   inblocksize,imax = findmax(inblocksizes)
-  outblocksize     = length(dc.outAxes)>0 ? sizeof(eltype(dc.outcube))*prod(map(length,dc.outAxes)) : 1
+  outblocksize     = map((A,C)->length(A)>0 ? sizeof(eltype(C))*prod(map(length,A)) : 1,dc.outAxes,dc.outcubes)
   loopCacheSize    = getLoopCacheSize(max(inblocksize,outblocksize),dc.LoopAxes,dc.max_cache)
   @debug_print "Choosing Cache Size of $loopCacheSize"
   for icube=1:dc.NIN
@@ -460,19 +458,6 @@ function getLoopCacheSize(preblocksize,LoopAxes,max_cache)
     end
   end
   return loopCacheSize
-  j=1
-  CacheInSize=Int[]
-  for a in axlist
-    if typeof(a) in indims
-      push!(CacheInSize,length(a))
-    else
-      push!(CacheInSize,loopCacheSize[j])
-      j=j+1
-    end
-  end
-  @assert j==length(loopCacheSize)+1
-  CacheOutSize = [map(length,outAxes);loopCacheSize]
-  return CacheInSize, CacheOutSize
 end
 
 using Base.Cartesian
