@@ -69,7 +69,7 @@ Get an area-weighted sample from all non-ocean grid cells. This will return a ne
 where the `LonAxis` and `LatAxis` are condensed into a single `SpatialPointAxis` of
 length `nsample`. If `nomissing=true` only grid cells will be selected which don't contain any missing values.
 This makes sense for gap-filled cubes to make sure that grid cells with systematic seasonal gaps are not selected
-in the sample. 
+in the sample.
 """
 function sampleLandPoints(cdata::CubeAPI.AbstractCubeData,nsample::Integer,nomissing=false)
   axlist=axes(cdata)
