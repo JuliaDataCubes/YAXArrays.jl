@@ -14,6 +14,12 @@ function DATfitOnline{T<:OnlineStat{OnlineStats.ScalarInput}}(xout::AbstractArra
     end
 end
 
+function DATfitOnline{T<:OnlineStat{OnlineStats.ScalarInput}}(xout::AbstractArray{T},maskout,xin,maskin,splitmask,msplitmask,cfun)
+  for (mi,xi,si) in zip(maskin,xin,splitmask)
+      (mi & MISSING)==VALID && fit!(xout[cfun(si)],xi)
+  end
+end
+
 function DATfitOnline{T<:OnlineStat{OnlineStats.VectorInput},U}(xout::AbstractArray{T},maskout,xin::AbstractArray{U},maskin,cfun)
     offs=1
     offsinc=size(xin,1)
@@ -29,7 +35,7 @@ function DATfitOnline{T<:OnlineStat{OnlineStats.VectorInput},U}(xout::AbstractAr
 end
 
 
-function DATfitOnline{U}(xout,maskout,xin::AbstractArray{U},maskin,splitmask,msplitmask,cfun)
+function DATfitOnline{T<:OnlineStats.VectorInput,U}(xout::AbstractArray{T},maskout,xin::AbstractArray{U},maskin,splitmask,msplitmask,cfun)
   offs=1
   offsinc=size(xin,1)
   xtest=zeros(U,offsinc)

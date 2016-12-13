@@ -324,13 +324,16 @@ end
 function runLoop(dc::DATConfig)
   if dc.ispar
     #TODO CHeck this for multiple output cubes, how to parallelize
+    #I thnk this should work, but not 100% sure yet
     allRanges=distributeLoopRanges(dc.outcubes[1].block_size.I[(end-length(dc.LoopAxes)+1):end],map(length,dc.LoopAxes))
     pmap(r->CABLAB.DAT.innerLoop(Main.PMDATMODULE.dc.fu,CABLAB.CABLABTools.totuple(Main.PMDATMODULE.dc.inCubesH),
       Main.PMDATMODULE.dc.outCubeH,CABLAB.DAT.InnerObj(Main.PMDATMODULE.dc),r,Main.PMDATMODULE.dc.addargs,Main.PMDATMODULE.dc.kwargs),allRanges)
-    isa(dc.outcubes[1],TempCube) && @everywhereelsem CachedArrays.sync(dc.outCubeH[1])
+    @everywhereelsem for oci=1:length(dc.outcubes)
+      isa(dc.outcubes[oci],TempCube) && CachedArrays.sync(dc.outCubeH[oci])
+    end
   else
     innerLoop(dc.fu,totuple(dc.inCubesH),dc.outCubeH,InnerObj(dc),totuple(map(length,dc.LoopAxes)),dc.addargs,dc.kwargs)
-    isa(dc.outCubeH[1],CachedArray) && CachedArrays.sync(dc.outCubeH[1])
+    foreach(oci->(isa(dc.outCubeH[oci],CachedArray) && CachedArrays.sync(dc.outCubeH[oci])),1:length(dc.outcubes))
   end
   dc.outcubes
 end
