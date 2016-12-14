@@ -12,7 +12,7 @@ import NullableArrays.NullableArray
 import NullableArrays.isnull
 import StatsBase.WeightVec
 importall CABLAB.CubeAPI.Mask
-global const debugDAT=true
+global const debugDAT=false
 macro debug_print(e)
   debugDAT && return(:(println($e)))
   :()
