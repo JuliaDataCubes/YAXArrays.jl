@@ -400,7 +400,7 @@ function getCubeHandles(dc::DATConfig)
     end
     for ioutcube=1:length(dc.outcubes)
       if isa(dc.outcubes[ioutcube],TempCube)
-        push!(dc.outCubeH[ioutcube],CachedArray(dc.outcubes[ioutcube],1,dc.outcubes[ioutcube].block_size,MaskedCacheBlock{eltype(dc.outcubes[ioutcube]),length(dc.axlistOut[ioutcube])}))
+        push!(dc.outCubeH,CachedArray(dc.outcubes[ioutcube],1,dc.outcubes[ioutcube].block_size,MaskedCacheBlock{eltype(dc.outcubes[ioutcube]),length(dc.axlistOut[ioutcube])}))
       elseif isa(dc.outcubes[ioutcube],CubeMem)
         push!(dc.outCubeH,dc.outcubes[ioutcube])
       else
@@ -684,8 +684,8 @@ end
 function registerDATFunction(f,dimsin,dimsout,addargs...;kwargs...)
   dimsin=expandTuple(dimsin,1)
   dimsout=expandTuple(dimsout,1)
-  isa(dimsin[1],Tuple) || (dimsin=(dimsin,))
-  isa(dimsout[1],Tuple) || (dimsout=(dimsout,))
+  isempty(dimsin) ? (dimsin=((),)) : isa(dimsin[1],Tuple) || (dimsin=(dimsin,))
+  isempty(dimsout) ? (dimsout=((),)) : isa(dimsout[1],Tuple) || (dimsout=(dimsout,))
   registerDATFunction(f,dimsin,dimsout,addargs...;kwargs...)
 end
 registerDATFunction(f,dimsin;kwargs...)=registerDATFunction(f,dimsin,();kwargs...)

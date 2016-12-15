@@ -145,7 +145,16 @@ type RemoteCube
   config::CubeConfig
 end
 
-testDAP()=`nc-config --has-dap` |> readstring |> chomp =="yes"
+function testDAP()
+  conda_nc_config=joinpath(Pkg.dir("Conda"),"deps","usr","bin","nc-config")
+  nc_config = isfile(conda_nc_config) ? conda_nc_config : "nc-config"
+  if !success(pipeline(`which nc-config`, DevNull))
+    warn("Could not test for DAP support. Data access might fail.")
+    return true
+  else
+    return `$(nc_config) --has-dap` |> readstring |> chomp =="yes"
+  end
+end
 
 function RemoteCube(;resolution="low",url="http://www.brockmann-consult.de/cablab-thredds/")
   testDAP() || error("NetCDF built without DAP support. Accessing remote cubes is not possible.")
