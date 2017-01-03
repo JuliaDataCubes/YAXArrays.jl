@@ -28,16 +28,16 @@ prepAx(x)=x.values
 prepAx(x::TimeAxis)=toYr(x)
 function repAx(x,idim,ax)
   l=length(x)
-    inrep=prod(size(x)[1:idim-1])
+  inrep=prod(size(x)[1:idim-1])
   outrep=div(l,(inrep*size(x,idim)))
-    repeat(collect(ax),inner=[inrep],outer=[outrep])
+  repeat(collect(ax),inner=[inrep],outer=[outrep])
 end
 function count_to(f,c,i)
-    ni=0
-    for ind=1:i
-        f(c[ind]) && (ni+=1)
-    end
-    return ni
+  ni=0
+  for ind=1:i
+    f(c[ind]) && (ni+=1)
+  end
+  return ni
 end
 
 getWidget(x::CategoricalAxis)=dropdown(Dict(zip(x.values,1:length(x.values))),label=axname(x))
@@ -138,13 +138,13 @@ function plotXY{T}(cube::AbstractCubeData{T};group=0,xaxis=-1,kwargs...)
     yvals = r1(dataslice)
 
     if igroup > 0
-        plotf = isa(axlist[ixaxis],CategoricalAxis) ? groupedbar : lineplot
-        jgroup=count_to(x->isa(x,Range),sliceargs,igroup)
-        gvals=repAx(dataslice,jgroup,prepAx(axlist[igroup]))
-        p=plotf(x=xvals,y=yvals,group=gvals)
+      plotf = isa(axlist[ixaxis],CategoricalAxis) ? groupedbar : lineplot
+      jgroup=count_to(x->isa(x,Range),sliceargs,igroup)
+      gvals=repAx(dataslice,jgroup,prepAx(axlist[igroup]))
+      p=plotf(x=xvals,y=yvals,group=gvals)
     else
-        plotf = isa(axlist[ixaxis],CategoricalAxis) ? barplot : lineplot
-        p=plotf(x=xvals,y=yvals)
+      plotf = isa(axlist[ixaxis],CategoricalAxis) ? barplot : lineplot
+      p=plotf(x=xvals,y=yvals)
     end
     p
   end
@@ -155,18 +155,18 @@ function plotXY{T}(cube::AbstractCubeData{T};group=0,xaxis=-1,kwargs...)
   lambda = Expr(:(->), Expr(:tuple, argvars...),plotfun2)
   liftex = Expr(:call,:map,lambda,signals...)
   myfun=eval(quote
-    local li
-    li(cube)=$liftex
-  end)
-  for w in widgets display(w) end
-  display(myfun(cube))
+  local li
+  li(cube)=$liftex
+end)
+for w in widgets display(w) end
+display(myfun(cube))
 end
 
 function getMinMax(x,mask;symmetric=false,squeeze=1.0)
   mi=typemax(eltype(x))
   ma=typemin(eltype(x))
   for ix in eachindex(x)
-        if mask[ix]==VALID
+    if mask[ix]==VALID
       if x[ix]<mi mi=x[ix] end
       if x[ix]>ma ma=x[ix] end
     end
@@ -201,10 +201,10 @@ import PlotUtils.cgrad
 import Colors.@colorant_str
 import Compose: rectangle, text, line, compose, context, stroke, svgattribute, bitmap, HCenter, VBottom
 const namedcolms=Dict(
-  :viridis=>[cgrad(:viridis)[ix] for ix in linspace(0,1,100)],
-  :magma=>[cgrad(:magma)[ix] for ix in linspace(0,1,100)],
-  :inferno=>[cgrad(:inferno)[ix] for ix in linspace(0,1,100)],
-  :plasma=>[cgrad(:plasma)[ix] for ix in linspace(0,1,100)])
+:viridis=>[cgrad(:viridis)[ix] for ix in linspace(0,1,100)],
+:magma=>[cgrad(:magma)[ix] for ix in linspace(0,1,100)],
+:inferno=>[cgrad(:inferno)[ix] for ix in linspace(0,1,100)],
+:plasma=>[cgrad(:plasma)[ix] for ix in linspace(0,1,100)])
 typed_dminmax{T<:Integer}(::Type{T},dmin,dmax)=(Int(dmin),Int(dmax))
 typed_dminmax{T<:AbstractFloat}(::Type{T},dmin,dmax)=(Float64(dmin),Float64(dmax))
 
@@ -309,15 +309,131 @@ end
 
 import Showoff.showoff
 function getlegend(xmin,xmax,colm,legheight)
-    xoffs=0.05
-    xl=1-2xoffs
-    tlabs,smin,smax=optimize_ticks(Float64(xmin),Float64(xmax),extend_ticks=false,k_min=4)
-    tpos=[(tlabs[i]-xmin)/(xmax-xmin) for i=1:length(tlabs)]
-    r=rectangle([(i-1)/length(colm) for i in 1:length(colm)],[0],[1/(length(colm)-1)],[1])
-    f=fill([colm[div((i-1)*length(colm),length(colm))+1] for i=1:length(colm)])
-    bar=compose(context(xoffs,0.35,xl,0.55),r,f,stroke(nothing),svgattribute("shape-rendering","crispEdges"))
-    tlabels=compose(context(xoffs,0,xl,0.2),text(tpos,[1],showoff(tlabs),[HCenter()],[VBottom()]))
-    dlines=compose(context(xoffs,0.25,xl,0.1),line([[(tpx,0.1),(tpx,0.9)] for tpx in tpos]),stroke(colorant"black"))
-    compose(context(0,1Measures.h-legheight,1,legheight),bar,tlabels,dlines)
+  xoffs=0.05
+  xl=1-2xoffs
+  tlabs,smin,smax=optimize_ticks(Float64(xmin),Float64(xmax),extend_ticks=false,k_min=4)
+  tpos=[(tlabs[i]-xmin)/(xmax-xmin) for i=1:length(tlabs)]
+  r=rectangle([(i-1)/length(colm) for i in 1:length(colm)],[0],[1/(length(colm)-1)],[1])
+  f=fill([colm[div((i-1)*length(colm),length(colm))+1] for i=1:length(colm)])
+  bar=compose(context(xoffs,0.35,xl,0.55),r,f,stroke(nothing),svgattribute("shape-rendering","crispEdges"))
+  tlabels=compose(context(xoffs,0,xl,0.2),text(tpos,[1],showoff(tlabs),[HCenter()],[VBottom()]))
+  dlines=compose(context(xoffs,0.25,xl,0.1),line([[(tpx,0.1),(tpx,0.9)] for tpx in tpos]),stroke(colorant"black"))
+  compose(context(0,1Measures.h-legheight,1,legheight),bar,tlabels,dlines)
 end
+
+
+# """
+# `plotXY(cube::AbstractCubeData; group=0, xaxis=-1, kwargs...)`
+# 
+# Generic plotting tool for cube objects, can be called on any type of cube data.
+#
+# ### Keyword arguments
+#
+# * `xaxis` which axis is to be used as x axis. Can be either an axis Datatype or a string. Short versions of axes names are possible as long as the axis can be uniquely determined.
+# * `group` it is possible to group the plot by a categorical axis. Can be either an axis data type or a string.
+# * `dim=value` can set other dimensions to certain values, for example `lon=51.5` will fix the longitude for the resulting plot
+#
+# If a dimension is not the x axis or group variable and is not fixed through an additional keyword, a slider or dropdown menu will appear to select the axis value.
+# """
+# function plotScatter{T}(cube::AbstractCubeData{T};group=0,vsaxis=VariableAxis,xaxis=0,yaxis=0,kwargs...)
+#   axlist=axes(cube)
+#   axlabels=map(axname,axlist)
+#   fixedvarsEx=quote end
+#   widgets=Any[]
+#   argvars=Symbol[]
+#   fixedAxes=CubeAxis[]
+#   signals=Signal[]
+#
+#   ivsaxis=findAxis(xaxis,axlist)
+#   if ivsaxis>0
+#     push!(fixedvarsEx.args,:(ivsaxis=$ivsaxis))
+#     push!(fixedAxes,axlist[ivsaxis])
+#   else
+#     throw(ArgumentError("Could not find axis $vsaxis in data cube."))
+#   end
+#   if xaxis!=0
+#     xfixed=true
+#     xaxis<=length(axlist[ivsaxis]) || error("")
+#     if group!=0
+#       igroup=findAxis(group,axlist)
+#       igroup>0 || error("Axis $group not found!")
+#       push!(fixedvarsEx.args,:(igroup=$igroup))
+#       push!(fixedAxes,axlist[igroup])
+#     else
+#       igroup=0
+#     end
+#     for (sy,val) in kwargs
+#       ivalaxis=findAxis(string(sy),axlist)
+#       ivalaxis>0 || error("Axis $sy not found")
+#       s=Symbol("v_$ivalaxis")
+#       push!(fixedvarsEx.args,:($s=$val))
+#       push!(fixedAxes,axlist[ivalaxis])
+#     end
+#
+#     availableIndices=find(ax->!in(ax,fixedAxes),axlist)
+#     availableAxis=axlist[availableIndices]
+#
+#
+#     if length(availableAxis) > 0
+#       if ixaxis==0
+#         xaxmenu=dropdown(OrderedDict(zip(axlabels[availableIndices],availableIndices)),label="X Axis",value=availableIndices[1],value_label=axlabels[availableIndices[1]])
+#         xax=signal(xaxmenu)
+#         push!(widgets,xaxmenu)
+#         push!(argvars,:ixaxis)
+#         push!(signals,xax)
+#       end
+#       if igroup==0
+#         groupmenu=dropdown(OrderedDict(zip(["None";axlabels[availableIndices]],[0;availableIndices])),label="Group",value=0,value_label="None")
+#         groupsig=signal(groupmenu)
+#         push!(widgets,groupmenu)
+#         push!(argvars,:igroup)
+#         push!(signals,groupsig)
+#       end
+#       for i in availableIndices
+#         w=getWidget(axlist[i])
+#         push!(widgets,w)
+#         push!(signals,signal(w))
+#         push!(argvars,Symbol(string("v_",i)))
+#       end
+#     end
+#     nax=length(axlist)
+#
+#     plotfun2=quote
+#       axlist=axes(cube)
+#       $fixedvarsEx
+#       ndim=length(axlist)
+#       subcubedims=@ntuple $nax d->(d==ixaxis || d==igroup) ? length(axlist[d]) : 1
+#       sliceargs=@ntuple $nax d->(d==ixaxis || d==igroup) ? (1:length(axlist[d])) : axVal2Index(axlist[d],v_d)
+#       ca = getMemHandle(cube,1,CartesianIndex(subcubedims))
+#       dataslice=getSubRange(ca,sliceargs...)[1]
+#       jxaxis=count_to(x->isa(x,Range),sliceargs,ixaxis)
+#
+#       xvals = repAx(dataslice,jxaxis,prepAx(axlist[ixaxis]))
+#       yvals = r1(dataslice)
+#
+#       if igroup > 0
+#         plotf = isa(axlist[ixaxis],CategoricalAxis) ? groupedbar : lineplot
+#         jgroup=count_to(x->isa(x,Range),sliceargs,igroup)
+#         gvals=repAx(dataslice,jgroup,prepAx(axlist[igroup]))
+#         p=plotf(x=xvals,y=yvals,group=gvals)
+#       else
+#         plotf = isa(axlist[ixaxis],CategoricalAxis) ? barplot : lineplot
+#         p=plotf(x=xvals,y=yvals)
+#       end
+#       p
+#     end
+#     if length(argvars)==0
+#       x=eval(:(cube->$plotfun2))
+#       return x(cube)
+#     end
+#     lambda = Expr(:(->), Expr(:tuple, argvars...),plotfun2)
+#     liftex = Expr(:call,:map,lambda,signals...)
+#     myfun=eval(quote
+#     local li
+#     li(cube)=$liftex
+#   end)
+#   for w in widgets display(w) end
+#   display(myfun(cube))
+# end
+
 end
