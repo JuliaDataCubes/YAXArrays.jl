@@ -5,6 +5,7 @@ importall ..CubeAPI
 importall ..CubeAPI.CachedArrays
 importall ..Proc
 importall ..Mask
+import NullableArrays.anynull
 exportmissval(x::AbstractFloat)=oftype(x,NaN)
 exportmissval(x::Integer)=typemax(x)
 
@@ -73,15 +74,14 @@ in the sample.
 """
 function sampleLandPoints(cdata::CubeAPI.AbstractCubeData,nsample::Integer,nomissing=false)
   axlist=axes(cdata)
+  ilon=findAxis(LonAxis,axlist)
+  ilat=findAxis(LatAxis,axlist)
   if nomissing
     remAxes=filter(i->!(isa(i,LonAxis) || isa(i,LatAxis)),axlist)
-    cm=reduceCube(anynull,cdata,ntuple(i->remAxes[i],length(remAxes)),outtype=Bool)
-    m=map(i->i ? VALID : OCEAN)
-    cm.data=m
-    cm.mask=m
+    cm=reduceCube(anynull,cdata,ntuple(i->typeof(remAxes[i]),length(remAxes)),outtype=(Bool,))
+    m=map(i->(i ? OCEAN : VALID),cm.data)
+    cm=CubeMem(CubeAxis[axlist[ilon],axlist[ilat]],m,m)
   else
-    ilon=findAxis(LonAxis,axlist)
-    ilat=findAxis(LatAxis,axlist)
     bs=ntuple(i->in(i,(ilon,ilat)) ? length(axlist[i]) : 1,length(axlist))
     sargs=ntuple(i->ifelse(in(i,(ilon,ilat)),1:length(axlist[i]),1),length(axlist))
     mh=getMemHandle(cdata,1,CartesianIndex(bs))
@@ -90,6 +90,7 @@ function sampleLandPoints(cdata::CubeAPI.AbstractCubeData,nsample::Integer,nomis
     cm=CubeMem(CubeAxis[axlist[ilon],axlist[ilat]],m,m)
   end
   sax=getSpatiaPointAxis(cm);
+  isempty(sax.data) && error("Could not find any valid coordinates to extract a sample from. Please check for systematic missing values if you set nomissing=true")
   w=WeightVec(map(i->cosd(i[2]),sax.values))
   sax2=SpatialPointAxis(sample(sax.values,w,nsample,replace=false))
   y=mapCube(toPointAxis,(cdata,axlist[ilon],axlist[ilat],sax2),max_cache=1e8);

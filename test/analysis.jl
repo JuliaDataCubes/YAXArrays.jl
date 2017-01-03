@@ -119,6 +119,6 @@ end
 doTests()
 
 addprocs(2)
-
+@everywhere using CABLAB
 doTests()
 rmprocs(workers())
