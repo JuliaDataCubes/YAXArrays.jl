@@ -139,7 +139,7 @@ axname{T,S}(::RangeAxis{T,S})=string(S)
 axunits(::CubeAxis)="unknown"
 axunits(::LonAxis)="degrees_east"
 axunits(::LatAxis)="degrees_north"
-axVal2Index{T,S,F<:FloatRange}(axis::RangeAxis{T,S,F},v)=min(max(round(Int,axis.values.step)*round(Int,v*axis.values.divisor-axis.values.start-sign(axis.values.step))+2,1),length(axis))
+axVal2Index{T,S,F<:FloatRange}(axis::RangeAxis{T,S,F},v)=min(max(round(Int,(v-first(axis.values))/step(axis.values))+1,1),length(axis))
 axVal2Index(x,v)=min(max(v,1),length(x))
 
 getSubRange(x::CubeAxis,i)=x[i],nothing
