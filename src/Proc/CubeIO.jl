@@ -90,7 +90,7 @@ function sampleLandPoints(cdata::CubeAPI.AbstractCubeData,nsample::Integer,nomis
     cm=CubeMem(CubeAxis[axlist[ilon],axlist[ilat]],m,m)
   end
   sax=getSpatiaPointAxis(cm);
-  isempty(sax.data) && error("Could not find any valid coordinates to extract a sample from. Please check for systematic missing values if you set nomissing=true")
+  isempty(sax.values) && error("Could not find any valid coordinates to extract a sample from. Please check for systematic missing values if you set nomissing=true")
   w=WeightVec(map(i->cosd(i[2]),sax.values))
   sax2=SpatialPointAxis(sample(sax.values,w,nsample,replace=false))
   y=mapCube(toPointAxis,(cdata,axlist[ilon],axlist[ilat],sax2),max_cache=1e8);
