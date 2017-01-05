@@ -96,11 +96,29 @@ function doTests()
   @test quantile(o2,[0.1,0.5,0.9])==o.data[:,1]
 
   nothing
+  #Test onvolving multiple output cubes
+  c1=getCubeData(c,variable="gross_primary_productivity",longitude=(30,31),latitude=(50,51))
+
+  c2=readCubeData(c1)
+
+  @everywhere function sub_and_return_mean(xout1,xout2,xin)
+    m=mean(filter(isfinite,xin))
+    for i=1:length(xin)
+      xout1[i]=xin[i]-m
+    end
+    xout2[1]=m
+  end
+  registerDATFunction(sub_and_return_mean,(TimeAxis,),((TimeAxis,),()),inmissing=:nan,outmissing=(:nan,:nan))
+
+  cube_wo_mean,cube_means=mapCube(sub_and_return_mean,c2)
+
+  @test isapprox(permutedims(c2.data.-mean(c2.data,3),(3,1,2)),readCubeData(cube_wo_mean).data)
+  @test isapprox(mean(c2.data,3)[:,:,1],readCubeData(cube_means).data)
 end
 
 doTests()
 
 addprocs(2)
-
+@everywhere using CABLAB
 doTests()
 rmprocs(workers())

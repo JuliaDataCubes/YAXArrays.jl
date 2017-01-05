@@ -59,6 +59,7 @@ include("Axes.jl")
 importall .Axes
 
 immutable EmptyCube{T}<:AbstractCubeData{T,0} end
+axes(c::EmptyCube)=CubeAxis[]
 
 """
     CubeMem{T,N} <: AbstractCubeMem{T,N}
@@ -142,6 +143,7 @@ importall .TempCubes
 getCubeDes(c::AbstractSubCube)="Data Cube view"
 getCubeDes(c::TempCube)="Temporary Data Cube"
 getCubeDes(c::CubeMem)="In-Memory data cube"
+getCubeDes(c::EmptyCube)="Empty Data Cube (placeholder)"
 function Base.show(io::IO,c::AbstractCubeData)
     println(io,getCubeDes(c), " with the following dimensions")
     for a in axes(c)

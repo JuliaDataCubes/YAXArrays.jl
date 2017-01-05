@@ -28,11 +28,14 @@ include("DAT/DAT.jl")
 include("Proc/Proc.jl")
 include("Plot/Plot.jl")
 
+using Suppressor
+@suppress begin
 import Vega.VegaVisualization
 import Vega.patchwork_repr
 #Patch Vega
 function Base.show(io::IO, m::MIME"text/html", v::VegaVisualization)
     show(io, m, patchwork_repr(v))
+end
 end
 
 importall .Cubes, .CubeAPI, .DAT, .Proc, .Plot
