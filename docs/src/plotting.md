@@ -39,7 +39,10 @@ dropdown menus will be shown to select the desired values.
 
 ## Other plots
 
-Generating x-y type plots is done with the generic plotXY function.
+### XY plots
+
+Generating x-y type plots where the x axis is one of the cube axes and the y axis
+is the corresponding cube value is done with the generic `plotXY` function.
 
 ```@docs
 plotXY
@@ -82,6 +85,35 @@ cdata=getCubeData(ds,variable=["net_ecosystem_exchange","gross_primary_productiv
 longitude=(30.0,30.0),latitude=(50.0,52.0))
 m=reduceCube(mean,cdata,TimeAxis, max_cache=1e8)
 p=plotXY(m,xaxis="variable",group="lat",lon=30)
+b=IOBuffer()
+show(b,MIME"text/html"(),p)
+Documenter.Documents.RawHTML(takebuf_string(b))
+````
+
+### Scatter plots
+
+In order to do scatter plots, i.e. plotting variable A against variable B one can use the
+`plotScatter` function.
+
+```@doc
+plotScatter
+```
+
+A short example is shown here:
+
+```julia
+cdata=getCubeData(ds,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
+longitude=(30.0,30.0),latitude=(50.0,52.0))
+p=plotScatter(cdata,alongaxis=TimeAxis,xaxis=1,yaxis=2,group="lat",lon=30)
+```
+
+````@eval
+using CABLAB # hide
+import Documenter # hide
+ds=RemoteCube() # hide
+cdata=getCubeData(ds,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
+longitude=(30.0,30.0),latitude=(50.0,52.0))
+p=plotScatter(cdata,alongaxis=TimeAxis,xaxis=1,yaxis=2,group="lat",lon=30)
 b=IOBuffer()
 show(b,MIME"text/html"(),p)
 Documenter.Documents.RawHTML(takebuf_string(b))
