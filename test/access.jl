@@ -42,6 +42,13 @@ data2=readCubeData(d2)
 
 @test_throws ArgumentError getCubeData(c,longitude=(10,-10))
 
+# Test reading of coordinate list
+ll=[30.1 50.2;30.5 51.1;30.7 51.1]
+llcube = extractLonLats(data1,ll)
+@test llcube.data[1,:]==data1.data[1,4,:]
+@test llcube.data[2,:]==data1.data[3,1,:]
+@test llcube.data[3,:]==data1.data[4,1,:]
+
 #Test saving cubes
 dire=mktempdir()
 CABLABdir(dire)
