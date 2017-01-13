@@ -11,11 +11,11 @@ import Reactive: Signal
 import Interact: slider, dropdown, signal, togglebutton, togglebuttons
 import Vega: lineplot, barplot, groupedbar, scatterplot, xlab!, ylab!
 import Images: Image
-import Colors: RGB, @colorant_str, colormap, U8
-import DataStructures: OrderedDict
+import Colors: RGB, @colorant_str, colormap,  U8, distinguishable_colors
 import Base.Cartesian: @ntuple,@nexprs
 import Patchwork.load_js_runtime
 import Measures
+import Compose
 
 #import Patchwork.load_js_runtime
 ga=[]
@@ -220,12 +220,15 @@ Map plotting tool for cube objects, can be called on any type of cube data
 * `colorm` colormap to be used. Find a list of colormaps in the [Colors.jl](https://github.com/JuliaGraphics/Colors.jl) package
 * `oceancol` color to fill the ocean with, defaults to `colorant"darkblue"`
 * `misscol` color to represent missing values, defaults to `colorant"gray"`
+* `symmetric` make the color scale symmetric around zero
+* `labels` given a list of labels this will create a plot with a non-continouous color scale where integer cube values [1..N] are mapped to the given labels.
 * `dim=value` can set other dimensions to certain values, for example `var="air_temperature_2m"` will fix the variable for the resulting plot
 
 If a dimension is neither longitude or latitude and is not fixed through an additional keyword, a slider or dropdown menu will appear to select the axis value.
 """
 function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
-  colorm=:inferno,oceancol=colorant"darkblue",misscol=colorant"gray",symmetric=false,kwargs...)
+  colorm=:inferno,oceancol=colorant"darkblue",misscol=colorant"gray",symmetric=false,
+  labels=nothing,kwargs...)
   isa(colorm,Symbol) && (colorm=namedcolms[colorm])
   dmin,dmax=typed_dminmax(T,dmin,dmax)
   axlist=axes(cube)
@@ -246,6 +249,10 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
   subcubedims[2]=nlat
   sliceargs=Any[:(1:$nlon),:(1:$nlat)]
   fixedvarsEx=quote end
+  if labels!=nothing
+    push!(fixedvarsEx.args,:(labels=$labels))
+    colorm=distinguishable_colors(length(labels)+2,[misscol,oceancol])[3:end]
+  end
   fixedAxes=CubeAxis[]
   for (sy,val) in kwargs
     ivalaxis=findAxis(string(sy),axlist)
@@ -279,7 +286,7 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
   push!(ga,getMemHandle(cube,1,CartesianIndex(ntuple(i->subcubedims[i],length(axlist)))))
   lga=length(ga)
   dataslice=Expr(:call,:getSubRange,:(ga[$lga]),sliceargs...)
-  mimaex = dmin==dmax ? :((mi,ma)=getMinMax(a,m,symmetric=$symmetric)) : :(mi=$(dmin);ma=$(dmax))
+  mimaex = labels==nothing ? nothing : dmin==dmax ? :((mi,ma)=getMinMax(a,m,symmetric=$symmetric)) : :(mi=$(dmin);ma=$(dmax))
   plotfun=quote
     $fixedvarsEx
     a,m=$dataslice
@@ -293,7 +300,7 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
     show(pngbuf,"image/png",Image(rgbar,Dict("spatialorder"=>["x","y"])))
     legheight=max(0.1*Measures.h,1.6Measures.cm)
     themap=obj=compose(context(0,0,1,1Measures.h-legheight),bitmap("image/png",pngbuf.data,0,0,1,1))
-    theleg=getlegend(mi,ma,colorm,legheight)
+    theleg=isdefined(labels) ? getlegend(colorm,legheight,labels) : getlegend(mi,ma,colorm,legheight)
     compose(context(),themap,theleg)
   end
   lambda = Expr(:(->), Expr(:tuple, argvars...),plotfun)
@@ -491,6 +498,18 @@ function plotScatter{T}(cube::AbstractCubeData{T};group=0,vsaxis=VariableAxis,xa
   end)
   for w in widgets display(w) end
   display(myfun(cube))
+end
+
+function getlegend(colm,legheight,labels)
+    xoffs=0.05
+    xl=1-2xoffs
+    tlabs=labels
+    tpos=[(i-0.5)/length(tlabs) for i=1:length(tlabs)]
+    r=rectangle([(i-1)/length(colm) for i in 1:length(colm)],[0],[1/(length(colm))],[1])
+    f=fill([colm[div((i-1)*length(colm),length(colm))+1] for i=1:length(colm)])
+    bar=compose(context(xoffs,0.35,xl,0.55),r,f,stroke(nothing),svgattribute("shape-rendering","crispEdges"))
+    tlabels=compose(context(xoffs,0,xl,0.2),Compose.text(tpos,[1],tlabs,[HCenter()],[VBottom()]))
+    compose(context(0,1Measures.h-legheight,1,legheight),bar,tlabels)
 end
 
 end
