@@ -28,7 +28,7 @@ c=RemoteCube()
 ```@example 1
 var=["c_emissions","air_temperature_2m"]
 time=(DateTime("2001-01-01"),DateTime("2001-12-31"))
-cubedata = getCubeData(c,longitude=(30,31),latitude=(50,51),variable=var)
+cubedata = getCubeData(c,longitude=(30,31),latitude=(50,51),time=time,variable=var)
 ```
 
 This returns a view into the Data Cube, on which further calculations can be applied.
@@ -38,6 +38,26 @@ No data is read yet. Here you can start to do some calculations on your sub-cube
 [Analysis](@ref) for a list of methods provided by this framework or
 [Applying custom functions](@ref) to apply your own functions on the cube. If you just
 want to visualize the cube see this section [Plotting](@ref).
+
+## Extracting a list of lon/lat coordinates from a data cube
+
+There are situations in which only a certain list of longitude/latitude pairs is
+needed for the analysis. One can extract such a list by first creating a cube view
+containing all the needed variables and then apply the `extractLonLats` function.
+
+```@docs
+CABLAB.Proc.CubeIO.extractLonLats
+```
+
+Here is an example how to apply the function:
+
+```@example 1
+cubedata = getCubeData(c,longitude=(30,31),latitude=(50,51),time=time,variable=var)
+ll       = [30.1 50.2;
+            30.5 51.1;
+            30.7 51.1] #Lon/Lats to be extracted
+cubenew  = extractLonLats(cubedata,ll)
+```
 
 ## Cube Types
 

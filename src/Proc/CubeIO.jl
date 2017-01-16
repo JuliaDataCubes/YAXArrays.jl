@@ -64,6 +64,28 @@ export toPointAxis
 registerDATFunction(toPointAxis,((LonAxis,LatAxis),(LonAxis,),(LatAxis,),(SpatialPointAxis,)),(SpatialPointAxis,))
 
 """
+    extractLonLats(c::AbstractCubeData,pl::Matrix)
+
+Extracts a list of longitude/latitude coordinates from a data cube. The coordinates
+are specified through the matrix `pl` where `size(pl)==(N,2)` and N is the number
+of extracted coordinates. Returns a data cube without `LonAxis` and `LatAxis` but with a
+`SpatialPointAxis` containing the input locations. 
+"""
+function extractLonLats(c::AbstractCubeData,pl::Matrix)
+  size(pl,2)==2 || error("Coordinate list must have exactly 2 columns")
+  axlist=axes(c)
+  ilon=findAxis(LonAxis,axlist)
+  ilat=findAxis(LatAxis,axlist)
+  lonax=axlist[ilon]
+  latax=axlist[ilat]
+  pointax = SpatialPointAxis([(pl[i,1],pl[i,2]) for i in 1:size(pl,1)])
+  ilon>0 || error("Input cube must contain a LonAxis")
+  ilat>0 || error("input cube must contain a LonAxis")
+  y=mapCube(toPointAxis,(c,axlist[ilon],axlist[ilat],pointax),max_cache=1e8)
+end
+export extractLonLats
+
+"""
     sampleLandPoints(cube, nsample;nomissing=false)
 
 Get an area-weighted sample from all non-ocean grid cells. This will return a new Cube

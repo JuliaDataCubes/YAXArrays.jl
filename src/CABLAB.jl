@@ -12,7 +12,8 @@ export Cube, getCubeData,readCubeData,CubeMem,CubeAxis, TimeAxis, VariableAxis, 
 export registerDATFunction, mapCube, reduceCube, getAxis #From DAT module
 export axVal2Index, plotTS, plotMAP, plotXY, plotScatter #From Plot module
 export DAT_detectAnomalies!, removeMSC, gapFillMSC, normalizeTS,DATfitOnline,
-  sampleLandPoints, toPointAxis, getMSC, filterTSFFT, getNpY,timespacequantiles,timelonlatquantiles, getMedSC #From Proc module
+  sampleLandPoints, toPointAxis, getMSC, filterTSFFT, getNpY,timespacequantiles,
+  timelonlatquantiles, getMedSC, extractLonLats #From Proc module
 export TempCube, openTempCube # From CachedArrays
 
 global const workdir=String["./"]
