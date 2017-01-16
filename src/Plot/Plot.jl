@@ -286,7 +286,7 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
   push!(ga,getMemHandle(cube,1,CartesianIndex(ntuple(i->subcubedims[i],length(axlist)))))
   lga=length(ga)
   dataslice=Expr(:call,:getSubRange,:(ga[$lga]),sliceargs...)
-  mimaex = labels==nothing ? nothing : dmin==dmax ? :((mi,ma)=getMinMax(a,m,symmetric=$symmetric)) : :(mi=$(dmin);ma=$(dmax))
+  mimaex = labels!=nothing ? nothing : dmin==dmax ? :((mi,ma)=getMinMax(a,m,symmetric=$symmetric)) : :(mi=$(dmin);ma=$(dmax))
   plotfun=quote
     $fixedvarsEx
     a,m=$dataslice
@@ -300,7 +300,7 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
     show(pngbuf,"image/png",Image(rgbar,Dict("spatialorder"=>["x","y"])))
     legheight=max(0.1*Measures.h,1.6Measures.cm)
     themap=obj=compose(context(0,0,1,1Measures.h-legheight),bitmap("image/png",pngbuf.data,0,0,1,1))
-    theleg=isdefined(labels) ? getlegend(colorm,legheight,labels) : getlegend(mi,ma,colorm,legheight)
+    theleg=isdefined(:labels) ? getlegend(colorm,legheight,labels) : getlegend(mi,ma,colorm,legheight)
     compose(context(),themap,theleg)
   end
   lambda = Expr(:(->), Expr(:tuple, argvars...),plotfun)
