@@ -33,7 +33,13 @@ cubedata = getCubeData(c,longitude=(30,31),latitude=(50,51),time=time,variable=v
 
 This returns a view into the Data Cube, on which further calculations can be applied.
 All keyword arguments default to the full range, so calling `getCubeData` without
-keyword arguments will return a view
+keyword arguments will return a view into the whole data cube.
+
+```@docs
+CABLAB.CubeAPI.getCubeData
+```
+
+
 No data is read yet. Here you can start to do some calculations on your sub-cube, see either
 [Analysis](@ref) for a list of methods provided by this framework or
 [Applying custom functions](@ref) to apply your own functions on the cube. If you just
@@ -142,3 +148,8 @@ or time series in lon-lat boxes of size 1degx1deg.
 ```@docs
 sampleLandPoints
 ```
+
+## List of known regions
+
+```@docs
+CABLAB.CubeAPI.known_regions

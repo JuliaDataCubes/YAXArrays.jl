@@ -3,12 +3,12 @@ importall ..Cubes
 importall ..Cubes.Axes
 importall ..CABLABTools
 import Base.Markdown.@md_str
-export Cube, getCubeData,getTimeRanges,readCubeData, getMemHandle, RemoteCube
+export Cube, getCubeData,getTimeRanges,readCubeData, getMemHandle, RemoteCube, known_regions
 export isvalid, isinvalid, isvalid, isvalidorfilled, Mask
 export showVarInfo
 
 include("Mask.jl")
-
+include("countrydict.jl")
 importall .Mask
 using DataStructures
 using Base.Dates
@@ -324,15 +324,22 @@ Returns a view into the data cube. The following keyword arguments are accepted:
 - *time*: a single datetime.datetime object or a 2-element iterable (time_start, time_end)
 - *latitude*: a single latitude value or a 2-element iterable (latitude_start, latitude_end)
 - *longitude*: a single longitude value or a 2-element iterable (longitude_start, longitude_end)
+- *region*: specify a country or SREX region by name or ISO_A3 code. Type `?CABLAB.known_regions` to see a list of pre-defined areas
 
 Returns a `SubCube` object which represents a view into the original data cube.
 
 
 """
-function getCubeData(cube::UCube;variable=Int[],time=[],latitude=[],longitude=[])
+function getCubeData(cube::UCube;variable=Int[],time=[],latitude=[],longitude=[],region=[])
   #First fill empty inputs
   isempty(variable)  && (variable = defaultvariable(cube))
   isempty(time)      && (time     = defaulttime(cube))
+  if !isempty(region)
+    haskey(known_regions,region) || error("Region $region not recognized as a known place")
+    ll = known_regions[region]
+    longitude = (ll[1],ll[3])
+    latitude  = (ll[2],ll[4])
+  end
   isempty(latitude)  && (latitude = defaultlatitude(cube))
   isempty(longitude) && (longitude= defaultlongitude(cube))
   getCubeData(cube,variable,time,latitude,longitude)
