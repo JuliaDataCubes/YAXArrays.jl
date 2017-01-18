@@ -286,7 +286,7 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
   push!(ga,getMemHandle(cube,1,CartesianIndex(ntuple(i->subcubedims[i],length(axlist)))))
   lga=length(ga)
   dataslice=Expr(:call,:getSubRange,:(ga[$lga]),sliceargs...)
-  mimaex = labels!=nothing ? nothing : dmin==dmax ? :((mi,ma)=getMinMax(a,m,symmetric=$symmetric)) : :(mi=$(dmin);ma=$(dmax))
+  mimaex = labels!=nothing ? :((mi,ma)=(1,$(length(labels)))) : dmin==dmax ? :((mi,ma)=getMinMax(a,m,symmetric=$symmetric)) : :(mi=$(dmin);ma=$(dmax))
   plotfun=quote
     $fixedvarsEx
     a,m=$dataslice
