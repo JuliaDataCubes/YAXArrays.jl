@@ -252,6 +252,11 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
   if labels!=nothing
     push!(fixedvarsEx.args,:(labels=$labels))
     colorm=distinguishable_colors(length(labels)+2,[misscol,oceancol])[3:end]
+    legex = :(getlegend(colorm,legheight,labels))
+    mimaex = :(mi=1;ma=$(length(labels)))
+  else
+    legex = :(getlegend(mi,ma,colorm,legheight))
+    mimaex = dmin==dmax ? :((mi,ma)=getMinMax(a,m,symmetric=$symmetric)) : :(mi=$(dmin);ma=$(dmax))
   end
   fixedAxes=CubeAxis[]
   for (sy,val) in kwargs
@@ -286,7 +291,6 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
   push!(ga,getMemHandle(cube,1,CartesianIndex(ntuple(i->subcubedims[i],length(axlist)))))
   lga=length(ga)
   dataslice=Expr(:call,:getSubRange,:(ga[$lga]),sliceargs...)
-  mimaex = labels!=nothing ? :((mi,ma)=(1,$(length(labels)))) : dmin==dmax ? :((mi,ma)=getMinMax(a,m,symmetric=$symmetric)) : :(mi=$(dmin);ma=$(dmax))
   plotfun=quote
     $fixedvarsEx
     a,m=$dataslice
@@ -300,7 +304,7 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
     show(pngbuf,"image/png",Image(rgbar,Dict("spatialorder"=>["x","y"])))
     legheight=max(0.1*Measures.h,1.6Measures.cm)
     themap=obj=compose(context(0,0,1,1Measures.h-legheight),bitmap("image/png",pngbuf.data,0,0,1,1))
-    theleg=isdefined(:labels) ? getlegend(colorm,legheight,labels) : getlegend(mi,ma,colorm,legheight)
+    theleg=$legex
     compose(context(),themap,theleg)
   end
   lambda = Expr(:(->), Expr(:tuple, argvars...),plotfun)
