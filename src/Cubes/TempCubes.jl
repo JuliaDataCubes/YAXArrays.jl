@@ -86,7 +86,7 @@ function TempCube{N}(axlist,block_size::CartesianIndex{N};folder=mktempdir(),T=F
   ssmall=map(div,s,block_size.I)
   for ii in CartesianRange(totuple(ssmall))
     istart = (CItimes((ii-CartesianIndex{N}()),block_size))+CartesianIndex{N}()
-    ncdims = NcDim[NcDim(axlist[i],istart[i],block_size[i]) for i=1:N]
+    ncdims = N>0 ? NcDim[NcDim(axlist[i],istart[i],block_size[i]) for i=1:N] : [NcDim("DummyDim",1)]
     vars   = NcVar[NcVar("cube",ncdims,t=T),NcVar("mask",ncdims,t=UInt8)]
     nc     = NetCDF.create(joinpath(folder,tofilename(ii)),vars)
 #    NetCDF.putvar(nc["cube"],fill(iniVal,block_size))
@@ -106,7 +106,7 @@ function openTempCube(folder;persist=true)
   N=length(axlist)
   v=NetCDF.open(joinpath(folder,tofilename(CartesianIndex{N}())),"cube")
   T=eltype(v)
-  block_size=CartesianIndex(size(v))
+  block_size= N==0 ? CartesianIndex(()) : CartesianIndex(size(v))
   ncclose(joinpath(folder,tofilename(CartesianIndex{N}())))
   return TempCube{T,N}(axlist,folder,block_size,persist)
 end
