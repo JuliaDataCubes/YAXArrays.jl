@@ -467,6 +467,7 @@ function getMaskFile(cube::RemoteCube)
   end
 end
 
+getLandSeaMask!(mask::Array{UInt8,2},cube::UCube,grid_x1,nx,grid_y1,ny)=getLandSeaMask!(reshape(mask,(size(mask,1),size(mask,2),1)),cube,grid_x1,nx,grid_y1,ny)
 function getLandSeaMask!(mask::Array{UInt8,3},cube::UCube,grid_x1,nx,grid_y1,ny)
   filename=getMaskFile(cube)
   if !isempty(filename)
@@ -605,6 +606,7 @@ function _read{T,N}(s::Union{SubCubeVPerm{T},SubCubePerm{T},SubCubeStaticPerm{T}
   mypermutedims!(mask,masktemp,Val{perm})
 end
 
+getNv(r::CartesianRange{CartesianIndex{2}})=(0,1)
 getNv(r::CartesianRange{CartesianIndex{3}})=(0,1)
 getNv(r::CartesianRange{CartesianIndex{4}})=(r.start.I[4]-1,r.stop.I[4]-r.start.I[4]+1)
 
@@ -664,6 +666,8 @@ function readRemote{T}(cube::RemoteCube,outar::AbstractArray{T,3},mask::Abstract
   return true
 end
 
+gettoffsnt(::AbstractSubCube,r::CartesianRange)=(r.start.I[3] - 1,r.stop.I[3]  - r.start.I[3]+1)
+gettoffsnt(::SubCubeStatic,r::CartesianRange{CartesianIndex{2}})=(0,1)
 
   function _read{T}(s::AbstractSubCube{T},t::NTuple{2},r::CartesianRange) #;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,1),ny::Int=size(outar,2),nt::Int=size(outar,3),nv::Int=length(s.variable))
 
@@ -675,8 +679,7 @@ end
     nx      = r.stop.I[1] - r.start.I[1] + 1
     grid_y1 = grid_y1 + r.start.I[2] - 1
     ny      = r.stop.I[2] - r.start.I[2] +1
-    toffs   = r.start.I[3] - 1
-    nt      = r.stop.I[3]  - r.start.I[3]+1
+    toffs,nt= gettoffsnt(s,r)
     if toffs > 0
       i1 = i1 + toffs
       if i1 > NpY
@@ -788,13 +791,16 @@ end
 show(io::IO,::MIME"text/markdown",v::Vector{CABLABVarInfo})=foreach(x->show(io,MIME"text/markdown"(),x),v)
 
 
+getNanVal{T<:AbstractFloat}(::Type{T}) = convert(T,NaN)
+getNanVal{T<:Integer}(::Type{T})       = typemax(T)
+
 function readFromDataYear{T}(cube::Cube,outar::AbstractArray{T,3},mask::AbstractArray{UInt8,3},variable,y,grid_x1,nx,grid_y1,ny,itcur,i1cur,ntime,NpY)
   filename=joinpath(cube.base_dir,"data",variable,string(y,"_",variable,".nc"))
   ntleft = ntime - itcur + 1
   nt = min(NpY-i1cur+1,ntleft)
   xr = grid_x1:(grid_x1+nx-1)
   yr = grid_y1:(grid_y1+ny-1)
-  nanval=convert(T,NaN)
+  nanval=getNanVal(T)
   #Make some assertions for inbounds
   @assert itcur>0
   @assert (itcur+nt-1)<=size(outar,3)
@@ -805,7 +811,7 @@ function readFromDataYear{T}(cube::Cube,outar::AbstractArray{T,3},mask::Abstract
     v=NetCDF.open(filename,variable)
     scalefac::T = convert(T,get(v.atts,"scale_factor",one(T)))
     offset::T   = convert(T,get(v.atts,"add_offset",zero(T)))
-    NetCDF.readvar!(v,view(outar,1:nx,1:ny,itcur:(itcur+nt-1)),start=[grid_x1,grid_y1,i1cur],count=[nx,ny,nt])
+    NetCDF.readvar!(v,view(outar,:,:,itcur:(itcur+nt-1)),start=[grid_x1,grid_y1,i1cur],count=[nx,ny,nt])
     missval::T=convert(T,ncgetatt(filename,variable,"_FillValue"))
     @inbounds for k=itcur:(itcur+nt-1),j=1:ny,i=1:nx
       if (outar[i,j,k] == missval) || isnan(outar[i,j,k])
