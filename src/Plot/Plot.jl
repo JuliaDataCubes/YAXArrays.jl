@@ -197,10 +197,20 @@ function val2col(x,m,colorm,mi,ma,misscol,oceancol)
   end
 end
 
+function val2col(x,m,colorm::Dict,misscol,oceancol)
+  if !isnan(x) && m==VALID || m==FILLED
+    return get(colorm,x,misscol)
+  elseif (m & OCEAN)==OCEAN
+    return oceancol
+  else
+    return misscol
+  end
+end
+
 import PlotUtils.optimize_ticks
 import PlotUtils.cgrad
 import Colors.@colorant_str
-import Compose: rectangle, text, line, compose, context, stroke, svgattribute, bitmap, HCenter, VBottom
+import Compose: rectangle, text, line, compose, context, stroke, svgattribute, bitmap, HCenter, VBottom, HRight, VCenter
 const namedcolms=Dict(
 :viridis=>[cgrad(:viridis)[ix] for ix in linspace(0,1,100)],
 :magma=>[cgrad(:magma)[ix] for ix in linspace(0,1,100)],
@@ -227,8 +237,7 @@ Map plotting tool for cube objects, can be called on any type of cube data
 If a dimension is neither longitude or latitude and is not fixed through an additional keyword, a slider or dropdown menu will appear to select the axis value.
 """
 function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
-  colorm=:inferno,oceancol=colorant"darkblue",misscol=colorant"gray",symmetric=false,
-  labels=nothing,kwargs...)
+  colorm=:inferno,oceancol=colorant"darkblue",misscol=colorant"gray",symmetric=false,kwargs...)
   isa(colorm,Symbol) && (colorm=namedcolms[colorm])
   dmin,dmax=typed_dminmax(T,dmin,dmax)
   axlist=axes(cube)
@@ -249,9 +258,22 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
   subcubedims[2]=nlat
   sliceargs=Any[:(1:$nlon),:(1:$nlat)]
   fixedvarsEx=quote end
-  if labels!=nothing
+  if haskey(cube.properties,"labels")
+    labels = cube.properties["labels"]
     push!(fixedvarsEx.args,:(labels=$labels))
-    colorm=distinguishable_colors(length(labels)+2,[misscol,oceancol])[3:end]
+    _colorm=distinguishable_colors(length(labels)+2,[misscol,oceancol])[3:end]
+    colorm=Dict(k=>_colorm[i] for (i,k) in enumerate(keys(labels)))
+    colorm2=Dict(k=>_colorm[i] for (i,k) in enumerate(values(labels)))
+    rgbarEx = :(rgbar=getRGBAR(a,m,colorm,misscol,oceancol,nx,ny))
+    legEx = :(getlegend(colorm2,legwidth))
+    mimaex = :(colorm2=$colorm2)
+    legPosEx = :(legPos=:right)
+  else
+    labels=nothing
+    mimaex =  dmin==dmax ? :((mi,ma)=getMinMax(a,m,symmetric=$symmetric)) : :(mi=$(dmin);ma=$(dmax))
+    rgbarEx = :(rgbar=getRGBAR(a,m,colorm,convert($T,mi),convert($T,ma),misscol,oceancol,nx,ny))
+    legEx = :(getlegend(mi,ma,colorm,legheight))
+    legPosEx = :(legPos=:bottom)
   end
   fixedAxes=CubeAxis[]
   for (sy,val) in kwargs
@@ -286,7 +308,6 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
   push!(ga,getMemHandle(cube,1,CartesianIndex(ntuple(i->subcubedims[i],length(axlist)))))
   lga=length(ga)
   dataslice=Expr(:call,:getSubRange,:(ga[$lga]),sliceargs...)
-  mimaex = labels!=nothing ? nothing : dmin==dmax ? :((mi,ma)=getMinMax(a,m,symmetric=$symmetric)) : :(mi=$(dmin);ma=$(dmax))
   plotfun=quote
     $fixedvarsEx
     a,m=$dataslice
@@ -295,12 +316,14 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
     colorm=$colorm
     oceancol=$oceancol
     misscol=$misscol
-    rgbar=getRGBAR(a,m,colorm,convert($T,mi),convert($T,ma),misscol,oceancol,nx,ny)
+    $rgbarEx
+    $legPosEx
     pngbuf=IOBuffer()
     show(pngbuf,"image/png",Image(rgbar,Dict("spatialorder"=>["x","y"])))
-    legheight=max(0.1*Measures.h,1.6Measures.cm)
-    themap=obj=compose(context(0,0,1,1Measures.h-legheight),bitmap("image/png",pngbuf.data,0,0,1,1))
-    theleg=isdefined(:labels) ? getlegend(colorm,legheight,labels) : getlegend(mi,ma,colorm,legheight)
+    legheight=legPos==:bottom ? max(0.1*Measures.h,1.6Measures.cm) : 0Measures.h
+    legwidth =legPos==:right  ? max(0.2*Measures.w,3.2Measures.cm) : 0Measures.w
+    themap=compose(context(0,0,1Measures.w-legwidth,1Measures.h-legheight),bitmap("image/png",pngbuf.data,0,0,1,1))
+    theleg=$legEx
     compose(context(),themap,theleg)
   end
   lambda = Expr(:(->), Expr(:tuple, argvars...),plotfun)
@@ -314,6 +337,7 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
   myfun()
 end
 @noinline getRGBAR(a,m,colorm,mi,ma,misscol,oceancol,nx,ny)=RGB{U8}[val2col(a[i,j],m[i,j],colorm,mi,ma,misscol,oceancol) for i=1:nx,j=1:ny]
+@noinline getRGBAR(a,m,colorm::Dict,misscol,oceancol,nx,ny)=RGB{U8}[val2col(a[i,j],m[i,j],colorm,misscol,oceancol) for i=1:nx,j=1:ny]
 
 import Showoff.showoff
 function getlegend(xmin,xmax,colm,legheight)
@@ -328,6 +352,20 @@ function getlegend(xmin,xmax,colm,legheight)
   dlines=compose(context(xoffs,0.25,xl,0.1),line([[(tpx,0.1),(tpx,0.9)] for tpx in tpos]),stroke(colorant"black"))
   compose(context(0,1Measures.h-legheight,1,legheight),bar,tlabels,dlines)
 end
+
+function getlegend(colm,width)
+            texth1=Compose.max_text_extents(Compose.default_font_family, Compose.default_font_size, first(keys(colm)))[2]
+            texth=texth1*1.05*length(colm)
+            yoffs=(Measures.h-texth)/2
+            yl=texth
+            ncol=length(colm)
+            tpos=[(i-0.5)/ncol for i=1:ncol]
+            r=Compose.circle([0.5],[(i-0.5)/ncol for i in 1:ncol],[max(1/(ncol-1),0.5)])
+            f=fill(collect(values(colm)))
+            bar=compose(context(0.9,yoffs,0.1,yl),r,f,stroke(nothing),svgattribute("shape-rendering","crispEdges"))
+            tlabels=compose(context(0,yoffs,0.85,yl),Compose.text([1],tpos,collect(keys(colm)),[HRight()],[VCenter()]))
+            compose(context(1Measures.w-width,0,width,1),bar,tlabels)
+        end
 
 
 """
@@ -500,16 +538,5 @@ function plotScatter{T}(cube::AbstractCubeData{T};group=0,vsaxis=VariableAxis,xa
   display(myfun(cube))
 end
 
-function getlegend(colm,legheight,labels)
-    xoffs=0.05
-    xl=1-2xoffs
-    tlabs=labels
-    tpos=[(i-0.5)/length(tlabs) for i=1:length(tlabs)]
-    r=rectangle([(i-1)/length(colm) for i in 1:length(colm)],[0],[1/(length(colm))],[1])
-    f=fill([colm[div((i-1)*length(colm),length(colm))+1] for i=1:length(colm)])
-    bar=compose(context(xoffs,0.35,xl,0.55),r,f,stroke(nothing),svgattribute("shape-rendering","crispEdges"))
-    tlabels=compose(context(xoffs,0,xl,0.2),Compose.text(tpos,[1],tlabs,[HCenter()],[VBottom()]))
-    compose(context(0,1Measures.h-legheight,1,legheight),bar,tlabels)
-end
 
 end

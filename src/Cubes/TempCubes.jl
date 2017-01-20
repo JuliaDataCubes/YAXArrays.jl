@@ -29,6 +29,7 @@ type TempCube{T,N} <: AbstractTempCube{T,N}
   folder::String
   block_size::CartesianIndex{N}
   persist::Bool
+  properties::Dict{String}
 end
 "This defines a perumtation of a temporary datacube, as a result from perumtedims on a TempCube"
 type TempCubePerm{T,N} <: AbstractTempCube{T,N}
@@ -36,6 +37,7 @@ type TempCubePerm{T,N} <: AbstractTempCube{T,N}
   folder::String
   block_size::CartesianIndex{N}
   perm::NTuple{N,Int}
+  properties::Dict{String}
 end
 
 
@@ -69,7 +71,7 @@ containing the dimensions of each sub-file the cube is split into.
 - `persist=true` shall the cubes disk representation be kept or deleted when the cube gets out of scope
 - `overwrite=false` shall the data in an existing folder be overwritten
 """
-function TempCube{N}(axlist,block_size::CartesianIndex{N};folder=mktempdir(),T=Float32,persist::Bool=true,overwrite::Bool=false)
+function TempCube{N}(axlist,block_size::CartesianIndex{N};folder=mktempdir(),T=Float32,persist::Bool=true,overwrite::Bool=false,properties=Dict{String,Any}())
   isdir(folder) || mkpath(folder)
   if !isempty(readdir(folder))
     if overwrite
@@ -93,22 +95,23 @@ function TempCube{N}(axlist,block_size::CartesianIndex{N};folder=mktempdir(),T=F
 #    NetCDF.putvar(nc["mask"],fill(MISSING,block_size))
     NetCDF.close(nc)
   end
-  save(joinpath(folder,"axinfo.jld"),"axlist",axlist)
-  ntc=TempCube{T,N}(axlist,folder,block_size,persist)
+  save(joinpath(folder,"axinfo.jld"),"axlist",axlist,"properties",properties)
+  ntc=TempCube{T,N}(axlist,folder,block_size,persist,properties)
   finalizer(ntc,cleanTempCube)
   return ntc
 end
 
-TempCube(axlist,block_size::Tuple;kwargs...)=TempCube(axlist,CartesianIndex(block_size))
+TempCube(axlist,block_size::Tuple;kwargs...)=TempCube(axlist,CartesianIndex(block_size);kwargs...)
 
 function openTempCube(folder;persist=true)
   axlist=load(joinpath(folder,"axinfo.jld"),"axlist")
+  properties=load(joinpath(folder,"axinfo.jld"),"properties")
   N=length(axlist)
   v=NetCDF.open(joinpath(folder,tofilename(CartesianIndex{N}())),"cube")
   T=eltype(v)
   block_size= N==0 ? CartesianIndex(()) : CartesianIndex(size(v))
   ncclose(joinpath(folder,tofilename(CartesianIndex{N}())))
-  return TempCube{T,N}(axlist,folder,block_size,persist)
+  return TempCube{T,N}(axlist,folder,block_size,persist,properties)
 end
 
 function readCubeData{T}(y::AbstractTempCube{T})
@@ -149,7 +152,7 @@ function _read{N}(y::TempCube,thedata::NTuple{2},r::CartesianRange{CartesianInde
   return nothing
 end
 
-Base.permutedims{T,N}(c::TempCube{T,N},perm)=TempCubePerm{T,N}(c.axes,c.folder,c.block_size,perm)
+Base.permutedims{T,N}(c::TempCube{T,N},perm)=TempCubePerm{T,N}(c.axes,c.folder,c.block_size,perm,c.properties)
 #Method for reading cubes that get transposed
 #Per means fileOrder -> MemoryOrder
 function _read{N}(y::TempCubePerm,thedata::NTuple{2},r::CartesianRange{CartesianIndex{N}})

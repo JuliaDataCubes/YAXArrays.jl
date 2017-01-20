@@ -13,6 +13,7 @@ importall .Mask
 using DataStructures
 using Base.Dates
 import Requests.get
+import DataStructures.OrderedDict
 using LightXML
 
 type ConfigEntry{LHS}
@@ -22,6 +23,8 @@ end
 
 #This is probably not the final solution, we define a set of static variables that are treated differently when reading
 const static_vars = Set(["water_mask","country_mask"])
+const countrylabels = include("countrylabels.jl")
+const known_labels = Dict("water_mask"=>Dict(0x01=>"land",0x02=>"water"),"country_mask"=>countrylabels)
 
 "
 A data cube's static configuration information.
@@ -229,6 +232,7 @@ immutable SubCube{T,C} <: AbstractSubCube{T,3}
   lonAxis::LonAxis
   latAxis::LatAxis
   timeAxis::TimeAxis
+  properties::Dict{String}
 end
 axes(s::SubCube)=CubeAxis[s.lonAxis,s.latAxis,s.timeAxis]
 
@@ -288,6 +292,7 @@ immutable SubCubeV{T,C} <: AbstractSubCube{T,4}
   latAxis::LatAxis
   timeAxis::TimeAxis
   varAxis::VariableAxis
+  properties::Dict{String}
 end
 
 """
@@ -337,6 +342,7 @@ immutable SubCubeStatic{T,C} <: AbstractSubCube{T,2}
   sub_times::NTuple{6,Int} #y1,i1,y2,i2,ntime,NpY
   lonAxis::LonAxis
   latAxis::LatAxis
+  properties::Dict{String}
 end
 
 """
@@ -537,20 +543,33 @@ function getCubeData{T<:AbstractString}(cube::UCube,
     end
   end
   t=reduce(promote_type,varTypes[1],varTypes)
+  properties=Dict{String,Any}()
   if length(variableNew)==1
     if time[1]==time[2]
-      return SubCubeStatic{t,typeof(cube)}(cube,variable[1],
+      # This is a static cube and probably small enough to be in memory
+      c=SubCubeStatic{t,typeof(cube)}(cube,variable[1],
         (grid_y1,grid_y2,grid_x1,grid_x2),
         (y1,i1,y2,i2,ntime,NpY),
         LonAxis(x2lon(grid_x1,config):config.spatial_res:x2lon(grid_x2,config)),
-        LatAxis(y2lat(grid_y1,config):-config.spatial_res:y2lat(grid_y2,config)))
+        LatAxis(y2lat(grid_y1,config):-config.spatial_res:y2lat(grid_y2,config)),
+        properties)
+      d=readCubeData(c)
+      if haskey(known_labels,variable[1])
+        rem_keys = unique(d.data)
+        all_labels = known_labels[variable[1]]
+        left_labels = OrderedDict((k,all_labels[k]) for k in rem_keys if k<typemax(k))
+        d.properties["labels"]=left_labels
+        d.properties["name"]="Country"
+      end
+      return d
     else
       return SubCube{t,typeof(cube)}(cube,variable[1],
         (grid_y1,grid_y2,grid_x1,grid_x2),
         (y1,i1,y2,i2,ntime,NpY),
         LonAxis(x2lon(grid_x1,config):config.spatial_res:x2lon(grid_x2,config)),
         LatAxis(y2lat(grid_y1,config):-config.spatial_res:y2lat(grid_y2,config)),
-        TimeAxis(getTimeRanges(cube,y1,y2,i1,i2)))
+        TimeAxis(getTimeRanges(cube,y1,y2,i1,i2)),
+        properties)
     end
   else
     return SubCubeV{t,typeof(cube)}(cube,variable,
@@ -559,7 +578,8 @@ function getCubeData{T<:AbstractString}(cube::UCube,
       LonAxis(x2lon(grid_x1,config):config.spatial_res:x2lon(grid_x2,config)),
       LatAxis(y2lat(grid_y1,config):-config.spatial_res:y2lat(grid_y2,config)),
       TimeAxis(getTimeRanges(cube,y1,y2,i1,i2)),
-      VariableAxis(variableNew))
+      VariableAxis(variableNew),
+      properties)
   end
 end
 

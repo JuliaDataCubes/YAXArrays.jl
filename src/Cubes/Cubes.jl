@@ -79,9 +79,10 @@ type CubeMem{T,N} <: AbstractCubeMem{T,N}
   axes::Vector{CubeAxis}
   data::Array{T,N}
   mask::Array{UInt8,N}
+  properties::Dict{String}
 end
 
-
+CubeMem(axes::Vector{CubeAxis},data,mask) = CubeMem(axes,data,mask,Dict{String,Any}())
 Base.permutedims(c::CubeMem,p)=CubeMem(c.axes[collect(p)],permutedims(c.data,p),permutedims(c.mask,p))
 axes(c::CubeMem)=c.axes
 

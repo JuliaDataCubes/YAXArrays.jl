@@ -1,8 +1,20 @@
 """
+
+### List of Continents
+
+* Africa
+* Asia
+* Australia
+* Europe
+* North America
+* South America
+
+
 ### List of SREX regions
 
 | Short Name | Long Name |
 | --- | --- |
+
 |ALA|Alaska/N.W. Canada
 |AMZ|Amazon
 |CAM|Central America/Mexico
@@ -296,6 +308,13 @@
 |ZWE|Zimbabwe
 """
 const known_regions = Dict{String,NTuple{4,Float64}}(
+"Africa"=>(-17.0,-40.0,51.0,40.0),
+"Asia"=>(30.0,5.0,180.0,178.0),
+"Australia"=>(110.0,-40.0,155.0,-8.0),
+"Europe"=>(-10.0,35.0,33.0,70.0),
+"North America"=>(-168.0,10.0,-55.0,80.0),
+"South America"=>(-85.0,-60.0,-33.0,15.0),
+
   "Alaska/N.W. Canada" => (-168.0,60.0,-105.0,72.6),
   "ALA" => (-168.0,60.0,-105.0,72.6),
   "Amazon" => (-79.7,-20.0,-50.0,11.4),
