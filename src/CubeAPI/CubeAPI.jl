@@ -387,7 +387,7 @@ Returns a `SubCube` object which represents a view into the original data cube.
 function getCubeData(cube::UCube;variable=Int[],time=[],latitude=[],longitude=[],region=[])
   #First fill empty inputs
   isempty(variable)  && (variable = defaultvariable(cube))
-  isempty(time)      && (time     = defaulttime(cube,variable))
+  time==Int[]        && (time     = defaulttime(cube,variable))
   if !isempty(region)
     haskey(known_regions,region) || error("Region $region not recognized as a known place")
     ll = known_regions[region]

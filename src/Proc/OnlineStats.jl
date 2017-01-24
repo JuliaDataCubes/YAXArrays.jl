@@ -15,8 +15,8 @@ function DATfitOnline{T<:OnlineStat{OnlineStats.ScalarInput}}(xout::AbstractArra
 end
 
 function DATfitOnline{T<:OnlineStat{OnlineStats.ScalarInput}}(xout::AbstractArray{T},maskout,xin,maskin,splitmask,msplitmask,cfun)
-  for (mi,xi,si) in zip(maskin,xin,splitmask)
-      (mi & MISSING)==VALID && fit!(xout[cfun(si)],xi)
+  for (mi,xi,si,m2) in zip(maskin,xin,splitmask,msplitmask)
+      ((mi | m2) & MISSING)==VALID && fit!(xout[cfun(si)],xi)
   end
 end
 

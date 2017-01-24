@@ -249,4 +249,5 @@ Dict{Int32,String}(
 710 => "South Africa",
 894 => "Zambia",
 716 => "Zimbabwe",
+typemax(Int32) => "MISSING"
 )

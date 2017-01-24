@@ -14,7 +14,6 @@
 
 | Short Name | Long Name |
 | --- | --- |
-
 |ALA|Alaska/N.W. Canada
 |AMZ|Amazon
 |CAM|Central America/Mexico
