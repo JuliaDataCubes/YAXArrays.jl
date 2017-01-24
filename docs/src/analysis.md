@@ -82,10 +82,11 @@ statistics by a certain axis, it has to be specified using the `by` keyword argu
 `by` accepts a vector of axes types and up to one datacube that can serve as a mask. If such
 a data cube is supplied, the statistics are split by the unique values in the mask. One can pass
 a function `cfun` that transforms the mask values into an index in the range `1..N` that defines the   
-index where the new value is going to be put to. If a mask is supplied, one also needs to supply an
+index where the new value is going to be put to. If a mask is supplied, it must have either a `labels` property,
+which is a `Dict{T,String}` mapping the numerical mask value to the value name. Alternatively on can supply an
 `outAxis` argument that describes the resulting output axis.
 
-This all gets clearer with a little example. suppose we want to calculate the mean of GPP, NEE and TER
+This all gets clearer with two small examples. suppose we want to calculate the mean of GPP, NEE and TER
 under the condition that Tair<280K and Tair>280K over all time steps and grid cells. This is achieved through the
 following lines of code:
 
@@ -129,3 +130,17 @@ b=IOBuffer()
 show(b,MIME"text/html"(),p)
 Documenter.Documents.RawHTML(takebuf_string(b))
 ```
+
+A second example would be that we want to calculate averages of the fluxes according to
+a country mask.
+
+```julia
+import OnlineStats
+vars  = ["gross_primary_productivity","net_ecosystem_exchange","terrestrial_ecosystem_respiration"]
+m     = getCubeData(ds,variable="country_mask",longitude=lons,latitude=lats)
+cube  = getCubeData(ds,variable=vars,longitude=lons,latitude=lats)
+
+mT    = mapCube(OnlineStats.Mean,cube,by=[m,VariableAxis], cfun=splitTemp, outAxis=outAxis)
+```
+
+This will split the cube by country and variable and compute averages over the input variables.

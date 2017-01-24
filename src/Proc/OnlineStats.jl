@@ -15,8 +15,8 @@ function DATfitOnline{T<:OnlineStat{OnlineStats.ScalarInput}}(xout::AbstractArra
 end
 
 function DATfitOnline{T<:OnlineStat{OnlineStats.ScalarInput}}(xout::AbstractArray{T},maskout,xin,maskin,splitmask,msplitmask,cfun)
-  for (mi,xi,si) in zip(maskin,xin,splitmask)
-      (mi & MISSING)==VALID && fit!(xout[cfun(si)],xi)
+  for (mi,xi,si,m2) in zip(maskin,xin,splitmask,msplitmask)
+      ((mi | m2) & MISSING)==VALID && fit!(xout[cfun(si)],xi)
   end
 end
 
@@ -54,7 +54,7 @@ function DATfitOnline{T<:OnlineStats.VectorInput,U}(xout::AbstractArray{T},masko
 end
 
 function finalizeOnlineCube{T<:OnlineStat,N}(c::CubeMem{T,N})
-    CubeMem{Float32,N}(c.axes,map(OnlineStats.value,c.data),c.mask)
+    CubeMem(c.axes,map(OnlineStats.value,c.data),c.mask)
 end
 
 function mapCube{T<:OnlineStat}(f::Type{T},cdata::AbstractCubeData;by=CubeAxis[],max_cache=1e7,cfun=identity,outAxis=nothing,MDAxis=nothing,kwargs...)
@@ -67,7 +67,17 @@ function mapCube{T<:OnlineStat}(f::Type{T},cdata::AbstractCubeData;by=CubeAxis[]
   end
   bycubes=filter(i->!in(i,inaxtypes),collect(by))
   if length(bycubes)==1
-    outAxis==nothing && error("You have to specify an output axis")
+    if outAxis==nothing
+      if haskey(bycubes[1].properties,"labels")
+        idict=bycubes[1].properties["labels"]
+        axname=get(bycubes[1].properties,"name","Label")
+        outAxis=CategoricalAxis(axname,collect(values(idict)))
+        const convertdict=Dict(k=>i for (i,k) in enumerate(keys(idict)))
+        cfun=x->convertdict[x]
+      else
+        error("You have to specify an output axis")
+      end
+    end
     indata=(cdata,bycubes[1])
     isa(outAxis,DataType) && (outAxis=outAxis())
     outdims=(outAxis,)

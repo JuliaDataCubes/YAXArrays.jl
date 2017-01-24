@@ -101,7 +101,6 @@ CategoricalAxis(s::AbstractString,v::Vector)=CategoricalAxis(Symbol(s),v)
 
 @defineCatAxis Variable String
 @defineCatAxis SpatialPoint Tuple{Float64,Float64}
-@defineCatAxis Country String
 @defineCatAxis TimeScale String
 @defineCatAxis Quantile Float64
 

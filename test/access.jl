@@ -49,6 +49,14 @@ llcube = extractLonLats(data1,ll)
 @test llcube.data[2,:]==data1.data[3,1,:]
 @test llcube.data[3,:]==data1.data[4,1,:]
 
+
+#Test access datacube by region
+d3 = getCubeData(c,variable="gross_primary_productivity",region="Cambodia",time=DateTime("2005-01-01"))
+@test d3.axes==[LonAxis(102.25:0.25:107.25),LatAxis(14.75:-0.25:10.75)]
+
+
+
+
 #Test saving cubes
 dire=mktempdir()
 CABLABdir(dire)

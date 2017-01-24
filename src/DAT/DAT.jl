@@ -357,7 +357,7 @@ function generateOutCube(dc::DATConfig,gfun,T1,i)
     @inbounds for ii in eachindex(outar)
       outar[ii]=gfun(T1)
     end
-    dc.outcubes[i] = Cubes.CubeMem{T,length(newsize)}(dc.axlistOut[i], outar,zeros(UInt8,newsize...))
+    dc.outcubes[i] = Cubes.CubeMem(dc.axlistOut[i], outar,zeros(UInt8,newsize...))
   else
     error("return cube type not defined")
   end
