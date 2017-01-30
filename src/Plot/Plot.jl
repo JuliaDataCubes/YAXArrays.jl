@@ -260,20 +260,20 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
   sliceargs=Any[:(1:$nlon),:(1:$nlat)]
   fixedvarsEx=quote end
   if haskey(cube.properties,"labels")
-    labels = cube.properties["labels"]
+    labels   = cube.properties["labels"]
     push!(fixedvarsEx.args,:(labels=$labels))
-    _colorm=distinguishable_colors(length(labels)+2,[misscol,oceancol])[3:end]
-    colorm=Dict(k=>_colorm[i] for (i,k) in enumerate(keys(labels)))
-    colorm2=Dict(k=>_colorm[i] for (i,k) in enumerate(values(labels)))
-    rgbarEx = :(rgbar=getRGBAR(a,m,colorm,misscol,oceancol,nx,ny))
-    legEx = :(getlegend(colorm2,legwidth))
-    mimaex = :(colorm2=$colorm2)
+    _colorm  = distinguishable_colors(length(labels)+2,[misscol,oceancol])[3:end]
+    colorm   = Dict(k=>_colorm[i] for (i,k) in enumerate(keys(labels)))
+    colorm2  = Dict(k=>_colorm[i] for (i,k) in enumerate(values(labels)))
+    rgbarEx  = :(rgbar=getRGBAR(a,m,colorm,misscol,oceancol,nx,ny))
+    legEx    = :(getlegend(colorm2,legwidth))
+    mimaex   = :(colorm2=$colorm2)
     legPosEx = :(legPos=:right)
   else
-    labels=nothing
-    mimaex =  dmin==dmax ? :((mi,ma)=getMinMax(a,m,symmetric=$symmetric)) : :(mi=$(dmin);ma=$(dmax))
-    rgbarEx = :(rgbar=getRGBAR(a,m,colorm,convert($T,mi),convert($T,ma),misscol,oceancol,nx,ny))
-    legEx = :(getlegend(mi,ma,colorm,legheight))
+    labels   = nothing
+    mimaex   = dmin==dmax ? :((mi,ma)=getMinMax(a,m,symmetric=$symmetric)) : :(mi=$(dmin);ma=$(dmax))
+    rgbarEx  = :(rgbar=getRGBAR(a,m,colorm,convert($T,mi),convert($T,ma),misscol,oceancol,nx,ny))
+    legEx    = :(getlegend(mi,ma,colorm,legheight))
     legPosEx = :(legPos=:bottom)
   end
   fixedAxes=CubeAxis[]

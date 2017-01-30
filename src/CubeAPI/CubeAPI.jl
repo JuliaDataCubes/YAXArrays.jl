@@ -24,6 +24,7 @@ end
 #This is probably not the final solution, we define a set of static variables that are treated differently when reading
 const static_vars = Set(["water_mask","country_mask"])
 const countrylabels = include("countrylabels.jl")
+include("vardict.jl")
 const known_labels = Dict("water_mask"=>Dict(0x01=>"land",0x02=>"water"),"country_mask"=>countrylabels)
 
 "
@@ -516,11 +517,27 @@ function getvartype(cube::RemoteCube,variable)
   eltype(NetCDF.open(datafile,variable))
 end
 
+function expandknownvars{T}(v::Array{T})
+  vnew = T[]
+  for iv in v
+    if haskey(known_vargroups,iv)
+      for iiv in known_vargroups[iv]
+        push!(vnew,iiv)
+      end
+    else
+      push!(vnew,iv)
+    end
+  end
+  vnew
+end
+
 function getCubeData{T<:AbstractString}(cube::UCube,
   variable::Vector{T},
   time::Tuple{TimeType,TimeType},
   longitude::Tuple{Real,Real},
   latitude::Tuple{Real,Real})
+
+  variable = expandknownvars(variable)
 
   config=cube.config
 
