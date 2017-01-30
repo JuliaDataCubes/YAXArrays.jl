@@ -828,7 +828,7 @@ function readFromDataYear{T}(cube::Cube,outar::AbstractArray{T,3},mask::Abstract
   @assert nx==size(outar,1)
   @assert size(outar)==size(mask)
   if isfile(filename)
-    v=NetCDF.open(filename,variable)
+    v=convert(NcVar{T},NetCDF.open(filename,variable))
     scalefac::T = convert(T,get(v.atts,"scale_factor",one(T)))
     offset::T   = convert(T,get(v.atts,"add_offset",zero(T)))
     NetCDF.readvar!(v,view(outar,:,:,itcur:(itcur+nt-1)),start=[grid_x1,grid_y1,i1cur],count=[nx,ny,nt])
