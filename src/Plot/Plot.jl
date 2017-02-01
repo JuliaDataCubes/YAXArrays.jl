@@ -10,14 +10,16 @@ import ..Cubes.Axes.axname
 import Reactive: Signal
 import Interact: slider, dropdown, signal, togglebutton, togglebuttons
 import Vega: lineplot, barplot, groupedbar, scatterplot, xlab!, ylab!
-import Images: Image
-import Colors: RGB, @colorant_str, colormap,  U8, distinguishable_colors
+import Colors: RGB, @colorant_str, colormap,  distinguishable_colors
+import FixedPointNumbers: Normed
 import Base.Cartesian: @ntuple,@nexprs
 import Patchwork.load_js_runtime
 import Measures
 import Compose
+import Images
 import DataStructures: OrderedDict
 
+typealias U8 Normed{UInt8,8}
 #import Patchwork.load_js_runtime
 ga=[]
 
@@ -320,7 +322,7 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
     $rgbarEx
     $legPosEx
     pngbuf=IOBuffer()
-    show(pngbuf,"image/png",Image(rgbar,Dict("spatialorder"=>["x","y"])))
+    show(pngbuf,"image/png",rgbar)
     legheight=legPos==:bottom ? max(0.1*Measures.h,1.6Measures.cm) : 0Measures.h
     legwidth =legPos==:right  ? max(0.2*Measures.w,3.2Measures.cm) : 0Measures.w
     themap=compose(context(0,0,1Measures.w-legwidth,1Measures.h-legheight),bitmap("image/png",pngbuf.data,0,0,1,1))
@@ -337,8 +339,8 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
   myfun=eval(:($(pf)()=$liftex))
   myfun()
 end
-@noinline getRGBAR(a,m,colorm,mi,ma,misscol,oceancol,nx,ny)=RGB{U8}[val2col(a[i,j],m[i,j],colorm,mi,ma,misscol,oceancol) for i=1:nx,j=1:ny]
-@noinline getRGBAR(a,m,colorm::Dict,misscol,oceancol,nx,ny)=RGB{U8}[val2col(a[i,j],m[i,j],colorm,misscol,oceancol) for i=1:nx,j=1:ny]
+@noinline getRGBAR(a,m,colorm,mi,ma,misscol,oceancol,nx,ny)=RGB{U8}[val2col(a[i,j],m[i,j],colorm,mi,ma,misscol,oceancol) for j=1:ny,i=1:nx]
+@noinline getRGBAR(a,m,colorm::Dict,misscol,oceancol,nx,ny)=RGB{U8}[val2col(a[i,j],m[i,j],colorm,misscol,oceancol) for j=1:ny,i=1:nx]
 
 import Showoff.showoff
 function getlegend(xmin,xmax,colm,legheight)
