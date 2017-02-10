@@ -135,6 +135,8 @@ const regDict=Dict{Function,DATFunction}()
 
 getOuttype(outtype::Type{Any},cdata)=isa(cdata,AbstractCubeData) ? eltype(cdata) : eltype(cdata[1])
 getOuttype(outtype,cdata)=outtype
+getInAxes(indims::Tuple{}, cdata::AbstractCubeData)=getInAxes((indims,),(cdata,))
+getInAxes(indims::Tuple{}, cdata::Tuple)=getInAxes((indims,),cdata)
 getInAxes(indims::Tuple{Vararg{DataType}},cdata)=getInAxes((indims,),cdata)
 getInAxes(indims::Tuple{Vararg{Tuple{Vararg{DataType}}}},cdata::AbstractCubeData)=getInAxes(indims,(cdata,))
 function getInAxes(indims::Tuple{Vararg{Tuple{Vararg{DataType}}}},cdata::Tuple)
@@ -249,9 +251,14 @@ function mapCube(fu::Function,
     retCubeType=getReg(fuObj,:retCubeType,cdata,length(outdims)),
     ispar=nprocs()>1,
     outBroadCastAxes=Vector{CubeAxis}[CubeAxis[] for i=1:length(outdims)],
+    debug=false,
     kwargs...)
   @debug_print "Generating DATConfig"
-  dc=DATConfig(cdata,getInAxes(indims,cdata),getOutAxes(outdims,cdata,addargs),map(i->getOuttype(i,cdata),outtype),max_cache,fu,inmissing,outmissing,no_ocean,inplace,genOut,outfolder,finalizeOut,retCubeType,outBroadCastAxes,ispar,addargs,kwargs)
+  dc=DATConfig(cdata,
+    getInAxes(indims,cdata),
+    getOutAxes(outdims,cdata,addargs),
+    map(i->getOuttype(i,cdata),outtype),
+    max_cache,fu,inmissing,outmissing,no_ocean,inplace,genOut,outfolder,finalizeOut,retCubeType,outBroadCastAxes,ispar,addargs,kwargs)
   analyseaddargs(fuObj,dc)
   @debug_print "Reordering Cubes"
   reOrderInCubes(dc)
@@ -264,6 +271,7 @@ function mapCube(fu::Function,
   @debug_print "Generating cube handles"
   getCubeHandles(dc)
   @debug_print "Running main Loop"
+  debug && return(dc)
   runLoop(dc)
   @debug_print "Finalizing Output Cube"
 
@@ -417,9 +425,13 @@ end
 function analyzeAxes(dc::DATConfig)
   #First check if one of the axes is a concrete type
   for icube=1:dc.NIN
+    println("Before $icube ",dc.LoopAxes)
+    println(dc.inAxes)
     for a in dc.axlists[icube]
       in(a,dc.inAxes[icube]) || in(a,dc.LoopAxes) || push!(dc.LoopAxes,a)
     end
+    println("After $icube ",dc.LoopAxes)
+    println(dc.inAxes)
   end
   #Try to construct outdims
   for ioutcube=1:length(dc.outAxes)

@@ -15,7 +15,26 @@ d2=readCubeData(d)
 @test_approx_eq mean(d2.data) oo.data[1]
 @test_approx_eq mean(d2.data,(1,3))[:] oo2.data
 
+#Test KMeans
+d2 = getCubeData(c,variable=["air_temperature_2m","gross_primary_productivity"],longitude=(30,31),latitude=(50,51),
+              time=(DateTime("2002-01-01"),DateTime("2008-12-31")))
+x=mapCube(KMeans,d2,5,MDAxis=VariableAxis)
+
+dm=readCubeData(d2)
+srand(190283)
+xin=permutedims(dm.data,[4,1,2,3])
+xin=reshape(xin,(2,length(xin) ÷ 2))
+o2=KMeans(2,5,EqualWeight())
+fit!(o2,xin')
+@test all(isapprox.(OnlineStats.value(o2),x.data))
+
+#Test covariance Matrix
+covmat = mapCube(CovMatrix,dm,MDAxis=VariableAxis)
+covmat.data
+@test all(isapprox.(covmat.data,cov(reshape(dm.data,length(dm.data) ÷ 2,2))))
+
 srand(1)
+d2=readCubeData(d)
 mask=CubeMem(d2.axes,rand(1:10,size(d2.data)),zeros(UInt8,size(d2.data)),Dict("labels"=>Dict(i=>string(i) for i=1:10)))
 mask2=CubeMem(d2.axes[1:2],rand(1:10,4,4),zeros(UInt8,4,4),Dict("labels"=>Dict(i=>string(i) for i=1:10)))
 

@@ -165,9 +165,9 @@ function RemoteCube(;resolution="low",url="http://www.brockmann-consult.de/cabla
   testDAP() || error("NetCDF built without DAP support. Accessing remote cubes is not possible.")
   resExt=resolution=="high" ? "fileServer/datacube/high-res/cube.config" : "fileServer/datacube/low-res/cube.config"
   res=get(string(url,"catalog.xml"))
-  xconfig=split(readall(get(string(url,resExt))),"\n")
+  xconfig=split(readstring(get(string(url,resExt))),"\n")
   config=parseConfig(xconfig)
-  xmldoc=parse_string(readall(res));
+  xmldoc=parse_string(readstring(res));
   xroot=root(xmldoc)
   datasets=get_elements_by_tagname(xroot,"dataset")
   ds=datasets[findfirst(map(x->startswith(lowercase(attribute(x,"name")),resolution),datasets))]

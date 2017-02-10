@@ -79,7 +79,7 @@ of the aliases:
 * `MSCAxis` time step inside a year (for seasonal statistics)
 
 """
-abstract CubeAxis{T} <: AbstractCubeMem{T,1}
+abstract CubeAxis{T,S} <: AbstractCubeMem{T,1}
 
 """
     CategoricalAxis{T,S}
@@ -91,7 +91,7 @@ The default constructor is:
     CategoricalAxis(axname::String,values::Vector{T})
 
 """
-immutable CategoricalAxis{T,S} <: CubeAxis{T}
+immutable CategoricalAxis{T,S} <: CubeAxis{T,S}
   values::Vector{T}
 end
 
@@ -115,7 +115,7 @@ The default constructor is:
     RangeAxis(axname::String,values::Range{T})
 
 """
-immutable RangeAxis{T,S,R} <: CubeAxis{T}
+immutable RangeAxis{T,S,R} <: CubeAxis{T,S}
   values::R
 end
 RangeAxis{T}(s::Symbol,v::Range{T})=RangeAxis{T,s,typeof(v)}(v)
