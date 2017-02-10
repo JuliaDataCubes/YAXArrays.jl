@@ -246,6 +246,7 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
   axlist=axes(cube)
   ilon=findfirst(a->isa(a,LonAxis),axlist)
   ilat=findfirst(a->isa(a,LatAxis),axlist)
+  props=cube.properties
   p=getFrontPerm(cube,(axlist[ilon],axlist[ilat]))
   (p[1]==1 && p[2]==2) || (cube=permutedims(cube,p))
   axlist=axes(cube)
@@ -261,8 +262,8 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
   subcubedims[2]=nlat
   sliceargs=Any[:(1:$nlon),:(1:$nlat)]
   fixedvarsEx=quote end
-  if haskey(cube.properties,"labels")
-    labels   = cube.properties["labels"]
+  if haskey(props,"labels")
+    labels = props["labels"]
     push!(fixedvarsEx.args,:(labels=$labels))
     _colorm  = distinguishable_colors(length(labels)+2,[misscol,oceancol])[3:end]
     colorm   = Dict(k=>_colorm[i] for (i,k) in enumerate(keys(labels)))
