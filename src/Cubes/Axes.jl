@@ -1,7 +1,7 @@
 module Axes
 export CubeAxis, QuantileAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis,
 SpatialPointAxis,Axes,YearStepRange,CategoricalAxis,RangeAxis,axVal2Index,MSCAxis,
-TimeScaleAxis, axname
+TimeScaleAxis, axname, @caxis_str
 import NetCDF.NcDim
 importall ..Cubes
 using Base.Dates
@@ -138,11 +138,31 @@ axname{T,S}(::RangeAxis{T,S})=string(S)
 axunits(::CubeAxis)="unknown"
 axunits(::LonAxis)="degrees_east"
 axunits(::LatAxis)="degrees_north"
-axVal2Index{T,S,F<:FloatRange}(axis::RangeAxis{T,S,F},v)=min(max(round(Int,(v-first(axis.values))/step(axis.values))+1,1),length(axis))
-axVal2Index(x,v)=min(max(v,1),length(x))
+axVal2Index{T,S,F<:FloatRange}(axis::RangeAxis{T,S,F},v;fuzzy::Bool=false)=min(max(round(Int,(v-first(axis.values))/step(axis.values))+1,1),length(axis))
+function axVal2Index(axis::CategoricalAxis{String},v::String;fuzzy::Bool=false)
+  r=findfirst(axis.values,v)
+  if r==0
+    if fuzzy
+      r=find(i->startswith(lowercase(i),lowercase(v)),axis.values)
+      if length(r)==1
+        return(r[1])
+      else
+        error("Could not find unique value of $v in $axis")
+      end
+    else
+      error("$v not found in $axis")
+    end
+  end
+  r
+end
+axVal2Index(x,v;fuzzy::Bool=false)=min(max(v,1),length(x))
 
 getSubRange(x::CubeAxis,i)=x[i],nothing
 getSubRange(x::TimeAxis,i)=sub(x,i),nothing
+
+macro caxis_str(s)
+  :(CategoricalAxis{String,$(QuoteNode(Symbol(s)))})
+end
 
 import Base.==
 ==(a::CubeAxis,b::CubeAxis)=a.values==b.values

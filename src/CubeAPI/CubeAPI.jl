@@ -875,10 +875,10 @@ function readFromDataYear{T}(cube::Cube,outar::AbstractArray{T,3},mask::Abstract
   include("CachedArrays.jl")
   importall .CachedArrays
 
-  function getMemHandle{T}(cube::AbstractCubeData{T},nblock,block_size)
-    CachedArray(cube,nblock,block_size,CachedArrays.MaskedCacheBlock{T,length(block_size)})
+  function getMemHandle{T}(cube::AbstractCubeData{T},nblock,block_size;startInd::Int=1)
+    CachedArray(cube,nblock,block_size,CachedArrays.MaskedCacheBlock{T,length(block_size)},startInd=startInd)
   end
-  getMemHandle(cube::AbstractCubeMem,nblock,block_size)=cube
+  getMemHandle(cube::AbstractCubeMem,nblock,block_size;startInd::Int=1)=cube
 
 
 end
