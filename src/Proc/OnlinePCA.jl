@@ -1,27 +1,23 @@
-using CABLAB
-import CABLAB: AbstractCubeData, getAxis, axname, axes
-import CABLAB.CABLABTools: totuple
-using CABLAB.Mask
 using OnlineStats
 using MultivariateStats
-
+export cubePCA, rotation_matrix, transformPCA, explained_variance
 function pcafromcov(xout,maskout,covs,covmask,means,meanmask;pratio=0.9,maxoutdim=3)
     if (covmask[1] & MISSING)==0x00
-        xout[1] = pcacov(covs,means,pratio=pratio,maxoutdim=maxoutdim)
+        xout[1] = pcacov(covs,copy(means),pratio=pratio,maxoutdim=maxoutdim)
         maskout[1] = VALID
     else
         maskout[1] = covmask[1]
     end
 end
 
-function pcapredict(xout,xin::Union{Vector,Matrix},pcain,pcamask)
+function pcapredict(xout,xin::Union{Vector,Matrix},pcain,pcamask,cfun)
     if (pcamask[1] & MISSING)==0x00
         xout[:] = transform(pcain,xin)
     else
         xout[:] = NaN
     end
 end
-function pcapredict(xout,xin::Array,pcain,pcamask)
+function pcapredict(xout,xin::Array,pcain,pcamask,cfun)
     xout2 = reshape(xout,(size(xout,1),length(xout)÷size(xout,1)))
     xin2 = reshape(xin,(size(xin,1),length(xin)÷size(xin,1)))
     if (pcamask[1] & MISSING)==0x00
@@ -31,7 +27,7 @@ function pcapredict(xout,xin::Array,pcain,pcamask)
     end
 end
 function pcapredict(xout,xin::Union{Vector,Matrix},pcain,pcamask,by,bymask,cfun::Function)
-    if (pcamask[1] & MISSING)==0x00
+    if ((pcamask[1] | bymask) & MISSING)==0x00
         xout[:] = transform(pcain[cfun(by)],xin)
     else
         xout[:] = NaN
@@ -43,8 +39,12 @@ function pcapredict(xout,xin::Array,pcain,pcamask,by,bymask,cfun::Function)
     xhelp = zeros(eltype(xin),size(xin,1))
     if (pcamask[1] & MISSING)==0x00
       for i=1:size(xin2,2)
-        copy!(xhelp,view(xin2,:,i))
-        xout2[:,i] = transform(pcain[cfun(by[i])],xhelp)
+        if ((bymask[i] & MISSING)==0x00)
+          copy!(xhelp,view(xin2,:,i))
+          xout2[:,i] = transform(pcain[cfun(by[i])],xhelp)
+        else
+          xout2[:,i] = NaN
+        end
       end
     else
         xout2[:] = NaN
@@ -72,19 +72,21 @@ function show(io::IO,c::OnlinePCA)
 end
 PCAxis(n)=CategoricalAxis("PC",["PC $i" for i=1:n])
 function cubePCA(cube::AbstractCubeData;MDAxis=VariableAxis,by=CubeAxis[],max_cache=1e7,noutdims=3,kwargs...)
-    covmat,means = mapCube(CovMatrix,d,MDAxis=MDAxis,by=by)
+    covmat,means = mapCube(CovMatrix,cube,MDAxis=MDAxis,by=by)
     varAx  = getAxis(MDAxis,cube)
     varAx1 = isa(varAx,CategoricalAxis) ? CategoricalAxis(string(axname(varAx)," 1"),varAx.values) : RangeAxis(string(axname(varAx)," 1"),varAx.values)
     varAx2 = isa(varAx,CategoricalAxis) ? CategoricalAxis(string(axname(varAx)," 2"),varAx.values) : RangeAxis(string(axname(varAx)," 2"),varAx.values)
     T      = eltype(covmat)
+
     pcares = mapCube(pcafromcov,(covmat,means),indims=((typeof(varAx1),typeof(varAx2)),(MDAxis,)),outdims=((),),outtype=(PCA{T},),
-                genOut=(i->PCA(zeros(T,0),zeros(T,0,0),zeros(T,0),zero(T),zero(T)),);maxoutdim=noutdims,pratio=1.0,kwargs...)
+                genOut=(i->PCA(zeros(T,0),zeros(T,0,0),zeros(T,0),zero(T),zero(T)),);maxoutdim=noutdims,pratio=1.0)
     return OnlinePCA(pcares,noutdims,varAx,varAx1,varAx2,filter(i->!isa(i,DataType),by))
 end
 function transformPCA(pca::OnlinePCA,c::AbstractCubeData;max_cache=1e7,kwargs...)
     #Now determine how to brodcast for projection
     forbiddenAxes = CubeAxis[pca.varAx]
-    push!(forbiddenAxes,filter(i->in(i,axes(pca.PCA)),axes(c))...)
+    axl=filter(i->in(i,axes(pca.PCA)),axes(c))
+    isempty(axl) || push!(forbiddenAxes,axl...)
     if length(pca.bycube)==1
       # We have to decide if the pca is already split along the bycube or not
       haskey(pca.bycube[1].properties,"labels") || error("By cube does not have a label property")

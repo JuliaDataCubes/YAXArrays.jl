@@ -18,6 +18,7 @@ import Measures
 import Compose
 import Images
 import DataStructures: OrderedDict
+import Suppressor: @suppress
 
 typealias U8 Normed{UInt8,8}
 #import Patchwork.load_js_runtime
@@ -124,7 +125,10 @@ function plotXY{T}(cube::AbstractCubeData{T};group=0,xaxis=-1,kwargs...)
       push!(signals,signal(w))
       push!(argvars,Symbol(string("v_",i)))
     end
+  else
+    igroup==0 && push!(fixedvarsEx.args,:(igroup=0))
   end
+
   nax=length(axlist)
 
   plotfun2=quote
@@ -144,10 +148,10 @@ function plotXY{T}(cube::AbstractCubeData{T};group=0,xaxis=-1,kwargs...)
       plotf = isa(axlist[ixaxis],CategoricalAxis) ? groupedbar : lineplot
       jgroup=count_to(x->isa(x,Range),sliceargs,igroup)
       gvals=repAx(dataslice,jgroup,prepAx(axlist[igroup]))
-      p=plotf(x=xvals,y=yvals,group=gvals)
+      p=@suppress plotf(x=xvals,y=yvals,group=gvals)
     else
       plotf = isa(axlist[ixaxis],CategoricalAxis) ? barplot : lineplot
-      p=plotf(x=xvals,y=yvals)
+      p=@suppress plotf(x=xvals,y=yvals)
     end
     p
   end

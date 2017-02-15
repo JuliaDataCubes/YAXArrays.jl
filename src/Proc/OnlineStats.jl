@@ -34,18 +34,15 @@ function DATfitOnline{T<:OnlineStat{OnlineStats.VectorInput},U}(xout::AbstractAr
     end
 end
 
-
 function DATfitOnline{T<:OnlineStat{OnlineStats.VectorInput},U}(xout::AbstractArray{T},maskout,xin::AbstractArray{U},maskin,splitmask,msplitmask,cfun)
   offs=1
   offsinc=size(xin,1)
   xtest=zeros(U,offsinc)
   mtest=zeros(UInt8,offsinc)
-  for (offsin,i) in zip(1:offsinc:length(xin),1:length(splitmask))
-      for j=1:offsinc
-        xtest[j]=xin[offsin+j-1]
-        mtest[j]=maskin[offsin+j-1]
-      end
-      all(m->(m & MISSING)==VALID,mtest) && fit!(xout[cfun(splitmask[i])],xtest)
+  for (offsin,si) in zip(1:offsinc:length(xin),1:length(splitmask))
+    copy!(xtest,1,xin,offsin,offsinc)
+    copy!(mtest,1,maskin,offsin,offsinc)
+    ((msplitmask[si] & MISSING)==VALID) && all(m->(m & MISSING)==VALID,mtest) && fit!(xout[cfun(splitmask[si])],xtest)
   end
 end
 

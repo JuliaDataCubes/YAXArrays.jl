@@ -425,13 +425,9 @@ end
 function analyzeAxes(dc::DATConfig)
   #First check if one of the axes is a concrete type
   for icube=1:dc.NIN
-    println("Before $icube ",dc.LoopAxes)
-    println(dc.inAxes)
     for a in dc.axlists[icube]
       in(a,dc.inAxes[icube]) || in(a,dc.LoopAxes) || push!(dc.LoopAxes,a)
     end
-    println("After $icube ",dc.LoopAxes)
-    println(dc.inAxes)
   end
   #Try to construct outdims
   for ioutcube=1:length(dc.outAxes)
