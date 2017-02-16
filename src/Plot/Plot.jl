@@ -372,9 +372,9 @@ function plotMAPRGB{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(
   dmin,dmax = typed_dminmax2(T,dmin,dmax)
   axlist    = axes(cube)
 
-  irgb = findfirst(a->isa(a,rgbAxis),axlist)
-  ilon = findfirst(a->isa(a,LonAxis),axlist)
-  ilat = findfirst(a->isa(a,LatAxis),axlist)
+  irgb = findAxis(rgbAxis,axlist)
+  ilon = findAxis(LonAxis,axlist)
+  ilat = findAxis(LatAxis,axlist)
 
   p    = getFrontPerm(cube,(axlist[irgb],axlist[ilon],axlist[ilat]))
   (p[1]==1 && p[2]==2 && p[3]==3) || (cube=permutedims(cube,p))

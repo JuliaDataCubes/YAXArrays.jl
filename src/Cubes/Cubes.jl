@@ -117,7 +117,7 @@ import ..CABLABTools.toRange
 function _read(c::CubeMem,thedata::NTuple{2},r::CartesianRange)
   outar,outmask=thedata
   data=view(c.data,toRange(r)...)
-  mask=view(c.data,toRange(r)...)
+  mask=view(c.mask,toRange(r)...)
   copy!(outar,data)
   copy!(outmask,mask)
 end

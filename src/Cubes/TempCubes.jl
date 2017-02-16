@@ -193,4 +193,6 @@ function loadCube(name::AbstractString)
   openTempCube(newfolder)
 end
 
+function rmCube()
+
 end #module

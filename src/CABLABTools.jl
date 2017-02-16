@@ -1,5 +1,6 @@
 module CABLABTools
-export mypermutedims!, totuple, freshworkermodule, passobj, @everywhereelsem, toRange, getiperm, CItimes, CIdiv
+import ..CABLAB: CABLABdir
+export mypermutedims!, totuple, freshworkermodule, passobj, @everywhereelsem, toRange, getiperm, CItimes, CIdiv, @loadOrGenerate
 # SOme global function definitions
 
 function getiperm(perm)
@@ -121,9 +122,33 @@ macro everywhereelsem(ex)
             Base.async_run_thunk(()->remotecall_fetch(thunk,pid))
             yield() # ensure that the remotecall_fetch has been started
         end
-
         Base.sync_end()
         end
     end
+end
+
+macro loadOrGenerate(x...)
+  code=x[end]
+  x=x[1:end-1]
+  x2=map(x) do i
+    isa(i,Symbol) ? (i,string(i)) : i.head==:(=>) ? (i.args[1],i.args[2]) : error("Wrong Argument type")
+  end
+  xnames=map(i->i[2],x2)
+  loadEx=map(x2) do i
+    :($(i[1]) = loadCube($(i[2])))
+  end
+  loadEx=Expr(:block,loadEx...)
+  saveEx=map(x2) do i
+    :(saveCube($(i[1]),$(i[2])))
+  end
+  saveEx=Expr(:block,saveEx...)
+  esc(quote
+    if !CABLAB.recalculate() && all(i->isdir(joinpath(CABLABdir(),i)),$xnames)
+      $loadEx
+    else
+      $code
+      $saveEx
+    end
+  end)
 end
 end

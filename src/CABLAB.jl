@@ -16,10 +16,14 @@ export DAT_detectAnomalies!, removeMSC, gapFillMSC, normalizeTS,DATfitOnline,
   timelonlatquantiles, getMedSC, extractLonLats,
   cubePCA, rotation_matrix, transformPCA, explained_variance #From Proc module
 export TempCube, openTempCube # From CachedArrays
+export @loadOrGenerate # from CABLAB Tools
 
 global const workdir=String["./"]
+global const recal=Bool[false]
 haskey(ENV,"CABLAB_WORKDIR") && (workdir[1]=ENV["CABLAB_WORKDIR"])
 CABLABdir(x::String)=workdir[1]=x
+recalculate(x::Bool)=recal[1]=x
+recalculate()=recal[1]
 CABLABdir()=workdir[1]
 export CABLABdir
 
@@ -40,6 +44,6 @@ function Base.show(io::IO, m::MIME"text/html", v::VegaVisualization)
 end
 end
 
-importall .Cubes, .CubeAPI, .DAT, .Proc, .Plot
+importall .Cubes, .CubeAPI, .DAT, .Proc, .Plot, .CABLABTools
 
 end # module
