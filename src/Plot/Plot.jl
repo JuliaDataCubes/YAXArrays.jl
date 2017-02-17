@@ -312,8 +312,8 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
   plotfun=quote
     axlist=axes(cube)
     $fixedvarsEx
-    subcubedims = @ntuple $nax d->(d==$ilon || d==$ilat) ? length(axlist[d]) : 1
-    sliceargs  = @ntuple $nax d->(d==$ilon || d==$ilat) ? (1:length(axlist[d])) : axVal2Index(axlist[d],v_d,fuzzy=true)
+    subcubedims = @ntuple $nax d->(d==1 || d==2) ? length(axlist[d]) : 1
+    sliceargs  = @ntuple $nax d->(d==1 || d==2) ? (1:length(axlist[d])) : axVal2Index(axlist[d],v_d,fuzzy=true)
     ca = getMemHandle(cube,1,CartesianIndex(subcubedims))
     a,m=getSubRange(ca,sliceargs...)
     nx,ny=size(a)

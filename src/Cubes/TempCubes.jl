@@ -2,6 +2,7 @@ module TempCubes
 export TempCube, openTempCube, TempCubePerm, saveCube, loadCube,rmCube
 importall ..Cubes
 importall ...CABLABTools
+import ....CABLAB.CABLABdir
 
 "This defines a temporary datacube, written on disk which is usually "
 abstract AbstractTempCube{T,N} <: AbstractCubeData{T,N}
@@ -135,8 +136,8 @@ function cleanTempCube(y::TempCube)
 end
 
 function rmCube(f::String)
-  if isdir(f)
-    y=openTempCube(f,persist=false)
+  if isdir(joinpath(CABLABdir(),f))
+    y=openTempCube(joinpath(CABLABdir(),f),persist=false)
     cleanTempCube(y)
   end
 end

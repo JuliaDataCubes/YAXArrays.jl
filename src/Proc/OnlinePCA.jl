@@ -36,6 +36,7 @@ end
 function pcapredict(xout,xin::Array,pcain,pcamask,by,bymask,cfun::Function)
     xout2 = reshape(xout,(size(xout,1),length(xout)÷size(xout,1)))
     xin2 = reshape(xin,(size(xin,1),length(xin)÷size(xin,1)))
+    @assert size(xout2,2)==size(xin2,2)
     xhelp = zeros(eltype(xin),size(xin,1))
     if (pcamask[1] & MISSING)==0x00
       for i=1:size(xin2,2)
@@ -51,11 +52,20 @@ function pcapredict(xout,xin::Array,pcain,pcamask,by,bymask,cfun::Function)
     end
 end
 function explained_variance(xout,xin,inmask)
-    xout[:] = principalvars(xin)
-    xout[:] = xout/sum(xout)
+  pv = principalvars(xin)
+  if size(pv)==size(xout)
+    xout[:] = pv/sum(pv)
+  else
+    xout[:] = NaN
+  end
 end
 function rotation(xout,xin,inmask)
-    xout[:,:] = projection(xin)
+  p=projection(xin)
+  if size(p)==size(xout)
+    xout[:]=p
+  else
+    xout[:]=NaN
+  end
 end
 
 type OnlinePCA
