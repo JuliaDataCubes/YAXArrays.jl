@@ -15,7 +15,7 @@ export DAT_detectAnomalies!, removeMSC, gapFillMSC, normalizeTS,DATfitOnline,
   sampleLandPoints, toPointAxis, getMSC, filterTSFFT, getNpY,timespacequantiles,
   timelonlatquantiles, getMedSC, extractLonLats,
   cubePCA, rotation_matrix, transformPCA, explained_variance #From Proc module
-export TempCube, openTempCube # From CachedArrays
+export TempCube, openTempCube, rmCube # From CachedArrays
 export @loadOrGenerate # from CABLAB Tools
 
 global const workdir=String["./"]
