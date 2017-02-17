@@ -21,6 +21,11 @@ Pages = [
 Depth = 1
 ```
 
+## Acknowledgements
+
+The development of this package was funded by ESA STSE and implemented by
+the Max-Planck-Institute for Biogeochemistry.
+
 ## Index
 
 ```@index

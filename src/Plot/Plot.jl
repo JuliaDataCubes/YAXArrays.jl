@@ -1,5 +1,5 @@
 module Plot
-export plotTS, plotMAP, plotXY, plotScatter
+export plotTS, plotMAP, plotXY, plotScatter, plotMAPRGB
 importall ..Cubes
 importall ..CubeAPI
 importall ..CubeAPI.Mask

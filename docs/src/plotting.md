@@ -37,6 +37,26 @@ plotMAP(cdata,time=1,var=1)
 Inside a Jupyter notebook, the keyword arguments can be omitted and sliders or
 dropdown menus will be shown to select the desired values.
 
+### RGB Maps
+
+A common method to plot several variables at once in a single map is an RGB map.
+This is possible through the plotMAPRGB function.
+
+```docs
+plotMAPRGB
+```
+
+For example, if we want to plot GPP, NEE and TER as an RGB map for South America,
+we can do the following:
+
+```@example 1
+d=getCubeData(c,variable="Biosphere",region="South America")
+plotMAPRGB(d,r="gross_primary_productivity",
+             g="net_ecosystem_exchange",
+             b="terrestrial_ecosystem_respiration",
+             time=100)
+```
+
 ## Other plots
 
 ### XY plots

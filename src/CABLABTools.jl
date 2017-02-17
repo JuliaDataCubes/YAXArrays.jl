@@ -141,11 +141,15 @@ macro loadOrGenerate(x...)
   saveEx=map(x2) do i
     :(saveCube($(i[1]),$(i[2])))
   end
-  saveEx=Expr(:block,saveEx...)
+  rmEx=map(x2) do i
+    :(rmCube($(i[2])))
+  end
+  rmEx=Expr(:block,rmEx...)
   esc(quote
     if !CABLAB.recalculate() && all(i->isdir(joinpath(CABLABdir(),i)),$xnames)
       $loadEx
     else
+      $rmEx
       $code
       $saveEx
     end

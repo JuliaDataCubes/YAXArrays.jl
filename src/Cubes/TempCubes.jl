@@ -1,5 +1,5 @@
 module TempCubes
-export TempCube, openTempCube, TempCubePerm, saveCube, loadCube
+export TempCube, openTempCube, TempCubePerm, saveCube, loadCube,rmCube
 importall ..Cubes
 importall ...CABLABTools
 
@@ -134,6 +134,13 @@ function cleanTempCube(y::TempCube)
   end
 end
 
+function rmCube(f::String)
+  if isdir(f)
+    y=openTempCube(f,persist=false)
+    cleanTempCube(y)
+  end
+end
+
 function _read{N}(y::TempCube,thedata::NTuple{2},r::CartesianRange{CartesianIndex{N}})
   data,mask=thedata
   unit=CartesianIndex{N}()
@@ -193,6 +200,5 @@ function loadCube(name::AbstractString)
   openTempCube(newfolder)
 end
 
-function rmCube()
 
 end #module
