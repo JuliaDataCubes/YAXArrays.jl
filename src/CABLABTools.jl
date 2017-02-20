@@ -141,6 +141,7 @@ macro loadOrGenerate(x...)
   saveEx=map(x2) do i
     :(saveCube($(i[1]),$(i[2])))
   end
+  saveEx=Expr(:block,saveEx...)
   rmEx=map(x2) do i
     :(rmCube($(i[2])))
   end
