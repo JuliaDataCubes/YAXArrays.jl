@@ -12,7 +12,8 @@ end
 
 function pcapredict(xout,xin::Union{Vector,Matrix},pcain,pcamask,cfun)
     if (pcamask[1] & MISSING)==0x00
-        xout[:] = transform(pcain,xin)
+        ttransformed = transform(pcain,xin) 
+        xout[1:length(ttransformed)] = ttransformed
     else
         xout[:] = NaN
     end
@@ -21,14 +22,16 @@ function pcapredict(xout,xin::Array,pcain,pcamask,cfun)
     xout2 = reshape(xout,(size(xout,1),length(xout)÷size(xout,1)))
     xin2 = reshape(xin,(size(xin,1),length(xin)÷size(xin,1)))
     if (pcamask[1] & MISSING)==0x00
-        xout2[:] = transform(pcain,xin2)
+        ttransformed=transform(pcain,xin2)
+        xout2[1:length(ttransformed)] = ttransformed
     else
         xout2[:] = NaN
     end
 end
 function pcapredict(xout,xin::Union{Vector,Matrix},pcain,pcamask,by,bymask,cfun::Function)
     if ((pcamask[1] | bymask) & MISSING)==0x00
-        xout[:] = transform(pcain[cfun(by)],xin)
+        ttransformed = transform(pcain[cfun(by)],xin) 
+        xout[1:length(ttransformed)] = ttransformed 
     else
         xout[:] = NaN
     end
@@ -42,7 +45,8 @@ function pcapredict(xout,xin::Array,pcain,pcamask,by,bymask,cfun::Function)
       for i=1:size(xin2,2)
         if ((bymask[i] & MISSING)==0x00)
           copy!(xhelp,view(xin2,:,i))
-          xout2[:,i] = transform(pcain[cfun(by[i])],xhelp)
+          ttransformed = transform(pcain[cfun(by[i])],xhelp)
+                xout2[1:size(ttransformed,1),i] = ttransformed 
         else
           xout2[:,i] = NaN
         end
@@ -127,7 +131,6 @@ function transformPCA(pca::OnlinePCA,c::AbstractCubeData;max_cache=1e7,kwargs...
     ia = isempty(totlengths) ? [] : map(typeof,axcombs[findmax(totlengths)[2]])
     indims = isempty(pca.bycube) ? (totuple([typeof(pca.varAx);ia]),()) : (totuple([typeof(pca.varAx);ia]),totuple(typeof.(indimspca)),totuple(ia))
     outdims = (totuple([PCAxis(pca.noutdims);ia]),)
-
     pcpred = mapCube(pcapredict,indata,cfun,indims=indims,outdims=outdims,outtype=(Float32,),inmissing=inmissing,outmissing=(:nan,),max_cache=max_cache;kwargs...)
     pcpred
 end

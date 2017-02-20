@@ -567,8 +567,8 @@ function getCubeData{T<:AbstractString}(cube::UCube,
       c=SubCubeStatic{t,typeof(cube)}(cube,variable[1],
         (grid_y1,grid_y2,grid_x1,grid_x2),
         (y1,i1,y2,i2,ntime,NpY),
-        LonAxis(x2lon(grid_x1,config):config.spatial_res:x2lon(grid_x2,config)),
-        LatAxis(y2lat(grid_y1,config):-config.spatial_res:y2lat(grid_y2,config)),
+                LonAxis(x2lon(grid_x1,config):config.spatial_res:x2lon(grid_x2,config)+0.1*config.spatial_res),
+                LatAxis(y2lat(grid_y1,config):-config.spatial_res:y2lat(grid_y2,config)-0.1*config.spatial_res),
         properties)
       d=readCubeData(c)
       if haskey(known_labels,variable[1])
@@ -583,8 +583,8 @@ function getCubeData{T<:AbstractString}(cube::UCube,
       return SubCube{t,typeof(cube)}(cube,variable[1],
         (grid_y1,grid_y2,grid_x1,grid_x2),
         (y1,i1,y2,i2,ntime,NpY),
-        LonAxis(x2lon(grid_x1,config):config.spatial_res:x2lon(grid_x2,config)),
-        LatAxis(y2lat(grid_y1,config):-config.spatial_res:y2lat(grid_y2,config)),
+        LonAxis(x2lon(grid_x1,config):config.spatial_res:x2lon(grid_x2,config)+0.1*config.spatial_res),
+        LatAxis(y2lat(grid_y1,config):-config.spatial_res:y2lat(grid_y2,config)-0.1*config.spatial_res),
         TimeAxis(getTimeRanges(cube,y1,y2,i1,i2)),
         properties)
     end
@@ -592,8 +592,8 @@ function getCubeData{T<:AbstractString}(cube::UCube,
     return SubCubeV{t,typeof(cube)}(cube,variable,
       (grid_y1,grid_y2,grid_x1,grid_x2),
       (y1,i1,y2,i2,ntime,NpY),
-      LonAxis(x2lon(grid_x1,config):config.spatial_res:x2lon(grid_x2,config)),
-      LatAxis(y2lat(grid_y1,config):-config.spatial_res:y2lat(grid_y2,config)),
+      LonAxis(x2lon(grid_x1,config):config.spatial_res:x2lon(grid_x2,config)+0.1*config.spatial_res),
+      LatAxis(y2lat(grid_y1,config):-config.spatial_res:y2lat(grid_y2,config)-0.1*config.spatial_res),
       TimeAxis(getTimeRanges(cube,y1,y2,i1,i2)),
       VariableAxis(variableNew),
       properties)
