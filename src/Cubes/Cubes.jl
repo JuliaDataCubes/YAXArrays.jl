@@ -12,8 +12,8 @@ export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesC
 
 Supertype of all cubes. `T` is the data type of the cube and `N` the number of
 dimensions. Beware that an `AbstractCubeData` does not implement the `AbstractArray`
-interface. However, the `CABLAB` functions [`mapCube`](@ref), [`reduceCube`](@ref),
-[`readCubeData`](@ref), [`plotMAP`](@ref) and [`plotXY`](@ref) will work on any subtype
+interface. However, the `CABLAB` functions [mapCube](@ref), [reduceCube](@ref),
+[readCubeData](@ref), [plotMAP](@ref) and [plotXY](@ref) will work on any subtype
 of `AbstractCubeData`
 """
 abstract AbstractCubeData{T,N}
@@ -64,7 +64,7 @@ axes(c::EmptyCube)=CubeAxis[]
 """
     CubeMem{T,N} <: AbstractCubeMem{T,N}
 
-An in-memory data cube. It is returned by applying [`mapCube`](@ref) when
+An in-memory data cube. It is returned by applying [mapCube](@ref) when
 the output cube is small enough to fit in memory or by explicitly calling
 `readCubeData` on any type of cube.
 

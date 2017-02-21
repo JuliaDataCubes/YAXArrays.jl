@@ -153,3 +153,4 @@ sampleLandPoints
 
 ```@docs
 CABLAB.CubeAPI.known_regions
+```

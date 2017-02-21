@@ -97,7 +97,7 @@ where `base_dir` is the datacube's base directory.
 ### Fields
 
 * `base_dir` the cube parent directory
-* `config` the cube's static configuration [`CubeConfig`](@ref)
+* `config` the cube's static configuration [CubeConfig](@ref)
 * `dataset_files` a list of datasets in the cube
 * `var_name_to_var_index` basically the inverse of `dataset_files`
 
@@ -134,7 +134,7 @@ where `base_url` is the datacube's base url.
 * `var_name_to_var_index` basically the inverse of `dataset_files`
 * `dataset_files` a list of datasets in the cube
 * `dataset_paths` a list of urls pointing to the different data sets
-* `config` the cube's static configuration [`CubeConfig`](@ref)
+* `config` the cube's static configuration [CubeConfig](@ref)
 
 ```@example
 using CABLAB

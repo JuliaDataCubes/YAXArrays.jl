@@ -12,7 +12,7 @@ end
 
 function pcapredict(xout,xin::Union{Vector,Matrix},pcain,pcamask,cfun)
     if (pcamask[1] & MISSING)==0x00
-        ttransformed = transform(pcain,xin) 
+        ttransformed = transform(pcain,xin)
         xout[1:length(ttransformed)] = ttransformed
     else
         xout[:] = NaN
@@ -30,8 +30,8 @@ function pcapredict(xout,xin::Array,pcain,pcamask,cfun)
 end
 function pcapredict(xout,xin::Union{Vector,Matrix},pcain,pcamask,by,bymask,cfun::Function)
     if ((pcamask[1] | bymask) & MISSING)==0x00
-        ttransformed = transform(pcain[cfun(by)],xin) 
-        xout[1:length(ttransformed)] = ttransformed 
+        ttransformed = transform(pcain[cfun(by)],xin)
+        xout[1:length(ttransformed)] = ttransformed
     else
         xout[:] = NaN
     end
@@ -46,7 +46,7 @@ function pcapredict(xout,xin::Array,pcain,pcamask,by,bymask,cfun::Function)
         if ((bymask[i] & MISSING)==0x00)
           copy!(xhelp,view(xin2,:,i))
           ttransformed = transform(pcain[cfun(by[i])],xhelp)
-                xout2[1:size(ttransformed,1),i] = ttransformed 
+                xout2[1:size(ttransformed,1),i] = ttransformed
         else
           xout2[:,i] = NaN
         end
@@ -72,6 +72,11 @@ function rotation(xout,xin,inmask)
   end
 end
 
+"""
+    type OnlinePCA
+
+Represents the result of an Online PCA calculated on a DataCube.
+"""
 type OnlinePCA
   PCA::CubeMem
   noutdims::Int
@@ -85,6 +90,21 @@ function show(io::IO,c::OnlinePCA)
   println(io,"Online PCA result, you can call `explained_variance` to extract explained variances, `rotation` to retrieve the rotation matrix or `transform` to project data using the PCA.")
 end
 PCAxis(n)=CategoricalAxis("PC",["PC $i" for i=1:n])
+
+"""
+    cubePCA(cube::AbstractCubeData)
+
+Performs a PCA based on a covariance matrix which is estimated through an online algorithm.
+Returns an OnlinePCA object from which [explained_variance](@ref) and the [rotation](@ref) can be extracted,
+or which can be used to perform the projection on a dataset.
+
+
+### Keyword arguments
+* `MDAxis` specifies the axes that is reduced through the PCA
+* `by` a vector of axes types or masks denoting if several PCAs should be performed. If provided, several PCAs will be performed.
+* `noutdims` number of output dimensions, how many PCs are estimated
+
+"""
 function cubePCA(cube::AbstractCubeData;MDAxis=VariableAxis,by=CubeAxis[],max_cache=1e7,noutdims=3,kwargs...)
     covmat,means = mapCube(CovMatrix,cube,MDAxis=MDAxis,by=by)
     varAx  = getAxis(MDAxis,cube)
@@ -96,6 +116,14 @@ function cubePCA(cube::AbstractCubeData;MDAxis=VariableAxis,by=CubeAxis[],max_ca
                 genOut=(i->PCA(zeros(T,0),zeros(T,0,0),zeros(T,0),zero(T),zero(T)),);maxoutdim=noutdims,pratio=1.0)
     return OnlinePCA(pcares,noutdims,varAx,varAx1,varAx2,filter(i->!isa(i,DataType),by))
 end
+
+"""
+    transformPCA(pca::OnlinePCA,c::AbstractCubeData)
+
+Forward transform of a data cube `c` using a previously defined [OnlinePCA](@ref) object. The
+The cube must contain the `MDAxis` as provided during PCA estimation as well as all axes
+used as a `by argument`. Returns a transformed datacube.
+"""
 function transformPCA(pca::OnlinePCA,c::AbstractCubeData;max_cache=1e7,kwargs...)
     #Now determine how to brodcast for projection
     forbiddenAxes = CubeAxis[pca.varAx]
@@ -135,7 +163,18 @@ function transformPCA(pca::OnlinePCA,c::AbstractCubeData;max_cache=1e7,kwargs...
     pcpred
 end
 
+"""
+    explained_variance(c::OnlinePCA)
+
+Returns the relative explained variance of each PC as a datacube.
+"""
 explained_variance(c::OnlinePCA) = mapCube(explained_variance,(c.PCA,),indims=((),),outdims=((PCAxis(c.noutdims),),),outtype=(Float32,),inmissing=(:mask,),outmissing=(:nan,))
+
+"""
+    rotation_matrix(c::OnlinePCA)
+
+Returns the rotations matrix as a datacube.
+"""
 rotation_matrix(c::OnlinePCA)    = mapCube(rotation,(c.PCA,),indims=((),),outdims=((c.varAx,PCAxis(c.noutdims)),),outtype=(Float32,),inmissing=(:mask,),outmissing=(:nan,))
 
 

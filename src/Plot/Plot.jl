@@ -204,9 +204,11 @@ function val2col(x,m,colorm,mi,ma,misscol,oceancol)
   end
 end
 
-function val2col(xr,mr,xg,mg,xb,mb,mi,ma,misscol,oceancol)
+function val2col(cType,xr,mr,xg,mg,xb,mb,mi,ma,misscol,oceancol)
+  mi1,mi2,mi3=channel_min(cType)
+  ma1,ma2,ma3=channel_max(cType)
   if !isnan(xr) && !isnan(xg) && !isnan(xb) && (((mr | mg | mb) & MISSING)==VALID)
-    return RGB((xr-mi[1])/(ma[1]-mi[1]),(xg-mi[2])/(ma[2]-mi[2]),(xb-mi[3])/(ma[3]-mi[3]))
+    return cType((xr-mi[1])/(ma[1]-mi[1])*(ma1-mi1)+mi1,(xg-mi[2])/(ma[2]-mi[2])*(ma2-mi2)+mi2,(xb-mi[3])/(ma[3]-mi[3])*(ma3-mi3)+mi3)
   elseif (mr & OCEAN)==OCEAN
     return oceancol
   else
@@ -345,29 +347,53 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
   myfun(cube)
 end
 @noinline getRGBAR(a,m,colorm,mi,ma,misscol,oceancol,nx,ny)=RGB{U8}[val2col(a[i,j],m[i,j],colorm,mi,ma,misscol,oceancol) for j=1:ny,i=1:nx]
-@noinline getRGBAR(ar,mr,ag,mg,ab,mb,mi,ma,misscol,oceancol,nx,ny)=[val2col(ar[i,j],mr[i,j],ag[i,j],mg[i,j],ab[i,j],mb[i,j],mi,ma,misscol,oceancol) for j=1:ny,i=1:nx]
+@noinline getRGBAR(cType,ar,mr,ag,mg,ab,mb,mi,ma,misscol,oceancol,nx,ny)=[RGB(val2col(cType,ar[i,j],mr[i,j],ag[i,j],mg[i,j],ab[i,j],mb[i,j],mi,ma,misscol,oceancol)) for j=1:ny,i=1:nx]
 @noinline getRGBAR(a,m,colorm::Dict,misscol,oceancol,nx,ny)=RGB{U8}[val2col(a[i,j],m[i,j],colorm,misscol,oceancol) for j=1:ny,i=1:nx]
+
+using ColorTypes
+channel_max(d::DataType)="Colortype $d not yet added"
+typealias RGBlike Union{Type{XYZ},Type{RGB},Type{xyY}}
+typealias HSVlike Union{Type{HSV},Type{HSI},Type{HSL}}
+typealias Lablike Union{Type{Lab},Type{Luv}}
+channel_min(::RGBlike)=(0.0,0.0,0.0)
+channel_max(::RGBlike)=(1.0,1.0,1.0)
+channel_min(::Lablike)=(0.0,-170.0,-100.0)
+channel_max(::Lablike)=(100.0,100.0,150.0)
+channel_min(::HSVlike)=(0.0,0.0,0.0)
+channel_max(::HSVlike)=(360.0,1.0,1.0)
+channel_names(::Type{RGB})=("R","G","B")
+channel_names(::Type{XYZ})=("X","Y","Z")
+channel_names(::Type{xyY})=("x","y","Y")
+channel_names(::Type{HSV})=("H","S","V")
+channel_names(::Type{HSI})=("H","S","I")
+channel_names(::Type{HSL})=("H","S","L")
+channel_names(::Type{Lab})=("L","a","b")
+channel_names(::Type{Luv})=("L","u","v")
+
 
 """
 `plotMAPRGB(cube::AbstractCubeData; dmin=datamin, dmax=datamax, colorm=colormap("oranges"), oceancol=colorant"darkblue", misscol=colorant"gray", kwargs...)`
 
-Map plotting tool for cube objects, can be called on any type of cube data
+Map plotting tool for colored plots that use up to 3 variables as input into the several color channels.
+Several color representations from the `Colortypes.jl` package are supported, so that besides RGB (XYZ)-plots
+one can create HSL, HSI, HSV or Lab and Luv plots.
 
 ### Keyword arguments
 
-* `dmin, dmax` Minimum and maximum value to be used for color transformation
-* `colorm` colormap to be used. Find a list of colormaps in the [Colors.jl](https://github.com/JuliaGraphics/Colors.jl) package
+* `dmin, dmax` Minimum and maximum value to be used for color transformation, can be either a single value or a tuple, when min/max values are given for each channel
+* `rgbAxis` which axis should be used to select RGB channels from
 * `oceancol` color to fill the ocean with, defaults to `colorant"darkblue"`
 * `misscol` color to represent missing values, defaults to `colorant"gray"`
-* `symmetric` make the color scale symmetric around zero
 * `labels` given a list of labels this will create a plot with a non-continouous color scale where integer cube values [1..N] are mapped to the given labels.
+* `cType` ColorType to use for the color representation. Can be one of `RGB`, `XYZ`, `Lab`, `Luv`, `HSV`, `HSI`, `HSL`
 * `dim=value` can set other dimensions to certain values, for example `var="air_temperature_2m"` will fix the variable for the resulting plot
+
 
 If a dimension is neither longitude or latitude and is not fixed through an additional keyword, a slider or dropdown menu will appear to select the axis value.
 """
 function plotMAPRGB{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
   rgbAxis=VariableAxis,oceancol=colorant"darkblue",misscol=colorant"gray",symmetric=false,
-  r = nothing, g=nothing, b=nothing, kwargs...)
+  c1 = nothing, c2=nothing, c3=nothing, cType=XYZ, kwargs...)
   isa(rgbAxis,CubeAxis) && (rgbAxis=typeof(rgbAxis))
 
   dmin,dmax = typed_dminmax2(T,dmin,dmax)
@@ -391,36 +417,36 @@ function plotMAPRGB{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(
   fixedvarsEx=quote end
   labels   = nothing
   mimaex   = dmin==dmax ? :((mir,mar,mig,mag,mib,mab)=(getMinMax(ar,mr)...,getMinMax(ag,mg)...,getMinMax(ab,mb)...)) : :(mi=$(dmin);ma=$(dmax))
-  rgbarEx  = :(rgbar=getRGBAR(ar,mr,ag,mg,ab,mb,(mir,mig,mib),(mar,mag,mab),misscol,oceancol,nx,ny))
+  rgbarEx  = :(rgbar=getRGBAR($cType,ar,mr,ag,mg,ab,mb,(mir,mig,mib),(mar,mag,mab),misscol,oceancol,nx,ny))
   fixedAxes=CubeAxis[]
-  if length(axlist[irgb])==3 && r==nothing && b==nothing && g==nothing
-    r=1
-    g=2
-    b=3
+  if length(axlist[irgb])==3 && c1==nothing && c2==nothing && c3==nothing
+    c1=1
+    c2=2
+    c3=3
   end
-  if r==nothing
-    w=getWidget(axlist[irgb],label="Red  ")
+  if c1==nothing
+    w=getWidget(axlist[irgb],label=channel_names(cType)[1])
     push!(sliders,w)
     push!(signals,signal(w))
-    push!(argvars,:r)
+    push!(argvars,:c1)
   else
-    push!(fixedvarsEx.args,:(r=$r))
+    push!(fixedvarsEx.args,:(c1=$c1))
   end
-  if g==nothing
-    w=getWidget(axlist[irgb],label="Green")
+  if c2==nothing
+    w=getWidget(axlist[irgb],label=channel_names(cType)[2])
     push!(sliders,w)
     push!(signals,signal(w))
-    push!(argvars,:g)
+    push!(argvars,:c2)
   else
-    push!(fixedvarsEx.args,:(g=$g))
+    push!(fixedvarsEx.args,:(c2=$c2))
   end
-  if b==nothing
-    w=getWidget(axlist[irgb],label="Blue ")
+  if c3==nothing
+    w=getWidget(axlist[irgb],label=channel_names(cType)[3])
     push!(sliders,w)
     push!(signals,signal(w))
-    push!(argvars,:b)
+    push!(argvars,:c3)
   else
-    push!(fixedvarsEx.args,:(b=$b))
+    push!(fixedvarsEx.args,:(c3=$c3))
   end
   for (sy,val) in kwargs
     ivalaxis=findAxis(string(sy),axlist)
@@ -444,12 +470,12 @@ function plotMAPRGB{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(
     subcubedims = @ntuple $nax d->(d==$ilon || d==$ilat) ? length(axlist[d]) : 1
     ar,ag,ab = zeros(eltype(cube),subcubedims),zeros(eltype(cube),subcubedims),zeros(eltype(cube),subcubedims)
     mr,mg,mb = zeros(UInt8,subcubedims),       zeros(UInt8,subcubedims),       zeros(UInt8,subcubedims)
-    ind1r    = @ntuple $nax d->(d==$ilon || d==$ilat) ? 1                 : d==$irgb ? axVal2Index(axlist[d],r,fuzzy=true) : axVal2Index(axlist[d],v_d,fuzzy=true)
-    ind1g    = @ntuple $nax d->(d==$ilon || d==$ilat) ? 1                 : d==$irgb ? axVal2Index(axlist[d],g,fuzzy=true) : axVal2Index(axlist[d],v_d,fuzzy=true)
-    ind1b    = @ntuple $nax d->(d==$ilon || d==$ilat) ? 1                 : d==$irgb ? axVal2Index(axlist[d],b,fuzzy=true) : axVal2Index(axlist[d],v_d,fuzzy=true)
-    ind2r    = @ntuple $nax d->(d==$ilon || d==$ilat) ? length(axlist[d]) : d==$irgb ? axVal2Index(axlist[d],r,fuzzy=true) : axVal2Index(axlist[d],v_d,fuzzy=true)
-    ind2g    = @ntuple $nax d->(d==$ilon || d==$ilat) ? length(axlist[d]) : d==$irgb ? axVal2Index(axlist[d],g,fuzzy=true) : axVal2Index(axlist[d],v_d,fuzzy=true)
-    ind2b    = @ntuple $nax d->(d==$ilon || d==$ilat) ? length(axlist[d]) : d==$irgb ? axVal2Index(axlist[d],b,fuzzy=true) : axVal2Index(axlist[d],v_d,fuzzy=true)
+    ind1r    = @ntuple $nax d->(d==$ilon || d==$ilat) ? 1                 : d==$irgb ? axVal2Index(axlist[d],c1,fuzzy=true) : axVal2Index(axlist[d],v_d,fuzzy=true)
+    ind1g    = @ntuple $nax d->(d==$ilon || d==$ilat) ? 1                 : d==$irgb ? axVal2Index(axlist[d],c2,fuzzy=true) : axVal2Index(axlist[d],v_d,fuzzy=true)
+    ind1b    = @ntuple $nax d->(d==$ilon || d==$ilat) ? 1                 : d==$irgb ? axVal2Index(axlist[d],c3,fuzzy=true) : axVal2Index(axlist[d],v_d,fuzzy=true)
+    ind2r    = @ntuple $nax d->(d==$ilon || d==$ilat) ? length(axlist[d]) : d==$irgb ? axVal2Index(axlist[d],c1,fuzzy=true) : axVal2Index(axlist[d],v_d,fuzzy=true)
+    ind2g    = @ntuple $nax d->(d==$ilon || d==$ilat) ? length(axlist[d]) : d==$irgb ? axVal2Index(axlist[d],c2,fuzzy=true) : axVal2Index(axlist[d],v_d,fuzzy=true)
+    ind2b    = @ntuple $nax d->(d==$ilon || d==$ilat) ? length(axlist[d]) : d==$irgb ? axVal2Index(axlist[d],c3,fuzzy=true) : axVal2Index(axlist[d],v_d,fuzzy=true)
     _read(cube,(ar,mr),CartesianRange(CartesianIndex(ind1r),CartesianIndex(ind2r)))
     _read(cube,(ag,mg),CartesianRange(CartesianIndex(ind1g),CartesianIndex(ind2g)))
     _read(cube,(ab,mb),CartesianRange(CartesianIndex(ind1b),CartesianIndex(ind2b)))

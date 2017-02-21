@@ -35,7 +35,7 @@ end
     timespacequantiles
 
 Calculate quantiles from a space time data cube. This is usually called on a subset
-of data returned by [`sampleLandPoints`](@ref).
+of data returned by [sampleLandPoints](@ref).
 
 ### Call signature
 

@@ -42,7 +42,7 @@ dropdown menus will be shown to select the desired values.
 A common method to plot several variables at once in a single map is an RGB map.
 This is possible through the plotMAPRGB function.
 
-```docs
+```@docs
 plotMAPRGB
 ```
 
@@ -50,10 +50,12 @@ For example, if we want to plot GPP, NEE and TER as an RGB map for South America
 we can do the following:
 
 ```@example 1
-d=getCubeData(c,variable="Biosphere",region="South America")
-plotMAPRGB(d,r="gross_primary_productivity",
-             g="net_ecosystem_exchange",
-             b="terrestrial_ecosystem_respiration",
+d=getCubeData(ds,variable="Biosphere",region="South America")
+using ColorTypes
+plotMAPRGB(d,c1="gross_primary_productivity",
+             c2="net_ecosystem_exchange",
+             c3="terrestrial_ecosystem_respiration",
+             cType=Lab,
              time=100)
 ```
 
