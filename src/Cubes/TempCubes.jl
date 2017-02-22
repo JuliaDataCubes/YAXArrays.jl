@@ -106,7 +106,11 @@ TempCube(axlist,block_size::Tuple;kwargs...)=TempCube(axlist,CartesianIndex(bloc
 
 function openTempCube(folder;persist=true)
   axlist=load(joinpath(folder,"axinfo.jld"),"axlist")
-  properties=load(joinpath(folder,"axinfo.jld"),"properties")
+  properties=try
+      load(joinpath(folder,"axinfo.jld"),"properties")
+    catch
+      Dict{String,Any}()
+    end
   N=length(axlist)
   v=NetCDF.open(joinpath(folder,tofilename(CartesianIndex{N}())),"cube")
   T=eltype(v)
