@@ -1,7 +1,8 @@
 module TempCubes
-export TempCube, openTempCube, TempCubePerm, saveCube, loadCube
+export TempCube, openTempCube, TempCubePerm, saveCube, loadCube,rmCube
 importall ..Cubes
 importall ...CABLABTools
+import ....CABLAB.CABLABdir
 
 "This defines a temporary datacube, written on disk which is usually "
 abstract AbstractTempCube{T,N} <: AbstractCubeData{T,N}
@@ -10,11 +11,11 @@ abstract AbstractTempCube{T,N} <: AbstractCubeData{T,N}
     type TempCube{T,N} <: AbstractCubeData{T,N}
 
 The main data structure for storing temporary results from cube operations. Is
-usually returned by [`mapCube`](@ref), if the result is larger than `max_cache`
+usually returned by [mapCube](@ref), if the result is larger than `max_cache`
 
 ### Fields
 
-* `axes` a vector of [`CubeAxis`](@ref) containing the axes
+* `axes` a vector of [CubeAxis](@ref) containing the axes
 * `folder` folder containing the data
 * `block_size` dimension of the files that the cube is split into
 
@@ -138,6 +139,13 @@ function cleanTempCube(y::TempCube)
   end
 end
 
+function rmCube(f::String)
+  if isdir(joinpath(CABLABdir(),f))
+    y=openTempCube(joinpath(CABLABdir(),f),persist=false)
+    cleanTempCube(y)
+  end
+end
+
 function _read{N}(y::TempCube,thedata::NTuple{2},r::CartesianRange{CartesianIndex{N}})
   data,mask=thedata
   unit=CartesianIndex{N}()
@@ -183,18 +191,33 @@ function _read{N}(y::TempCubePerm,thedata::NTuple{2},r::CartesianRange{Cartesian
 end
 
 import ...CABLAB.workdir
-function saveCube(c::TempCube,name::AbstractString)
+
+"""
+    saveCube(c::AbstractCubeData, name::String)
+
+Permanently saves a data cube to disk by either moving the folder out of the
+tmp directory (for `TempCube`s) or by storing the data to disk (for `CubeMem`s)
+"""
+function saveCube(c::TempCube,name::String)
   newfolder=joinpath(workdir[1],name)
-  isdir(newfolder) && error("$(name) alreaday exists, please pick another name")
+  isdir(newfolder) && error("$(name) already exists, please pick another name")
   mv(c.folder,newfolder)
   c.folder=newfolder
   c.persist=true
 end
 
-function loadCube(name::AbstractString)
+"""
+    loadCube(name::String)
+
+Loads a cube that was previously saved with [`saveCube`](@ref). Returns a
+`TempCube` object.
+"""
+function loadCube(name::String)
   newfolder=joinpath(workdir[1],name)
   isdir(newfolder) || error("$(name) does not exist")
   openTempCube(newfolder)
 end
+
+
 
 end #module

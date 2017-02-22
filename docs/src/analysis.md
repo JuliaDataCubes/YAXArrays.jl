@@ -144,3 +144,15 @@ mT    = mapCube(OnlineStats.Mean,cube,by=[m,VariableAxis], cfun=splitTemp, outAx
 ```
 
 This will split the cube by country and variable and compute averages over the input variables.
+
+### Online PCA
+
+It is possible to compute a principal component analysis based on a covariance matrix obtained
+through an online algorithm. The package provides a convenient way to achieve this with the
+cubePCA function.
+
+```@docs
+cubePCA
+```
+
+For example, if one wants to calculate a PCA over the time dimension, you could use the following code:

@@ -97,7 +97,7 @@ where `base_dir` is the datacube's base directory.
 ### Fields
 
 * `base_dir` the cube parent directory
-* `config` the cube's static configuration [`CubeConfig`](@ref)
+* `config` the cube's static configuration [CubeConfig](@ref)
 * `dataset_files` a list of datasets in the cube
 * `var_name_to_var_index` basically the inverse of `dataset_files`
 
@@ -134,7 +134,7 @@ where `base_url` is the datacube's base url.
 * `var_name_to_var_index` basically the inverse of `dataset_files`
 * `dataset_files` a list of datasets in the cube
 * `dataset_paths` a list of urls pointing to the different data sets
-* `config` the cube's static configuration [`CubeConfig`](@ref)
+* `config` the cube's static configuration [CubeConfig](@ref)
 
 ```@example
 using CABLAB
@@ -165,9 +165,9 @@ function RemoteCube(;resolution="low",url="http://www.brockmann-consult.de/cabla
   testDAP() || error("NetCDF built without DAP support. Accessing remote cubes is not possible.")
   resExt=resolution=="high" ? "fileServer/datacube/high-res/cube.config" : "fileServer/datacube/low-res/cube.config"
   res=get(string(url,"catalog.xml"))
-  xconfig=split(readall(get(string(url,resExt))),"\n")
+  xconfig=split(readstring(get(string(url,resExt))),"\n")
   config=parseConfig(xconfig)
-  xmldoc=parse_string(readall(res));
+  xmldoc=parse_string(readstring(res));
   xroot=root(xmldoc)
   datasets=get_elements_by_tagname(xroot,"dataset")
   ds=datasets[findfirst(map(x->startswith(lowercase(attribute(x,"name")),resolution),datasets))]
@@ -567,8 +567,8 @@ function getCubeData{T<:AbstractString}(cube::UCube,
       c=SubCubeStatic{t,typeof(cube)}(cube,variable[1],
         (grid_y1,grid_y2,grid_x1,grid_x2),
         (y1,i1,y2,i2,ntime,NpY),
-        LonAxis(x2lon(grid_x1,config):config.spatial_res:x2lon(grid_x2,config)),
-        LatAxis(y2lat(grid_y1,config):-config.spatial_res:y2lat(grid_y2,config)),
+                LonAxis(x2lon(grid_x1,config):config.spatial_res:x2lon(grid_x2,config)+0.1*config.spatial_res),
+                LatAxis(y2lat(grid_y1,config):-config.spatial_res:y2lat(grid_y2,config)-0.1*config.spatial_res),
         properties)
       d=readCubeData(c)
       if haskey(known_labels,variable[1])
@@ -583,8 +583,8 @@ function getCubeData{T<:AbstractString}(cube::UCube,
       return SubCube{t,typeof(cube)}(cube,variable[1],
         (grid_y1,grid_y2,grid_x1,grid_x2),
         (y1,i1,y2,i2,ntime,NpY),
-        LonAxis(x2lon(grid_x1,config):config.spatial_res:x2lon(grid_x2,config)),
-        LatAxis(y2lat(grid_y1,config):-config.spatial_res:y2lat(grid_y2,config)),
+        LonAxis(x2lon(grid_x1,config):config.spatial_res:x2lon(grid_x2,config)+0.1*config.spatial_res),
+        LatAxis(y2lat(grid_y1,config):-config.spatial_res:y2lat(grid_y2,config)-0.1*config.spatial_res),
         TimeAxis(getTimeRanges(cube,y1,y2,i1,i2)),
         properties)
     end
@@ -592,8 +592,8 @@ function getCubeData{T<:AbstractString}(cube::UCube,
     return SubCubeV{t,typeof(cube)}(cube,variable,
       (grid_y1,grid_y2,grid_x1,grid_x2),
       (y1,i1,y2,i2,ntime,NpY),
-      LonAxis(x2lon(grid_x1,config):config.spatial_res:x2lon(grid_x2,config)),
-      LatAxis(y2lat(grid_y1,config):-config.spatial_res:y2lat(grid_y2,config)),
+      LonAxis(x2lon(grid_x1,config):config.spatial_res:x2lon(grid_x2,config)+0.1*config.spatial_res),
+      LatAxis(y2lat(grid_y1,config):-config.spatial_res:y2lat(grid_y2,config)-0.1*config.spatial_res),
       TimeAxis(getTimeRanges(cube,y1,y2,i1,i2)),
       VariableAxis(variableNew),
       properties)
@@ -875,10 +875,10 @@ function readFromDataYear{T}(cube::Cube,outar::AbstractArray{T,3},mask::Abstract
   include("CachedArrays.jl")
   importall .CachedArrays
 
-  function getMemHandle{T}(cube::AbstractCubeData{T},nblock,block_size)
-    CachedArray(cube,nblock,block_size,CachedArrays.MaskedCacheBlock{T,length(block_size)})
+  function getMemHandle{T}(cube::AbstractCubeData{T},nblock,block_size;startInd::Int=1)
+    CachedArray(cube,nblock,block_size,CachedArrays.MaskedCacheBlock{T,length(block_size)},startInd=startInd)
   end
-  getMemHandle(cube::AbstractCubeMem,nblock,block_size)=cube
+  getMemHandle(cube::AbstractCubeMem,nblock,block_size;startInd::Int=1)=cube
 
 
 end

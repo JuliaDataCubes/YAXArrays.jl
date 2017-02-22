@@ -4,7 +4,7 @@ using Documenter, CABLAB
 makedocs(
     modules = [CABLAB],
     clean   = false,
-    format   = Documenter.Formats.HTML,
+    format   = :html,
     sitename = "CABLAB.jl",
     pages    = Any[ # Compat: `Any` for 0.4 compat
         "Home" => "index.md",
@@ -14,6 +14,7 @@ makedocs(
             "analysis.md",
             "plotting.md",
             "adding_new.md",
+            "iotools.md"
         ]
         ]
 )

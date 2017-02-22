@@ -60,19 +60,19 @@ end
     Expr(:tuple,args...)
 end
 
-function CachedArray(x,max_blocks::Int,block_size::CartesianIndex,blocktype::DataType)
+function CachedArray(x,max_blocks::Int,block_size::CartesianIndex,blocktype::DataType;startInd::Int=1)
     vtype=typeof(x)
     T=eltype(x)
     N=ndims(x)
     s=size(x)
     ssmall=[div(s[i],block_size[i]) for i=1:N]
     blocks=Array(blocktype,ssmall...)
-    currentblocks=Array(blocktype,0)
+    currentblocks=blocktype[]
     scores=zeros(Int64,ssmall...)
     i=1
     nullblock=emptyblock(blocktype)
     for II in CartesianRange(size(blocks))
-        if i<=max_blocks
+        if length(currentblocks)<max_blocks && i>=startInd
             newblock=zeroblock(blocktype,block_size,II)
             blocks[II]=newblock
             read_subblock!(newblock,x,block_size)

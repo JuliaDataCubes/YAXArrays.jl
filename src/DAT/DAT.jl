@@ -135,6 +135,8 @@ const regDict=Dict{Function,DATFunction}()
 
 getOuttype(outtype::Type{Any},cdata)=isa(cdata,AbstractCubeData) ? eltype(cdata) : eltype(cdata[1])
 getOuttype(outtype,cdata)=outtype
+getInAxes(indims::Tuple{}, cdata::AbstractCubeData)=getInAxes((indims,),(cdata,))
+getInAxes(indims::Tuple{}, cdata::Tuple)=getInAxes((indims,),cdata)
 getInAxes(indims::Tuple{Vararg{DataType}},cdata)=getInAxes((indims,),cdata)
 getInAxes(indims::Tuple{Vararg{Tuple{Vararg{DataType}}}},cdata::AbstractCubeData)=getInAxes(indims,(cdata,))
 function getInAxes(indims::Tuple{Vararg{Tuple{Vararg{DataType}}}},cdata::Tuple)
@@ -220,8 +222,9 @@ Map a given function `fun` over slices of the data cube `cube`.
 * `outdims::Tuple` List of output axes, can be either an axis type that has a default constructor or an instance of a `CubeAxis`
 * `inmissing::Tuple` How to treat missing values in input data for each input cube. Possible values are `:nullable` `:mask` `:nan` or a value that is inserted for missing data, defaults to `:mask`
 * `outmissing` How are missing values written to the output array, possible values are `:nullable`, `:mask`, `:nan`, defaults to `:mask`
-* `no_ocean` should values containing ocean data be omitted
+* `no_ocean` should values containing ocean data be omitted, an integer specifying the cube whose input mask is used to determine land-sea points.
 * `inplace` does the function write to an output array inplace or return a single value> defaults to `true`
+* `ispar` boolean to determine if parallelisation should be applied, defaults to `true` if workers are available.
 * `kwargs` additional keyword arguments passed to the inner function
 
 The first argument is always the function to be applied, the second is the input cube or
@@ -249,9 +252,14 @@ function mapCube(fu::Function,
     retCubeType=getReg(fuObj,:retCubeType,cdata,length(outdims)),
     ispar=nprocs()>1,
     outBroadCastAxes=Vector{CubeAxis}[CubeAxis[] for i=1:length(outdims)],
+    debug=false,
     kwargs...)
   @debug_print "Generating DATConfig"
-  dc=DATConfig(cdata,getInAxes(indims,cdata),getOutAxes(outdims,cdata,addargs),map(i->getOuttype(i,cdata),outtype),max_cache,fu,inmissing,outmissing,no_ocean,inplace,genOut,outfolder,finalizeOut,retCubeType,outBroadCastAxes,ispar,addargs,kwargs)
+  dc=DATConfig(cdata,
+    getInAxes(indims,cdata),
+    getOutAxes(outdims,cdata,addargs),
+    map(i->getOuttype(i,cdata),outtype),
+    max_cache,fu,inmissing,outmissing,no_ocean,inplace,genOut,outfolder,finalizeOut,retCubeType,outBroadCastAxes,ispar,addargs,kwargs)
   analyseaddargs(fuObj,dc)
   @debug_print "Reordering Cubes"
   reOrderInCubes(dc)
@@ -264,6 +272,7 @@ function mapCube(fu::Function,
   @debug_print "Generating cube handles"
   getCubeHandles(dc)
   @debug_print "Running main Loop"
+  debug && return(dc)
   runLoop(dc)
   @debug_print "Finalizing Output Cube"
 

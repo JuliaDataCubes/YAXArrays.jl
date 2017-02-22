@@ -1,7 +1,7 @@
 module Axes
 export CubeAxis, QuantileAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis,
 SpatialPointAxis,Axes,YearStepRange,CategoricalAxis,RangeAxis,axVal2Index,MSCAxis,
-TimeScaleAxis, axname
+TimeScaleAxis, axname, @caxis_str
 import NetCDF.NcDim
 importall ..Cubes
 using Base.Dates
@@ -59,7 +59,7 @@ end
 
 Supertype of all axes. Every `CubeAxis` is 1D Cube itself and can be passed
 to mapCube operationes. Although all cube axes are instances of the parametric typealias
-[`CategoricalAxis`](@ref) and [`RangeAxis`](@ref), there are some typealiases defined
+[CategoricalAxis](@ref) and [RangeAxis](@ref), there are some typealiases defined
 to provide shorter and more convenient names for commonly used cube axes. Here is a list
 of the aliases:
 
@@ -79,7 +79,7 @@ of the aliases:
 * `MSCAxis` time step inside a year (for seasonal statistics)
 
 """
-abstract CubeAxis{T} <: AbstractCubeMem{T,1}
+abstract CubeAxis{T,S} <: AbstractCubeMem{T,1}
 
 """
     CategoricalAxis{T,S}
@@ -91,7 +91,7 @@ The default constructor is:
     CategoricalAxis(axname::String,values::Vector{T})
 
 """
-immutable CategoricalAxis{T,S} <: CubeAxis{T}
+immutable CategoricalAxis{T,S} <: CubeAxis{T,S}
   values::Vector{T}
 end
 
@@ -115,7 +115,7 @@ The default constructor is:
     RangeAxis(axname::String,values::Range{T})
 
 """
-immutable RangeAxis{T,S,R} <: CubeAxis{T}
+immutable RangeAxis{T,S,R} <: CubeAxis{T,S}
   values::R
 end
 RangeAxis{T}(s::Symbol,v::Range{T})=RangeAxis{T,s,typeof(v)}(v)
@@ -138,11 +138,31 @@ axname{T,S}(::RangeAxis{T,S})=string(S)
 axunits(::CubeAxis)="unknown"
 axunits(::LonAxis)="degrees_east"
 axunits(::LatAxis)="degrees_north"
-axVal2Index{T,S,F<:FloatRange}(axis::RangeAxis{T,S,F},v)=min(max(round(Int,(v-first(axis.values))/step(axis.values))+1,1),length(axis))
-axVal2Index(x,v)=min(max(v,1),length(x))
+axVal2Index{T,S,F<:FloatRange}(axis::RangeAxis{T,S,F},v;fuzzy::Bool=false)=min(max(round(Int,(v-first(axis.values))/step(axis.values))+1,1),length(axis))
+function axVal2Index(axis::CategoricalAxis{String},v::String;fuzzy::Bool=false)
+  r=findfirst(axis.values,v)
+  if r==0
+    if fuzzy
+      r=find(i->startswith(lowercase(i),lowercase(v)),axis.values)
+      if length(r)==1
+        return(r[1])
+      else
+        error("Could not find unique value of $v in $axis")
+      end
+    else
+      error("$v not found in $axis")
+    end
+  end
+  r
+end
+axVal2Index(x,v;fuzzy::Bool=false)=min(max(v,1),length(x))
 
 getSubRange(x::CubeAxis,i)=x[i],nothing
 getSubRange(x::TimeAxis,i)=sub(x,i),nothing
+
+macro caxis_str(s)
+  :(CategoricalAxis{String,$(QuoteNode(Symbol(s)))})
+end
 
 import Base.==
 ==(a::CubeAxis,b::CubeAxis)=a.values==b.values

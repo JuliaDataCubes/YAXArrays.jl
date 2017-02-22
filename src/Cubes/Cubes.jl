@@ -5,15 +5,15 @@ Data types that
 module Cubes
 export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, QuantileAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, axes,
        AbstractSubCube, CubeMem, openTempCube, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis, axVal2Index, MSCAxis,
-       getSingVal, TimeScaleAxis, axname
+       getSingVal, TimeScaleAxis, axname, @caxis_str, rmCube
 
 """
     AbstractCubeData{T,N}
 
 Supertype of all cubes. `T` is the data type of the cube and `N` the number of
 dimensions. Beware that an `AbstractCubeData` does not implement the `AbstractArray`
-interface. However, the `CABLAB` functions [`mapCube`](@ref), [`reduceCube`](@ref),
-[`readCubeData`](@ref), [`plotMAP`](@ref) and [`plotXY`](@ref) will work on any subtype
+interface. However, the `CABLAB` functions [mapCube](@ref), [reduceCube](@ref),
+[readCubeData](@ref), [plotMAP](@ref) and [plotXY](@ref) will work on any subtype
 of `AbstractCubeData`
 """
 abstract AbstractCubeData{T,N}
@@ -64,7 +64,7 @@ axes(c::EmptyCube)=CubeAxis[]
 """
     CubeMem{T,N} <: AbstractCubeMem{T,N}
 
-An in-memory data cube. It is returned by applying [`mapCube`](@ref) when
+An in-memory data cube. It is returned by applying [mapCube](@ref) when
 the output cube is small enough to fit in memory or by explicitly calling
 `readCubeData` on any type of cube.
 
@@ -94,7 +94,7 @@ Base.similar(c::CubeMem)=cubeMem(c.axes,similar(c.data),copy(c.mask))
 Base.ndims{T,N}(c::CubeMem{T,N})=N
 
 function getSubRange{T,N}(c::CubeMem{T,N},i...;write::Bool=true)
-  length(i)==N || error("Wrong number of view arguments to getSubRange")
+  length(i)==N || error("Wrong number of view arguments to getSubRange. Cube is: $c \n indices are $i")
   return (view(c.data,i...),view(c.mask,i...))
 end
 
@@ -117,7 +117,7 @@ import ..CABLABTools.toRange
 function _read(c::CubeMem,thedata::NTuple{2},r::CartesianRange)
   outar,outmask=thedata
   data=view(c.data,toRange(r)...)
-  mask=view(c.data,toRange(r)...)
+  mask=view(c.mask,toRange(r)...)
   copy!(outar,data)
   copy!(outmask,mask)
 end
@@ -139,6 +139,18 @@ newShape=(s1...,length(lonAx)*length(latAx),s2...)
 CubeMem(allNewAx,reshape(c.data,newShape),reshape(c.mask,newShape))
 end
 
+function formatbytes(x)
+  exts=["bytes","KB","MB","GB","TB"]
+  i=1
+  while x>=1024
+    i=i+1
+    x=x/1024
+  end
+  return string(round(x,2)," ",exts[i])
+end
+cubesize{T}(c::AbstractCubeData{T})=(sizeof(T)+1)*prod(map(length,axes(c)))
+cubesize{T}(c::AbstractCubeData{T,0})=sizeof(T)+1
+
 include("TempCubes.jl")
 importall .TempCubes
 getCubeDes(c::AbstractSubCube)="Data Cube view"
@@ -150,6 +162,7 @@ function Base.show(io::IO,c::AbstractCubeData)
     for a in axes(c)
         println(io,a)
     end
+    println(io,"Total size: ",formatbytes(cubesize(c)))
 end
 
 import ..CABLAB.workdir
