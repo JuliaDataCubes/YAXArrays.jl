@@ -1,5 +1,12 @@
 # News
 
+## v0.2.1
+
+* a new macro `@loadOrGenerate` was added to generate and save intermediate results or load them if already existent
+* a wrapper to calculate Online PCAs was added with `cubePCA`
+* a new map plotting function `plotMAPRGB` to generate RGB, Lab, HSV etc plots
+* print cube size when showing cube info  
+
 ## v0.2
 
 * a list of pre-defined lon-lat boxes was added that can be accessed when calling `getCubeData`, so for example `getCubeData(c,region="Germany")` will extract a Germany from the Cube.

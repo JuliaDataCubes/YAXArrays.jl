@@ -14,6 +14,7 @@ makedocs(
             "analysis.md",
             "plotting.md",
             "adding_new.md",
+            "iotools.md"
         ]
         ]
 )

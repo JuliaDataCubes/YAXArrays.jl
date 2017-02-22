@@ -17,6 +17,7 @@ Pages = [
     "plotting.md",
     "analysis.md",
     "adding_new.md",
+    "iotools.md",
 ]
 Depth = 1
 ```
