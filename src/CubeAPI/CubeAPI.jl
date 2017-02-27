@@ -37,10 +37,10 @@ A data cube's static configuration information.
 * `grid_height`: The fixed grid height in pixels (latitude direction).
 * `static_data`:
 * `temporal_res`: The temporal resolution in days.
-* `ref_time`: A datetime value which defines the units in which time values are given, namely days since *ref_time*.
-* `start_time`: The start time of the first image of any variable in the cube given as datetime value.
+* `ref_time`: A Date value which defines the units in which time values are given, namely days since *ref_time*.
+* `start_time`: The start time of the first image of any variable in the cube given as Date value.
 ``None`` means unlimited.
-* `end_time`: The end time of the last image of any variable in the cube given as datetime value.
+* `end_time`: The end time of the last image of any variable in the cube given as Date value.
 ``None`` means unlimited.
 * `variables`: A list of variable names to be included in the cube.
 * `file_format`: The file format used. Must be one of 'NETCDF4', 'NETCDF4_CLASSIC', 'NETCDF3_CLASSIC'
@@ -48,9 +48,9 @@ or 'NETCDF3_64BIT'.
 * `compression`: Whether the data should be compressed.
 "
 type CubeConfig
-  end_time::DateTime
-  ref_time::DateTime
-  start_time::DateTime
+  end_time::Date
+  ref_time::Date
+  start_time::Date
   grid_width::Int
   variables::Any
   temporal_res::Int
@@ -64,7 +64,7 @@ type CubeConfig
   compression::Bool
   grid_x0::Int
 end
-t0=DateTime(0)
+t0=Date(0)
 CubeConfig()=CubeConfig(t0,t0,t0,0,0,0,0,false,"","",0.0,"",0,false,0)
 
 parseEntry(d,e::ConfigEntry)=setfield!(d,Symbol(e.lhs),parse(e.rhs))
@@ -72,7 +72,7 @@ parseEntry(d,e::Union{ConfigEntry{:compression},ConfigEntry{:static_data}})=setf
 parseEntry(d,e::Union{ConfigEntry{:model_version},ConfigEntry{:file_format},ConfigEntry{:calendar}})=setfield!(d,Symbol(e.lhs),String(strip(e.rhs,'\'')))
 function parseEntry(d,e::Union{ConfigEntry{:ref_time},ConfigEntry{:start_time},ConfigEntry{:end_time}})
   m=match(r"datetime.datetime\(\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)\)",e.rhs).captures
-  setfield!(d,Symbol(e.lhs),DateTime(parse(Int,m[1]),parse(Int,m[2]),parse(Int,m[3]),parse(Int,m[4]),parse(Int,m[5])))
+  setfield!(d,Symbol(e.lhs),Date(parse(Int,m[1]),parse(Int,m[2]),parse(Int,m[3])))
 end
 
 function parseConfig(x)
@@ -376,7 +376,7 @@ getCubeData(cube::Cube;variable,time,latitude,longitude)
 Returns a view into the data cube. The following keyword arguments are accepted:
 
 - *variable*: an variable index or name or an iterable returning multiple of these (var1, var2, ...)
-- *time*: a single datetime.datetime object or a 2-element iterable (time_start, time_end)
+- *time*: a single Date object or a 2-element iterable (time_start, time_end)
 - *latitude*: a single latitude value or a 2-element iterable (latitude_start, latitude_end)
 - *longitude*: a single longitude value or a 2-element iterable (longitude_start, longitude_end)
 - *region*: specify a country or SREX region by name or ISO_A3 code. Type `?CABLAB.known_regions` to see a list of pre-defined areas
@@ -422,7 +422,7 @@ function getTimesToRead(time1,time2,config)
   return y1,index1,y2,index2,ntimesteps,NpY
 end
 
-"Returns a vector of DateTime objects giving the time indices returned by a respective call to getCubeData."
+"Returns a vector of Date objects giving the time indices returned by a respective call to getCubeData."
 function getTimeRanges(c::UCube,y1,y2,i1,i2)
   NpY    = ceil(Int,365/c.config.temporal_res)
   YearStepRange(y1,i1,y2,i2,c.config.temporal_res,NpY)

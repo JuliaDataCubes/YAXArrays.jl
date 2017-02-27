@@ -6,7 +6,7 @@ import NetCDF.NcDim
 importall ..Cubes
 using Base.Dates
 
-immutable YearStepRange <: Range{DateTime}
+immutable YearStepRange <: Range{Date}
     startyear::Int
     startst::Int
     stopyear::Int
@@ -15,7 +15,7 @@ immutable YearStepRange <: Range{DateTime}
     NPY::Int
 end
 
-function YearStepRange(start::DateTime,stop::DateTime,step::Day)
+function YearStepRange(start::Date,stop::Date,step::Day)
     startyear=year(start)
     startday=dayofyear(start)
     startst=ceil(Int,startday/Float64(step))
@@ -30,14 +30,14 @@ function Base.length(x::YearStepRange)
 end
 Base.size(x::YearStepRange)=(length(x),)
 Base.start(x::YearStepRange)=(x.startyear,x.startst)
-Base.next(x::YearStepRange,st)=(DateTime(st[1])+Day((st[2]-1)*x.step),st[2]==x.NPY ? (st[1]+1,1) : (st[1],st[2]+1))
+Base.next(x::YearStepRange,st)=(Date(st[1])+Day((st[2]-1)*x.step),st[2]==x.NPY ? (st[1]+1,1) : (st[1],st[2]+1))
 Base.done(x::YearStepRange,st)=(st[1]==x.stopyear && st[2]==x.stopst+1) || (st[1]==x.stopyear+1 && st[2]==1)
 Base.step(x::YearStepRange)=Day(x.step)
-Base.first(x::YearStepRange)=DateTime(x.startyear)+Day((x.startst-1)*x.step)
-Base.last(x::YearStepRange)=DateTime(x.stopyear)+Day((x.stopst-1)*x.step)
+Base.first(x::YearStepRange)=Date(x.startyear)+Day((x.startst-1)*x.step)
+Base.last(x::YearStepRange)=Date(x.stopyear)+Day((x.stopst-1)*x.step)
 function Base.getindex(x::YearStepRange,ind::Integer)
     y,d=divrem(ind-1+x.startst-1,x.NPY)
-    DateTime(y+x.startyear)+Day(d)*x.step
+    Date(y+x.startyear)+Day(d)*x.step
 end
 
 macro defineCatAxis(axname,eltype)
@@ -121,8 +121,8 @@ end
 RangeAxis{T}(s::Symbol,v::Range{T})=RangeAxis{T,s,typeof(v)}(v)
 RangeAxis(s::AbstractString,v)=RangeAxis(Symbol(s),v)
 
-@defineRanAxis Time DateTime YearStepRange
-@defineRanAxis MSC DateTime YearStepRange
+@defineRanAxis Time Date YearStepRange
+@defineRanAxis MSC Date YearStepRange
 @defineRanAxis Lon Float64 FloatRange{Float64}
 @defineRanAxis Lat Float64 FloatRange{Float64}
 
@@ -167,7 +167,7 @@ end
 import Base.==
 ==(a::CubeAxis,b::CubeAxis)=a.values==b.values
 
-function NcDim(a::CubeAxis{DateTime},start::Integer,count::Integer)
+function NcDim(a::CubeAxis{Date},start::Integer,count::Integer)
   if start + count - 1 > length(a.values)
     count = oftype(count,length(a.values) - start + 1)
   end

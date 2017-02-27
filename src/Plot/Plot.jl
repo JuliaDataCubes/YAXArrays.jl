@@ -50,6 +50,48 @@ getWidget(x::SpatialPointAxis;label="Spatial Point")= slider(1:length(x),label=l
 
 plotTS(x;kwargs...)=plotXY(x,xaxis=TimeAxis;kwargs...)
 
+setPlotAxis(x::Void,axlist,name,fixedvarsEx,fixedAxes)=0
+function setPlotAxis(x,name,axlist,fixedvarsEx,fixedAxes)
+  ix=findAxis(x,axlist)
+  if ix>0
+    push!(fixedvarsEx.args,:($(name(ix))=$ix))
+    push!(fixedAxes,axlist[ix])
+    return ix
+  else
+    return 0
+  end
+end
+
+function createWidgets(axlist,availableAxis,availableIndices,fixedvarsEx,axlabels,widgets,signals,argvars,axtuples)
+
+  if !isempty(availableAxis)
+    for (ix,ixs,label,musthave) in axtuples
+      options = musthave ? zip(axlabels[availableIndices],availableIndices) : zip(["None";axlabels[availableIndices]],[0;availableIndices])
+      axmenu=dropdown(OrderedDict(options),label=label,value=start(options)[1],value_label=axlabels[start(options)[2]])
+      sax=signal(axmenu)
+      push!(widgets,axmenu)
+      push!(argvars,ixs)
+      push!(signals,sax)
+    end
+    for i in availableIndices
+      w=getWidget(axlist[i])
+      push!(widgets,w)
+      push!(signals,signal(w))
+      push!(argvars,Symbol(string("v_",i)))
+    end
+  else
+    for (ix,ixs,label,musthave) in axtuples
+      if ix==0
+        musthave && error("No axis left to put on $label")
+        push!(fixedvarsEx.args,:($ixs=0))
+      end
+    end
+  end
+end
+
+import Plots
+import StatPlots
+
 """
 `plotXY(cube::AbstractCubeData; group=0, xaxis=-1, kwargs...)`
 
@@ -63,7 +105,8 @@ Generic plotting tool for cube objects, can be called on any type of cube data.
 
 If a dimension is not the x axis or group variable and is not fixed through an additional keyword, a slider or dropdown menu will appear to select the axis value.
 """
-function plotXY{T}(cube::AbstractCubeData{T};group=0,xaxis=-1,kwargs...)
+function plotXY{T}(cube::AbstractCubeData{T};group=nothing,xaxis=nothing,kwargs...)
+
   axlist=axes(cube)
   axlabels=map(axname,axlist)
   fixedvarsEx=quote end
@@ -72,85 +115,48 @@ function plotXY{T}(cube::AbstractCubeData{T};group=0,xaxis=-1,kwargs...)
   fixedAxes=CubeAxis[]
   signals=Signal[]
 
-  if xaxis!=-1
-    ixaxis=findAxis(xaxis,axlist)
-    if ixaxis>0
-      push!(fixedvarsEx.args,:(ixaxis=$ixaxis))
-      push!(fixedAxes,axlist[ixaxis])
-    else
-      ixaxis=0
-    end
-  else
-    ixaxis=0
-  end
-  if group!=0
-    igroup=findAxis(group,axlist)
-    igroup>0 || error("Axis $group not found!")
-    push!(fixedvarsEx.args,:(igroup=$igroup))
-    push!(fixedAxes,axlist[igroup])
-  else
-    igroup=0
-  end
+  ixaxis = setPlotAxis(xaxis,i->:ixaxis,axlist,fixedvarsEx,fixedAxes)
+  igroup = setPlotAxis(group,i->:igroup,axlist,fixedvarsEx,fixedAxes)
   for (sy,val) in kwargs
-    ivalaxis=findAxis(string(sy),axlist)
-    ivalaxis>0 || error("Axis $sy not found")
-    s=Symbol("v_$ivalaxis")
-    push!(fixedvarsEx.args,:($s=$val))
-    push!(fixedAxes,axlist[ivalaxis])
+    setPlotAxis(string(sy),i->Symbol("v_$i"),axlist,fixedvarsEx,fixedAxes)
   end
 
   availableIndices=find(ax->!in(ax,fixedAxes),axlist)
   availableAxis=axlist[availableIndices]
 
-
-  if length(availableAxis) > 0
-    if ixaxis==0
-      xaxmenu=dropdown(OrderedDict(zip(axlabels[availableIndices],availableIndices)),label="X Axis",value=availableIndices[1],value_label=axlabels[availableIndices[1]])
-      xax=signal(xaxmenu)
-      push!(widgets,xaxmenu)
-      push!(argvars,:ixaxis)
-      push!(signals,xax)
-    end
-    if igroup==0
-      groupmenu=dropdown(OrderedDict(zip(["None";axlabels[availableIndices]],[0;availableIndices])),label="Group",value=0,value_label="None")
-      groupsig=signal(groupmenu)
-      push!(widgets,groupmenu)
-      push!(argvars,:igroup)
-      push!(signals,groupsig)
-    end
-    for i in availableIndices
-      w=getWidget(axlist[i])
-      push!(widgets,w)
-      push!(signals,signal(w))
-      push!(argvars,Symbol(string("v_",i)))
-    end
-  else
-    igroup==0 && push!(fixedvarsEx.args,:(igroup=0))
-  end
+  createWidgets(axlist,availableAxis,availableIndices,fixedvarsEx,axlabels,widgets,signals,argvars,[(ixaxis,:ixaxis,"X Axis",true),(igroup, :igroup, "Group",false)])
 
   nax=length(axlist)
 
   plotfun2=quote
     axlist=axes(cube)
+
     $fixedvarsEx
     ndim=length(axlist)
     subcubedims=@ntuple $nax d->(d==ixaxis || d==igroup) ? length(axlist[d]) : 1
-    sliceargs=@ntuple $nax d->(d==ixaxis || d==igroup) ? (1:length(axlist[d])) : axVal2Index(axlist[d],v_d,fuzzy=true)
-    ca = getMemHandle(cube,1,CartesianIndex(subcubedims))
-    dataslice=getSubRange(ca,sliceargs...)[1]
-    jxaxis=count_to(x->isa(x,Range),sliceargs,ixaxis)
 
-    xvals = repAx(dataslice,jxaxis,prepAx(axlist[ixaxis]))
-    yvals = r1(dataslice)
+    a       = zeros(eltype(cube), subcubedims)
+    m       = zeros(UInt8,        subcubedims)
+    ind1    = @ntuple $nax d->(d==ixaxis || d==igroup) ? 1 : axVal2Index(axlist[d],v_d,fuzzy=true)
+    ind2    = @ntuple $nax d->(d==ixaxis || d==igroup) ? subcubedims[d] : axVal2Index(axlist[d],v_d,fuzzy=true)
 
+    _read(cube,(a,m),CartesianRange(CartesianIndex(ind1),CartesianIndex(ind2)))
+
+    nx  = size(a,ixaxis)
     if igroup > 0
-      plotf = isa(axlist[ixaxis],CategoricalAxis) ? groupedbar : lineplot
-      jgroup=count_to(x->isa(x,Range),sliceargs,igroup)
-      gvals=repAx(dataslice,jgroup,prepAx(axlist[igroup]))
-      p=@suppress plotf(x=xvals,y=yvals,group=gvals)
+      ny = size(a,igroup)
+      a,m = reshape(a,(nx,ny)), reshape(m,(nx,ny))
     else
-      plotf = isa(axlist[ixaxis],CategoricalAxis) ? barplot : lineplot
-      p=@suppress plotf(x=xvals,y=yvals)
+      a,m = reshape(a,nx), reshape(m,nx)
+    end
+    #xvals = repAx(dataslice,jxaxis,prepAx(axlist[ixaxis]))
+    #yvals = r1(dataslice)
+    if igroup > 0
+      plotf = isa(axlist[ixaxis],CategoricalAxis) ? StatPlots.groupedbar : Plots.plot
+      p=plotf(axlist[ixaxis].values,a,lab=reshape(string.(axlist[igroup].values),(1,length(axlist[igroup]))))
+    else
+      plotf = isa(axlist[ixaxis],CategoricalAxis) ? Plots.bar : Plots.plot
+      p=plotf(axlist[ixaxis].values,a)
     end
     p
   end
@@ -161,15 +167,17 @@ function plotXY{T}(cube::AbstractCubeData{T};group=0,xaxis=-1,kwargs...)
   lambda = Expr(:(->), Expr(:tuple, argvars...),plotfun2)
   liftex = Expr(:call,:map,lambda,signals...)
   #println(liftex)
-  myfun=eval(quote
-  local li
-  li(cube)=$liftex
-end)
-for w in widgets display(w) end
-display(myfun(cube))
+  myfun=eval(
+  quote
+    local li
+    li(cube)=$liftex
+  end
+  )
+  for w in widgets display(w) end
+  display(myfun(cube))
 end
 
-function getMinMax(x,mask;symmetric=false,squeeze=1.0)
+function getMinMax(x,mask;symmetric=false)
   mi=typemax(eltype(x))
   ma=typemin(eltype(x))
   for ix in eachindex(x)
@@ -193,9 +201,9 @@ end
 
 function val2col(x,m,colorm,mi,ma,misscol,oceancol)
   N=length(colorm)
-    #println(x)
-    if !isnan(x) && x<typemax(x) && m==VALID || m==FILLED
-        i=min(N,max(1,ceil(Int,(x-mi)/(ma-mi)*N)))
+  #println(x)
+  if !isnan(x) && x<typemax(x) && m==VALID || m==FILLED
+    i=min(N,max(1,ceil(Int,(x-mi)/(ma-mi)*N)))
     return colorm[i]
   elseif (m & OCEAN)==OCEAN
     return oceancol
@@ -341,10 +349,10 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
   lambda = Expr(:(->), Expr(:tuple, argvars...),plotfun)
   liftex = Expr(:call,:map,lambda,signals...)
   myfun=eval(quote
-    local li
-    li(cube)=$liftex
-  end)
-  myfun(cube)
+  local li
+  li(cube)=$liftex
+end)
+myfun(cube)
 end
 @noinline getRGBAR(a,m,colorm,mi,ma,misscol,oceancol,nx,ny)=RGB{U8}[val2col(a[i,j],m[i,j],colorm,mi,ma,misscol,oceancol) for j=1:ny,i=1:nx]
 @noinline getRGBAR(cType,ar,mr,ag,mg,ab,mb,mi,ma,misscol,oceancol,nx,ny)=[RGB(val2col(cType,ar[i,j],mr[i,j],ag[i,j],mg[i,j],ab[i,j],mb[i,j],mi,ma,misscol,oceancol)) for j=1:ny,i=1:nx]
@@ -499,11 +507,11 @@ function plotMAPRGB{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(
   lambda = Expr(:(->), Expr(:tuple, argvars...),plotfun)
   liftex = Expr(:call,:map,lambda,signals...)
   myfun=eval(quote
-    local li
-    li(cube)=$liftex
-  end)
-  for w in sliders display(w) end
-  myfun(cube)
+  local li
+  li(cube)=$liftex
+end)
+for w in sliders display(w) end
+myfun(cube)
 end
 
 import Showoff.showoff
@@ -521,18 +529,18 @@ function getlegend(xmin,xmax,colm,legheight)
 end
 
 function getlegend(colm,width)
-            texth1=Compose.max_text_extents(Compose.default_font_family, Compose.default_font_size, first(keys(colm)))[2]
-            texth=texth1*1.05*length(colm)
-            yoffs=(Measures.h-texth)/2
-            yl=texth
-            ncol=length(colm)
-            tpos=[(i-0.5)/ncol for i=1:ncol]
-            r=Compose.circle([0.5],[(i-0.5)/ncol for i in 1:ncol],[max(1/(ncol-1),0.5)])
-            f=fill(collect(values(colm)))
-            bar=compose(context(0.9,yoffs,0.1,yl),r,f,stroke(nothing),svgattribute("shape-rendering","crispEdges"))
-            tlabels=compose(context(0,yoffs,0.85,yl),Compose.text([1],tpos,collect(keys(colm)),[HRight()],[VCenter()]))
-            compose(context(1Measures.w-width,0,width,1),bar,tlabels)
-        end
+  texth1=Compose.max_text_extents(Compose.default_font_family, Compose.default_font_size, first(keys(colm)))[2]
+  texth=texth1*1.05*length(colm)
+  yoffs=(Measures.h-texth)/2
+  yl=texth
+  ncol=length(colm)
+  tpos=[(i-0.5)/ncol for i=1:ncol]
+  r=Compose.circle([0.5],[(i-0.5)/ncol for i in 1:ncol],[max(1/(ncol-1),0.5)])
+  f=fill(collect(values(colm)))
+  bar=compose(context(0.9,yoffs,0.1,yl),r,f,stroke(nothing),svgattribute("shape-rendering","crispEdges"))
+  tlabels=compose(context(0,yoffs,0.85,yl),Compose.text([1],tpos,collect(keys(colm)),[HRight()],[VCenter()]))
+  compose(context(1Measures.w-width,0,width,1),bar,tlabels)
+end
 
 
 """
@@ -698,12 +706,10 @@ function plotScatter{T}(cube::AbstractCubeData{T};group=0,vsaxis=VariableAxis,xa
   lambda = Expr(:(->), Expr(:tuple, argvars...),plotfun2)
   liftex = Expr(:call,:map,lambda,signals...)
   myfun=eval(quote
-    local li
-    li(cube)=$liftex
-  end)
-  for w in widgets display(w) end
-  display(myfun(cube))
+  local li
+  li(cube)=$liftex
+end)
+for w in widgets display(w) end
+display(myfun(cube))
 end
-
-
 end

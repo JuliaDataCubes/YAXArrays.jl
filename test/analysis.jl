@@ -7,7 +7,7 @@ function doTests()
   c=RemoteCube()
 
   d = getCubeData(c,variable="air_temperature_2m",longitude=(30,31),latitude=(50,51),
-                time=(DateTime("2002-01-01"),DateTime("2008-12-31")))
+                time=(Date("2002-01-01"),Date("2008-12-31")))
 
   dmem=readCubeData(d)
 
@@ -20,7 +20,7 @@ function doTests()
                 281.963  282.109  282.271  282.418])
 
   #Test Spatial meann along laitutde axis
-  d1=getCubeData(c,variable="gross_primary_productivity",time=(DateTime("2002-01-01"),DateTime("2002-01-01")),longitude=(30,30))
+  d1=getCubeData(c,variable="gross_primary_productivity",time=(Date("2002-01-01"),Date("2002-01-01")),longitude=(30,30))
 
   dmem=readCubeData(d1)
   mtime=reduceCube(mean,dmem,(LonAxis,LatAxis),skipnull=true)
