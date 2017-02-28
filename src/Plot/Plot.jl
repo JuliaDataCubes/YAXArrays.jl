@@ -19,9 +19,14 @@ import Compose
 import Images
 import DataStructures: OrderedDict
 import Suppressor: @suppress
+import Match: @match
 
 typealias U8 Normed{UInt8,8}
 #import Patchwork.load_js_runtime
+
+
+abstract CABLABPlots
+
 
 
 toYr(tx::TimeAxis)=((tx.values.startyear+(tx.values.startst-1)/tx.values.NPY):(1.0/tx.values.NPY):(tx.values.stopyear+(tx.values.stopst-1)/tx.values.NPY))-(tx.values.startyear+(tx.values.startst-1)/tx.values.NPY)
@@ -54,7 +59,7 @@ setPlotAxis(x::Void,axlist,name,fixedvarsEx,fixedAxes)=0
 function setPlotAxis(x,name,axlist,fixedvarsEx,fixedAxes)
   ix=findAxis(x,axlist)
   if ix>0
-    push!(fixedvarsEx.args,:($(name(ix))=$ix))
+    push!(fixedvarsEx.args,:($name=$ix))
     push!(fixedAxes,axlist[ix])
     return ix
   else
@@ -66,12 +71,15 @@ function createWidgets(axlist,availableAxis,availableIndices,fixedvarsEx,axlabel
 
   if !isempty(availableAxis)
     for (ix,ixs,label,musthave) in axtuples
-      options = musthave ? zip(axlabels[availableIndices],availableIndices) : zip(["None";axlabels[availableIndices]],[0;availableIndices])
-      axmenu=dropdown(OrderedDict(options),label=label,value=start(options)[1],value_label=axlabels[start(options)[2]])
-      sax=signal(axmenu)
-      push!(widgets,axmenu)
-      push!(argvars,ixs)
-      push!(signals,sax)
+      if ix == 0
+        options = collect(musthave ? zip(axlabels[availableIndices],availableIndices) : zip(["None";axlabels[availableIndices]],[0;availableIndices]))
+        println(options)
+        axmenu  = dropdown(OrderedDict(options),label=label,value=options[1][2],value_label=options[1][1])
+        sax=signal(axmenu)
+        push!(widgets,axmenu)
+        push!(argvars,ixs)
+        push!(signals,sax)
+      end
     end
     for i in availableIndices
       w=getWidget(axlist[i])
@@ -115,10 +123,10 @@ function plotXY{T}(cube::AbstractCubeData{T};group=nothing,xaxis=nothing,kwargs.
   fixedAxes=CubeAxis[]
   signals=Signal[]
 
-  ixaxis = setPlotAxis(xaxis,i->:ixaxis,axlist,fixedvarsEx,fixedAxes)
-  igroup = setPlotAxis(group,i->:igroup,axlist,fixedvarsEx,fixedAxes)
+  ixaxis = setPlotAxis(xaxis,:ixaxis,axlist,fixedvarsEx,fixedAxes)
+  igroup = setPlotAxis(group,:igroup,axlist,fixedvarsEx,fixedAxes)
   for (sy,val) in kwargs
-    setPlotAxis(string(sy),i->Symbol("v_$i"),axlist,fixedvarsEx,fixedAxes)
+    setPlotAxis(string(sy),Symbol("v_$i"),axlist,fixedvarsEx,fixedAxes)
   end
 
   availableIndices=find(ax->!in(ax,fixedAxes),axlist)
@@ -135,22 +143,15 @@ function plotXY{T}(cube::AbstractCubeData{T};group=nothing,xaxis=nothing,kwargs.
     ndim=length(axlist)
     subcubedims=@ntuple $nax d->(d==ixaxis || d==igroup) ? length(axlist[d]) : 1
 
-    a       = zeros(eltype(cube), subcubedims)
-    m       = zeros(UInt8,        subcubedims)
-    ind1    = @ntuple $nax d->(d==ixaxis || d==igroup) ? 1 : axVal2Index(axlist[d],v_d,fuzzy=true)
-    ind2    = @ntuple $nax d->(d==ixaxis || d==igroup) ? subcubedims[d] : axVal2Index(axlist[d],v_d,fuzzy=true)
+    a           = zeros(eltype(cube), subcubedims)
+    m           = zeros(UInt8,        subcubedims)
+    indstart    = @ntuple $nax d->(d==ixaxis || d==igroup) ? 1 : axVal2Index(axlist[d],v_d,fuzzy=true)
+    indend      = @ntuple $nax d->(d==ixaxis || d==igroup) ? subcubedims[d] : axVal2Index(axlist[d],v_d,fuzzy=true)
+    _read(cube,(a,m),CartesianRange(CartesianIndex(indstart),CartesianIndex(indend)))
 
-    _read(cube,(a,m),CartesianRange(CartesianIndex(ind1),CartesianIndex(ind2)))
+    sd2 = filter(i->i>1,subcubedims)
+    a,m = reshape(a,sd2...),reshape(m,sd2...)
 
-    nx  = size(a,ixaxis)
-    if igroup > 0
-      ny = size(a,igroup)
-      a,m = reshape(a,(nx,ny)), reshape(m,(nx,ny))
-    else
-      a,m = reshape(a,nx), reshape(m,nx)
-    end
-    #xvals = repAx(dataslice,jxaxis,prepAx(axlist[ixaxis]))
-    #yvals = r1(dataslice)
     if igroup > 0
       plotf = isa(axlist[ixaxis],CategoricalAxis) ? StatPlots.groupedbar : Plots.plot
       p=plotf(axlist[ixaxis].values,a,lab=reshape(string.(axlist[igroup].values),(1,length(axlist[igroup]))))
@@ -248,6 +249,133 @@ typed_dminmax{T<:AbstractFloat}(::Type{T},dmin,dmax)=(Float64(dmin),Float64(dmax
 typed_dminmax2{T<:Integer}(::Type{T},dmin,dmax)=(isa(dmin,Tuple) ? (Int(dmin[1]),Int(dmin[2]),Int(dmin[3])) : (Int(dmin),Int(dmin),Int(dmin)), isa(dmax,Tuple) ? (Int(dmax[1]),Int(dmax[2]),Int(dmax[3])) : (Int(dmax),Int(dmax),Int(dmax)))
 typed_dminmax2{T<:AbstractFloat}(::Type{T},dmin,dmax)=(isa(dmin,Tuple) ? (Float64(dmin[1]),Float64(dmin[2]),Float64(dmin[3])) : (Float64(dmin),Float64(dmin),Float64(dmin)), isa(dmax,Tuple) ? (Float64(dmax[1]),Float64(dmax[2]),Float64(dmax[3])) : (Float64(dmax),Float64(dmax),Float64(dmax)))
 
+function _makeMap(a,m,mi,ma,colorm,colorm2,oceancol,misscol,legPos,iscategorical,symmetric)
+  if iscategorical
+    colorm,colorm2=colorm
+  else
+    mi==ma && ((mi,ma)=getMinMax(a,m,symmetric=symmetric))
+  end
+  rgbar = getRGBAR(a,m,colorm,convert($T,mi),convert($T,ma),misscol,oceancol,nx,ny)
+  pngbuf=IOBuffer()
+  show(pngbuf,"image/png",rgbar)
+  legheight=legPos==:bottom ? max(0.1*Measures.h,1.6Measures.cm) : 0Measures.h
+  legwidth =legPos==:right  ? max(0.2*Measures.w,3.2Measures.cm) : 0Measures.w
+  themap=compose(context(0,0,1Measures.w-legwidth,1Measures.h-legheight),bitmap("image/png",pngbuf.data,0,0,1,1))
+  getlegend(mi,ma,colorm,legheight)
+  compose(context(),themap,theleg)
+end
+
+abstract MAPPlot <: CABLABPlots
+abstract MAPPlotMapped <: MAPPlot
+
+plotAxVars(p::MAPPlotMapped)=[(p.xaxis,:ilon,"X Axis",true),(p.yaxis,:ilat,"Y Axis",false)]
+match_subCubeDims(::MAPPlotMapped) = quote (ilon || ilat) => length(axlist[d]); _=>1 end
+match_indstart(::MAPPlotMapped,::Int)    = quote (ilon || ilat) => 1; _=> axVal2Index(axlist[d],v_d,fuzzy=true) end
+match_indend(::MAPPlotMapped,::Int)      = quote (ilon || ilat) => subcubedims[d]; _=> axVal2Index(axlist[d],v_d,fuzzy=true) end
+plotCall(::MAPPlotMapped) = :(_makeMap(a_1,m_1,mi,ma,colorm,oceancol,misscol,legPos,iscategorical,symmetric))
+nplotCubes(::MAPPlotMapped)=1
+
+type MAPPlotCategory <: MAPPlotMapped
+  colorm
+  colorm2
+  oceancol
+  misscol
+  xaxis
+  yaxis
+end
+function getFixedVars(p::MAPPlotCategory,cube)
+  quote
+    colorm=($(p.colorm),$(p.colorm2))
+    iscategorical=true
+    legPos=:right
+  end
+end
+
+type MAPPlotContin <: MAPPlotMapped
+  colorm
+  dmin
+  dmax
+  oceancol
+  misscol
+  xaxis
+  yaxis
+end
+function getFixedVars(p::MAPPlotMapped,cube)
+  quote
+    colorm=$(p.colorm)
+    iscategorical=false
+    legPos=:bottom
+    $(p.dmin==p.dmax ? :((mi,ma)=getMinMax(a_1,m_1)) : :(mi=$p.(dmin);ma=$(p.dmax)))
+  end
+
+end
+
+function plotGeneric{T}(plotObj::CABLABPlots, cube::CubeAPI.AbstractCubeData{T};kwargs...)
+
+
+  axlist=axes(cube)
+
+  fixedvarsEx=getFixedVars(plotObj,cube)
+
+  axlist=axes(cube)
+  axlabels=map(axname,axlist)
+  widgets=Any[]
+  argvars=Symbol[]
+  fixedAxes=CubeAxis[]
+  signals=Signal[]
+
+  pAxVars=plotAxVars(plotObj)
+
+  ifixed = map(t->setPlotAxis(t[1],t[2],axlist,fixedvarsEx,fixedAxes),pAxVars)
+
+  for (sy,val) in kwargs
+    setPlotAxis(string(sy),Symbol("v_$i"),axlist,fixedvarsEx,fixedAxes)
+  end
+
+  availableIndices=find(ax->!in(ax,fixedAxes),axlist)
+  availableAxis=axlist[availableIndices]
+
+  createWidgets(axlist,availableAxis,availableIndices,fixedvarsEx,axlabels,widgets,signals,argvars,map((i,j)->(i,j...),ifixed,pAxVars))
+
+  nax        = length(axlist)
+  nCubes     = nplotCubes(plotObj)
+
+  plotfun=quote
+    axlist=axes(cube)
+    $fixedvarsEx
+    ndim=$nax
+
+    subcubedims = @ntuple $nax d->@match d $(match_subCubeDims(plotObj))
+    sd2 = filter(i->i>1,subcubedims)
+
+    @nexprs $nCubes f->begin
+      a_f        = zeros(eltype(cube), subcubedims)
+      m_f        = zeros(UInt8,        subcubedims)
+      indstart_f = @ntuple $nax d->@match d $(match_indstart(plotObj,f))
+      indend_f   = @ntuple $nax d->@match d $(match_indend(plotObj,f))
+
+      _read(cube,(a_f,m_f),CartesianRange(CartesianIndex(indstart_f),CartesianIndex(ind_f)))
+      a_f,m_f = reshape(a_f,sd2...),reshape(m_f,sd2...)
+    end
+
+    $(plotCall(plotObj))
+  end
+  return plotfun
+  if length(argvars)==0
+    x=eval(:(cube->$plotfun))
+    return x(cube)
+  end
+  lambda = Expr(:(->), Expr(:tuple, argvars...),plotfun)
+  liftex = Expr(:call,:map,lambda,signals...)
+  myfun=eval(quote
+  local li
+  li(cube)=$liftex
+end)
+foreach(display,widgets)
+display(myfun(cube))
+end
+
+
 
 """
 `plotMAP(cube::AbstractCubeData; dmin=datamin, dmax=datamax, colorm=colormap("oranges"), oceancol=colorant"darkblue", misscol=colorant"gray", kwargs...)`
@@ -266,94 +394,26 @@ Map plotting tool for cube objects, can be called on any type of cube data
 
 If a dimension is neither longitude or latitude and is not fixed through an additional keyword, a slider or dropdown menu will appear to select the axis value.
 """
-function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
+function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};xaxis=LonAxis, yaxis=LatAxis, dmin=zero(T),dmax=zero(T),
   colorm=:inferno,oceancol=colorant"darkblue",misscol=colorant"gray",symmetric=false,kwargs...)
-  isa(colorm,Symbol) && (colorm=namedcolms[colorm])
+
+  isa(colorm,Symbol) && (colorm=get(namedcolms,colorm,namedcolms[:inferno]))
   dmin,dmax=typed_dminmax(T,dmin,dmax)
   axlist=axes(cube)
-  ilon=findfirst(a->isa(a,LonAxis),axlist)
-  ilat=findfirst(a->isa(a,LatAxis),axlist)
+
   props=cube.properties
-  p=getFrontPerm(cube,(axlist[ilon],axlist[ilat]))
-  (p[1]==1 && p[2]==2) || (cube=permutedims(cube,p))
-  axlist=axes(cube)
-  sliders=Any[]
-  signals=Signal[]
-  argvars=Symbol[]
-  ivarax=0
-  nvar=0
-  nlon=length(axlist[1])
-  nlat=length(axlist[2])
-  fixedvarsEx=quote end
+
   if haskey(props,"labels")
     labels = props["labels"]
-    push!(fixedvarsEx.args,:(labels=$labels))
     _colorm  = distinguishable_colors(length(labels)+2,[misscol,oceancol])[3:end]
     colorm   = Dict(k=>_colorm[i] for (i,k) in enumerate(keys(labels)))
     colorm2  = Dict(k=>_colorm[i] for (i,k) in enumerate(values(labels)))
-    rgbarEx  = :(rgbar=getRGBAR(a,m,colorm,misscol,oceancol,nx,ny))
-    legEx    = :(getlegend(colorm2,legwidth))
-    mimaex   = :(colorm2=$colorm2)
-    legPosEx = :(legPos=:right)
+    plotGeneric(MAPPlotCategory(colorm,colorm2,oceancol,misscol,xaxis,yaxis),cube;kwargs...)
   else
-    labels   = nothing
-    mimaex   = dmin==dmax ? :((mi,ma)=getMinMax(a,m,symmetric=$symmetric)) : :(mi=$(dmin);ma=$(dmax))
-    rgbarEx  = :(rgbar=getRGBAR(a,m,colorm,convert($T,mi),convert($T,ma),misscol,oceancol,nx,ny))
-    legEx    = :(getlegend(mi,ma,colorm,legheight))
-    legPosEx = :(legPos=:bottom)
+    plotGeneric(MAPPlotContin(colorm,dmin,dmax,oceancol,misscol,xaxis,yaxis),cube;kwargs...)
   end
-  fixedAxes=CubeAxis[]
-  for (sy,val) in kwargs
-    ivalaxis=findAxis(string(sy),axlist)
-    ivalaxis>2 || error("Axis $sy not found")
-    s=Symbol("v_$ivalaxis")
-    push!(fixedvarsEx.args,:($s=$val))
-    push!(fixedAxes,axlist[ivalaxis])
-  end
-  for iax=3:length(axlist)
-    if !in(axlist[iax],fixedAxes)
-      w=getWidget(axlist[iax])
-      push!(sliders,w)
-      push!(signals,signal(w))
-      push!(argvars,Symbol(string("v_",iax)))
-      display(w)
-    end
-  end
-  nax=length(axlist)
-  plotfun=quote
-    axlist=axes(cube)
-    $fixedvarsEx
-    subcubedims = @ntuple $nax d->(d==1 || d==2) ? length(axlist[d]) : 1
-    sliceargs  = @ntuple $nax d->(d==1 || d==2) ? (1:length(axlist[d])) : axVal2Index(axlist[d],v_d,fuzzy=true)
-    ca = getMemHandle(cube,1,CartesianIndex(subcubedims))
-    a,m=getSubRange(ca,sliceargs...)
-    nx,ny=size(a)
-    $mimaex
-    colorm=$colorm
-    oceancol=$oceancol
-    misscol=$misscol
-    $rgbarEx
-    $legPosEx
-    pngbuf=IOBuffer()
-    show(pngbuf,"image/png",rgbar)
-    legheight=legPos==:bottom ? max(0.1*Measures.h,1.6Measures.cm) : 0Measures.h
-    legwidth =legPos==:right  ? max(0.2*Measures.w,3.2Measures.cm) : 0Measures.w
-    themap=compose(context(0,0,1Measures.w-legwidth,1Measures.h-legheight),bitmap("image/png",pngbuf.data,0,0,1,1))
-    theleg=$legEx
-    compose(context(),themap,theleg)
-  end
-  if length(argvars)==0
-    x=eval(:(cube->$plotfun))
-    return x(cube)
-  end
-  lambda = Expr(:(->), Expr(:tuple, argvars...),plotfun)
-  liftex = Expr(:call,:map,lambda,signals...)
-  myfun=eval(quote
-  local li
-  li(cube)=$liftex
-end)
-myfun(cube)
 end
+
 @noinline getRGBAR(a,m,colorm,mi,ma,misscol,oceancol,nx,ny)=RGB{U8}[val2col(a[i,j],m[i,j],colorm,mi,ma,misscol,oceancol) for j=1:ny,i=1:nx]
 @noinline getRGBAR(cType,ar,mr,ag,mg,ab,mb,mi,ma,misscol,oceancol,nx,ny)=[RGB(val2col(cType,ar[i,j],mr[i,j],ag[i,j],mg[i,j],ab[i,j],mb[i,j],mi,ma,misscol,oceancol)) for j=1:ny,i=1:nx]
 @noinline getRGBAR(a,m,colorm::Dict,misscol,oceancol,nx,ny)=RGB{U8}[val2col(a[i,j],m[i,j],colorm,misscol,oceancol) for j=1:ny,i=1:nx]
