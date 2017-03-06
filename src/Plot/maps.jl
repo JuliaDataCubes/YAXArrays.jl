@@ -13,19 +13,44 @@ type MAPPlotRGB <: MAPPlot
   oceancol
   cType
 end
-#plotAxVars(p::MAPPlotMapped)=[(p.xaxis,:ilon,"X Axis",true),(p.yaxis,:ilat,"Y Axis",true),(p.rgbAxis,:irgb,"RGB Axis",true)]
-#match_subCubeDims(::MAPPlotMapped) = quote (d==ilon || d==ilat) => length(axlist[d]); _=>1 end
-#match_indstart(::MAPPlotMapped)    = quote (d==ilon || d==ilat) => 1; _=> axVal2Index(axlist[d],v_d,fuzzy=true) end
-#match_indend(::MAPPlotMapped)      = quote (d==ilon || d==ilat) => subcubedims[d]; _=> axVal2Index(axlist[d],v_d,fuzzy=true) end
-#nplotCubes(::MAPPlotMapped)=1
+plotAxVars(p::MAPPlotRGB)=[
+  FixedAx(p.xaxis,:ilon,"X Axis",true,false),
+  FixedAx(p.yaxis,:ilat,"Y Axis",true,false),
+  FixedAx(p.rgbAxis,:irgb,"RGB Axis", true, true),
+  FixedVar(p.rgbAxis,p.c_1,:c_1,channel_names(p.cType)[1],true),
+  FixedVar(p.rgbAxis,p.c_2,:c_2,channel_names(p.cType)[2],true),
+  FixedVar(p.rgbAxis,p.c_3,:c_3,channel_names(p.cType)[3],true)
+  ]
+match_subCubeDims(::MAPPlotRGB) = quote (d==ilon || d==ilat) => length(axlist[d]);_=>1 end
+match_indstart(::MAPPlotRGB)    = quote (d==ilon || d==ilat) => 1;d==irgb => axVal2Index(axlist[d],c_f,fuzzy=true) ; _=> axVal2Index(axlist[d],v_d,fuzzy=true) end
+match_indend(::MAPPlotRGB)   = quote (d==ilon || d==ilat) => subcubedims[d];d==irgb => axVal2Index(axlist[d],c_f,fuzzy=true) ; _=> axVal2Index(axlist[d],v_d,fuzzy=true) end
+nplotCubes(::MAPPlotRGB)=3
+function getFixedVars(p::MAPPlotRGB,cube)
+  quote
+    oceancol=$(p.oceancol)
+    misscol=$(p.misscol)
+  end
+end
+plotCall(p::MAPPlotRGB) = quote
+  rgbar=getRGBAR($(p.cType),a_1,m_1,a_2,m_2,a_3,m_3,(mir,mig,mib),(mar,mag,mab),misscol,oceancol)
+  pngbuf=IOBuffer()
+  show(pngbuf,"image/png",rgbar)
+  themap=compose(context(0,0,1,1),bitmap("image/png",pngbuf.data,0,0,1,1))
+end
+getafterEx(p::MAPPlotRGB)=p.dmin==p.dmax ? :((mir,mar,mig,mag,mib,mab)=(getMinMax(a_1,m_1)...,getMinMax(a_2,m_2)...,getMinMax(a_3,m_3)...)) : :(mi=$(dmin);ma=$(dmax))
+
+
 
 abstract MAPPlotMapped <: MAPPlot
 
-plotAxVars(p::MAPPlotMapped)=[(p.xaxis,:ilon,"X Axis",true),(p.yaxis,:ilat,"Y Axis",false)]
+plotAxVars(p::MAPPlotMapped)=[FixedAx(p.xaxis,:ilon,"X Axis",true,false),FixedAx(p.yaxis,:ilat,"Y Axis",true,false)]
 match_subCubeDims(::MAPPlotMapped) = quote (d==ilon || d==ilat) => length(axlist[d]); _=>1 end
 match_indstart(::MAPPlotMapped)    = quote (d==ilon || d==ilat) => 1; _=> axVal2Index(axlist[d],v_d,fuzzy=true) end
 match_indend(::MAPPlotMapped)      = quote (d==ilon || d==ilat) => subcubedims[d]; _=> axVal2Index(axlist[d],v_d,fuzzy=true) end
 nplotCubes(::MAPPlotMapped)=1
+max_indim(::MAPPlot)=2
+min_indim(::MAPPlot)=2
+n_fixedindim(::MAPPlot)=0
 
 
 type MAPPlotCategory <: MAPPlotMapped
@@ -131,121 +156,24 @@ If a dimension is neither longitude or latitude and is not fixed through an addi
 function plotMAPRGB{T}(cube::CubeAPI.AbstractCubeData{T};dmin=zero(T),dmax=zero(T),
   rgbAxis=VariableAxis,oceancol=colorant"darkblue",misscol=colorant"gray",symmetric=false,
   c1 = nothing, c2=nothing, c3=nothing, cType=XYZ, xaxis=LonAxis,yaxis=LatAxis,kwargs...)
+
   isa(rgbAxis,CubeAxis) && (rgbAxis=typeof(rgbAxis))
 
   dmin,dmax = typed_dminmax2(T,dmin,dmax)
   axlist    = axes(cube)
 
-  return plotGeneric(MAPPlotRGB(xaxis,yaxis,rgbAxis,dmin,dmax,c1,c2,c3,misscol,oceancol,cType))
   irgb = findAxis(rgbAxis,axlist)
-  ilon = findAxis(LonAxis,axlist)
-  ilat = findAxis(LatAxis,axlist)
-
-  p    = getFrontPerm(cube,(axlist[irgb],axlist[ilon],axlist[ilat]))
-  (p[1]==1 && p[2]==2 && p[3]==3) || (cube=permutedims(cube,p))
-  irgb,ilon,ilat=(1,2,3)
-  axlist=axes(cube)
-  sliders=Any[]
-  signals=Signal[]
-  argvars=Symbol[]
-  ivarax=0
-  nvar=0
-  nlon=length(axlist[1])
-  nlat=length(axlist[2])
-  fixedvarsEx=quote end
-  labels   = nothing
-  mimaex   = dmin==dmax ? :((mir,mar,mig,mag,mib,mab)=(getMinMax(ar,mr)...,getMinMax(ag,mg)...,getMinMax(ab,mb)...)) : :(mi=$(dmin);ma=$(dmax))
-  rgbarEx  = :(rgbar=getRGBAR($cType,ar,mr,ag,mg,ab,mb,(mir,mig,mib),(mar,mag,mab),misscol,oceancol,nx,ny))
-  fixedAxes=CubeAxis[]
   if length(axlist[irgb])==3 && c1==nothing && c2==nothing && c3==nothing
     c1=1
     c2=2
     c3=3
   end
-  if c1==nothing
-    w=getWidget(axlist[irgb],label=channel_names(cType)[1])
-    push!(sliders,w)
-    push!(signals,signal(w))
-    push!(argvars,:c1)
-  else
-    push!(fixedvarsEx.args,:(c1=$c1))
-  end
-  if c2==nothing
-    w=getWidget(axlist[irgb],label=channel_names(cType)[2])
-    push!(sliders,w)
-    push!(signals,signal(w))
-    push!(argvars,:c2)
-  else
-    push!(fixedvarsEx.args,:(c2=$c2))
-  end
-  if c3==nothing
-    w=getWidget(axlist[irgb],label=channel_names(cType)[3])
-    push!(sliders,w)
-    push!(signals,signal(w))
-    push!(argvars,:c3)
-  else
-    push!(fixedvarsEx.args,:(c3=$c3))
-  end
-  for (sy,val) in kwargs
-    ivalaxis=findAxis(string(sy),axlist)
-    ivalaxis>3 || error("Axis $sy not found")
-    s=Symbol("v_$ivalaxis")
-    push!(fixedvarsEx.args,:($s=$val))
-    push!(fixedAxes,axlist[ivalaxis])
-  end
-  for iax=4:length(axlist)
-    if !in(axlist[iax],fixedAxes)
-      w=getWidget(axlist[iax])
-      push!(sliders,w)
-      push!(signals,signal(w))
-      push!(argvars,Symbol(string("v_",iax)))
-    end
-  end
-  nax=length(axlist)
-  plotfun=quote
-    axlist=axes(cube)
-    $fixedvarsEx
-    subcubedims = @ntuple $nax d->(d==$ilon || d==$ilat) ? length(axlist[d]) : 1
-    ar,ag,ab = zeros(eltype(cube),subcubedims),zeros(eltype(cube),subcubedims),zeros(eltype(cube),subcubedims)
-    mr,mg,mb = zeros(UInt8,subcubedims),       zeros(UInt8,subcubedims),       zeros(UInt8,subcubedims)
-    ind1r    = @ntuple $nax d->(d==$ilon || d==$ilat) ? 1                 : d==$irgb ? axVal2Index(axlist[d],c1,fuzzy=true) : axVal2Index(axlist[d],v_d,fuzzy=true)
-    ind1g    = @ntuple $nax d->(d==$ilon || d==$ilat) ? 1                 : d==$irgb ? axVal2Index(axlist[d],c2,fuzzy=true) : axVal2Index(axlist[d],v_d,fuzzy=true)
-    ind1b    = @ntuple $nax d->(d==$ilon || d==$ilat) ? 1                 : d==$irgb ? axVal2Index(axlist[d],c3,fuzzy=true) : axVal2Index(axlist[d],v_d,fuzzy=true)
-    ind2r    = @ntuple $nax d->(d==$ilon || d==$ilat) ? length(axlist[d]) : d==$irgb ? axVal2Index(axlist[d],c1,fuzzy=true) : axVal2Index(axlist[d],v_d,fuzzy=true)
-    ind2g    = @ntuple $nax d->(d==$ilon || d==$ilat) ? length(axlist[d]) : d==$irgb ? axVal2Index(axlist[d],c2,fuzzy=true) : axVal2Index(axlist[d],v_d,fuzzy=true)
-    ind2b    = @ntuple $nax d->(d==$ilon || d==$ilat) ? length(axlist[d]) : d==$irgb ? axVal2Index(axlist[d],c3,fuzzy=true) : axVal2Index(axlist[d],v_d,fuzzy=true)
-    _read(cube,(ar,mr),CartesianRange(CartesianIndex(ind1r),CartesianIndex(ind2r)))
-    _read(cube,(ag,mg),CartesianRange(CartesianIndex(ind1g),CartesianIndex(ind2g)))
-    _read(cube,(ab,mb),CartesianRange(CartesianIndex(ind1b),CartesianIndex(ind2b)))
-    nx,ny=subcubedims[2],subcubedims[3]
-    ar,mr = reshape(ar,(nx,ny)), reshape(mr,(nx,ny))
-    ag,mg = reshape(ag,(nx,ny)), reshape(mg,(nx,ny))
-    ab,mb = reshape(ab,(nx,ny)), reshape(mb,(nx,ny))
-    $mimaex
-    oceancol=$oceancol
-    misscol=$misscol
-    $rgbarEx
-    pngbuf=IOBuffer()
-    show(pngbuf,"image/png",rgbar)
-    themap=compose(context(0,0,1,1),bitmap("image/png",pngbuf.data,0,0,1,1))
-    #compose(context(),themap)
-  end
-  if length(argvars)==0
-    x=eval(:(cube->$plotfun))
-    return x(cube)
-  end
-  lambda = Expr(:(->), Expr(:tuple, argvars...),plotfun)
-  liftex = Expr(:call,:map,lambda,signals...)
-  myfun=eval(quote
-  local li
-  li(cube)=$liftex
-end)
-for w in sliders display(w) end
-myfun(cube)
+
+  return plotGeneric(MAPPlotRGB(xaxis,yaxis,rgbAxis,dmin,dmax,c1,c2,c3,misscol,oceancol,cType),cube;kwargs...)
 end
 
 @noinline getRGBAR(a,m,colorm,mi,ma,misscol,oceancol)=RGB{U8}[val2col(a[i,j],m[i,j],colorm,mi,ma,misscol,oceancol) for j=1:size(a,2),i=1:size(a,1)]
-@noinline getRGBAR(cType,ar,mr,ag,mg,ab,mb,mi,ma,misscol,oceancol)=[RGB(val2col(cType,ar[i,j],mr[i,j],ag[i,j],mg[i,j],ab[i,j],mb[i,j],mi,ma,misscol,oceancol)) for j=1:size(ar,1),i=1:size(ar,2)]
+@noinline getRGBAR(cType,ar,mr,ag,mg,ab,mb,mi,ma,misscol,oceancol)=[RGB(val2col(cType,ar[i,j],mr[i,j],ag[i,j],mg[i,j],ab[i,j],mb[i,j],mi,ma,misscol,oceancol)) for j=1:size(ar,2),i=1:size(ar,1)]
 @noinline getRGBAR(a,m,colorm::Dict,mi,ma,misscol,oceancol)=RGB{U8}[val2col(a[i,j],m[i,j],colorm,misscol,oceancol) for j=1:size(a,2),i=1:size(a,1)]
 
 using ColorTypes
@@ -268,7 +196,33 @@ channel_names(::Type{HSL})=("H","S","L")
 channel_names(::Type{Lab})=("L","a","b")
 channel_names(::Type{Luv})=("L","u","v")
 
+import Showoff.showoff
+function getlegend(xmin,xmax,colm,legheight)
+  xoffs=0.05
+  xl=1-2xoffs
+  tlabs,smin,smax=optimize_ticks(Float64(xmin),Float64(xmax),extend_ticks=false,k_min=4)
+  tpos=[(tlabs[i]-xmin)/(xmax-xmin) for i=1:length(tlabs)]
+  r=rectangle([(i-1)/length(colm) for i in 1:length(colm)],[0],[1/(length(colm)-1)],[1])
+  f=fill([colm[div((i-1)*length(colm),length(colm))+1] for i=1:length(colm)])
+  bar=compose(context(xoffs,0.35,xl,0.55),r,f,stroke(nothing),svgattribute("shape-rendering","crispEdges"))
+  tlabels=compose(context(xoffs,0,xl,0.2),text(tpos,[1],showoff(tlabs),[HCenter()],[VBottom()]))
+  dlines=compose(context(xoffs,0.25,xl,0.1),line([[(tpx,0.1),(tpx,0.9)] for tpx in tpos]),stroke(colorant"black"))
+  compose(context(0,1Measures.h-legheight,1,legheight),bar,tlabels,dlines)
+end
 
+function getlegend(colm,width)
+  texth1=Compose.max_text_extents(Compose.default_font_family, Compose.default_font_size, first(keys(colm)))[2]
+  texth=texth1*1.05*length(colm)
+  yoffs=(Measures.h-texth)/2
+  yl=texth
+  ncol=length(colm)
+  tpos=[(i-0.5)/ncol for i=1:ncol]
+  r=Compose.circle([0.5],[(i-0.5)/ncol for i in 1:ncol],[max(1/(ncol-1),0.5)])
+  f=fill(collect(values(colm)))
+  bar=compose(context(0.9,yoffs,0.1,yl),r,f,stroke(nothing),svgattribute("shape-rendering","crispEdges"))
+  tlabels=compose(context(0,yoffs,0.85,yl),Compose.text([1],tpos,collect(keys(colm)),[HRight()],[VCenter()]))
+  compose(context(1Measures.w-width,0,width,1),bar,tlabels)
+end
 
 function getMinMax(x,mask;symmetric=false)
   mi=typemax(eltype(x))
