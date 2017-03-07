@@ -25,6 +25,11 @@ typealias U8 Normed{UInt8,8}
 
 
 abstract CABLABPlots
+"Expression to evaluate after the data is loaded"
+getafterEx(::CABLABPlots)=Expr(:block)
+
+"Setting fixed variables"
+getFixedVars(::CABLABPlots,cube)=Expr(:block)
 
 type FixedAx
   axis
@@ -83,10 +88,9 @@ function setPlotAxis(a::FixedAx,axlist,fixedvarsEx,fixedAxes)
   end
 end
 function setPlotAxis(a::FixedVar,axlist,fixedvarsEx,fixedAxes)
-  if a.varVal==nothing
-    a.depAxis=findAxis(a.depAxis,axlist)
-  else
-    push!(fixedvarsEx.args,:($(a.varsym)=$(a.varVal)))
+  a.depAxis=findAxis(a.depAxis,axlist)
+  if a.varVal!=nothing
+    push!(fixedvarsEx.args,:($(a.varsym)=$(axVal2Index(axlist[a.depAxis],a.varVal))))
   end
 end
 
@@ -104,10 +108,12 @@ function createWidgets(axlist,availableAxis,availableIndices,fixedvarsEx,axlabel
           push!(signals,sax)
         end
       elseif isa(at,FixedVar)
-        w= getWidget(axlist[at.depAxis],label=at.widgetlabel)
-        push!(widgets,w)
-        push!(signals,signal(w))
-        push!(argvars,at.varsym)
+        if at.varVal==nothing
+          w=getWidget(axlist[at.depAxis],label=at.widgetlabel)
+          push!(widgets,w)
+          push!(signals,signal(w))
+          push!(argvars,at.varsym)
+        end
       else
         error("")
       end

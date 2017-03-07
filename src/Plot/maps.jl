@@ -297,7 +297,7 @@ function _makeMap{T}(a::Array{T},m,mi,ma,colorm,oceancol,misscol,legPos,iscatego
   compose(context(),themap,theleg)
 end
 
-getafterEx(::CABLABPlots)=Expr(:block)
+
 
 function makeifs(alist)
     filter!(i->i.head!=:line,alist)
