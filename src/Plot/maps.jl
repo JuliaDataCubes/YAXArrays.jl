@@ -120,7 +120,7 @@ function plotMAP{T}(cube::CubeAPI.AbstractCubeData{T};xaxis=LonAxis, yaxis=LatAx
   dmin,dmax=typed_dminmax(T,dmin,dmax)
   axlist=axes(cube)
 
-  props=cube.properties
+  props=cubeproperties(cube)
 
   if haskey(props,"labels")
     labels = props["labels"]

@@ -121,7 +121,11 @@ end
 RangeAxis{T}(s::Symbol,v::Range{T})=RangeAxis{T,s,typeof(v)}(v)
 RangeAxis(s::AbstractString,v)=RangeAxis(Symbol(s),v)
 
-@defineRanAxis Time Date YearStepRange
+
+
+typealias TimeAxis RangeAxis{Date,:Time}
+TimeAxis(r)=RangeAxis(:Time,r)
+
 @defineRanAxis MSC Date YearStepRange
 @defineRanAxis Lon Float64 FloatRange{Float64}
 @defineRanAxis Lat Float64 FloatRange{Float64}
