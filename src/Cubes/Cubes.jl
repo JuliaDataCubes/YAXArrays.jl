@@ -3,7 +3,7 @@ The functions provided by CABLAB are supposed to work on different types of cube
 Data types that
 """
 module Cubes
-export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, QuantileAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, axes,
+export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, TimeHAxis, QuantileAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, axes,
        AbstractSubCube, CubeMem, openTempCube, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis, axVal2Index, MSCAxis,
        getSingVal, TimeScaleAxis, axname, @caxis_str, rmCube, cubeproperties
 
@@ -32,7 +32,13 @@ getSingVal(c::AbstractCubeData,a...)=error("getSingVal called in the wrong way w
 """
     readCubeData(cube::AbstractCubeData)
 """
-function readCubeData end
+function readCubeData{T,N}(x::AbstractCubeData{T,N})
+  s=size(x)
+  aout,mout=zeros(Float32,s...),zeros(UInt8,s...)
+  r=CartesianRange(CartesianIndex{N}(),CartesianIndex(s...))
+  _read(x,(aout,mout),r)
+  CubeMem(axes(x),aout,mout)
+end
 
 """
 This function calculates a subset of a cube's data

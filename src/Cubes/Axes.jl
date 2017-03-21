@@ -1,5 +1,5 @@
 module Axes
-export CubeAxis, QuantileAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis,
+export CubeAxis, QuantileAxis, TimeAxis, TimeHAxis, VariableAxis, LonAxis, LatAxis, CountryAxis,
 SpatialPointAxis,Axes,YearStepRange,CategoricalAxis,RangeAxis,axVal2Index,MSCAxis,
 TimeScaleAxis, axname, @caxis_str
 import NetCDF.NcDim
@@ -122,13 +122,13 @@ RangeAxis{T}(s::Symbol,v::Range{T})=RangeAxis{T,s,typeof(v)}(v)
 RangeAxis(s::AbstractString,v)=RangeAxis(Symbol(s),v)
 
 
-
 typealias TimeAxis RangeAxis{Date,:Time}
 TimeAxis(r)=RangeAxis(:Time,r)
 
 @defineRanAxis MSC Date YearStepRange
 @defineRanAxis Lon Float64 FloatRange{Float64}
 @defineRanAxis Lat Float64 FloatRange{Float64}
+@defineRanAxis TimeH DateTime StepRange{DateTime,Base.Dates.Minute}
 
 Base.length(a::CubeAxis)=length(a.values)
 
@@ -142,6 +142,16 @@ axname{T,S}(::RangeAxis{T,S})=string(S)
 axunits(::CubeAxis)="unknown"
 axunits(::LonAxis)="degrees_east"
 axunits(::LatAxis)="degrees_north"
+function axVal2Index{T,S,F<:StepRange}(a::RangeAxis{T,S,F},v)
+  dt = v-first(a.values)
+  r = round(Int,dt/step(a.values))+1
+  return max(1,min(length(a.values),r))
+end
+function axVal2Index{T<:DateTime,S,F<:StepRange}(a::RangeAxis{T,S,F},v)
+  dt = v-first(a.values)
+  r = round(Int,dt/Millisecond(step(a.values)))+1
+  return max(1,min(length(a.values),r))
+end
 axVal2Index{T,S,F<:FloatRange}(axis::RangeAxis{T,S,F},v;fuzzy::Bool=false)=min(max(round(Int,(v-first(axis.values))/step(axis.values))+1,1),length(axis))
 function axVal2Index(axis::CategoricalAxis{String},v::String;fuzzy::Bool=false)
   r=findfirst(axis.values,v)

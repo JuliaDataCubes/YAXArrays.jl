@@ -7,7 +7,7 @@
 Some info on the project...
 """
 module CABLAB
-export Cube, getCubeData,readCubeData,CubeMem,CubeAxis, TimeAxis, VariableAxis, LonAxis, FitAxis, LatAxis, CountryAxis, SpatialPointAxis, saveCube, loadCube,
+export Cube, getCubeData,readCubeData,CubeMem,CubeAxis, TimeAxis, TimeHAxis, VariableAxis, LonAxis, FitAxis, LatAxis, CountryAxis, SpatialPointAxis, saveCube, loadCube,
         RangeAxis, CategoricalAxis, MSCAxis, getSingVal, TimeScaleAxis, QuantileAxis, MethodAxis, RemoteCube, showVarInfo, @caxis_str #From Cube module
 export registerDATFunction, mapCube, reduceCube, getAxis #From DAT module
 export axVal2Index, plotTS, plotMAP, plotXY, plotScatter, plotMAPRGB #From Plot module
