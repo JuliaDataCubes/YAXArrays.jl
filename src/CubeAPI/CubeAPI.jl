@@ -467,7 +467,8 @@ function getMaskFile(cube::RemoteCube)
 
   filename=cube.config.spatial_res==0.25 ? string(cube.base_url,"dodsC/datacube/low-res/data/water_mask/2001_water_mask.nc") : string(cube.base_url,"dodsC/datacube/high-res/data/water_mask/2001_water_mask.nc")
   try
-    ncinfo(filename)
+    nc=NetCDF.open(filename)
+    NetCDF.close(nc)
     return filename
   catch
     return ""

@@ -1,4 +1,4 @@
-using Documenter, CABLAB
+using Documenter, CABLAB, CABLABPlots
 
 
 makedocs(
