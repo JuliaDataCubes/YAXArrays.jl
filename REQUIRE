@@ -1,22 +1,10 @@
 julia 0.5
 DataStructures
 NetCDF
-PlotUtils
-Compose
-Images 0.6
 StatsBase
-ImageMagick
-Interact
-Reactive
 JLD
-Patchwork
-Vega
 Requests
 LightXML
 NullableArrays
 OnlineStats
 Combinatorics
-Showoff
-Suppressor
-FixedPointNumbers
-Measures
