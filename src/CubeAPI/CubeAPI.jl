@@ -22,10 +22,12 @@ type ConfigEntry{LHS}
 end
 
 #This is probably not the final solution, we define a set of static variables that are treated differently when reading
-const static_vars = Set(["water_mask","country_mask"])
+const static_vars = Set(["water_mask","country_mask","srex_mask"])
 const countrylabels = include("countrylabels.jl")
+const srexlabels = include("srexlabels.jl")
 include("vardict.jl")
-const known_labels = Dict("water_mask"=>Dict(0x01=>"land",0x02=>"water"),"country_mask"=>countrylabels)
+const known_labels = Dict("water_mask"=>Dict(0x01=>"land",0x02=>"water"),"country_mask"=>countrylabels,"srex_mask"=>srexlabels)
+const known_names = Dict("water_mask"=>"Water","country_mask"=>"Country","srex_mask"=>"SREXregion")
 
 "
 A data cube's static configuration information.
@@ -532,6 +534,9 @@ function expandknownvars{T}(v::Array{T})
   vnew
 end
 
+ismiss(k::Integer)=k<typemax(k)
+ismiss(k::AbstractFloat)=isnan(k)
+
 function getCubeData{T<:AbstractString}(cube::UCube,
   variable::Vector{T},
   time::Tuple{TimeType,TimeType},
@@ -575,9 +580,9 @@ function getCubeData{T<:AbstractString}(cube::UCube,
       if haskey(known_labels,variable[1])
         rem_keys = unique(d.data)
         all_labels = known_labels[variable[1]]
-        left_labels = OrderedDict((k,all_labels[k]) for k in rem_keys if k<typemax(k))
+        left_labels = OrderedDict((k,all_labels[k]) for k in rem_keys if !ismiss(k))
         d.properties["labels"]=left_labels
-        d.properties["name"]="Country"
+        d.properties["name"]=known_names[variable[1]]
       end
       return d
     else
