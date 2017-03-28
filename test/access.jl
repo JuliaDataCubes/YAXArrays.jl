@@ -4,7 +4,7 @@ using Base.Test
 c=RemoteCube()
 
 d = getCubeData(c,variable="air_temperature_2m",longitude=(30,31),latitude=(51,50),
-                time=(DateTime("2002-01-01"),DateTime("2008-12-31")))
+                time=(Date("2002-01-01"),Date("2008-12-31")))
 
 @test typeof(c)==RemoteCube
 @test d.variable=="air_temperature_2m"
@@ -14,7 +14,7 @@ d = getCubeData(c,variable="air_temperature_2m",longitude=(30,31),latitude=(51,5
 @test d.latAxis.values==51.0:-0.25:50.25
 
 d2 = getCubeData(c,variable=["air_temperature_2m","gross_primary_productivity"],longitude=(30,31),latitude=(50,51),
-                time=(DateTime("2002-01-01"),DateTime("2008-12-31")))
+                time=(Date("2002-01-01"),Date("2008-12-31")))
 
 @test d2.variable==["air_temperature_2m","gross_primary_productivity"]
 @test d2.sub_grid==(157,160,841,844)
@@ -49,7 +49,7 @@ llcube = extractLonLats(data1,ll)
 @test llcube.data[3,:]==data1.data[4,1,:]
 
 #Test access datacube by region
-d3 = getCubeData(c,variable="gross_primary_productivity",region="Cambodia",time=DateTime("2005-01-01"))
+d3 = getCubeData(c,variable="gross_primary_productivity",region="Cambodia",time=Date("2005-01-01"))
 @test d3.axes==[LonAxis(102.25:0.25:107.25),LatAxis(14.75:-0.25:10.75)]
 
 #Test saving cubes

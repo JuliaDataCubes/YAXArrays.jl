@@ -42,8 +42,10 @@ type TempCubePerm{T,N} <: AbstractTempCube{T,N}
 end
 
 
+
 axes(t::AbstractTempCube)=t.axes
 axes(t::TempCubePerm)=[t.axes[t.perm[i]] for i=1:length(t.axes)]
+cubeproperties(t::AbstractTempCube)=t.properties
 using Base.Cartesian
 using NetCDF
 totuple(x::Vector)=ntuple(i->x[i],length(x))

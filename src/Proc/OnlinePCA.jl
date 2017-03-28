@@ -131,9 +131,9 @@ function transformPCA(pca::OnlinePCA,c::AbstractCubeData;max_cache=1e7,kwargs...
     isempty(axl) || push!(forbiddenAxes,axl...)
     if length(pca.bycube)==1
       # We have to decide if the pca is already split along the bycube or not
-      haskey(pca.bycube[1].properties,"labels") || error("By cube does not have a label property")
-      idict=pca.bycube[1].properties["labels"]
-      axname=get(pca.bycube[1].properties,"name","Label")
+      haskey(cubeproperties(pca.bycube[1]),"labels") || error("By cube does not have a label property")
+      idict=cubeproperties(pca.bycube[1])["labels"]
+      axname=get(cubeproperties(pca.bycube[1]),"name","Label")
       outAxis=CategoricalAxis(axname,collect(String,values(idict)))
       const convertdict=Dict(k=>i for (i,k) in enumerate(keys(idict)))
       cfun=x->convertdict[x]

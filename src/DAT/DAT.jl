@@ -717,6 +717,8 @@ function findAxis(matchstr::AbstractString,axlist)
   i=findfirst(ism)
 end
 
+"Fallback method"
+findAxis(a,axlist)=0
 
 function getAxis{T<:CubeAxis}(a::Type{T},v)
   for i=1:length(v)

@@ -1,12 +1,12 @@
 module Axes
-export CubeAxis, QuantileAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, CountryAxis,
+export CubeAxis, QuantileAxis, TimeAxis, TimeHAxis, VariableAxis, LonAxis, LatAxis, CountryAxis,
 SpatialPointAxis,Axes,YearStepRange,CategoricalAxis,RangeAxis,axVal2Index,MSCAxis,
 TimeScaleAxis, axname, @caxis_str
 import NetCDF.NcDim
 importall ..Cubes
 using Base.Dates
 
-immutable YearStepRange <: Range{DateTime}
+immutable YearStepRange <: Range{Date}
     startyear::Int
     startst::Int
     stopyear::Int
@@ -15,7 +15,7 @@ immutable YearStepRange <: Range{DateTime}
     NPY::Int
 end
 
-function YearStepRange(start::DateTime,stop::DateTime,step::Day)
+function YearStepRange(start::Date,stop::Date,step::Day)
     startyear=year(start)
     startday=dayofyear(start)
     startst=ceil(Int,startday/Float64(step))
@@ -30,14 +30,14 @@ function Base.length(x::YearStepRange)
 end
 Base.size(x::YearStepRange)=(length(x),)
 Base.start(x::YearStepRange)=(x.startyear,x.startst)
-Base.next(x::YearStepRange,st)=(DateTime(st[1])+Day((st[2]-1)*x.step),st[2]==x.NPY ? (st[1]+1,1) : (st[1],st[2]+1))
+Base.next(x::YearStepRange,st)=(Date(st[1])+Day((st[2]-1)*x.step),st[2]==x.NPY ? (st[1]+1,1) : (st[1],st[2]+1))
 Base.done(x::YearStepRange,st)=(st[1]==x.stopyear && st[2]==x.stopst+1) || (st[1]==x.stopyear+1 && st[2]==1)
 Base.step(x::YearStepRange)=Day(x.step)
-Base.first(x::YearStepRange)=DateTime(x.startyear)+Day((x.startst-1)*x.step)
-Base.last(x::YearStepRange)=DateTime(x.stopyear)+Day((x.stopst-1)*x.step)
+Base.first(x::YearStepRange)=Date(x.startyear)+Day((x.startst-1)*x.step)
+Base.last(x::YearStepRange)=Date(x.stopyear)+Day((x.stopst-1)*x.step)
 function Base.getindex(x::YearStepRange,ind::Integer)
     y,d=divrem(ind-1+x.startst-1,x.NPY)
-    DateTime(y+x.startyear)+Day(d)*x.step
+    Date(y+x.startyear)+Day(d)*x.step
 end
 
 macro defineCatAxis(axname,eltype)
@@ -121,10 +121,14 @@ end
 RangeAxis{T}(s::Symbol,v::Range{T})=RangeAxis{T,s,typeof(v)}(v)
 RangeAxis(s::AbstractString,v)=RangeAxis(Symbol(s),v)
 
-@defineRanAxis Time DateTime YearStepRange
-@defineRanAxis MSC DateTime YearStepRange
+
+typealias TimeAxis RangeAxis{Date,:Time}
+TimeAxis(r)=RangeAxis(:Time,r)
+
+@defineRanAxis MSC Date YearStepRange
 @defineRanAxis Lon Float64 FloatRange{Float64}
 @defineRanAxis Lat Float64 FloatRange{Float64}
+@defineRanAxis TimeH DateTime StepRange{DateTime,Base.Dates.Minute}
 
 Base.length(a::CubeAxis)=length(a.values)
 
@@ -138,6 +142,16 @@ axname{T,S}(::RangeAxis{T,S})=string(S)
 axunits(::CubeAxis)="unknown"
 axunits(::LonAxis)="degrees_east"
 axunits(::LatAxis)="degrees_north"
+function axVal2Index{T,S,F<:StepRange}(a::RangeAxis{T,S,F},v)
+  dt = v-first(a.values)
+  r = round(Int,dt/step(a.values))+1
+  return max(1,min(length(a.values),r))
+end
+function axVal2Index{T<:DateTime,S,F<:StepRange}(a::RangeAxis{T,S,F},v)
+  dt = v-first(a.values)
+  r = round(Int,dt/Millisecond(step(a.values)))+1
+  return max(1,min(length(a.values),r))
+end
 axVal2Index{T,S,F<:FloatRange}(axis::RangeAxis{T,S,F},v;fuzzy::Bool=false)=min(max(round(Int,(v-first(axis.values))/step(axis.values))+1,1),length(axis))
 function axVal2Index(axis::CategoricalAxis{String},v::String;fuzzy::Bool=false)
   r=findfirst(axis.values,v)
@@ -167,7 +181,7 @@ end
 import Base.==
 ==(a::CubeAxis,b::CubeAxis)=a.values==b.values
 
-function NcDim(a::CubeAxis{DateTime},start::Integer,count::Integer)
+function NcDim(a::CubeAxis{Date},start::Integer,count::Integer)
   if start + count - 1 > length(a.values)
     count = oftype(count,length(a.values) - start + 1)
   end

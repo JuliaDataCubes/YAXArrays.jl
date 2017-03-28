@@ -5,7 +5,7 @@ using OnlineStats
 c=RemoteCube()
 
 d = getCubeData(c,variable="air_temperature_2m",longitude=(30,31),latitude=(50,51),
-              time=(DateTime("2002-01-01"),DateTime("2008-12-31")))
+              time=(Date("2002-01-01"),Date("2008-12-31")))
 oo=mapCube(Mean,d)
 
 oo2=mapCube(Mean,d,by=(LatAxis,))
@@ -17,7 +17,7 @@ d2=readCubeData(d)
 
 #Test KMeans
 d2 = getCubeData(c,variable=["air_temperature_2m","gross_primary_productivity"],longitude=(30,31),latitude=(50,51),
-              time=(DateTime("2002-01-01"),DateTime("2008-12-31")))
+              time=(Date("2002-01-01"),Date("2008-12-31")))
 
 dm=readCubeData(d2)
 xin=permutedims(dm.data,[4,1,2,3])
@@ -42,7 +42,7 @@ using CABLAB
 using DataStructures
 c=RemoteCube()
 d2 = getCubeData(c,variable=["air_temperature_2m","gross_primary_productivity"],longitude=(30,31),latitude=(50,51),
-              time=(DateTime("2002-01-01"),DateTime("2008-12-31")))
+              time=(Date("2002-01-01"),Date("2008-12-31")))
 dm=readCubeData(d2)
 
 randmask=CubeMem(dm.axes[1:2],rand(1:2,size(dm)[1:2]),zeros(UInt8,size(dm)[1:2]),

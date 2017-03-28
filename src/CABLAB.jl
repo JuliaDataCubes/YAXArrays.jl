@@ -7,10 +7,10 @@ __precompile__()
 Some info on the project...
 """
 module CABLAB
-export Cube, getCubeData,readCubeData,CubeMem,CubeAxis, TimeAxis, VariableAxis, LonAxis, FitAxis, LatAxis, CountryAxis, SpatialPointAxis, saveCube, loadCube,
-        RangeAxis, CategoricalAxis, MSCAxis, getSingVal, TimeScaleAxis, QuantileAxis, MethodAxis, RemoteCube, showVarInfo, @caxis_str #From Cube module
+export Cube, getCubeData,readCubeData,CubeMem,CubeAxis, TimeAxis, TimeHAxis, VariableAxis, LonAxis, FitAxis, LatAxis, CountryAxis, SpatialPointAxis, saveCube, loadCube,
+        RangeAxis, CategoricalAxis, MSCAxis, getSingVal, TimeScaleAxis, QuantileAxis, MethodAxis, RemoteCube, showVarInfo, @caxis_str,
+        axVal2Index #From Cube module
 export registerDATFunction, mapCube, reduceCube, getAxis #From DAT module
-export axVal2Index, plotTS, plotMAP, plotXY, plotScatter, plotMAPRGB #From Plot module
 export DAT_detectAnomalies!, removeMSC, gapFillMSC, normalizeTS,DATfitOnline,
   sampleLandPoints, toPointAxis, getMSC, filterTSFFT, getNpY,timespacequantiles,
   timelonlatquantiles, getMedSC, extractLonLats,
@@ -32,18 +32,7 @@ include("Cubes/Cubes.jl")
 include("CubeAPI/CubeAPI.jl")
 include("DAT/DAT.jl")
 include("Proc/Proc.jl")
-include("Plot/Plot.jl")
 
-using Suppressor
-@suppress begin
-import Vega.VegaVisualization
-import Vega.patchwork_repr
-#Patch Vega
-function Base.show(io::IO, m::MIME"text/html", v::VegaVisualization)
-    show(io, m, patchwork_repr(v))
-end
-end
-
-importall .Cubes, .CubeAPI, .DAT, .Proc, .Plot, .CABLABTools
+importall .Cubes, .CubeAPI, .DAT, .Proc, .CABLABTools
 
 end # module

@@ -3,9 +3,9 @@ The functions provided by CABLAB are supposed to work on different types of cube
 Data types that
 """
 module Cubes
-export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, QuantileAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, axes,
+export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, TimeHAxis, QuantileAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, axes,
        AbstractSubCube, CubeMem, openTempCube, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis, axVal2Index, MSCAxis,
-       getSingVal, TimeScaleAxis, axname, @caxis_str, rmCube
+       getSingVal, TimeScaleAxis, axname, @caxis_str, rmCube, cubeproperties
 
 """
     AbstractCubeData{T,N}
@@ -32,7 +32,13 @@ getSingVal(c::AbstractCubeData,a...)=error("getSingVal called in the wrong way w
 """
     readCubeData(cube::AbstractCubeData)
 """
-function readCubeData end
+function readCubeData{T,N}(x::AbstractCubeData{T,N})
+  s=size(x)
+  aout,mout=zeros(Float32,s...),zeros(UInt8,s...)
+  r=CartesianRange(CartesianIndex{N}(),CartesianIndex(s...))
+  _read(x,(aout,mout),r)
+  CubeMem(axes(x),aout,mout)
+end
 
 """
 This function calculates a subset of a cube's data
@@ -47,6 +53,10 @@ _read(c::AbstractCubeData,d,r::CartesianRange)=error("_read not implemented for 
 "Returns the axes of a Cube"
 axes(c::AbstractCubeData)=error("Axes function not implemented for $(typeof(c))")
 
+"Number of dimensions"
+Base.ndims{T,N}(::AbstractCubeData{T,N})=N
+
+cubeproperties(::AbstractCubeData)=Dict{String,Any}()
 
 "Supertype of all subtypes of the original data cube"
 abstract AbstractSubCube{T,N} <: AbstractCubeData{T,N}
@@ -85,6 +95,7 @@ end
 CubeMem(axes::Vector{CubeAxis},data,mask) = CubeMem(axes,data,mask,Dict{String,Any}())
 Base.permutedims(c::CubeMem,p)=CubeMem(c.axes[collect(p)],permutedims(c.data,p),permutedims(c.mask,p))
 axes(c::CubeMem)=c.axes
+cubeproperties(c::CubeMem)=c.properties
 
 Base.linearindexing(::CubeMem)=Base.LinearFast()
 Base.getindex(c::CubeMem,i::Integer)=getindex(c.data,i)
@@ -174,11 +185,11 @@ Save a `TempCube` or `CubeMem` to the folder `name` in the CABLAB working direct
 
 See also loadCube, CABLABdir
 """
-function saveCube(c::CubeMem,name::AbstractString)
+function saveCube{T}(c::CubeMem{T},name::AbstractString)
   newfolder=joinpath(workdir[1],name)
   isdir(newfolder) && error("$(name) alreaday exists, please pick another name")
   mkdir(newfolder)
-  tc=Cubes.TempCube(c.axes,CartesianIndex(size(c)),folder=newfolder)
+  tc=Cubes.TempCube(c.axes,CartesianIndex(size(c)),folder=newfolder,T=T)
   files=readdir(newfolder)
   filter!(i->startswith(i,"file"),files)
   @assert length(files)==1

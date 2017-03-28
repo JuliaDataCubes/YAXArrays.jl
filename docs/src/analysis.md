@@ -102,6 +102,7 @@ splitTemp(t) = ifelse(t>280,2,1)                            # Define the classif
 outAxis      = CategoricalAxis("TempClass",["< 7C",">7C"])  # A two-length output axis, because there are two possible values
 mT    = mapCube(OnlineStats.Mean,cube,by=[t,VariableAxis], cfun=splitTemp, outAxis=outAxis) # Of course we want to split by variable, too
 
+using CABLABPlots
 plotXY(mT,xaxis="var",group="tempclass")
 ```
 ```@eval
@@ -125,6 +126,8 @@ splitTemp(t) = ifelse(t>280,2,1)
 outAxis      = CategoricalAxis("TempClass",["< 7C",">7C"])
 mT    = mapCube(OnlineStats.Mean,cube,by=[t,VariableAxis], cfun=splitTemp, outAxis=outAxis)
 
+using CABLABPlots
+gr()
 p=plotXY(mT,xaxis="var",group="tempclass")
 b=IOBuffer()
 show(b,MIME"text/html"(),p)
