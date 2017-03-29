@@ -47,7 +47,7 @@ function DATfitOnline{T<:OnlineStat{OnlineStats.VectorInput},U}(xout::AbstractAr
 end
 
 function finalizeOnlineCube{T<:OnlineStat,N}(c::CubeMem{T,N})
-    CubeMem(c.axes,map(OnlineStats.value,c.data),c.mask)
+    CubeMem(c.axes,map(i->nobs(i)>0 ? OnlineStats.value(i) : NaN,c.data),c.mask)
 end
 
 function finalizeOnlineCube{T<:OnlineStats.CovMatrix,CT,S}(c::CubeMem{T},varAx::CubeAxis{CT,S})
