@@ -15,5 +15,6 @@ script:
   - julia -e 'Pkg.clone(pwd()); Pkg.build("CABLAB"); Pkg.build("NetCDF"); Pkg.test("CABLAB"; coverage=true)'
 after_success:
   - julia -e 'Pkg.add("Documenter")'
-  - julia -e 'Pkg.clone("https://github.com/CAB-LAB/CABLABPlots.jl")'
+  - julia -e 'Pkg.clone("https://github.com/CAB-LAB/CABLABPlots.jl");Pkg.add("GR")'
+  - julia -e 'using Compose'
   - julia -e 'cd(Pkg.dir("CABLAB")); include(joinpath("docs", "make.jl"))'
