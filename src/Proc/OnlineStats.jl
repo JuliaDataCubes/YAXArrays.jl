@@ -141,7 +141,7 @@ function mapCube{T<:OnlineStat}(f::Type{T},cdata::AbstractCubeData,pargs...;by=C
   axcombs=combinations(inAxes2)
   totlengths=map(a->prod(map(length,a)),axcombs)*sizeof(Float32)*lout
   smallenough=totlengths.<max_cache
-  axcombs=collect(axcombs)[smallenough]
+  axcombs=[ax for ax in axcombs][smallenough]
   totlengths=totlengths[smallenough]
   if !isempty(totlengths)
     m,i=findmax(totlengths)

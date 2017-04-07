@@ -534,7 +534,7 @@ function expandknownvars{T}(v::Array{T})
   vnew
 end
 
-ismiss(k::Integer)=k<typemax(k)
+ismiss(k::Integer)=(k==typemax(k))
 ismiss(k::AbstractFloat)=isnan(k)
 
 function getCubeData{T<:AbstractString}(cube::UCube,
