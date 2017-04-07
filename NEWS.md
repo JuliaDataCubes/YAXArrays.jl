@@ -1,5 +1,10 @@
 # News
 
+## v0.3.0
+
+- the plotting module was split out into a separate package called `CABLABPlots`, so please add this package if you want to use Plots
+- the time axis is now based on `Date` - and not on `DateTime` anymore. This means that some methods are not applicable on old datacubes anymore, so please be careful
+
 ## v0.2.1
 
 * a new macro `@loadOrGenerate` was added to generate and save intermediate results or load them if already existent

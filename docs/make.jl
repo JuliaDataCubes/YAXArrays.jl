@@ -6,6 +6,7 @@ makedocs(
     clean   = false,
     format   = :html,
     sitename = "CABLAB.jl",
+    authors = "Fabian Gans",
     pages    = Any[ # Compat: `Any` for 0.4 compat
         "Home" => "index.md",
         "Manual" => Any[
