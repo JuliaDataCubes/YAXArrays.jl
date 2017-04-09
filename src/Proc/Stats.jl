@@ -24,12 +24,17 @@ Normalize a time series to zeros mean and unit variance
 
 """
 function normalizeTS(xout::AbstractVector,xin::AbstractVector)
-  m=mean(xin,skipnull=true)
-  s=std(xin,skipnull=true)
-  for i in eachindex(xout)
-    xout[i]=(xin[i]-m)/s
-  end
+  xin2 = filter(i->!isnan(i),xin)
+    if length(xin2)>2
+        m = mean(xin2)
+        s = std(xin2)
+        s = s==zero(s) ? one(s) : s
+        map!(x->(x-m)/s,xout,xin)
+    else
+        xout[:]=NaN
+    end
 end
+registerDATFunction(normalizeTS,(TimeAxis,),(TimeAxis,),inmissing=:nan,outmissing=:nan,no_ocean=1)
 
 """
     timespacequantiles
@@ -93,7 +98,6 @@ registerDATFunction(timespacequantiles,(TimeAxis,SpatialPointAxis),
     return length(pargs)==1 ? pargs[1] : [0.25,0.5,0.75],zeros(eltype(cube[1]),length(tax)*length(sax))
   end,inmissing=(:nan,),outmissing=:nan)
 
-registerDATFunction(normalizeTS,(TimeAxis,),(TimeAxis,),inmissing=(:nullable,),outmissing=:nullable,no_ocean=1)
 
 
 

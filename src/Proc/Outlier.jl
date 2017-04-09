@@ -1,5 +1,5 @@
 module Outlier
-export DAT_detectAnomalies!
+export DAT_detectAnomalies!, simpleAnomalies
 importall ..DAT
 importall ..CubeAPI
 importall ..Cubes
@@ -42,5 +42,18 @@ end
 registerDATFunction(DAT_detectAnomalies!,(TimeAxis,VariableAxis),(TimeAxis,(cube,pargs)->CategoricalAxis("Method",pargs[1])),
 (cube,pargs)->getDetectParameters(pargs[1],pargs[2],length(getAxis(TimeAxis,cube[1]))),inmissing=(:nan,),outmissing=:nan,no_ocean=1)
 
+
+function simpleAnomalies(xout::AbstractArray, xin::AbstractArray,methods)
+  if !any(isnan,xin)
+    P=getParameters(methods,xin)
+    res=detectAnomalies(xin,P)
+    for i=1:length(res)
+      xout[:,i]=res[i]
+    end
+  else
+    xout[:]=NaN
+    end
+end
+registerDATFunction(simpleAnomalies,(TimeAxis,VariableAxis),(TimeAxis,(cube,pargs)->CategoricalAxis("Method",pargs[1])),inmissing=(:nan,),outmissing=:nan,no_ocean=1)
 
 end
