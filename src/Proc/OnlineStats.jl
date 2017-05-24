@@ -112,7 +112,15 @@ function mapCube{T<:OnlineStat}(f::Type{T},cdata::AbstractCubeData,pargs...;by=C
     ia1 = CubeAxis[]
     funargs = ()
   end
-  bycubes=filter(i->!in(i,inaxtypes),collect(by))
+  function interpretBycubes(x::Union{String,DataType},c)
+    i=findAxis(x,axes(c))
+    axes(c)[i]
+  end
+  function interpretBycubes(x::AbstractCubeData,c)
+    x
+  end
+  by2 = map(a->interpretBycubes(a,cdata),by)
+  bycubes=filter(i->!isa(i,CubeAxis),collect(by2))
   if length(bycubes)==1
     if outAxis==nothing
       if haskey(bycubes[1].properties,"labels")
@@ -129,14 +137,14 @@ function mapCube{T<:OnlineStat}(f::Type{T},cdata::AbstractCubeData,pargs...;by=C
     isa(outAxis,DataType) && (outAxis=outAxis())
     outdims=(outAxis,)
     lout=lout * length(outAxis)
-    inAxes2=filter(i->!in(typeof(i),by) && in(i,axes(bycubes[1])) && !isa(i,MDAxis),inAxes)
+    inAxes2=filter(i->!in(i,by2) && in(i,axes(bycubes[1])) && !isa(i,MDAxis),inAxes)
   elseif length(bycubes)>1
     error("more than one filter cube not yet supported")
   else
     indata=cdata
     lout=lout * 1
     outdims=()
-    inAxes2=filter(i->!in(typeof(i),by) && !isa(i,MDAxis),inAxes)
+    inAxes2=filter(i->!in(i,by2) && !isa(i,MDAxis),inAxes)
   end
   axcombs=combinations(inAxes2)
   totlengths=map(a->prod(map(length,a)),axcombs)*sizeof(Float32)*lout
@@ -147,10 +155,10 @@ function mapCube{T<:OnlineStat}(f::Type{T},cdata::AbstractCubeData,pargs...;by=C
     m,i=findmax(totlengths)
     iain=[ia1;map(typeof,axcombs[i])]
     ia  = map(typeof,axcombs[i])
-    outBroad=filter(ax->!in(typeof(ax),by) && !in(typeof(ax),iain),inAxes)
+    outBroad=filter(ax->!in(ax,by2) && !in(typeof(ax),iain),inAxes)
     indims=length(bycubes)==0 ? (totuple(iain),) : (totuple(iain),totuple(ia))
   else
-    outBroad=filter(ax->!in(typeof(ax),by),inAxes)
+    outBroad=filter(ax->!in(ax,by2),inAxes)
     indims=length(bycubes)==0 ? totuple(ia1) : (totuple(ia1),totuple(CubeAxis[]))
   end
   outBroad=map(typeof,outBroad)

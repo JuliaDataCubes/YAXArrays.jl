@@ -172,7 +172,7 @@ end
 axVal2Index(x,v;fuzzy::Bool=false)=min(max(v,1),length(x))
 
 getSubRange(x::CubeAxis,i)=x[i],nothing
-getSubRange(x::TimeAxis,i)=sub(x,i),nothing
+getSubRange(x::TimeAxis,i)=view(x,i),nothing
 
 macro caxis_str(s)
   :(CategoricalAxis{String,$(QuoteNode(Symbol(s)))})

@@ -255,8 +255,8 @@ higetVal=Expr(:call,:getValues,:blockx)
 hisetVal=Expr(:call,:setValues,:blockx,:vals,:mask)
 higetSub=Expr(:call,:getSubRange,:c)
 hisetSub=Expr(:call,:setSubRange,:c,:vals,:mask)
-ex=5
-for N=1:5
+ex=6
+for N=1:6
   push!(higetVal.args,Symbol("iI_$N"))
   push!(higetSub.args,:($(Symbol("iL_$N"))-1+$(Symbol("istart_$N"))))
   push!(hisetVal.args,Symbol("iI_$N"))
