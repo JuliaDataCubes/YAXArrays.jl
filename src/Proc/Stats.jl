@@ -107,7 +107,7 @@ Base.mean(X::NullableArray; skipnull::Bool = false) =
     sum(X; skipnull = skipnull) /
         Nullable(length(X.isnull) - (skipnull * countnz(X.isnull)))
 
-function Base.mean(X::NullableArray, w::WeightVec;
+function Base.mean(X::NullableArray, w::Weights;
                             skipnull::Bool=false)
     if skipnull
         _X = NullableArray(X.values .* reshape(w.values,size(X)), X.isnull)
@@ -119,7 +119,7 @@ function Base.mean(X::NullableArray, w::WeightVec;
 end
 
 function Base.mean{T, W, V<:NullableArray}(X::NullableArray{T},
-                                           w::WeightVec{W, V};
+                                           w::Weights{W, V};
                                            skipnull::Bool=false)
     if skipnull
         _X = X .* w.values
