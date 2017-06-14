@@ -10,7 +10,7 @@ import ...CABLAB.workdir
 using Base.Dates
 import NullableArrays.NullableArray
 import NullableArrays.isnull
-import StatsBase.WeightVec
+import StatsBase.Weights
 importall CABLAB.CubeAPI.Mask
 global const debugDAT=false
 macro debug_print(e)
@@ -201,7 +201,7 @@ function reduceCube(f::Function,c::CABLAB.Cubes.AbstractCubeData,dim::Tuple,no_o
     ssmall=map(i->isa(i,LatAxis) ? length(i) : 1,inAxes)
     wone=reshape(cosd(latAxis.values),ssmall)
     ww=zeros(sfull).+wone
-    wv=WeightVec(reshape(ww,length(ww)))
+    wv=Weights(reshape(ww,length(ww)))
     return mapCube(f,c,wv,indims=dim,outdims=((),),inmissing=(:nullable,),outmissing=(:nullable,),inplace=false;kwargs...)
   else
     return mapCube(f,c,indims=dim,outdims=((),),inmissing=(:nullable,),outmissing=(:nullable,),inplace=false;kwargs...)
@@ -697,7 +697,9 @@ function registerDATFunction(f,dimsin,dimsout,addargs...;kwargs...)
   isempty(dimsout) ? (dimsout=((),)) : isa(dimsout[1],Tuple) || (dimsout=(dimsout,))
   registerDATFunction(f,dimsin,dimsout,addargs...;kwargs...)
 end
-registerDATFunction(f,dimsin;kwargs...)=registerDATFunction(f,dimsin,();kwargs...)
+function registerDATFunction(f,dimsin;kwargs...)
+  registerDATFunction(f,dimsin,();kwargs...)
+end
 expandTuple(x,nin)=ntuple(i->x,nin)
 expandTuple(x::Tuple,nin)=x
 

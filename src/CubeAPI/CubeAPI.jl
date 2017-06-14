@@ -404,8 +404,8 @@ end
 
 defaulttime(cube::UCube,v)=all_mask(v) ? cube.config.start_time : (cube.config.start_time,cube.config.end_time-Day(1))
 defaultvariable(cube::UCube)=filter(i->i ∉ static_vars,cube.dataset_files)
-defaultlatitude(cube::UCube)=(-90.0,90.0)
-defaultlongitude(cube::UCube)=(-180.0,180.0)
+defaultlatitude(cube::UCube)=(90.0-cube.config.grid_y0*cube.config.spatial_res,90.0-(cube.config.grid_y0+cube.config.grid_height)*cube.config.spatial_res)
+defaultlongitude(cube::UCube)=(-180.0+cube.config.grid_x0*cube.config.spatial_res,-180.0+(cube.config.grid_x0+cube.config.grid_width)*cube.config.spatial_res)
 all_mask(x::String)=x ∈ static_vars
 all_mask(x::Vector{String})=all(all_mask,x)
 

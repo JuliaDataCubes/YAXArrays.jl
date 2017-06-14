@@ -22,7 +22,7 @@ function copyMAP(xout::AbstractArray,maskout::AbstractArray{UInt8},xin::Abstract
 end
 
 import NetCDF.ncread, NetCDF.ncclose
-import StatsBase.WeightVec
+import StatsBase.Weights
 import StatsBase.sample
 #function readLandSea(c::Cube)
 #    m=ncread(joinpath(c.base_dir,"mask","mask.nc"),"mask")
@@ -69,7 +69,7 @@ registerDATFunction(toPointAxis,((LonAxis,LatAxis),(LonAxis,),(LatAxis,),(Spatia
 Extracts a list of longitude/latitude coordinates from a data cube. The coordinates
 are specified through the matrix `pl` where `size(pl)==(N,2)` and N is the number
 of extracted coordinates. Returns a data cube without `LonAxis` and `LatAxis` but with a
-`SpatialPointAxis` containing the input locations. 
+`SpatialPointAxis` containing the input locations.
 """
 function extractLonLats(c::AbstractCubeData,pl::Matrix)
   size(pl,2)==2 || error("Coordinate list must have exactly 2 columns")
@@ -113,7 +113,7 @@ function sampleLandPoints(cdata::CubeAPI.AbstractCubeData,nsample::Integer,nomis
   end
   sax=getSpatiaPointAxis(cm);
   isempty(sax.values) && error("Could not find any valid coordinates to extract a sample from. Please check for systematic missing values if you set nomissing=true")
-  w=WeightVec(map(i->cosd(i[2]),sax.values))
+  w=Weights(map(i->cosd(i[2]),sax.values))
   sax2=SpatialPointAxis(sample(sax.values,w,nsample,replace=false))
   y=mapCube(toPointAxis,(cdata,axlist[ilon],axlist[ilat],sax2),max_cache=1e8);
 end
