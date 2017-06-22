@@ -208,7 +208,7 @@ function Base.show(io::IO,a::CategoricalAxis)
 end
 Base.show(io::IO,a::SpatialPointAxis)=print(io,"Spatial points axis with ",length(a.values)," points")
 
-
+include("TransformedCubes.jl")
 
 
 end
