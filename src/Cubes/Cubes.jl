@@ -5,7 +5,7 @@ Data types that
 module Cubes
 export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, TimeHAxis, QuantileAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, axes,
        AbstractSubCube, CubeMem, openTempCube, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis, axVal2Index, MSCAxis,
-       getSingVal, TimeScaleAxis, axname, @caxis_str, rmCube, cubeproperties
+       getSingVal, TimeScaleAxis, axname, @caxis_str, rmCube, cubeproperties, findAxis
 
 """
     AbstractCubeData{T,N}
@@ -172,6 +172,9 @@ function Base.show(io::IO,c::AbstractCubeData)
     println(io,getCubeDes(c), " with the following dimensions")
     for a in axes(c)
         println(io,a)
+    end
+    foreach(c.properties) do p
+      println(io,p[1],": ",p[2])
     end
     println(io,"Total size: ",formatbytes(cubesize(c)))
 end

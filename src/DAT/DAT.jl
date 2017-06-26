@@ -703,25 +703,6 @@ end
 expandTuple(x,nin)=ntuple(i->x,nin)
 expandTuple(x::Tuple,nin)=x
 
-"Find a certain axis type in a vector of Cube axes and returns the index"
-function findAxis{T<:CubeAxis}(a::Type{T},v)
-    for i=1:length(v)
-        isa(v[i],a) && return i
-    end
-    return 0
-end
-
-function findAxis(matchstr::AbstractString,axlist)
-  ism=map(i->startswith(lowercase(axname(i)),lowercase(matchstr)),axlist)
-  sism=sum(ism)
-  sism==0 && error("No axis found matching string $matchstr")
-  sism>1 && error("Multiple axes found matching string $matchstr")
-  i=findfirst(ism)
-end
-
-"Fallback method"
-findAxis(a,axlist)=0
-
 function getAxis{T<:CubeAxis}(a::Type{T},v)
   for i=1:length(v)
       isa(v[i],a) && return v[i]

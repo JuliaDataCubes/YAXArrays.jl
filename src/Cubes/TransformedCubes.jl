@@ -107,3 +107,47 @@ using Base.Cartesian
     return aout,mout
   end
 end
+
+export SliceCube
+type SliceCube{T,N,iax} <: AbstractCubeData{T,N}
+  parent
+  ival::Int
+  size::NTuple{N,Int}
+  cubeAxes::Vector{CubeAxis}
+  properties::Dict{String,Any}
+end
+
+function SliceCube{T,N}(c::AbstractCubeData{T,N},ax,i)
+  axlist = axes(c)
+  iax = findAxis(ax,c)
+  iax<1 && error("Axis $ax not found in input cube")
+  i = axVal2Index(axlist[iax],i)
+  0<i<=length(axlist[iax]) || error("Axis index $i out of bounds")
+  axlistnew = deleteat!(copy(axlist),iax)
+  pnew=copy(c.properties)
+  pnew[axname(axlist[iax])]=axlist[iax].values[i]
+  SliceCube{T,N-1,iax}(c,i,ntuple(i->length(axlistnew[i]),N-1),axlistnew,pnew)
+end
+
+Base.size(x::SliceCube)=x.size
+Base.size(x::SliceCube,i)=x.size[i]
+axes(v::SliceCube)=v.cubeAxes
+getCubeDes(v::SliceCube)=getCubeDes(v.parent)
+using Base.Cartesian
+@generated function _read{T,N,F}(x::SliceCube{T,N,F},thedata::NTuple{2},r::CartesianRange{CartesianIndex{N}})
+  iax = F
+  startinds = Expr(:tuple,insert!(Any[:(rstart[$i]) for i=1:N],iax,:(x.ival))...)
+  stopinds  = Expr(:tuple,insert!(Any[:(rstop[$i]) for i=1:N],iax,:(x.ival))...)
+  newsize   = Expr(:tuple,insert!(Any[:(sout[$i]) for i=1:N],iax,1)...)
+  quote
+    aout,mout=thedata
+    sout = size(aout)
+    newsize = $newsize
+    aout2,mout2 = reshape(aout,newsize), reshape(mout,newsize)
+    rstart = r.start
+    rstop  = r.stop
+    rnew   = CartesianRange(CartesianIndex($startinds),CartesianIndex($stopinds))
+    _read(x.parent, (aout2,mout2), rnew)
+    return aout,mout
+  end
+end
