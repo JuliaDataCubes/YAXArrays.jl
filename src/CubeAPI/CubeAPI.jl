@@ -390,6 +390,7 @@ Returns a `SubCube` object which represents a view into the original data cube.
 function getCubeData(cube::UCube;variable=Int[],time=[],latitude=[],longitude=[],region=[])
   #First fill empty inputs
   isempty(variable)  && (variable = defaultvariable(cube))
+  variable = expandknownvars(variable)
   time==Int[]        && (time     = defaulttime(cube,variable))
   if !isempty(region)
     haskey(known_regions,region) || error("Region $region not recognized as a known place")
@@ -503,7 +504,7 @@ function getLandSeaMask!(mask::Array{UInt8,4},cube::UCube,grid_x1,nx,grid_y1,ny)
       mask[ilon,ilat,1]=(mask[ilon,ilat,1]-0x01)*0x05
     end
     nT=size(mask,3)
-    for ivar=1:size(mask,4),itime=2:nT,ilat=1:size(mask,2),ilon=1:size(mask,1)
+    for ivar=1:size(mask,4),itime=1:nT,ilat=1:size(mask,2),ilon=1:size(mask,1)
       mask[ilon,ilat,itime,ivar]=mask[ilon,ilat,1,1]
     end
     ncclose(filename)
@@ -533,6 +534,7 @@ function expandknownvars{T}(v::Array{T})
   end
   vnew
 end
+expandknownvars(v::String)=expandknownvars([v])
 
 ismiss(k::Integer)=(k==typemax(k))
 ismiss(k::AbstractFloat)=isnan(k)
