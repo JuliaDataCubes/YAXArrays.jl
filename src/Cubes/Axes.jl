@@ -1,7 +1,7 @@
 module Axes
 export CubeAxis, QuantileAxis, TimeAxis, TimeHAxis, VariableAxis, LonAxis, LatAxis, CountryAxis,
 SpatialPointAxis,Axes,YearStepRange,CategoricalAxis,RangeAxis,axVal2Index,MSCAxis,
-TimeScaleAxis, axname, @caxis_str
+TimeScaleAxis, axname, @caxis_str, findAxis
 import NetCDF.NcDim
 importall ..Cubes
 using Base.Dates
@@ -147,9 +147,15 @@ function axVal2Index{T,S,F<:StepRange}(a::RangeAxis{T,S,F},v)
   r = round(Int,dt/step(a.values))+1
   return max(1,min(length(a.values),r))
 end
-function axVal2Index{T<:DateTime,S,F<:StepRange}(a::RangeAxis{T,S,F},v)
+function axVal2Index{T<:DateTime,S,F<:Range}(a::RangeAxis{T,S,F},v)
   dt = v-first(a.values)
   r = round(Int,dt/Millisecond(step(a.values)))+1
+  return max(1,min(length(a.values),r))
+end
+function axVal2Index{T<:Date,S,F<:YearStepRange}(a::RangeAxis{T,S,F},v::Date)
+  y = year(v)
+  d = dayofyear(v)
+  r = (y-a.values.startyear)*a.values.NPY + d÷a.values.step + 1
   return max(1,min(length(a.values),r))
 end
 axVal2Index{T,S,F<:FloatRange}(axis::RangeAxis{T,S,F},v;fuzzy::Bool=false)=min(max(round(Int,(v-first(axis.values))/step(axis.values))+1,1),length(axis))
@@ -170,6 +176,27 @@ function axVal2Index(axis::CategoricalAxis{String},v::String;fuzzy::Bool=false)
   r
 end
 axVal2Index(x,v;fuzzy::Bool=false)=min(max(v,1),length(x))
+
+"Find a certain axis type in a vector of Cube axes and returns the index"
+function findAxis{T<:CubeAxis,S<:CubeAxis}(a::Type{T},v::Vector{S})
+    for i=1:length(v)
+        isa(v[i],a) && return i
+    end
+    return 0
+end
+
+findAxis(a,c::AbstractCubeData)=findAxis(a,axes(c))
+
+function findAxis{T<:CubeAxis}(matchstr::AbstractString,axlist::Vector{T})
+  ism=map(i->startswith(lowercase(axname(i)),lowercase(matchstr)),axlist)
+  sism=sum(ism)
+  sism==0 && error("No axis found matching string $matchstr")
+  sism>1 && error("Multiple axes found matching string $matchstr")
+  i=findfirst(ism)
+end
+
+"Fallback method"
+findAxis(a,axlist)=0
 
 getSubRange(x::CubeAxis,i)=x[i],nothing
 getSubRange(x::TimeAxis,i)=view(x,i),nothing

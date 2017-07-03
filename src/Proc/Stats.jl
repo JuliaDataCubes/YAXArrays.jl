@@ -103,9 +103,13 @@ registerDATFunction(timespacequantiles,(TimeAxis,SpatialPointAxis),
 
 #Here starts the part that is copy-pasted from the NullableStats package
 
-Base.mean(X::NullableArray; skipnull::Bool = false) =
-    sum(X; skipnull = skipnull) /
-        Nullable(length(X.isnull) - (skipnull * countnz(X.isnull)))
+function Base.mean(X::NullableArray; skipnull::Bool = false)
+    if all(X.isnull)
+      return Nullable(X.values[1]/1,true)
+    else
+      sum(X; skipnull = skipnull) / Nullable(length(X.isnull) - (skipnull * countnz(X.isnull)))
+    end
+end
 
 function Base.mean(X::NullableArray, w::Weights;
                             skipnull::Bool=false)
