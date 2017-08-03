@@ -192,7 +192,7 @@ either an Axis type or a tuple of axis types. Keyword arguments are passed to `m
 It is assumed that `f` takes an array input and returns a single value.
 """
 reduceCube{T<:CubeAxis}(f::Function,c::CABLAB.Cubes.AbstractCubeData,dim::Type{T};kwargs...)=reduceCube(f,c,(dim,);kwargs...)
-function reduceCube(f::Function,c::CABLAB.Cubes.AbstractCubeData,dim::Tuple,addargs,no_ocean=any(i->isa(i,LonAxis) || isa(i,LatAxis),axes(c)) ? 0 : 1;kwargs...)
+function reduceCube(f::Function,c::CABLAB.Cubes.AbstractCubeData,dim::Tuple,addargs=(),no_ocean=any(i->isa(i,LonAxis) || isa(i,LatAxis),axes(c)) ? 0 : 1;kwargs...)
   if in(LatAxis,dim)
     axlist=axes(c)
     inAxes=map(i->getAxis(i,axlist),dim)
@@ -202,9 +202,17 @@ function reduceCube(f::Function,c::CABLAB.Cubes.AbstractCubeData,dim::Tuple,adda
     wone=reshape(cosd(latAxis.values),ssmall)
     ww=zeros(sfull).+wone
     wv=Weights(reshape(ww,length(ww)))
-    return mapCube(f,c,wv,indims=dim,outdims=((),), addargs,inmissing=(:nullable,),outmissing=(:nullable,),inplace=false;kwargs...)
+    if isempty(addargs)
+            return mapCube(f,c,wv,indims=dim,outdims=((),),inmissing=(:nullable,),outmissing=(:nullable,),inplace=false;kwargs...)
+        else
+            return mapCube(f,c,wv,addargs,indims=dim,outdims=((),),inmissing=(:nullable,),outmissing=(:nullable,),inplace=false;kwargs...)
+        end
   else
-    return mapCube(f,c,indims=dim,outdims=((),), addargs,inmissing=(:nullable,),outmissing=(:nullable,),inplace=false;kwargs...)
+    if isempty(addargs)
+            return mapCube(f,c,indims=dim,outdims=((),),inmissing=(:nullable,),outmissing=(:nullable,),inplace=false;kwargs...)
+        else
+            return mapCube(f,c,addargs,indims=dim,outdims=((),),inmissing=(:nullable,),outmissing=(:nullable,),inplace=false;kwargs...)
+        end
   end
 end
 
