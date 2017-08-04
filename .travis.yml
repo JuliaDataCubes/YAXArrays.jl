@@ -12,9 +12,8 @@ script:
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
   - julia -e 'Pkg.clone("https://github.com/milanflach/LIBSVM.jl.git"); Pkg.checkout("LIBSVM", "mutating_versions"); Pkg.build("LIBSVM")'
   - julia -e 'Pkg.clone("https://github.com/milanflach/MultivariateAnomalies.jl")'
-  - julia -e 'using Conda'
-  - julia -e 'Pkg.add("libnetcdf")'
-  - julia -e 'Pkg.clone(pwd()); Pkg.build("CABLAB"); Pkg.build("NetCDF"); Pkg.test("CABLAB"; coverage=true)'
+  - julia -e 'Pkg.clone(pwd()); Pkg.build("CABLAB")' 
+  - julia -e 'using Conda; Conda.add("libnetcdf"); Pkg.build("NetCDF"); Pkg.test("CABLAB"; coverage=true)'
 after_success:
   - julia -e 'Pkg.add("Documenter")'
   - julia -e 'Pkg.clone("https://github.com/CAB-LAB/CABLABPlots.jl");Pkg.add("GR")'
