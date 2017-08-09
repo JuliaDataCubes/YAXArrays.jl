@@ -135,11 +135,11 @@ const regDict=Dict{Function,DATFunction}()
 
 getOuttype(outtype::Type{Any},cdata)=isa(cdata,AbstractCubeData) ? eltype(cdata) : eltype(cdata[1])
 getOuttype(outtype,cdata)=outtype
-getInAxes(indims::Tuple{}, cdata::AbstractCubeData)=getInAxes((indims,),(cdata,))
-getInAxes(indims::Tuple{}, cdata::Tuple)=getInAxes((indims,),cdata)
+getInAxes(indims::Tuple{UnionAll}, cdata::AbstractCubeData)=getInAxes((indims,),(cdata,))
+getInAxes(indims::Tuple{UnionAll}, cdata::Tuple)=getInAxes((indims,),cdata)
 getInAxes(indims::Tuple{Vararg{DataType}},cdata)=getInAxes((indims,),cdata)
-getInAxes(indims::Tuple{Vararg{Tuple{Vararg{DataType}}}},cdata::AbstractCubeData)=getInAxes(indims,(cdata,))
-function getInAxes(indims::Tuple{Vararg{Tuple{Vararg{DataType}}}},cdata::Tuple)
+getInAxes(indims::Tuple{Vararg{Tuple}},cdata::AbstractCubeData)=getInAxes(indims,(cdata,))
+function getInAxes(indims::Tuple{Vararg{Tuple}},cdata::Tuple)
   inAxes=Vector{CubeAxis}[]
   for (dat,dim) in zip(cdata,indims)
     ii=collect(map(a->findAxis(a,axes(dat)),dim))
@@ -153,7 +153,13 @@ function getInAxes(indims::Tuple{Vararg{Tuple{Vararg{DataType}}}},cdata::Tuple)
 end
 getOutAxes(outdims,cdata,pargs)=getOutAxes((outdims,),cdata,pargs)
 getOutAxes(outdims::Tuple{},cdata,pargs)=CubeAxis[]
-getOutAxes(outdims::Tuple{Vararg{Tuple}},cdata,pargs)=map(i->getOutAxes(i,cdata,pargs),outdims)
+getOutAxes(outdims::Tuple{UnionAll},cdata,pargs)=CubeAxis[]
+#getOutAxes(outdims::Tuple{Vararg{Tuple}},cdata,pargs)=map(i->getOutAxes(i,cdata,pargs),outdims)
+function getOutAxes(outdims::Tuple{Vararg{Tuple}},cdata,pargs)
+    @show typeof(outdims)
+    @show typeof(outdims[1])
+    map(i->getOutAxes(i,cdata,pargs),outdims)
+end
 getOutAxes(outdims::Tuple{Vararg{Union{DataType,CubeAxis,Function}}},cdata,pargs)=map(t->getOutAxes2(cdata,t,pargs),outdims)
 function getOutAxes2(cdata::Tuple,t::DataType,pargs)
   for da in cdata

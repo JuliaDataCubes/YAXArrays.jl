@@ -644,7 +644,7 @@ function _read{T,N}(s::Union{SubCubeVPerm{T},SubCubePerm{T},SubCubeStaticPerm{T}
   outar,mask=t
   sout=map(-,r.stop.I,(r.start-CartesianIndex{N}()).I)[iperm]
   #println("xoffs=$xoffs yoffs=$yoffs toffs=$toffs voffs=$voffs nx=$nx ny=$ny nt=$nt nv=$nv")
-  outartemp=Array(T,sout...)
+  outartemp=Array{T}(sout...)
   masktemp=zeros(UInt8,sout...)
   _read(s.parent,(outartemp,masktemp),CartesianRange(CartesianIndex(r.start.I[iperm]),CartesianIndex(r.stop.I[iperm])))
   mypermutedims!(outar,outartemp,Val{perm})

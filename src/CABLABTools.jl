@@ -4,7 +4,7 @@ export mypermutedims!, totuple, freshworkermodule, passobj, @everywhereelsem, to
 # SOme global function definitions
 
 function getiperm(perm)
-    iperm = Array(Int,length(perm))
+    iperm = Array{Int}(length(perm))
     for i = 1:length(perm)
         iperm[perm[i]] = i
     end
