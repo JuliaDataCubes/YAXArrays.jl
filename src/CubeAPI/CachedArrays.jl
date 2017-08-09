@@ -28,7 +28,7 @@ type MaskedCacheBlock{T,N} <: CacheBlock{T,N}
     position::CartesianIndex{N}
     iswritten::Bool
 end
-emptyblock{T,N}(b::Type{MaskedCacheBlock{T,N}})=MaskedCacheBlock{T,N}(Array(T,ntuple(i->0,N)),Array(UInt8,ntuple(i->0,N)),0.0,CartesianIndex{N}()-CartesianIndex{N}(),false)
+emptyblock{T,N}(b::Type{MaskedCacheBlock{T,N}})=MaskedCacheBlock{T,N}(Array{T}(ntuple(i->0,N)),Array{UInt8}(ntuple(i->0,N)),0.0,CartesianIndex{N}()-CartesianIndex{N}(),false)
 zeroblock{T,N}(b::Type{MaskedCacheBlock{T,N}},block_size,position)=MaskedCacheBlock{T,N}(zeros(T,block_size.I),zeros(UInt8,block_size.I),0.0,position,false)
 getValues(b::MaskedCacheBlock,I::Union{Integer,UnitRange,Colon}...)=(view(b.data,I...),view(b.mask,I...))
 #getValues(b::MaskedCacheBlock,I::Integer...)=(b.data[I...],b.mask[I...])
@@ -66,7 +66,7 @@ function CachedArray(x,max_blocks::Int,block_size::CartesianIndex,blocktype::Dat
     N=ndims(x)
     s=size(x)
     ssmall=[div(s[i],block_size[i]) for i=1:N]
-    blocks=Array(blocktype,ssmall...)
+    blocks=Array{blocktype}(ssmall...)
     currentblocks=blocktype[]
     scores=zeros(Int64,ssmall...)
     i=1
