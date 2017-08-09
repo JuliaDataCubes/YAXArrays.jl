@@ -611,7 +611,7 @@ end
 function readCubeData{T}(s::SubCube{T})
   grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid
   y1,i1,y2,i2,ntime,NpY           = s.sub_times
-  outar=Array(T,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)
+  outar=Array{T}(grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)
   mask=zeros(UInt8,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)
   _read(s,(outar,mask),CartesianRange((grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)))
   return CubeMem(CubeAxis[s.lonAxis,s.latAxis,s.timeAxis],outar,mask)
@@ -620,7 +620,7 @@ end
 function readCubeData{T}(s::SubCubeV{T})
   grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid
   y1,i1,y2,i2,ntime,NpY           = s.sub_times
-  outar=Array(T,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime,length(s.varAxis))
+  outar=Array{T}(grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime,length(s.varAxis))
   mask=zeros(UInt8,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime,length(s.varAxis))
   _read(s,(outar,mask),CartesianRange((grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime,length(s.varAxis))))
   return CubeMem(CubeAxis[s.lonAxis,s.latAxis,s.timeAxis,s.varAxis],outar,mask)
@@ -629,7 +629,7 @@ end
 function readCubeData{T}(s::SubCubeStatic{T})
   grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid
   y1,i1,y2,i2,ntime,NpY           = s.sub_times
-  outar=Array(T,grid_x2-grid_x1+1,grid_y2-grid_y1+1)
+  outar=Array{T}(grid_x2-grid_x1+1,grid_y2-grid_y1+1)
   mask=zeros(UInt8,grid_x2-grid_x1+1,grid_y2-grid_y1+1)
   _read(s,(reshape(outar,(size(outar,1),size(outar,2),1)),reshape(mask,(size(mask,1),size(mask,2),1))),CartesianRange((grid_x2-grid_x1+1,grid_y2-grid_y1+1,1)))
   return CubeMem(CubeAxis[s.lonAxis,s.latAxis],outar,mask)
@@ -638,7 +638,7 @@ end
 """
 Add a function to read some CubeData in a permuted way, we will make a copy here for simplicity, however, this might change in the future
 """
-function _read{T,N}(s::Union{SubCubeVPerm{T},SubCubePerm{T},SubCubeStaticPerm{T}},t::NTuple{2},r::CartesianRange{CartesianIndex{N}})  #;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,findin(s.perm,1)[1]),ny::Int=size(outar,findin(s.perm,2)[1]),nt::Int=size(outar,findin(s.perm,3)[1]),nv::Int=size(outar,findin(s.perm,4)[1]))
+function _read{T,N}(s::Union{SubCubeVPerm{T},SubCubePerm{T},SubCubeStaticPerm{T}},t::Tuple,r::CartesianRange{CartesianIndex{N}})  #;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,findin(s.perm,1)[1]),ny::Int=size(outar,findin(s.perm,2)[1]),nt::Int=size(outar,findin(s.perm,3)[1]),nv::Int=size(outar,findin(s.perm,4)[1]))
   iperm=sgetiperm(s)
   perm=sgetperm(s)
   outar,mask=t
@@ -714,7 +714,7 @@ end
 gettoffsnt(::AbstractSubCube,r::CartesianRange)=(r.start.I[3] - 1,r.stop.I[3]  - r.start.I[3]+1)
 gettoffsnt(::SubCubeStatic,r::CartesianRange{CartesianIndex{2}})=(0,1)
 
-  function _read{T}(s::AbstractSubCube{T},t::NTuple{2},r::CartesianRange) #;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,1),ny::Int=size(outar,2),nt::Int=size(outar,3),nv::Int=length(s.variable))
+  function _read(s::AbstractSubCube,t::Tuple,r::CartesianRange) #;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,1),ny::Int=size(outar,2),nt::Int=size(outar,3),nv::Int=length(s.variable))
 
     outar,mask=t
     grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid

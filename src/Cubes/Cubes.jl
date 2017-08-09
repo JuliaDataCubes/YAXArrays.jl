@@ -125,7 +125,7 @@ end
 
 
 import ..CABLABTools.toRange
-function _read(c::CubeMem,thedata::NTuple{2},r::CartesianRange)
+function _read(c::CubeMem,thedata::Tuple,r::CartesianRange)
   outar,outmask=thedata
   data=view(c.data,toRange(r)...)
   mask=view(c.mask,toRange(r)...)

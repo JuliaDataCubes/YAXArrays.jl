@@ -148,7 +148,7 @@ function rmCube(f::String)
   end
 end
 
-function _read{N}(y::TempCube,thedata::NTuple{2},r::CartesianRange{CartesianIndex{N}})
+function _read{N}(y::TempCube,thedata::Tuple,r::CartesianRange{CartesianIndex{N}})
   data,mask=thedata
   unit=CartesianIndex{N}()
   rsmall=CartesianRange(CIdiv(r.start-unit,y.block_size)+unit,CIdiv(r.stop-unit,y.block_size)+unit)
@@ -169,7 +169,7 @@ end
 Base.permutedims{T,N}(c::TempCube{T,N},perm)=TempCubePerm{T,N}(c.axes,c.folder,c.block_size,perm,c.properties)
 #Method for reading cubes that get transposed
 #Per means fileOrder -> MemoryOrder
-function _read{N}(y::TempCubePerm,thedata::NTuple{2},r::CartesianRange{CartesianIndex{N}})
+function _read{N}(y::TempCubePerm,thedata::Tuple,r::CartesianRange{CartesianIndex{N}})
   data,mask=thedata
   perm=y.perm
   blocksize_trans = CartesianIndex(ntuple(i->y.block_size.I[perm[i]],N))

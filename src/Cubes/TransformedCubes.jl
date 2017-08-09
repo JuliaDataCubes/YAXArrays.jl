@@ -25,7 +25,7 @@ Base.size{T,N}(x::TransformedCube{T,N},i)=size(x.parents,i)
 axes(v::TransformedCube)=v.cubeAxes
 getCubeDes(v::TransformedCube)="Transformed cube $(getCubeDes(v.parents[1]))"
 using Base.Cartesian
-function _read{T,N}(x::TransformedCube{T,N},thedata::NTuple{2},r::CartesianRange{CartesianIndex{N}})
+function _read{T,N}(x::TransformedCube{T,N},thedata::Tuple,r::CartesianRange{CartesianIndex{N}})
   aout,mout=thedata
   ainter=[]
   minter=[]
@@ -93,7 +93,7 @@ Base.size{T,N}(x::ConcatCube{T,N},i)=i==N ? length(x.catAxis) : size(x.cubelist[
 axes(v::ConcatCube)=[v.cubeAxes;v.catAxis]
 getCubeDes(v::ConcatCube)="Collection of $(getCubeDes(v.cubelist[1]))"
 using Base.Cartesian
-@generated function _read{T,N}(x::ConcatCube{T,N},thedata::NTuple{2},r::CartesianRange{CartesianIndex{N}})
+@generated function _read{T,N}(x::ConcatCube{T,N},thedata::Tuple,r::CartesianRange{CartesianIndex{N}})
   viewEx1=Expr(:call,:view,:aout,fill(Colon(),N-1)...,:j)
   viewEx2=Expr(:call,:view,:mout,fill(Colon(),N-1)...,:j)
   quote
@@ -134,7 +134,7 @@ Base.size(x::SliceCube,i)=x.size[i]
 axes(v::SliceCube)=v.cubeAxes
 getCubeDes(v::SliceCube)=getCubeDes(v.parent)
 using Base.Cartesian
-@generated function _read{T,N,F}(x::SliceCube{T,N,F},thedata::NTuple{2},r::CartesianRange{CartesianIndex{N}})
+@generated function _read{T,N,F}(x::SliceCube{T,N,F},thedata::Tuple,r::CartesianRange{CartesianIndex{N}})
   iax = F
   startinds = Expr(:tuple,insert!(Any[:(rstart[$i]) for i=1:N],iax,:(x.ival))...)
   stopinds  = Expr(:tuple,insert!(Any[:(rstop[$i]) for i=1:N],iax,:(x.ival))...)
