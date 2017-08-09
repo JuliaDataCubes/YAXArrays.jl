@@ -16,7 +16,7 @@ interface. However, the `CABLAB` functions [mapCube](@ref), [reduceCube](@ref),
 [readCubeData](@ref), [plotMAP](@ref) and [plotXY](@ref) will work on any subtype
 of `AbstractCubeData`
 """
-abstract AbstractCubeData{T,N}
+abstract type AbstractCubeData{T,N} end
 
 """
 getSubRange reads some Cube data and writes it to a pre-allocated memory.
@@ -59,11 +59,11 @@ Base.ndims{T,N}(::AbstractCubeData{T,N})=N
 cubeproperties(::AbstractCubeData)=Dict{String,Any}()
 
 "Supertype of all subtypes of the original data cube"
-abstract AbstractSubCube{T,N} <: AbstractCubeData{T,N}
+abstract type AbstractSubCube{T,N} <: AbstractCubeData{T,N} end
 
 
 "Supertype of all in-memory representations of a data cube"
-abstract AbstractCubeMem{T,N} <: AbstractCubeData{T,N}
+abstract type AbstractCubeMem{T,N} <: AbstractCubeData{T,N} end
 
 include("Axes.jl")
 importall .Axes
@@ -97,7 +97,7 @@ Base.permutedims(c::CubeMem,p)=CubeMem(c.axes[collect(p)],permutedims(c.data,p),
 axes(c::CubeMem)=c.axes
 cubeproperties(c::CubeMem)=c.properties
 
-Base.linearindexing(::CubeMem)=Base.LinearFast()
+Base.IndexStyle(::CubeMem)=Base.LinearFast()
 Base.getindex(c::CubeMem,i::Integer)=getindex(c.data,i)
 Base.setindex!(c::CubeMem,i::Integer,v)=setindex!(c.data,i,v)
 Base.size(c::CubeMem)=size(c.data)

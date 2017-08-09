@@ -208,7 +208,7 @@ function Base.show(io::IO,c::RemoteCube)
   end
   println(io)
 end
-typealias UCube Union{Cube,RemoteCube}
+const UCube = Union{Cube,RemoteCube}
 
 """
     immutable SubCube{T,C} <: AbstractCubeData{T,4}

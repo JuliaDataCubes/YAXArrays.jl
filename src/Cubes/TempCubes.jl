@@ -5,7 +5,7 @@ importall ...CABLABTools
 import ....CABLAB.CABLABdir
 
 "This defines a temporary datacube, written on disk which is usually "
-abstract AbstractTempCube{T,N} <: AbstractCubeData{T,N}
+abstract type AbstractTempCube{T,N} <: AbstractCubeData{T,N} end
 
 """
     type TempCube{T,N} <: AbstractCubeData{T,N}

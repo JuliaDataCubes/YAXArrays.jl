@@ -8,7 +8,7 @@ importall ..CABLABTools
 importall ..Mask
 using Base.Cartesian
 
-abstract CacheBlock{T,N}
+abstract type CacheBlock{T,N} end
 type SimpleCacheBlock{T,N} <: CacheBlock{T,N}
     data::Array{T,N}
     score::Float64
@@ -84,7 +84,7 @@ function CachedArray(x,max_blocks::Int,block_size::CartesianIndex,blocktype::Dat
     end
     CachedArray{T,N,blocktype,vtype}(x,max_blocks,block_size,blocks,currentblocks,nullblock)
 end
-Base.linearindexing(::CachedArray)=Base.LinearSlow()
+Base.IndexStyle(::CachedArray)=Base.LinearSlow()
 #Base.setindex!{T,N}(c::CachedArray{T,N},v,i::CartesianIndex{N})=0.0
 Base.size(c::CachedArray)=size(c.x)
 Base.similar(c::CachedArray)=similar(c.x)

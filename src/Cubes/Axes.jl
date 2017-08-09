@@ -43,14 +43,14 @@ end
 macro defineCatAxis(axname,eltype)
   newname=esc(Symbol(string(axname,"Axis")))
   quote
-    typealias $newname CategoricalAxis{$eltype,$(QuoteNode(axname))}
+    $newname = CategoricalAxis{$eltype,$(QuoteNode(axname))}
   end
 end
 
 macro defineRanAxis(axname,eltype,rantype)
   newname=esc(Symbol(string(axname,"Axis")))
   quote
-    typealias $newname RangeAxis{$eltype,$(QuoteNode(axname)),$rantype}
+    const $newname = RangeAxis{$eltype,$(QuoteNode(axname)),$rantype}
   end
 end
 
@@ -79,7 +79,7 @@ of the aliases:
 * `MSCAxis` time step inside a year (for seasonal statistics)
 
 """
-abstract CubeAxis{T,S} <: AbstractCubeMem{T,1}
+abstract type CubeAxis{T,S} <: AbstractCubeMem{T,1} end
 
 """
     CategoricalAxis{T,S}
@@ -122,7 +122,7 @@ RangeAxis{T}(s::Symbol,v::Range{T})=RangeAxis{T,s,typeof(v)}(v)
 RangeAxis(s::AbstractString,v)=RangeAxis(Symbol(s),v)
 
 
-typealias TimeAxis RangeAxis{Date,:Time}
+const TimeAxis = RangeAxis{Date,:Time}
 TimeAxis(r)=RangeAxis(:Time,r)
 
 @defineRanAxis MSC Date YearStepRange
@@ -131,6 +131,8 @@ TimeAxis(r)=RangeAxis(:Time,r)
 @defineRanAxis TimeH DateTime StepRange{DateTime,Base.Dates.Minute}
 
 Base.length(a::CubeAxis)=length(a.values)
+
+println(MSCAxis)
 
 MSCAxis(n::Int)=MSCAxis(YearStepRange(1900,1,1900,n,ceil(Int,366/n),n))
 
