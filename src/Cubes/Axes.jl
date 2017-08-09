@@ -43,7 +43,7 @@ end
 macro defineCatAxis(axname,eltype)
   newname=esc(Symbol(string(axname,"Axis")))
   quote
-    $newname = CategoricalAxis{$eltype,$(QuoteNode(axname))}
+    const $newname = CategoricalAxis{$eltype,$(QuoteNode(axname))}
   end
 end
 
@@ -126,13 +126,11 @@ const TimeAxis = RangeAxis{Date,:Time}
 TimeAxis(r)=RangeAxis(:Time,r)
 
 @defineRanAxis MSC Date YearStepRange
-@defineRanAxis Lon Float64 FloatRange{Float64}
-@defineRanAxis Lat Float64 FloatRange{Float64}
+@defineRanAxis Lon Float64 StepRangeLen{Float64}
+@defineRanAxis Lat Float64 StepRangeLen{Float64}
 @defineRanAxis TimeH DateTime StepRange{DateTime,Base.Dates.Minute}
 
 Base.length(a::CubeAxis)=length(a.values)
-
-println(MSCAxis)
 
 MSCAxis(n::Int)=MSCAxis(YearStepRange(1900,1,1900,n,ceil(Int,366/n),n))
 
@@ -160,7 +158,7 @@ function axVal2Index{T<:Date,S,F<:YearStepRange}(a::RangeAxis{T,S,F},v::Date)
   r = (y-a.values.startyear)*a.values.NPY + d÷a.values.step + 1
   return max(1,min(length(a.values),r))
 end
-axVal2Index{T,S,F<:FloatRange}(axis::RangeAxis{T,S,F},v;fuzzy::Bool=false)=min(max(round(Int,(v-first(axis.values))/step(axis.values))+1,1),length(axis))
+axVal2Index{T,S,F<:StepRangeLen}(axis::RangeAxis{T,S,F},v;fuzzy::Bool=false)=min(max(round(Int,(v-first(axis.values))/step(axis.values))+1,1),length(axis))
 function axVal2Index(axis::CategoricalAxis{String},v::String;fuzzy::Bool=false)
   r=findfirst(axis.values,v)
   if r==0

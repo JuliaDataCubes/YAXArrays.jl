@@ -432,7 +432,7 @@ function analyzeAxes(dc::DATConfig)
   end
   #Try to construct outdims
   for ioutcube=1:length(dc.outAxes)
-    outnotfound=find([!isdefined(dc.outAxes[ioutcube],ii) for ii in eachindex(dc.outAxes[ioutcube])])
+    outnotfound=find([!isassigned(dc.outAxes[ioutcube],ii) for ii in eachindex(dc.outAxes[ioutcube])])
     for ii in outnotfound
       dc.outAxes[ioutcube][ii]=dc.outdims[ioutcube][ii]()
     end
