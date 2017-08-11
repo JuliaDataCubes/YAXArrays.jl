@@ -527,8 +527,8 @@ using Base.Cartesian
 @generated function distributeLoopRanges{N}(block_size::NTuple{N,Int},loopR::Vector)
     quote
         @assert length(loopR)==N
-        nsplit=Int[div(l,b) for (l,b) in zip(loopR,block_size)]
-        baseR=UnitRange{Int}[1:b for b in block_size]
+        nsplit=helpComprehension_nsplit(block_size, loopR)
+        baseR=helpComprehension_baseR(block_size)
         a=Array(NTuple{$N,UnitRange{Int}},nsplit...)
         @nloops $N i a begin
             rr=@ntuple $N d->baseR[d]+(i_d-1)*block_size[d]
@@ -537,6 +537,18 @@ using Base.Cartesian
         a=reshape(a,length(a))
     end
 end
+
+#Comprehensions are not allowed in generated functions so they have to moved to normal function
+# see https://github.com/JuliaLang/julia/issues/21094
+function helpComprehension_nsplit{N}(block_size::NTuple{N,Int},loopR::Vector)
+    nsplit=Int[div(l,b) for (l,b) in zip(loopR,block_size)]
+    return nsplit
+end
+function helpComprehension_baseR{N}(block_size::NTuple{N,Int})
+    baseR=UnitRange{Int}[1:b for b in block_size]
+    return baseR
+end
+
 
 using Base.Cartesian
 @generated function innerLoop{T1,T2,T3,T4,NIN,NOUT,M1,M2,OC,R}(f,xin,xout,::InnerObj{NIN,NOUT,T1,T2,T4,M1,M2,OC,R},loopRanges::T3,addargs,kwargs)
