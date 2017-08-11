@@ -60,7 +60,7 @@ end
     Expr(:tuple,args...)
 end
 
-function CachedArray(x,max_blocks::Int,block_size::CartesianIndex,blocktype::DataType;startInd::Int=1)
+function CachedArray(x,max_blocks::Int,block_size::CartesianIndex,blocktype::Type;startInd::Int=1)
     vtype=typeof(x)
     T=eltype(x)
     N=ndims(x)
