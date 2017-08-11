@@ -32,7 +32,7 @@ type TransformedCube{T,N,F} <: AbstractCubeData{T,N}
   properties::Dict{String,Any}
 end
 
-function Base.map(op, incubes::AbstractCubeData...; T::DataType=eltype(incubes[1]))
+function Base.map(op, incubes::AbstractCubeData...; T::Type=eltype(incubes[1]))
   axlist=copy(axes(incubes[1]))
   N=ndims(incubes[1])
   for i=2:length(incubes)

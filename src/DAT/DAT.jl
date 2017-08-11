@@ -135,9 +135,9 @@ const regDict=Dict{Function,DATFunction}()
 
 getOuttype(outtype::Type{Any},cdata)=isa(cdata,AbstractCubeData) ? eltype(cdata) : eltype(cdata[1])
 getOuttype(outtype,cdata)=outtype
-getInAxes(indims::Tuple{UnionAll}, cdata::AbstractCubeData)=getInAxes((indims,),(cdata,))
-getInAxes(indims::Tuple{UnionAll}, cdata::Tuple)=getInAxes((indims,),cdata)
-getInAxes(indims::Tuple{Vararg{DataType}},cdata)=getInAxes((indims,),cdata)
+getInAxes(indims::Tuple{Type}, cdata::AbstractCubeData)=getInAxes((indims,),(cdata,))
+getInAxes(indims::Tuple{Type}, cdata::Tuple)=getInAxes((indims,),cdata)
+getInAxes(indims::Tuple{Vararg{Type}},cdata)=getInAxes((indims,),cdata)
 getInAxes(indims::Tuple{Vararg{Tuple}},cdata::AbstractCubeData)=getInAxes(indims,(cdata,))
 function getInAxes(indims::Tuple{Vararg{Tuple}},cdata::Tuple)
   inAxes=Vector{CubeAxis}[]
@@ -153,15 +153,19 @@ function getInAxes(indims::Tuple{Vararg{Tuple}},cdata::Tuple)
 end
 getOutAxes(outdims,cdata,pargs)=getOutAxes((outdims,),cdata,pargs)
 getOutAxes(outdims::Tuple{},cdata,pargs)=CubeAxis[]
-getOutAxes(outdims::Tuple{UnionAll},cdata,pargs)=CubeAxis[]
-#getOutAxes(outdims::Tuple{Vararg{Tuple}},cdata,pargs)=map(i->getOutAxes(i,cdata,pargs),outdims)
+#getOutAxes(outdims::Tuple{UnionAll},cdata,pargs)=CubeAxis[]
 function getOutAxes(outdims::Tuple{Vararg{Tuple}},cdata,pargs)
-    @show typeof(outdims)
-    @show typeof(outdims[1])
-    map(i->getOutAxes(i,cdata,pargs),outdims)
+    map(outdims) do onetuple
+        #println(onetuple)
+        isempty(onetuple) ? () : map(onetuple) do t
+            #println("Calling getOutAxes2: ",t)
+            getOutAxes2(cdata,t,pargs)
+        end
+    end
 end
-getOutAxes(outdims::Tuple{Vararg{Union{DataType,CubeAxis,Function}}},cdata,pargs)=map(t->getOutAxes2(cdata,t,pargs),outdims)
-function getOutAxes2(cdata::Tuple,t::DataType,pargs)
+
+#getOutAxes(outdims::Tuple{Vararg{Union{DataType,CubeAxis,Function}}},cdata,pargs)=map(t->getOutAxes2(cdata,t,pargs),outdims)
+function getOutAxes2(cdata::Tuple,t::Type,pargs)
   for da in cdata
     ii = findAxis(t,axes(da))
     ii>0 && return axes(da)[ii]
@@ -281,7 +285,7 @@ function mapCube(fu::Function,
   debug && return(dc)
   runLoop(dc)
   @debug_print "Finalizing Output Cube"
-
+   
   if dc.NOUT==1
     return dc.finalizeOut[1](dc.outcubes[1])
   else
