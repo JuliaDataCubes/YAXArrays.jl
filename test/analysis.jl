@@ -1,6 +1,9 @@
 using CABLAB
 using Base.Test
 
+addprocs(2)
+@everywhere using CABLAB
+
 @everywhere function catCubes(xout,xin1,xin2)
     Ntime,nvar1=size(xin1)
     nvar2=size(xin2,2)
@@ -117,9 +120,7 @@ function doTests()
   @test isapprox(mean(c2.data,3)[:,:,1],readCubeData(cube_means).data)
 end
 
-#addprocs(2)
-#@everywhere using CABLAB
-#doTests()
-#rmprocs(workers())
+doTests()
+rmprocs(workers())
 
 doTests()
