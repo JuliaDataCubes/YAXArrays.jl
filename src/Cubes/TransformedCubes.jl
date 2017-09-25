@@ -64,7 +64,7 @@ function _read{T,N}(x::TransformedCube{T,N},thedata::Tuple,r::CartesianRange{Car
   return aout,mout
 end
 
-ops2 = [:+, :-, :(./), :(.*),:/, :*, :max, :min]
+ops2 = [:+, :-,:/, :*, :max, :min]
 for op in ops2
   eval(:(Base.$(op)(x::AbstractCubeData, y::AbstractCubeData)=map($op, x,y)))
   eval(:(Base.$(op)(x::AbstractCubeData, y::Number)          =map(i->i-y,x)))

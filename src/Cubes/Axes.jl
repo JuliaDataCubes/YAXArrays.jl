@@ -18,12 +18,12 @@ end
 function YearStepRange(start::Date,stop::Date,step::Day)
     startyear=year(start)
     startday=dayofyear(start)
-    startst=ceil(Int,startday/Float64(step))
+    startst=ceil(Int,startday/Dates.value(step))
     stopyear=year(stop)
     stopday=dayofyear(stop)
-    stopst=ceil(Int,stopday/Float64(step))
-    NPY=ceil(Int,366/Float64(step))
-    YearStepRange(startyear,startst,stopyear,stopst,Int(step),NPY)
+    stopst=ceil(Int,stopday/Dates.value(step))
+    NPY=ceil(Int,366/Dates.value(step))
+    YearStepRange(startyear,startst,stopyear,stopst,Dates.value(step),NPY)
 end
 function Base.length(x::YearStepRange)
     (-x.startst+1+x.stopst+(x.stopyear-x.startyear)*x.NPY)
@@ -198,7 +198,7 @@ end
 "Fallback method"
 findAxis(a,axlist)=0
 
-getSubRange(x::CubeAxis,i)=x[i],nothing
+getSubRange(x::CubeAxis,i)=x.values[i],nothing
 getSubRange(x::TimeAxis,i)=view(x,i),nothing
 
 macro caxis_str(s)

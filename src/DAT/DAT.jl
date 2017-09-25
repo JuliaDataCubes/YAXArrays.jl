@@ -209,7 +209,7 @@ function reduceCube(f::Function,c::CABLAB.Cubes.AbstractCubeData,dim::Tuple,adda
     latAxis=getAxis(LatAxis,axlist)
     sfull=map(length,inAxes)
     ssmall=map(i->isa(i,LatAxis) ? length(i) : 1,inAxes)
-    wone=reshape(cosd(latAxis.values),ssmall)
+    wone=reshape(cosd.(latAxis.values),ssmall)
     ww=zeros(sfull).+wone
     wv=Weights(reshape(ww,length(ww)))
     return mapCube(f,c,wv,addargs...;indims=dim,outdims=((),),inmissing=(:nullable,),outmissing=(:nullable,),inplace=false,kwargs...)
@@ -285,7 +285,7 @@ function mapCube(fu::Function,
   debug && return(dc)
   runLoop(dc)
   @debug_print "Finalizing Output Cube"
-   
+
   if dc.NOUT==1
     return dc.finalizeOut[1](dc.outcubes[1])
   else
@@ -529,7 +529,7 @@ using Base.Cartesian
         @assert length(loopR)==N
         nsplit=helpComprehension_nsplit(block_size, loopR)
         baseR=helpComprehension_baseR(block_size)
-        a=Array(NTuple{$N,UnitRange{Int}},nsplit...)
+        a=Array{NTuple{$N,UnitRange{Int}}}(nsplit...)
         @nloops $N i a begin
             rr=@ntuple $N d->baseR[d]+(i_d-1)*block_size[d]
             @nref($N,a,i)=rr

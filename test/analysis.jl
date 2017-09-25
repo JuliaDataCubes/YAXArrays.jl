@@ -53,7 +53,7 @@ function doTests()
   dmem=readCubeData(d1)
   mtime=reduceCube(mean,dmem,(LonAxis,LatAxis),skipnull=true)
 
-  wv=cosd(dmem.axes[2].values)
+  wv=cosd.(dmem.axes[2].values)
   goodinds=dmem.mask.==0x00
   # the element-wise operations are right now a problem with the julia 0.6
   #@test Float32(sum(dmem.data[goodinds].*wv[goodinds])/sum(wv[goodinds]))==readCubeData(mtime).data[1]
