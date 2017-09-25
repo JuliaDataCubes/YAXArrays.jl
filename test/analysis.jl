@@ -2,7 +2,7 @@ using CABLAB
 using Base.Test
 
 addprocs(2)
-@everywhere using CABLAB
+@everywhere using CABLAB, DataArrays
 
 @everywhere function catCubes(xout,xin1,xin2)
     Ntime,nvar1=size(xin1)
@@ -40,7 +40,7 @@ function doTests()
   dmem=readCubeData(d)
 
   # Basic statistics
-  m=reduceCube(mean,d,TimeAxis,skipnull=true)
+  m=reduceCube(mean,d,TimeAxis,skipna=true)
 
   @test isapprox(readCubeData(m).data,[281.922  282.038  282.168  282.288;
                 281.936  282.062  282.202  282.331;
@@ -51,7 +51,7 @@ function doTests()
   d1=getCubeData(c,variable="gross_primary_productivity",time=(Date("2002-01-01"),Date("2002-01-01")),longitude=(30,30))
 
   dmem=readCubeData(d1)
-  mtime=reduceCube(mean,dmem,(LonAxis,LatAxis),skipnull=true)
+  mtime=reduceCube(mean,dmem,(LonAxis,LatAxis),skipna=true)
 
   wv=cosd.(dmem.axes[2].values)
   goodinds=dmem.mask.==0x00

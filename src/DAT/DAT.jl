@@ -8,8 +8,7 @@ importall ..Cubes.TempCubes
 import ...CABLAB
 import ...CABLAB.workdir
 using Base.Dates
-import NullableArrays.NullableArray
-import NullableArrays.isnull
+import DataArrays: DataArray, isna
 import StatsBase.Weights
 importall CABLAB.CubeAPI.Mask
 global const debugDAT=false
@@ -212,9 +211,10 @@ function reduceCube(f::Function,c::CABLAB.Cubes.AbstractCubeData,dim::Tuple,no_o
     wone=reshape(cosd.(latAxis.values),ssmall)
     ww=zeros(sfull).+wone
     wv=Weights(reshape(ww,length(ww)))
-    return mapCube(f,c,wv,indims=dim,outdims=((),),inmissing=(:nullable,),outmissing=(:nullable,),inplace=false;kwargs...)
+    g = length(dim)>1 ? (x,w;kwargs...)->f(DataArray(reshape(x.data,length(x)),reshape(x.na,length(x))),w;kwargs...) : f
+    return mapCube(g,c,wv,indims=dim,outdims=((),),inmissing=(:data,),outmissing=(:data,),inplace=false;kwargs...)
   else
-    return mapCube(f,c,indims=dim,outdims=((),),inmissing=(:nullable,),outmissing=(:nullable,),inplace=false;kwargs...)
+    return mapCube(f,c,indims=dim,outdims=((),),inmissing=(:data,),outmissing=(:data,),inplace=false;kwargs...)
   end
 end
 
@@ -230,8 +230,8 @@ Map a given function `fun` over slices of the data cube `cube`.
 * `outtype::DataType` output data type of the operation
 * `indims::Tuple{Tuple{Vararg{CubeAxis}}}` List of input axis types for each input data cube
 * `outdims::Tuple` List of output axes, can be either an axis type that has a default constructor or an instance of a `CubeAxis`
-* `inmissing::Tuple` How to treat missing values in input data for each input cube. Possible values are `:nullable` `:mask` `:nan` or a value that is inserted for missing data, defaults to `:mask`
-* `outmissing` How are missing values written to the output array, possible values are `:nullable`, `:mask`, `:nan`, defaults to `:mask`
+* `inmissing::Tuple` How to treat missing values in input data for each input cube. Possible values are `:data` `:mask` `:nan` or a value that is inserted for missing data, defaults to `:mask`
+* `outmissing` How are missing values written to the output array, possible values are `:data`, `:mask`, `:nan`, defaults to `:mask`
 * `no_ocean` should values containing ocean data be omitted, an integer specifying the cube whose input mask is used to determine land-sea points.
 * `inplace` does the function write to an output array inplace or return a single value> defaults to `true`
 * `ispar` boolean to determine if parallelisation should be applied, defaults to `true` if workers are available.
@@ -483,7 +483,6 @@ function getCacheSizes(dc::DATConfig)
   outblocksizes    = map((A,C)->length(A)>0 ? sizeof(eltype(C))*prod(map(length,A)) : 1,dc.outAxes,dc.outcubes)
   outblocksize     = length(outblocksizes) > 0 ? findmax(outblocksizes)[1] : 1
   loopCacheSize    = getLoopCacheSize(max(inblocksize,outblocksize),dc.LoopAxes,dc.max_cache)
-  @debug_print "Choosing Cache Size of $loopCacheSize"
   for icube=1:dc.NIN
     if dc.isMem[icube]
       push!(dc.inCacheSizes,Int[])
@@ -595,7 +594,7 @@ using Base.Cartesian
     end
   end
   for j=1:NOUT
-    outmissing[j]==:nullable && push!(loopBody.args,:($(Symbol("aout_$j"))=toNullableArray($(Symbol("aout_$j")),$(Symbol("mout_$j")))))
+    outmissing[j]==:data && push!(loopBody.args,:($(Symbol("aout_$j"))=toDataArray($(Symbol("aout_$j")),$(Symbol("mout_$j")))))
   end
   for (i,s) in enumerate(subIn)
     ains=Symbol("ain_$i");mins=Symbol("min_$i")
@@ -606,8 +605,8 @@ using Base.Cartesian
         push!(callargs,mins)
       elseif inmissing[i]==:nan
         push!(loopBody.args,:(fillVals($(ains),$(mins),NaN)))
-      elseif inmissing[i]==:nullable
-        push!(loopBody.args,:($(ains)=toNullableArray($(ains),$(mins))))
+    elseif inmissing[i]==:data
+        push!(loopBody.args,:($(ains)=toDataArray($(ains),$(mins))))
       end
     else
       push!(loopBody.args,:(fillVals($(ains),$(mins),$(inmissing))))
@@ -639,15 +638,15 @@ using Base.Cartesian
   for j=1:NOUT
     if outmissing[j]==:nan
       push!(loopBody.args, :(fillNanMask($(Symbol("aout_$j")),$(Symbol("mout_$j")))))
-    elseif outmissing[j]==:nullable
-      push!(loopBody.args, :(fillNullableArrayMask($(Symbol("aout_$j")),$(Symbol("mout_$j")))))
+  elseif outmissing[j]==:data
+      push!(loopBody.args, :(fillDataArrayMask($(Symbol("aout_$j")),$(Symbol("mout_$j")))))
     end
   end
   loopEx = length(loopRangesE.args)==0 ? loopBody : Expr(:for,loopRangesE,loopBody)
   if debugDAT
     b=IOBuffer()
     show(b,loopEx)
-    s=takebuf_string(b)
+    s=String(take!(b))
     loopEx=quote
       println($s)
       $loopEx
@@ -675,11 +674,11 @@ function fillNanMask(x,m)
   end
 end
 fillNanMask(m)=m[:]=0x01
-#"Converts data and Mask to a NullableArray"
-toNullableArray(x,m)=NullableArray(x,reinterpret(Bool,m))
-function fillNullableArrayMask(x,m)
-  for i in eachindex(x.values)
-    m[i]=isnull(x[i]) ? 0x01 : 0x00
+#"Converts data and Mask to a DataArray"
+toDataArray(x,m)=DataArray(x,reinterpret(Bool,m))
+function fillDataArrayMask(x,m)
+  for i in eachindex(x)
+    m[i]=isna(x,i) ? 0x01 : 0x00
   end
 end
 
@@ -692,7 +691,7 @@ Registers a function so that it can be applied to the whole data cube through ma
   - `dimsin` a tuple containing the Axes Types that the function is supposed to work on. If multiple input cubes are needed, then a tuple of tuples must be provided
   - `dimsout` a tuple of output Axes types. If omitted, it is assumed that the output is a single value. Can also be a function with the signature (cube,pargs)-> ... which returns the output Axis. This is useful if the output axis can only be constructed based on runtime input.
   - `addargs` an optional function with the signature (cube,pargs)-> ... , to calculate function arguments that are passed to f which are only known when the function is called. Here `cube` is a tuple of input cubes provided when `mapCube` is called and `pargs` is a list of trailing arguments passed to `mapCube`. For example `(cube,pargs)->(length(getAxis(cube[1],"TimeAxis")),pargs[1])` would pass the length of the time axis and the first trailing argument of the mapCube call to each invocation of `f`
-  - `inmissing` tuple of symbols, determines how to deal with missing data for each input cube. `:mask` means that masks are explicitly passed to the function call, `:nan` replaces all missing data with NaNs, and `:nullable` passes a NullableArray to `f`
+  - `inmissing` tuple of symbols, determines how to deal with missing data for each input cube. `:mask` means that masks are explicitly passed to the function call, `:nan` replaces all missing data with NaNs, and `:data` passes a DataArray to `f`
   - `outmissing` symbol, determines how missing values is the output are interpreted. Same values as for `inmissing are allowed`
   - `no_ocean` integer, if set to a value > 0, omit function calls that would act on grid cells where the first value in the mask is set to `OCEAN`.
   - `inplace::Bool` defaults to true. If `f` returns a single value, instead of writing into an output array, one can set `inplace=false`.
