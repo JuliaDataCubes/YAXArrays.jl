@@ -117,11 +117,6 @@ readCubeData(c::CubeMem)=c
 
 getSubRange{T}(c::CubeMem{T,0};write::Bool=true)=(c.data,c.mask)
 
-function getSubRange{T}(c::CubeAxis{T},i;write::Bool=true)
-  r=c.values[i]
-  return (r,nothing)
-end
-
 
 
 import ..CABLABTools.toRange
