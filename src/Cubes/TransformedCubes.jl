@@ -1,5 +1,28 @@
 export ConcatCube, concatenateCubes
 export mapCubeSimple
+import ..CABLABTools.getiperm
+
+type PermCube{T,N,C} <: AbstractCubeData{T,N}
+  parent::C
+  perm::NTuple{N,Int}
+end
+Base.size(x::PermCube)=ntuple(i->size(x.parent,x.perm[i]),ndims(x))
+Base.size(x::PermCube,i)=size(x.parent,x.perm[i])
+axes(v::PermCube)=axes(v.parent)[collect(v.perm)]
+getCubeDes(v::PermCube)=getCubeDes(v.parent)
+permtuple(t,perm)=ntuple(i->t[perm[i]],length(t))
+function _read{T,N}(x::PermCube{T,N},thedata::NTuple{2},r::CartesianRange{CartesianIndex{N}})
+  perm=x.perm
+  iperm=getiperm(perm)
+  r2=CartesianRange(CartesianIndex(permtuple(r.start.I,iperm)),CartesianIndex(permtuple(r.stop.I,iperm)))
+  sr = ntuple(i->r.stop.I[iperm[i]]-r.start.I[iperm[i]]+1,N)
+  aout,mout=zeros(T,sr...),zeros(UInt8,sr...)
+  _read(x.parent,(aout,mout),r2)
+  permutedims!(thedata[1],aout,perm)
+  permutedims!(thedata[2],mout,perm)
+end
+Base.permutedims{T,N}(x::AbstractCubeData{T,N},perm)=PermCube{T,N,typeof(x)}(x,perm)
+
 
 
 type TransformedCube{T,N,F} <: AbstractCubeData{T,N}
@@ -8,7 +31,6 @@ type TransformedCube{T,N,F} <: AbstractCubeData{T,N}
   cubeAxes::Vector{CubeAxis}
   properties::Dict{String,Any}
 end
-
 
 function Base.map(op, incubes::AbstractCubeData...; T::DataType=eltype(incubes[1]))
   axlist=copy(axes(incubes[1]))
@@ -21,7 +43,7 @@ function Base.map(op, incubes::AbstractCubeData...; T::DataType=eltype(incubes[1
   TransformedCube{T,N,typeof(op)}(incubes,op,axlist,props)
 end
 Base.size(x::TransformedCube)=size(x.parents[1])
-Base.size{T,N}(x::TransformedCube{T,N},i)=size(x.parents,i)
+Base.size{T,N}(x::TransformedCube{T,N},i)=size(x.parents[1],i)
 axes(v::TransformedCube)=v.cubeAxes
 getCubeDes(v::TransformedCube)="Transformed cube $(getCubeDes(v.parents[1]))"
 using Base.Cartesian

@@ -101,6 +101,7 @@ Base.linearindexing(::CubeMem)=Base.LinearFast()
 Base.getindex(c::CubeMem,i::Integer)=getindex(c.data,i)
 Base.setindex!(c::CubeMem,i::Integer,v)=setindex!(c.data,i,v)
 Base.size(c::CubeMem)=size(c.data)
+Base.size(c::CubeMem,i)=size(c.data,i)
 Base.similar(c::CubeMem)=cubeMem(c.axes,similar(c.data),copy(c.mask))
 Base.ndims{T,N}(c::CubeMem{T,N})=N
 

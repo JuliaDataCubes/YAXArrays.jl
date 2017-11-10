@@ -262,9 +262,13 @@ axes(s::SubCubePerm)=CubeAxis[s.parent.lonAxis,s.parent.latAxis,s.parent.timeAxi
 Base.eltype{T}(s::AbstractCubeData{T})=T
 Base.ndims(s::Union{SubCube,SubCubePerm})=3
 Base.size(s::SubCube)=(length(s.lonAxis),length(s.latAxis),length(s.timeAxis))
+Base.size(s::SubCube,i)=(length(s.lonAxis),length(s.latAxis),length(s.timeAxis))[i]
 Base.size(s::SubCubePerm)=(s.perm[1]==1 ? length(s.parent.lonAxis) : s.perm[1]==2 ? length(s.parent.latAxis) : length(s.parent.timeAxis),
 s.perm[2]==1 ? length(s.parent.lonAxis) : s.perm[2]==2 ? length(s.parent.latAxis) : length(s.parent.timeAxis),
 s.perm[3]==1 ? length(s.parent.lonAxis) : s.perm[3]==2 ? length(s.parent.latAxis) : length(s.parent.timeAxis))
+Base.size(s::SubCubePerm,i)=(s.perm[1]==1 ? length(s.parent.lonAxis) : s.perm[1]==2 ? length(s.parent.latAxis) : length(s.parent.timeAxis),
+s.perm[2]==1 ? length(s.parent.lonAxis) : s.perm[2]==2 ? length(s.parent.latAxis) : length(s.parent.timeAxis),
+s.perm[3]==1 ? length(s.parent.lonAxis) : s.perm[3]==2 ? length(s.parent.latAxis) : length(s.parent.timeAxis))[i]
 
 
 
@@ -318,6 +322,11 @@ Base.size(s::SubCubeVPerm)=(s.perm[1]==1 ? length(s.parent.lonAxis) : s.perm[1]=
 s.perm[2]==1 ? length(s.parent.lonAxis) : s.perm[2]==2 ? length(s.parent.latAxis) : s.perm[2]==3 ? length(s.parent.timeAxis) : length(s.parent.varAxis),
 s.perm[3]==1 ? length(s.parent.lonAxis) : s.perm[3]==2 ? length(s.parent.latAxis) : s.perm[3]==3 ? length(s.parent.timeAxis) : length(s.parent.varAxis),
 s.perm[4]==1 ? length(s.parent.lonAxis) : s.perm[4]==2 ? length(s.parent.latAxis) : s.perm[4]==3 ? length(s.parent.timeAxis) : length(s.parent.varAxis))
+Base.size(s::SubCubeV,i)=(length(s.lonAxis),length(s.latAxis),length(s.timeAxis),length(s.varAxis))[i]
+Base.size(s::SubCubeVPerm,i)=(s.perm[1]==1 ? length(s.parent.lonAxis) : s.perm[1]==2 ? length(s.parent.latAxis) : s.perm[1]==3 ? length(s.parent.timeAxis) : length(s.parent.varAxis),
+s.perm[2]==1 ? length(s.parent.lonAxis) : s.perm[2]==2 ? length(s.parent.latAxis) : s.perm[2]==3 ? length(s.parent.timeAxis) : length(s.parent.varAxis),
+s.perm[3]==1 ? length(s.parent.lonAxis) : s.perm[3]==2 ? length(s.parent.latAxis) : s.perm[3]==3 ? length(s.parent.timeAxis) : length(s.parent.varAxis),
+s.perm[4]==1 ? length(s.parent.lonAxis) : s.perm[4]==2 ? length(s.parent.latAxis) : s.perm[4]==3 ? length(s.parent.timeAxis) : length(s.parent.varAxis))[i]
 
 Base.permutedims{T}(c::SubCube{T},perm::NTuple{3,Int})=SubCubePerm(c,perm)
 Base.permutedims{T}(c::SubCubeV{T},perm::NTuple{4,Int})=SubCubeVPerm(c,perm)
@@ -363,6 +372,8 @@ Base.ndims(s::SubCubeStatic)=2
 Base.ndims(s::SubCubeStaticPerm)=2
 Base.size(s::SubCubeStatic)=(length(s.lonAxis),length(s.latAxis))
 Base.size(s::SubCubeStaticPerm)=(length(s.latAxis),length(s.lonAxis))
+Base.size(s::SubCubeStatic,i)=(length(s.lonAxis),length(s.latAxis))[i]
+Base.size(s::SubCubeStaticPerm,i)=(length(s.latAxis),length(s.lonAxis))[i]
 
 sgetperm(s::Union{SubCubePerm,SubCubeVPerm})=s.perm
 sgetiperm(s::Union{SubCubePerm,SubCubeVPerm})=s.iperm
