@@ -8,22 +8,22 @@ import ...CABLABTools.totuple
 export DATfitOnline
 
 
-function DATfitOnline{T<:OnlineStat{OnlineStats.ScalarInput}}(xout::AbstractArray{T},maskout,xin,maskin,cfun)
+function DATfitOnline{T<:Series{0}}(xout::AbstractArray{T},maskout,xin,maskin,cfun)
     for (mi,xi) in zip(maskin,xin)
         (mi & MISSING)==VALID && fit!(xout[1],xi)
     end
 end
 
-function DATfitOnline{T<:OnlineStat{OnlineStats.ScalarInput}}(xout::AbstractArray{T},maskout,xin,maskin,splitmask,msplitmask,cfun)
+function DATfitOnline{T<:Series{0}}(xout::AbstractArray{T},maskout,xin,maskin,splitmask,msplitmask,cfun)
   for (mi,xi,si,m2) in zip(maskin,xin,splitmask,msplitmask)
-      ((mi | m2) & MISSING)==VALID && fit!(xout[cfun(si)],xi)
+      ((mi | m2) & MISSING)==VALID && fit!(xout[cfun(si)],Float64(xi))
   end
 end
 
-function DATfitOnline{T<:OnlineStat{OnlineStats.VectorInput},U}(xout::AbstractArray{T},maskout,xin::AbstractArray{U},maskin,cfun)
+function DATfitOnline{T<:Series{1},U}(xout::AbstractArray{T},maskout,xin::AbstractArray{U},maskin,cfun)
     offs=1
     offsinc=size(xin,1)
-    xtest=zeros(U,offsinc)
+    xtest=zeros(Float64,offsinc)
     mtest=zeros(UInt8,offsinc)
     for offsin=1:offsinc:length(xin)
         for j=1:offsinc
@@ -34,7 +34,7 @@ function DATfitOnline{T<:OnlineStat{OnlineStats.VectorInput},U}(xout::AbstractAr
     end
 end
 
-function DATfitOnline{T<:OnlineStat{OnlineStats.VectorInput},U}(xout::AbstractArray{T},maskout,xin::AbstractArray{U},maskin,splitmask,msplitmask,cfun)
+function DATfitOnline{T<:Series{1},U}(xout::AbstractArray{T},maskout,xin::AbstractArray{U},maskin,splitmask,msplitmask,cfun)
   offs=1
   offsinc=size(xin,1)
   xtest=zeros(U,offsinc)
@@ -46,11 +46,11 @@ function DATfitOnline{T<:OnlineStat{OnlineStats.VectorInput},U}(xout::AbstractAr
   end
 end
 
-function finalizeOnlineCube{T<:OnlineStat,N}(c::CubeMem{T,N})
+function finalizeOnlineCube{S,U<:OnlineStat{0},T<:Series{S,U},N}(c::CubeMem{T,N})
     CubeMem(c.axes,map(i->nobs(i)>0 ? OnlineStats.value(i) : NaN,c.data),c.mask)
 end
 
-function finalizeOnlineCube{T<:OnlineStats.CovMatrix,CT,S}(c::CubeMem{T},varAx::CubeAxis{CT,S})
+function finalizeOnlineCube{T<:Series{1,OnlineStats.CovMatrix},CT,S}(c::CubeMem{T},varAx::CubeAxis{CT,S})
   nV=length(varAx)
   cout=zeros(Float32,nV,nV,size(c.data)...)
   maskout=zeros(UInt8,nV,nV,size(c.data)...)
@@ -67,7 +67,7 @@ function finalizeOnlineCube{T<:OnlineStats.CovMatrix,CT,S}(c::CubeMem{T},varAx::
   CubeMem(CubeAxis[varAx1,varAx2,c.axes...],cout,maskout),CubeMem(CubeAxis[varAx,c.axes...],cout2,maskout2)
 end
 
-function finalizeOnlineCube{T<:OnlineStats.KMeans,N}(c::CubeMem{T,N},varAx::CubeAxis)
+function finalizeOnlineCube{T<:Series{1,OnlineStats.KMeans},N}(c::CubeMem{T,N},varAx::CubeAxis)
   nV,nC=size(c.data[1].value)
   cout=zeros(Float32,nV,nC,size(c.data)...)
   maskout=zeros(UInt8,nV,nC,size(c.data)...)
@@ -94,12 +94,11 @@ getFinalFun{T<:OnlineStat}(f::Type{T},funargs...)=finalizeOnlineCube
 getFinalFun{T<:OnlineStats.KMeans}(f::Type{T},funargs...)=c->finalizeOnlineCube(c,funargs[1])
 getFinalFun{T<:OnlineStats.CovMatrix}(f::Type{T},funargs...)=c->finalizeOnlineCube(c,funargs[1])
 
-
 function mapCube{T<:OnlineStat}(f::Type{T},cdata::AbstractCubeData,pargs...;by=CubeAxis[],max_cache=1e7,cfun=identity,outAxis=nothing,MDAxis=Void,kwargs...)
   inAxes=axes(cdata)
   #Now analyse additional by axes
   inaxtypes=map(typeof,inAxes)
-  if issubtype(T,OnlineStat{OnlineStats.VectorInput})
+  if issubtype(T,OnlineStat{1})
     MDAxis<:Void && error("$T Requires a Vector Input, you have to specify the MDAxis keyword argument.")
     issubtype(MDAxis,CubeAxis) || error("MDAxis must be an Axis type")
     mdAx = getAxis(MDAxis,inAxes)
