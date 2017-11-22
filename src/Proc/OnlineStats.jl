@@ -46,11 +46,11 @@ function DATfitOnline{T<:Series{1},U}(xout::AbstractArray{T},maskout,xin::Abstra
   end
 end
 
-function finalizeOnlineCube(c::CubeMem{T}) where {S,U<:OnlineStat{0},T<:Series{S,Tuple{U}}}
+function finalizeOnlineCube(c::CubeMem)
     CubeMem(c.axes,map(i->nobs(i)>0 ? OnlineStats.value(i)[1] : NaN,c.data),c.mask)
 end
 
-function finalizeOnlineCube(c::CubeMem{Series{1,Tuple{OnlineStats.CovMatrix}}},varAx::CubeAxis)
+function finalizeOnlineCube(c::CubeMem,varAx::CubeAxis, statType::Type{T}) where {T<:CovMatrix}
   nV=length(varAx)
   cout=zeros(Float32,nV,nV,size(c.data)...)
   maskout=zeros(UInt8,nV,nV,size(c.data)...)
@@ -59,7 +59,7 @@ function finalizeOnlineCube(c::CubeMem{Series{1,Tuple{OnlineStats.CovMatrix}}},v
   for ii in CartesianRange(size(c.data))
     cout[:,:,ii]=OnlineStats.value(c.data[ii])[1]
     maskout[:,:,ii]=c.mask[ii]
-    cout2[:,ii]=OnlineStats.mean(c.data[ii])
+    cout2[:,ii]=OnlineStats.mean(c.data[ii].stats[1])
     maskout2[:,ii]=c.mask[ii]
   end
   varAx1 = isa(varAx,CategoricalAxis) ? CategoricalAxis(string(axname(varAx)," 1"),varAx.values) : RangeAxis(string(axname(varAx)," 1"),varAx.values)
@@ -67,8 +67,8 @@ function finalizeOnlineCube(c::CubeMem{Series{1,Tuple{OnlineStats.CovMatrix}}},v
   CubeMem(CubeAxis[varAx1,varAx2,c.axes...],cout,maskout),CubeMem(CubeAxis[varAx,c.axes...],cout2,maskout2)
 end
 
-function finalizeOnlineCube(c::CubeMem{Series{1,Tuple{OnlineStats.Kmeans}}},varAx::CubeAxis)
-  nV,nC=size(c.data[1].value)
+function finalizeOnlineCube(c::CubeMem,varAx::CubeAxis,statType::Type{T}) where {T<:KMeans}
+  nV,nC=size(OnlineStats.value(c.data[1])[1])
   cout=zeros(Float32,nV,nC,size(c.data)...)
   maskout=zeros(UInt8,nV,nC,size(c.data)...)
   for ii in CartesianRange(size(c.data))
@@ -87,12 +87,12 @@ function getGenFun{T<:OnlineStats.KMeans}(f::Type{T},nclass,startVal,d)
   return i->begin a=f(d,nclass);a.value[:]=startVal;a end
 end
 function getGenFun{T<:OnlineStats.CovMatrix}(f::Type{T},pargs...)
-  return i->f(pargs[1],EqualWeight())
+  return i->f(pargs[1])
 end
 
 getFinalFun{T<:OnlineStat}(f::Type{T},funargs...)=finalizeOnlineCube
-getFinalFun{T<:OnlineStats.KMeans}(f::Type{T},funargs...)=c->finalizeOnlineCube(c,funargs[1])
-getFinalFun{T<:OnlineStats.CovMatrix}(f::Type{T},funargs...)=c->finalizeOnlineCube(c,funargs[1])
+getFinalFun{T<:OnlineStats.KMeans}(f::Type{T},funargs...)=c->finalizeOnlineCube(c,funargs[1],T)
+getFinalFun{T<:OnlineStats.CovMatrix}(f::Type{T},funargs...)=c->finalizeOnlineCube(c,funargs[1],T)
 
 function mapCube{T<:OnlineStat}(f::Type{T},cdata::AbstractCubeData,pargs...;by=CubeAxis[],max_cache=1e7,cfun=identity,outAxis=nothing,MDAxis=Void,kwargs...)
   inAxes=axes(cdata)
@@ -161,7 +161,7 @@ function mapCube{T<:OnlineStat}(f::Type{T},cdata::AbstractCubeData,pargs...;by=C
     indims=length(bycubes)==0 ? totuple(ia1) : (totuple(ia1),totuple(CubeAxis[]))
   end
   outBroad=map(typeof,outBroad)
-  fout(x) = Series(getGenFun(f,pargs...)(x))
+  fout(x) = Series(EqualWeight(),getGenFun(f,pargs...)(x))
   return mapCube(DATfitOnline,indata,cfun;
     outtype=(typeof(fout(f)),),
     indims=indims,outdims=(outdims,),

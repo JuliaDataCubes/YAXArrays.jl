@@ -12,7 +12,7 @@ end
 
 function pcapredict(xout,xin::Union{Vector,Matrix},pcain,pcamask,cfun)
     if (pcamask[1] & MISSING)==0x00
-        ttransformed = transform(pcain,xin)
+        ttransformed = MultivariateStats.transform(pcain,xin)
         xout[1:length(ttransformed)] = ttransformed
     else
         xout[:] = NaN
@@ -22,7 +22,7 @@ function pcapredict(xout,xin::Array,pcain,pcamask,cfun)
     xout2 = reshape(xout,(size(xout,1),length(xout)÷size(xout,1)))
     xin2 = reshape(xin,(size(xin,1),length(xin)÷size(xin,1)))
     if (pcamask[1] & MISSING)==0x00
-        ttransformed=transform(pcain,xin2)
+        ttransformed=MultivariateStats.transform(pcain,xin2)
         xout2[1:length(ttransformed)] = ttransformed
     else
         xout2[:] = NaN
@@ -30,7 +30,7 @@ function pcapredict(xout,xin::Array,pcain,pcamask,cfun)
 end
 function pcapredict(xout,xin::Union{Vector,Matrix},pcain,pcamask,by,bymask,cfun::Function)
     if ((pcamask[1] | bymask) & MISSING)==0x00
-        ttransformed = transform(pcain[cfun(by)],xin)
+        ttransformed = MultivariateStats.transform(pcain[cfun(by)],xin)
         xout[1:length(ttransformed)] = ttransformed
     else
         xout[:] = NaN
@@ -45,7 +45,7 @@ function pcapredict(xout,xin::Array,pcain,pcamask,by,bymask,cfun::Function)
       for i=1:size(xin2,2)
         if ((bymask[i] & MISSING)==0x00)
           copy!(xhelp,view(xin2,:,i))
-          ttransformed = transform(pcain[cfun(by[i])],xhelp)
+          ttransformed = MultivariateStats.transform(pcain[cfun(by[i])],xhelp)
                 xout2[1:size(ttransformed,1),i] = ttransformed
         else
           xout2[:,i] = NaN
