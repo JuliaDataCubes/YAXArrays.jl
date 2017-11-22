@@ -26,8 +26,9 @@ startVal=mean(xin,2)[:].+rand(Float32,2,5)
 
 x=mapCube(KMeans,d2,5,copy(startVal),MDAxis=VariableAxis)
 
-o2=KMeans(2,5,EqualWeight())
+o2=KMeans(2,5)
 o2.value[:]=startVal
+o2=Series(EqualWeight(),o2)
 fit!(o2,xin')
 #This test fails, I honestly could noot find out why
 #TODO please check what is going on
