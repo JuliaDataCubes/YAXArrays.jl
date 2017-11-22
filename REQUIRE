@@ -1,4 +1,4 @@
-julia 0.5
+julia 0.6
 DataStructures
 NetCDF
 StatsBase
@@ -8,3 +8,5 @@ LightXML
 DataArrays
 OnlineStats 0.7
 Combinatorics
+MultivariateAnomalies
+MultivariateStats
