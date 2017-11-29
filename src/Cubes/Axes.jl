@@ -43,14 +43,16 @@ end
 macro defineCatAxis(axname,eltype)
   newname=esc(Symbol(string(axname,"Axis")))
   quote
-    const $newname = CategoricalAxis{$eltype,$(QuoteNode(axname))}
+    const $newname = _CategoricalAxis{T,$(QuoteNode(axname)),R} where R<:AbstractVector{T} where T<:$(eltype)
+    $(newname)(v::AbstractVector{T}) where T = CategoricalAxis{T,$(QuoteNode(axname)),typeof(v)}(v)
   end
 end
 
-macro defineRanAxis(axname,eltype,rantype)
+macro defineRanAxis(axname,eltype)
   newname=esc(Symbol(string(axname,"Axis")))
   quote
-    const $newname = RangeAxis{$eltype,$(QuoteNode(axname)),$rantype}
+    const $newname = _RangeAxis{T,$(QuoteNode(axname)),R} where R<:AbstractVector{T} where T<:$(eltype)
+    $(newname)(v::AbstractVector{T}) where T = RangeAxis{T,$(QuoteNode(axname)),typeof(v)}(v)
   end
 end
 
@@ -91,18 +93,19 @@ The default constructor is:
     CategoricalAxis(axname::String,values::Vector{T})
 
 """
-immutable CategoricalAxis{T,S} <: CubeAxis{T,S}
-  values::Vector{T}
+immutable _CategoricalAxis{T,S,RT} <: CubeAxis{T,S}
+  values::RT
 end
+const CategoricalAxis = _CategoricalAxis{T,S,RT} where RT<:AbstractVector{T} where S where T
 
 
-CategoricalAxis{T}(s::Symbol,v::Vector{T})=CategoricalAxis{T,s}(v)
-CategoricalAxis(s::AbstractString,v::Vector)=CategoricalAxis(Symbol(s),v)
+CategoricalAxis{T}(s::Symbol,v::AbstractVector{T})=CategoricalAxis{T,s,typeof(v)}(v)
+CategoricalAxis(s::AbstractString,v::AbstractVector)=CategoricalAxis(Symbol(s),v)
 
 @defineCatAxis Variable String
-@defineCatAxis SpatialPoint Tuple{Float64,Float64}
+@defineCatAxis SpatialPoint Tuple{Number,Number}
 @defineCatAxis TimeScale String
-@defineCatAxis Quantile Float64
+@defineCatAxis Quantile AbstractFloat
 
 """
     RangeAxis{T,S,R}
@@ -115,20 +118,20 @@ The default constructor is:
     RangeAxis(axname::String,values::Range{T})
 
 """
-immutable RangeAxis{T,S,R} <: CubeAxis{T,S}
+immutable _RangeAxis{T,S,R} <: CubeAxis{T,S}
   values::R
 end
-RangeAxis{T}(s::Symbol,v::Range{T})=RangeAxis{T,s,typeof(v)}(v)
+const RangeAxis = _RangeAxis{T,S,R} where R<:AbstractVector{T} where S where T
+
+RangeAxis(s::Symbol,v::AbstractVector{T}) where T = RangeAxis{T,s,typeof(v)}(v)
 RangeAxis(s::AbstractString,v)=RangeAxis(Symbol(s),v)
 
 
-const TimeAxis = RangeAxis{Date,:Time}
-TimeAxis(r)=RangeAxis(:Time,r)
 
-@defineRanAxis MSC Date YearStepRange
-@defineRanAxis Lon Float64 StepRangeLen{Float64}
-@defineRanAxis Lat Float64 StepRangeLen{Float64}
-@defineRanAxis TimeH DateTime StepRange{DateTime,Base.Dates.Minute}
+@defineRanAxis MSC TimeType
+@defineRanAxis Lon Number
+@defineRanAxis Lat Number
+@defineRanAxis Time TimeType
 
 Base.length(a::CubeAxis)=length(a.values)
 

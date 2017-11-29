@@ -111,7 +111,7 @@ function mapCube{T<:OnlineStat}(f::Type{T},cdata::AbstractCubeData,pargs...;by=C
     ia1 = CubeAxis[]
     funargs = ()
   end
-  function interpretBycubes(x::Union{String,DataType},c)
+  function interpretBycubes(x::Union{String,Type},c)
     i=findAxis(x,axes(c))
     axes(c)[i]
   end
