@@ -1,6 +1,7 @@
 export ConcatCube, concatenateCubes
 export mapCubeSimple
 import ..CABLABTools.getiperm
+import ..Cubes._read
 
 type PermCube{T,N,C} <: AbstractCubeData{T,N}
   parent::C
@@ -11,7 +12,7 @@ Base.size(x::PermCube,i)=size(x.parent,x.perm[i])
 axes(v::PermCube)=axes(v.parent)[collect(v.perm)]
 getCubeDes(v::PermCube)=getCubeDes(v.parent)
 permtuple(t,perm)=ntuple(i->t[perm[i]],length(t))
-function _read{T,N}(x::PermCube{T,N},thedata::NTuple{2},r::CartesianRange{CartesianIndex{N}})
+function _read{T,N}(x::PermCube{T,N},thedata::Tuple{Any,Any},r::CartesianRange{CartesianIndex{N}})
   perm=x.perm
   iperm=getiperm(perm)
   r2=CartesianRange(CartesianIndex(permtuple(r.start.I,iperm)),CartesianIndex(permtuple(r.stop.I,iperm)))
