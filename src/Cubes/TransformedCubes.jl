@@ -68,8 +68,8 @@ end
 ops2 = [:+, :-,:/, :*, :max, :min]
 for op in ops2
   eval(:(Base.$(op)(x::AbstractCubeData, y::AbstractCubeData)=map($op, x,y)))
-  eval(:(Base.$(op)(x::AbstractCubeData, y::Number)          =map(i->i-y,x)))
-  eval(:(Base.$(op)(x::Number, y::AbstractCubeData)          =map(i->x-i,y)))
+  eval(:(Base.$(op)(x::AbstractCubeData, y::Number)          =map(i->$(op)(i,y),x)))
+  eval(:(Base.$(op)(x::Number, y::AbstractCubeData)          =map(i->$(op)(x,i),y)))
 end
 
 ops1 = [:sin, :cos, :log, :log10, :exp, :abs]
