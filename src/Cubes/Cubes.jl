@@ -34,10 +34,10 @@ getSingVal(c::AbstractCubeData,a...)=error("getSingVal called in the wrong way w
 """
 function readCubeData{T,N}(x::AbstractCubeData{T,N})
   s=size(x)
-  aout,mout=zeros(Float32,s...),zeros(UInt8,s...)
+  aout,mout=zeros(T,s...),zeros(UInt8,s...)
   r=CartesianRange(CartesianIndex{N}(),CartesianIndex(s...))
   _read(x,(aout,mout),r)
-  CubeMem(axes(x),aout,mout)
+  CubeMem(collect(CubeAxis,axes(x)),aout,mout)
 end
 
 """
@@ -45,10 +45,10 @@ This function calculates a subset of a cube's data
 """
 function subsetCubeData end
 
-"""
-Internal function to read a range from a datacube
-"""
-_read(c::AbstractCubeData,d,r::CartesianRange)=error("_read not implemented for $(typeof(c))")
+#"""
+#Internal function to read a range from a datacube
+#"""
+#_read(c::AbstractCubeData,d,r::CartesianRange)=error("_read not implemented for $(typeof(c))")
 
 "Returns the axes of a Cube"
 axes(c::AbstractCubeData)=error("Axes function not implemented for $(typeof(c))")
