@@ -16,7 +16,7 @@ interface. However, the `CABLAB` functions [mapCube](@ref), [reduceCube](@ref),
 [readCubeData](@ref), [plotMAP](@ref) and [plotXY](@ref) will work on any subtype
 of `AbstractCubeData`
 """
-abstract AbstractCubeData{T,N}
+abstract type AbstractCubeData{T,N} end
 
 """
 getSubRange reads some Cube data and writes it to a pre-allocated memory.
@@ -34,10 +34,10 @@ getSingVal(c::AbstractCubeData,a...)=error("getSingVal called in the wrong way w
 """
 function readCubeData{T,N}(x::AbstractCubeData{T,N})
   s=size(x)
-  aout,mout=zeros(Float32,s...),zeros(UInt8,s...)
+  aout,mout=zeros(T,s...),zeros(UInt8,s...)
   r=CartesianRange(CartesianIndex{N}(),CartesianIndex(s...))
   _read(x,(aout,mout),r)
-  CubeMem(axes(x),aout,mout)
+  CubeMem(collect(CubeAxis,axes(x)),aout,mout)
 end
 
 """
@@ -45,10 +45,10 @@ This function calculates a subset of a cube's data
 """
 function subsetCubeData end
 
-"""
-Internal function to read a range from a datacube
-"""
-_read(c::AbstractCubeData,d,r::CartesianRange)=error("_read not implemented for $(typeof(c))")
+#"""
+#Internal function to read a range from a datacube
+#"""
+#_read(c::AbstractCubeData,d,r::CartesianRange)=error("_read not implemented for $(typeof(c))")
 
 "Returns the axes of a Cube"
 axes(c::AbstractCubeData)=error("Axes function not implemented for $(typeof(c))")
@@ -59,11 +59,11 @@ Base.ndims{T,N}(::AbstractCubeData{T,N})=N
 cubeproperties(::AbstractCubeData)=Dict{String,Any}()
 
 "Supertype of all subtypes of the original data cube"
-abstract AbstractSubCube{T,N} <: AbstractCubeData{T,N}
+abstract type AbstractSubCube{T,N} <: AbstractCubeData{T,N} end
 
 
 "Supertype of all in-memory representations of a data cube"
-abstract AbstractCubeMem{T,N} <: AbstractCubeData{T,N}
+abstract type AbstractCubeMem{T,N} <: AbstractCubeData{T,N} end
 
 include("Axes.jl")
 importall .Axes
@@ -97,7 +97,7 @@ Base.permutedims(c::CubeMem,p)=CubeMem(c.axes[collect(p)],permutedims(c.data,p),
 axes(c::CubeMem)=c.axes
 cubeproperties(c::CubeMem)=c.properties
 
-Base.linearindexing(::CubeMem)=Base.LinearFast()
+Base.IndexStyle(::CubeMem)=Base.LinearFast()
 Base.getindex(c::CubeMem,i::Integer)=getindex(c.data,i)
 Base.setindex!(c::CubeMem,i::Integer,v)=setindex!(c.data,i,v)
 Base.size(c::CubeMem)=size(c.data)
@@ -118,15 +118,10 @@ readCubeData(c::CubeMem)=c
 
 getSubRange{T}(c::CubeMem{T,0};write::Bool=true)=(c.data,c.mask)
 
-function getSubRange{T}(c::CubeAxis{T},i;write::Bool=true)
-  r=c.values[i]
-  return (r,nothing)
-end
-
 
 
 import ..CABLABTools.toRange
-function _read(c::CubeMem,thedata::NTuple{2},r::CartesianRange)
+function _read(c::CubeMem,thedata::Tuple,r::CartesianRange)
   outar,outmask=thedata
   data=view(c.data,toRange(r)...)
   mask=view(c.mask,toRange(r)...)

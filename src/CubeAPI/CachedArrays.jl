@@ -8,7 +8,7 @@ importall ..CABLABTools
 importall ..Mask
 using Base.Cartesian
 
-abstract CacheBlock{T,N}
+abstract type CacheBlock{T,N} end
 type SimpleCacheBlock{T,N} <: CacheBlock{T,N}
     data::Array{T,N}
     score::Float64
@@ -28,7 +28,7 @@ type MaskedCacheBlock{T,N} <: CacheBlock{T,N}
     position::CartesianIndex{N}
     iswritten::Bool
 end
-emptyblock{T,N}(b::Type{MaskedCacheBlock{T,N}})=MaskedCacheBlock{T,N}(Array(T,ntuple(i->0,N)),Array(UInt8,ntuple(i->0,N)),0.0,CartesianIndex{N}()-CartesianIndex{N}(),false)
+emptyblock{T,N}(b::Type{MaskedCacheBlock{T,N}})=MaskedCacheBlock{T,N}(Array{T}(ntuple(i->0,N)),Array{UInt8}(ntuple(i->0,N)),0.0,CartesianIndex{N}()-CartesianIndex{N}(),false)
 zeroblock{T,N}(b::Type{MaskedCacheBlock{T,N}},block_size,position)=MaskedCacheBlock{T,N}(zeros(T,block_size.I),zeros(UInt8,block_size.I),0.0,position,false)
 getValues(b::MaskedCacheBlock,I::Union{Integer,UnitRange,Colon}...)=(view(b.data,I...),view(b.mask,I...))
 #getValues(b::MaskedCacheBlock,I::Integer...)=(b.data[I...],b.mask[I...])
@@ -60,13 +60,13 @@ end
     Expr(:tuple,args...)
 end
 
-function CachedArray(x,max_blocks::Int,block_size::CartesianIndex,blocktype::DataType;startInd::Int=1)
+function CachedArray(x,max_blocks::Int,block_size::CartesianIndex,blocktype::Type;startInd::Int=1)
     vtype=typeof(x)
     T=eltype(x)
     N=ndims(x)
     s=size(x)
     ssmall=[div(s[i],block_size[i]) for i=1:N]
-    blocks=Array(blocktype,ssmall...)
+    blocks=Array{blocktype}(ssmall...)
     currentblocks=blocktype[]
     scores=zeros(Int64,ssmall...)
     i=1
@@ -84,7 +84,7 @@ function CachedArray(x,max_blocks::Int,block_size::CartesianIndex,blocktype::Dat
     end
     CachedArray{T,N,blocktype,vtype}(x,max_blocks,block_size,blocks,currentblocks,nullblock)
 end
-Base.linearindexing(::CachedArray)=Base.LinearSlow()
+Base.IndexStyle(::CachedArray)=Base.LinearSlow()
 #Base.setindex!{T,N}(c::CachedArray{T,N},v,i::CartesianIndex{N})=0.0
 Base.size(c::CachedArray)=size(c.x)
 Base.similar(c::CachedArray)=similar(c.x)

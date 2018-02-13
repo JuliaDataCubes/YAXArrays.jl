@@ -1,6 +1,7 @@
 export ConcatCube, concatenateCubes
 export mapCubeSimple
 import ..CABLABTools.getiperm
+import ..Cubes._read
 
 type PermCube{T,N,C} <: AbstractCubeData{T,N}
   parent::C
@@ -11,7 +12,7 @@ Base.size(x::PermCube,i)=size(x.parent,x.perm[i])
 axes(v::PermCube)=axes(v.parent)[collect(v.perm)]
 getCubeDes(v::PermCube)=getCubeDes(v.parent)
 permtuple(t,perm)=ntuple(i->t[perm[i]],length(t))
-function _read{T,N}(x::PermCube{T,N},thedata::NTuple{2},r::CartesianRange{CartesianIndex{N}})
+function _read{T,N}(x::PermCube{T,N},thedata::Tuple{Any,Any},r::CartesianRange{CartesianIndex{N}})
   perm=x.perm
   iperm=getiperm(perm)
   r2=CartesianRange(CartesianIndex(permtuple(r.start.I,iperm)),CartesianIndex(permtuple(r.stop.I,iperm)))
@@ -32,7 +33,7 @@ type TransformedCube{T,N,F} <: AbstractCubeData{T,N}
   properties::Dict{String,Any}
 end
 
-function Base.map(op, incubes::AbstractCubeData...; T::DataType=eltype(incubes[1]))
+function Base.map(op, incubes::AbstractCubeData...; T::Type=eltype(incubes[1]))
   axlist=copy(axes(incubes[1]))
   N=ndims(incubes[1])
   for i=2:length(incubes)
@@ -47,7 +48,7 @@ Base.size{T,N}(x::TransformedCube{T,N},i)=size(x.parents[1],i)
 axes(v::TransformedCube)=v.cubeAxes
 getCubeDes(v::TransformedCube)="Transformed cube $(getCubeDes(v.parents[1]))"
 using Base.Cartesian
-function _read{T,N}(x::TransformedCube{T,N},thedata::NTuple{2},r::CartesianRange{CartesianIndex{N}})
+function _read{T,N}(x::TransformedCube{T,N},thedata::Tuple,r::CartesianRange{CartesianIndex{N}})
   aout,mout=thedata
   ainter=[]
   minter=[]
@@ -64,11 +65,11 @@ function _read{T,N}(x::TransformedCube{T,N},thedata::NTuple{2},r::CartesianRange
   return aout,mout
 end
 
-ops2 = [:+, :-, :(./), :(.*),:/, :*, :max, :min]
+ops2 = [:+, :-,:/, :*, :max, :min]
 for op in ops2
   eval(:(Base.$(op)(x::AbstractCubeData, y::AbstractCubeData)=map($op, x,y)))
-  eval(:(Base.$(op)(x::AbstractCubeData, y::Number)          =map(i->i-y,x)))
-  eval(:(Base.$(op)(x::Number, y::AbstractCubeData)          =map(i->x-i,y)))
+  eval(:(Base.$(op)(x::AbstractCubeData, y::Number)          =map(i->$(op)(i,y),x)))
+  eval(:(Base.$(op)(x::Number, y::AbstractCubeData)          =map(i->$(op)(x,i),y)))
 end
 
 ops1 = [:sin, :cos, :log, :log10, :exp, :abs]
@@ -115,7 +116,7 @@ Base.size{T,N}(x::ConcatCube{T,N},i)=i==N ? length(x.catAxis) : size(x.cubelist[
 axes(v::ConcatCube)=[v.cubeAxes;v.catAxis]
 getCubeDes(v::ConcatCube)="Collection of $(getCubeDes(v.cubelist[1]))"
 using Base.Cartesian
-@generated function _read{T,N}(x::ConcatCube{T,N},thedata::NTuple{2},r::CartesianRange{CartesianIndex{N}})
+@generated function _read{T,N}(x::ConcatCube{T,N},thedata::Tuple,r::CartesianRange{CartesianIndex{N}})
   viewEx1=Expr(:call,:view,:aout,fill(Colon(),N-1)...,:j)
   viewEx2=Expr(:call,:view,:mout,fill(Colon(),N-1)...,:j)
   quote
@@ -156,7 +157,7 @@ Base.size(x::SliceCube,i)=x.size[i]
 axes(v::SliceCube)=v.cubeAxes
 getCubeDes(v::SliceCube)=getCubeDes(v.parent)
 using Base.Cartesian
-@generated function _read{T,N,F}(x::SliceCube{T,N,F},thedata::NTuple{2},r::CartesianRange{CartesianIndex{N}})
+@generated function _read{T,N,F}(x::SliceCube{T,N,F},thedata::Tuple,r::CartesianRange{CartesianIndex{N}})
   iax = F
   startinds = Expr(:tuple,insert!(Any[:(rstart[$i]) for i=1:N],iax,:(x.ival))...)
   stopinds  = Expr(:tuple,insert!(Any[:(rstop[$i]) for i=1:N],iax,:(x.ival))...)

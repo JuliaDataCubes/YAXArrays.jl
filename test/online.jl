@@ -12,8 +12,8 @@ oo2=mapCube(Mean,d,by=(LatAxis,))
 
 d2=readCubeData(d)
 
-@test_approx_eq mean(d2.data) oo.data[1]
-@test_approx_eq mean(d2.data,(1,3))[:] oo2.data
+@test mean(d2.data) ≈ oo.data[1]
+@test mean(d2.data,(1,3))[:] ≈ oo2.data
 
 #Test KMeans
 d2 = getCubeData(c,variable=["air_temperature_2m","gross_primary_productivity"],longitude=(30,31),latitude=(50,51),
@@ -26,8 +26,9 @@ startVal=mean(xin,2)[:].+rand(Float32,2,5)
 
 x=mapCube(KMeans,d2,5,copy(startVal),MDAxis=VariableAxis)
 
-o2=KMeans(2,5,EqualWeight())
+o2=KMeans(2,5)
 o2.value[:]=startVal
+o2=Series(EqualWeight(),o2)
 fit!(o2,xin')
 #This test fails, I honestly could noot find out why
 #TODO please check what is going on
@@ -78,7 +79,7 @@ oogrouped2 = mapCube(Mean,d2,by=(mask2,))
 
 for k=1:10
   know = findfirst(j->j==string(k),oogrouped2.axes[1].values)
-  @test_approx_eq oogrouped.data[know] mean(d2.data[mask.data.==k])
+  @test oogrouped.data[know] ≈ mean(d2.data[mask.data.==k])
 
   i=find(mask2.data.==k)
 
@@ -88,6 +89,6 @@ for k=1:10
     for (j1,j2) in zip(i1,i2)
       append!(dhelp,d2.data[j1,j2,:])
     end
-    @test_approx_eq mean(dhelp) oogrouped2.data[know]
+    @test mean(dhelp) ≈ oogrouped2.data[know]
   end
 end

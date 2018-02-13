@@ -1,5 +1,14 @@
 # News
 
+## v0.4.0
+
+- the package was updated to julia 0.6
+- a new cube type `TransformedCube` was introduced, to do simple element-wise operations without having to call `mapCube`
+- so thing like adding scalars to cube, and elementwise operations between cubes are possible now
+- see the demo notebook 02 for details
+- the `reduceCube` backend was switched to `DataArrays`, so when calling the function you will see a DataArray inside with missings represented as `NA`
+
+
 ## v0.3.0
 
 - the plotting module was split out into a separate package called `CABLABPlots`, so please add this package if you want to use Plots

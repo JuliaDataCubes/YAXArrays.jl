@@ -5,7 +5,6 @@ importall ..CubeAPI
 importall ..CubeAPI.CachedArrays
 importall ..Proc
 importall ..Mask
-import NullableArrays.anynull
 exportmissval(x::AbstractFloat)=oftype(x,NaN)
 exportmissval(x::Integer)=typemax(x)
 
@@ -100,7 +99,7 @@ function sampleLandPoints(cdata::CubeAPI.AbstractCubeData,nsample::Integer,nomis
   ilat=findAxis(LatAxis,axlist)
   if nomissing
     remAxes=filter(i->!(isa(i,LonAxis) || isa(i,LatAxis)),axlist)
-    cm=reduceCube(anynull,cdata,ntuple(i->typeof(remAxes[i]),length(remAxes)),outtype=(Bool,))
+    cm=reduceCube(anyna,cdata,ntuple(i->typeof(remAxes[i]),length(remAxes)),outtype=(Bool,))
     m=map(i->(i ? OCEAN : VALID),cm.data)
     cm=CubeMem(CubeAxis[axlist[ilon],axlist[ilat]],m,m)
   else
