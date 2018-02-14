@@ -73,8 +73,8 @@ function doTests()
   cube_filled=readCubeData(mapCube(gapFillMSC,d))
   imiss=findfirst(d.mask)
   @test cube_filled.mask[imiss]==CABLAB.Mask.FILLED
-  its=div(imiss-1,46)+1
-  @test cube_filled.data[imiss]==readCubeData(x2).data[its]
+  its=mod(imiss-1,46)+1
+  @test cube_filled.data[imiss]≈readCubeData(x2).data[its]
   @test !any(cube_filled.mask.==CABLAB.Mask.MISSING)
 
   # Test removal of MSC
