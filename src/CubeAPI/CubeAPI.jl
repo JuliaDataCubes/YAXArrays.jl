@@ -458,9 +458,9 @@ function getCubeData(cube::UCube,
 end
 
 x2lon(x,config)   = (x+config.grid_x0-0.5)*config.spatial_res - 180.0
-lon2x(lon,config) = round(Int,(180.0 + lon) / config.spatial_res + 0.5) - config.grid_x0
+lon2x(lon,config) = round(Int,(180.0 + lon) / config.spatial_res - 0.5) - config.grid_x0
 y2lat(y,config)   = 90.0 - (y+config.grid_y0-0.5)*config.spatial_res
-lat2y(lat,config) = round(Int,(90.0 - lat) / config.spatial_res + 0.5) - config.grid_y0
+lat2y(lat,config) = round(Int,(90.0 - lat) / config.spatial_res - 0.5) - config.grid_y0
 
 function getLonLatsToRead(config,longitude,latitude)
   grid_y1 = lat2y(latitude[2],config) + 1

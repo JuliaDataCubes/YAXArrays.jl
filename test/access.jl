@@ -50,7 +50,7 @@ llcube = extractLonLats(data1,ll)
 
 #Test access datacube by region
 d3 = getCubeData(c,variable="gross_primary_productivity",region="Cambodia",time=Date("2005-01-01"))
-@test d3.axes==[LonAxis(102.625:0.25:107.675),LatAxis(14.375:-0.25:10.375)]
+@test d3.axes==[LonAxis(102.375:0.25:107.375),LatAxis(14.625:-0.25:10.625)]
 
 #Test saving cubes
 dire=mktempdir()
