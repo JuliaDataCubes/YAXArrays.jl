@@ -8,7 +8,7 @@ importall ..Cubes.TempCubes
 import ...CABLAB
 import ...CABLAB.workdir
 using Base.Dates
-import DataArrays: DataArray, isna
+import DataArrays: DataArray, isna, anyna
 import StatsBase.Weights
 importall CABLAB.CubeAPI.Mask
 global const debugDAT=false
