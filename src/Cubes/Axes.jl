@@ -161,6 +161,11 @@ function axVal2Index{T<:Date,S,F<:YearStepRange}(a::RangeAxis{T,S,F},v::Date)
   r = (y-a.values.startyear)*a.values.NPY + d÷a.values.step + 1
   return max(1,min(length(a.values),r))
 end
+function axVal2Index{T<:Date,S,F<:StepRange}(a::RangeAxis{T,S,F},v::Date)
+  dd = map(i->abs((i-v).value),a.values)
+  mi,ind = findmin(dd)
+  return ind
+end
 axVal2Index{T,S,F<:StepRangeLen}(axis::RangeAxis{T,S,F},v;fuzzy::Bool=false)=min(max(round(Int,(v-first(axis.values))/step(axis.values))+1,1),length(axis))
 function axVal2Index(axis::CategoricalAxis{String},v::String;fuzzy::Bool=false)
   r=findfirst(axis.values,v)
