@@ -18,7 +18,7 @@ addprocs(2)
           end
     end
 end
-registerDATFunction(catCubes,((TimeAxis,VariableAxis),(TimeAxis,VariableAxis)),(TimeAxis,CategoricalAxis("Variable2",[1,2,3,4])),inmissing=(NaN,NaN),outmissing=:nan)
+registerDATFunction(catCubes,((TimeAxis,"Variable"),("Time",VariableAxis)),(TimeAxis,CategoricalAxis("Variable2",[1,2,3,4])),inmissing=(NaN,NaN),outmissing=:nan)
 
 @everywhere function sub_and_return_mean(xout1,xout2,xin)
     m=mean(filter(isfinite,xin))
@@ -51,7 +51,7 @@ function doTests()
   d1=getCubeData(c,variable="gross_primary_productivity",time=(Date("2002-01-01"),Date("2002-01-01")),longitude=(30,30))
 
   dmem=readCubeData(d1)
-  mtime=reduceCube(mean,dmem,(LonAxis,LatAxis),skipna=true)
+  mtime=reduceCube(mean,dmem,("lon","lat"),skipna=true)
 
   wv=cosd.(dmem.axes[2].values)
   goodinds=dmem.mask.==0x00
