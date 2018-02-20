@@ -32,7 +32,7 @@ end
 registerDATFunction(removeMSC,(TimeAxis,),(TimeAxis,),(cube,pargs)->begin
     NpY=getNpY(cube[1])
     (NpY,zeros(Float64,NpY),zeros(Int,NpY))
-end,no_ocean=1)
+end,no_ocean=1,inmissing=:mask,outmissing=:mask)
 
 """
     gapFillMSC
@@ -59,7 +59,7 @@ end
 registerDATFunction(gapFillMSC,(TimeAxis,),(TimeAxis,),(cube,pargs)->begin
     NpY=getNpY(cube[1])
     (NpY,zeros(Float64,NpY),zeros(Int,NpY))
-end,no_ocean=1)
+end,no_ocean=1,inmissing=:mask,outmissing=:mask)
 
 
 """
@@ -148,7 +148,7 @@ function getMedSC(xout::AbstractVector,maskout::AbstractVector{UInt8},xin::Abstr
     end
     xout
 end
-registerDATFunction(getMedSC,(TimeAxis,),((cube,pargs)->MSCAxis(getNpY(cube[1])),),no_ocean=1)
+registerDATFunction(getMedSC,(TimeAxis,),((cube,pargs)->MSCAxis(getNpY(cube[1])),),no_ocean=1,inmissing=:mask,outmissing=:mask)
 
 
 "Calculates the mean seasonal cycle of a vector"

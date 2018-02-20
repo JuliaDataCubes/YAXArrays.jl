@@ -8,7 +8,7 @@ importall ..Cubes.TempCubes
 import ...CABLAB
 import ...CABLAB.workdir
 using Base.Dates
-import DataArrays: DataArray, isna, anyna
+import DataArrays: DataArray, ismissing
 import StatsBase.Weights
 importall CABLAB.CubeAPI.Mask
 global const debugDAT=false
@@ -670,19 +670,12 @@ function fillVals(x::AbstractArray,m::AbstractArray{UInt8},v)
 end
 fillVals(x,::Void,v)=nothing
 "Sets the mask to missing if values are NaN"
-function fillNanMask(x,m)
-  for i in eachindex(x)
-    m[i]=isnan(x[i]) ? 0x01 : 0x00
-  end
-end
+fillNanMask(x,m) = map!(j->isnan(j) ? 0x01 : 0x00,m,x)
 fillNanMask(m)=m[:]=0x01
+
 #"Converts data and Mask to a DataArray"
 toDataArray(x,m)=DataArray(x,reinterpret(Bool,m))
-function fillDataArrayMask(x,m)
-  for i in eachindex(x)
-    m[i]=isna(x,i) ? 0x01 : 0x00
-  end
-end
+fillDataArrayMask(x,m) = map!(j->ismissing(j) ? 0x01 : 0x00,m,x)
 
 """
     registerDATFunction(f, dimsin, [dimsout, [addargs]]; inmissing=(:mask,...), outmissing=:mask, no_ocean=0)
@@ -699,7 +692,7 @@ Registers a function so that it can be applied to the whole data cube through ma
   - `inplace::Bool` defaults to true. If `f` returns a single value, instead of writing into an output array, one can set `inplace=false`.
 
 """
-function registerDATFunction(f,dimsin::Tuple{Vararg{Tuple}},dimsout::Tuple{Vararg{Tuple}},addargs...;outtype=Any,inmissing=ntuple(i->:mask,length(dimsin)),outmissing=:mask,no_ocean=0,inplace=true,genOut=zero,finalizeOut=identity,retCubeType="auto")
+function registerDATFunction(f,dimsin::Tuple{Vararg{Tuple}},dimsout::Tuple{Vararg{Tuple}},addargs...;outtype=Any,inmissing=ntuple(i->:data,length(dimsin)),outmissing=:data,no_ocean=0,inplace=true,genOut=zero,finalizeOut=identity,retCubeType="auto")
     nIn=length(dimsin)
     nOut=length(dimsout)
     inmissing=expandTuple(inmissing,nIn)
