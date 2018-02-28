@@ -12,10 +12,14 @@ macro no_ocean(maskin,maskout)
     end)
 end
 
+import Base.Dates.year
 function getNpY(cube::AbstractCubeData)
     axlist=axes(cube)
     isTime=[isa(a,TimeAxis) for a in axlist]
-    return axlist[isTime][1].values.NPY
+    timax = axlist[isTime][1]
+    years = year.(timax.values)
+    years[end]>years[1]+1 || error("Must have at least 3 years to calculate MSC")
+    return count(i->i==years[1]+1,years)
 end
 
 include("OnlineStats.jl")
