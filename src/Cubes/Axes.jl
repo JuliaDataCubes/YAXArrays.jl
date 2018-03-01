@@ -1,7 +1,8 @@
 module Axes
 export CubeAxis, QuantileAxis, TimeAxis, TimeHAxis, VariableAxis, LonAxis, LatAxis, CountryAxis,
 SpatialPointAxis,Axes,YearStepRange,CategoricalAxis,RangeAxis,axVal2Index,MSCAxis,
-TimeScaleAxis, axname, @caxis_str, findAxis
+TimeScaleAxis, axname, @caxis_str, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
+getOutAxis
 import NetCDF.NcDim
 importall ..Cubes
 using Base.Dates
@@ -185,26 +186,71 @@ function axVal2Index(axis::CategoricalAxis{String},v::String;fuzzy::Bool=false)
 end
 axVal2Index(x,v;fuzzy::Bool=false)=min(max(v,1),length(x))
 
-"Find a certain axis type in a vector of Cube axes and returns the index"
-function findAxis{T<:CubeAxis,S<:CubeAxis}(a::Type{T},v::Vector{S})
-    for i=1:length(v)
-        isa(v[i],a) && return i
-    end
-    return 0
+abstract type AxisDescriptor end
+getAxis(d::Any,v::Any)=error("getAxis not defined for $d $v")
+immutable ByName <: AxisDescriptor
+  name::String
+end
+
+immutable ByType{T} <: AxisDescriptor
+  t::Type{T}
+end
+immutable ByValue <: AxisDescriptor
+  v::CubeAxis
+end
+immutable ByFunction <: AxisDescriptor
+  f::Function
 end
 
 findAxis(a,c::AbstractCubeData)=findAxis(a,axes(c))
+get_descriptor(a::String)=ByName(a)
+get_descriptor{T<:CubeAxis}(a::Type{T})=ByType(a)
+get_descriptor(a::CubeAxis)=ByValue(a)
+get_descriptor(a::Function)=ByFunction(a)
+get_descriptor(a)=error("$a is not a valid axis description")
+get_descriptor(a::AxisDescriptor)=a
 
-function findAxis{T<:CubeAxis}(matchstr::AbstractString,axlist::Vector{T})
+
+"Find a certain axis type in a vector of Cube axes and returns the index"
+function findAxis{S<:CubeAxis}(bt::ByType,v::Vector{S})
+  a=bt.t
+  for i=1:length(v)
+    isa(v[i],a) && return i
+  end
+  return 0
+end
+function findAxis{T<:CubeAxis}(bs::ByName,axlist::Vector{T})
+  matchstr=bs.name
   ism=map(i->startswith(lowercase(axname(i)),lowercase(matchstr)),axlist)
   sism=sum(ism)
   sism==0 && error("No axis found matching string $matchstr")
   sism>1 && error("Multiple axes found matching string $matchstr")
   i=findfirst(ism)
 end
+function findAxis{T<:CubeAxis}(bv::ByValue,axlist::Vector{T})
+  v=bv.v
+  return findfirst(i->i==v,axlist)
+end
+function getAxis{T<:CubeAxis}(desc,axlist::Vector{T})
+  i = findAxis(desc,axlist)
+  if i==0
+    error("Axis $desc not found in $axlist")
+  else
+    return axlist[i]
+  end
+end
+getOutAxis(desc,axlist,incubes,pargs) = getAxis(desc,axlist)
+function getOutAxis(desc::ByFunction,axlist,incubes,pargs)
+  outax = desc.f(incubes,pargs)
+  isa(outax,CubeAxis) || error("Axis Generation function $(desc.f) did not return an axis")
+  outax
+end
+
+getAxis(desc,c::AbstractCubeData)=getAxis(desc,axes(c))
+getAxis{T<:CubeAxis}(desc::ByValue,axlist::Vector{T})=desc.v
 
 "Fallback method"
-findAxis(a,axlist)=0
+findAxis(a,axlist)=findAxis(get_descriptor(a),axlist)
 
 getSubRange(x::CubeAxis,i)=x.values[i],nothing
 getSubRange(x::TimeAxis,i)=view(x,i),nothing
@@ -214,7 +260,7 @@ macro caxis_str(s)
 end
 
 import Base.==
-==(a::CubeAxis,b::CubeAxis)=a.values==b.values
+==(a::CubeAxis,b::CubeAxis)=(a.values==b.values) && (axname(a)==axname(b))
 
 function NcDim(a::CubeAxis{Date},start::Integer,count::Integer)
   if start + count - 1 > length(a.values)

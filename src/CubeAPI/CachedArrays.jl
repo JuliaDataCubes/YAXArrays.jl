@@ -84,7 +84,7 @@ function CachedArray(x,max_blocks::Int,block_size::CartesianIndex,blocktype::Typ
     end
     CachedArray{T,N,blocktype,vtype}(x,max_blocks,block_size,blocks,currentblocks,nullblock)
 end
-Base.IndexStyle(::CachedArray)=Base.LinearSlow()
+Base.IndexStyle(::CachedArray)=Base.IndexCartesian()
 #Base.setindex!{T,N}(c::CachedArray{T,N},v,i::CartesianIndex{N})=0.0
 Base.size(c::CachedArray)=size(c.x)
 Base.similar(c::CachedArray)=similar(c.x)
@@ -375,7 +375,7 @@ function getSubRange{T,S<:MaskedCacheBlock}(c::CachedArray{T,0,S};write=false)
   (c.currentblocks[1].data,c.currentblocks[1].mask)
 end
 
-function sync(c::CachedArray)
+function synccube(c::CachedArray)
     for b in c.currentblocks
         if b.iswritten
             write_subblock!(b,c.x,c.block_size)
@@ -384,7 +384,7 @@ function sync(c::CachedArray)
 end
 
 
-sync(c)=1
+synccube(c)=1
 
 
 end # module

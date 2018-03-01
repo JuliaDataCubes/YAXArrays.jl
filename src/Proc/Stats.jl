@@ -85,7 +85,7 @@ registerDATFunction(timelonlatquantiles,(TimeAxis,LonAxis,LatAxis),
     tax=getAxis(TimeAxis,cube[1])
     lonax=getAxis(LonAxis,cube[1])
     latax=getAxis(LatAxis,cube[1])
-    return length(pargs)==1 ? pargs[1] : [0.25,0.5,0.75],zeros(eltype(cube[1]),length(tax)*length(lonax)*length(latax))
+    return length(pargs)==1 ? pargs[1] : [0.25,0.5,0.75],zeros(eltype(cube[1].cube),length(tax)*length(lonax)*length(latax))
   end,inmissing=(:nan,),outmissing=:nan)
 
 registerDATFunction(timespacequantiles,(TimeAxis,SpatialPointAxis),

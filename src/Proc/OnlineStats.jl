@@ -8,19 +8,23 @@ import ...CABLABTools.totuple
 export DATfitOnline
 
 
-function DATfitOnline{T<:Series{0}}(xout::AbstractArray{T},maskout,xin,maskin,cfun)
-    for (mi,xi) in zip(maskin,xin)
-        (mi & MISSING)==VALID && fit!(xout[1],xi)
-    end
+function DATfitOnline{T<:Series{0}}(xout::AbstractArray{T},ain,cfun)
+  xin,maskin = ain
+  for (mi,xi) in zip(maskin,xin)
+    (mi & MISSING)==VALID && fit!(xout[1],xi)
+  end
 end
 
-function DATfitOnline{T<:Series{0}}(xout::AbstractArray{T},maskout,xin,maskin,splitmask,msplitmask,cfun)
+function DATfitOnline{T<:Series{0}}(xout::AbstractArray{T},ain,main,cfun)
+  xin,maskin = ain
+  splitmask,msplitmask = main
   for (mi,xi,si,m2) in zip(maskin,xin,splitmask,msplitmask)
       ((mi | m2) & MISSING)==VALID && fit!(xout[cfun(si)],Float64(xi))
   end
 end
 
-function DATfitOnline{T<:Series{1},U}(xout::AbstractArray{T},maskout,xin::AbstractArray{U},maskin,cfun)
+function DATfitOnline{T<:Series{1}}(xout::AbstractArray{T},ain,cfun)
+  xin,maskin = ain
     offs=1
     offsinc=size(xin,1)
     xtest=zeros(Float64,offsinc)
@@ -34,10 +38,12 @@ function DATfitOnline{T<:Series{1},U}(xout::AbstractArray{T},maskout,xin::Abstra
     end
 end
 
-function DATfitOnline{T<:Series{1},U}(xout::AbstractArray{T},maskout,xin::AbstractArray{U},maskin,splitmask,msplitmask,cfun)
+function DATfitOnline{T<:Series{1}}(xout::AbstractArray{T},ain,spl,cfun)
+  xin,maskin = ain
+  splitmask,msplitmask = spl
   offs=1
   offsinc=size(xin,1)
-  xtest=zeros(U,offsinc)
+  xtest=zeros(eltype(xin),offsinc)
   mtest=zeros(UInt8,offsinc)
   for (offsin,si) in zip(1:offsinc:length(xin),1:length(splitmask))
     copy!(xtest,1,xin,offsin,offsinc)
@@ -134,7 +140,7 @@ function mapCube{T<:OnlineStat}(f::Type{T},cdata::AbstractCubeData,pargs...;by=C
     end
     indata=(cdata,bycubes[1])
     isa(outAxis,DataType) && (outAxis=outAxis())
-    outdims=(outAxis,)
+    outdims=[get_descriptor(outAxis)]
     lout=lout * length(outAxis)
     inAxes2=filter(i->!in(i,by2) && in(i,axes(bycubes[1])) && !isa(i,MDAxis),inAxes)
   elseif length(bycubes)>1
@@ -142,7 +148,7 @@ function mapCube{T<:OnlineStat}(f::Type{T},cdata::AbstractCubeData,pargs...;by=C
   else
     indata=cdata
     lout=lout * 1
-    outdims=()
+    outdims=[]
     inAxes2=filter(i->!in(i,by2) && !isa(i,MDAxis),inAxes)
   end
   axcombs=combinations(inAxes2)
@@ -155,19 +161,17 @@ function mapCube{T<:OnlineStat}(f::Type{T},cdata::AbstractCubeData,pargs...;by=C
     iain=[ia1;map(typeof,axcombs[i])]
     ia  = map(typeof,axcombs[i])
     outBroad=filter(ax->!in(ax,by2) && !in(typeof(ax),iain),inAxes)
-    indims=length(bycubes)==0 ? (totuple(iain),) : (totuple(iain),totuple(ia))
+    indims=length(bycubes)==0 ? [get_descriptor.(iain)] : [get_descriptor.(iain),get_descriptor.(ia)]
   else
     outBroad=filter(ax->!in(ax,by2),inAxes)
-    indims=length(bycubes)==0 ? totuple(ia1) : (totuple(ia1),totuple(CubeAxis[]))
+    indims=length(bycubes)==0 ? [get_descriptor.(iain)] : [get_descriptor.(ia1),[]]
   end
-  outBroad=map(typeof,outBroad)
+  outBroad=[get_descriptor(ob) for ob in outBroad]
   fout(x) = Series(EqualWeight(),getGenFun(f,pargs...)(x))
+  ic = ntuple(i->InputCube(indims[i],miss=MaskMissing()),length(indims))
+  oc = (OutputCube(outdims,bcaxisdesc=outBroad,finalizeOut=getFinalFun(f,funargs...),genOut=fout,outtype=typeof(fout(f)),miss=NoMissing()),)
   return mapCube(DATfitOnline,indata,cfun;
-    outtype=(typeof(fout(f)),),
-    indims=indims,outdims=(outdims,),
-    outBroadCastAxes=(outBroad,),
-    finalizeOut=(getFinalFun(f,funargs...),),
-    genOut=(fout,),
+    incubes = ic,outcubes = oc,
     kwargs...
 )
 end

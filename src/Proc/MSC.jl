@@ -21,7 +21,9 @@ Removes the mean annual cycle from each time series.
 **Output Axes** `Time`axis
 
 """
-function removeMSC(xout::AbstractArray,maskout::AbstractArray{UInt8},xin::AbstractArray,maskin::AbstractArray{UInt8},NpY::Integer,tmsc,tnmsc)
+function removeMSC(aout::Tuple,ain::Tuple,NpY::Integer,tmsc,tnmsc)
+  xout,maskout = aout
+  xin, maskin  = ain
     #Start loop through all other variables
     getMSC(tmsc,xin,tnmsc,NpY=NpY)
     subtractMSC(tmsc,xin,xout,NpY)
@@ -50,8 +52,9 @@ Fills missing values of each time series with the mean annual cycle.
 **Output Axes** `Time`axis
 
 """
-function gapFillMSC(xout::AbstractArray,maskout::AbstractArray{UInt8},xin::AbstractArray,maskin::AbstractArray{UInt8},NpY::Integer,tmsc,tnmsc)
-
+function gapFillMSC(aout::Tuple,ain::Tuple,NpY::Integer,tmsc,tnmsc)
+  xin,maskin = ain
+  xout,maskout = aout
   getMSC(tmsc,xin,tnmsc,NpY=NpY)
   replaceMisswithMSC(tmsc,xin,xout,maskin,maskout,NpY)
 
@@ -128,7 +131,9 @@ Returns the median annual cycle from each time series.
 **Output Axes** `MSC`axis
 
 """
-function getMedSC(xout::AbstractVector,maskout::AbstractVector{UInt8},xin::AbstractVector,maskin::AbstractVector{UInt8})
+function getMedSC(aout::Tuple,ain::Tuple)
+  xout,maskout = aout
+  xin,maskin   = ain
     #Reshape the cube to squeeze unimportant variables
     NpY=length(xout)
     yvec=eltype(xout)[]

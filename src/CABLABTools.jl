@@ -1,7 +1,12 @@
 module CABLABTools
 import ..CABLAB: CABLABdir
-export mypermutedims!, totuple, freshworkermodule, passobj, @everywhereelsem, toRange, getiperm, CItimes, CIdiv, @loadOrGenerate
+export mypermutedims!, totuple, freshworkermodule, passobj, @everywhereelsem, toRange, getiperm, CItimes, CIdiv, @loadOrGenerate,
+        expandTuple
 # SOme global function definitions
+expandTuple(x,nin)=ntuple(i->x,nin)
+expandTuple(x::Tuple,nin)=x
+
+
 
 function getiperm(perm)
     iperm = Array{Int}(length(perm))
@@ -36,6 +41,7 @@ end
 end
 
 totuple(x::AbstractArray)=ntuple(i->x[i],length(x))
+totuple(x::Tuple)=x
 
 @generated function Base.getindex{N}(t::NTuple{N},p::NTuple{N,Int})
     :(@ntuple $N d->t[p[d]])
@@ -153,7 +159,7 @@ macro loadOrGenerate(x...)
   code=x[end]
   x=x[1:end-1]
   x2=map(x) do i
-    isa(i,Symbol) ? (i,string(i)) : i.head==:(=>) ? (i.args[1],i.args[2]) : error("Wrong Argument type")
+    isa(i,Symbol) ? (i,string(i)) : (i.head==:call && i.args[1]==:(=>)) ? (i.args[2],i.args[3]) : error("Wrong Argument type")
   end
   xnames=map(i->i[2],x2)
   loadEx=map(x2) do i

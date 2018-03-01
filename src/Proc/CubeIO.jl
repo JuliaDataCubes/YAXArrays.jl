@@ -49,20 +49,22 @@ function getSpatiaPointAxis(mask::CubeMem)
     SpatialPointAxis(a)
 end
 
-function toPointAxis(xout,maskout,xin,maskin,lonax,lonmask,latax,latmask,pointax,pointmask)
-    lom=LonAxis(lonax)
-    lam=LatAxis(latax)
-    iout=1
-    for (lon,lat) in pointax
-        ilon=axVal2Index(lom,lon)
-        ilat=axVal2Index(lam,lat)
-        xout[iout]=xin[ilon,ilat]
-        maskout[iout]=maskin[ilon,ilat]
-        iout+=1
-    end
+function toPointAxis(aout,ain,lonax,latax,pointax)
+  xout, maskout = aout
+  xin , maskin  = ain
+  lom=LonAxis(lonax)
+  lam=LatAxis(latax)
+  iout=1
+  for (lon,lat) in pointax
+    ilon=axVal2Index(lom,lon)
+    ilat=axVal2Index(lam,lat)
+    xout[iout]=xin[ilon,ilat]
+    maskout[iout]=maskin[ilon,ilat]
+    iout+=1
+  end
 end
 export toPointAxis
-registerDATFunction(toPointAxis,((LonAxis,LatAxis),(LonAxis,),(LatAxis,),(SpatialPointAxis,)),(SpatialPointAxis,),inmissing=(:mask,:mask,:mask,:mask),outmissing=:mask)
+registerDATFunction(toPointAxis,((LonAxis,LatAxis),(LonAxis,),(LatAxis,),(SpatialPointAxis,)),(SpatialPointAxis,),inmissing=(:mask,:none,:none,:none),outmissing=:mask)
 
 """
     extractLonLats(c::AbstractCubeData,pl::Matrix)

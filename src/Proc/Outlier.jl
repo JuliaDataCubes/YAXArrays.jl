@@ -40,7 +40,7 @@ function DAT_detectAnomalies!(xout::AbstractArray, xin::AbstractArray, P::Multiv
  return(xout)
 end
 registerDATFunction(DAT_detectAnomalies!,(TimeAxis,VariableAxis),(TimeAxis,(cube,pargs)->CategoricalAxis("Method",pargs[1])),
-(cube,pargs)->getDetectParameters(pargs[1],pargs[2],length(getAxis(TimeAxis,cube[1]))),inmissing=(:nan,),outmissing=:nan,no_ocean=1)
+(cube,pargs)->getDetectParameters(pargs[1],pargs[2],length(getAxis(TimeAxis,cube[1].cube))),inmissing=(:nan,),outmissing=:nan,no_ocean=1)
 
 
 function simpleAnomalies(xout::AbstractArray, xin::AbstractArray,methods)

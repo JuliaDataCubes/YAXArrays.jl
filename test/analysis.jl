@@ -4,22 +4,6 @@ using Base.Test
 addprocs(2)
 @everywhere using CABLAB, DataArrays
 
-@everywhere function catCubes(xout,xin1,xin2)
-    Ntime,nvar1=size(xin1)
-    nvar2=size(xin2,2)
-    for ivar=1:nvar1
-        for itime=1:Ntime
-            xout[itime,ivar]=xin1[itime,ivar]
-          end
-        end
-    for ivar=1:nvar2
-        for itime=1:Ntime
-            xout[itime,nvar1+ivar]=xin2[itime,ivar]
-          end
-    end
-end
-registerDATFunction(catCubes,((TimeAxis,"Variable"),("Time",VariableAxis)),(TimeAxis,CategoricalAxis("Variable2",[1,2,3,4])),inmissing=(NaN,NaN),outmissing=:nan)
-
 @everywhere function sub_and_return_mean(xout1,xout2,xin)
     m=mean(filter(isfinite,xin))
     for i=1:length(xin)
@@ -41,6 +25,8 @@ function doTests()
 
   # Basic statistics
   m=reduceCube(mean,d,TimeAxis,skipmissing=true)
+
+
 
   @test isapprox(readCubeData(m).data,[281.922  282.038  282.168  282.288;
                 281.936  282.062  282.202  282.331;
@@ -97,8 +83,6 @@ function doTests()
 
   d1=getCubeData(c,variable=["gross_primary_productivity","net_ecosystem_exchange"],longitude=(30,30),latitude=(50,50))
   d2=getCubeData(c,variable=["gross_primary_productivity","air_temperature_2m"],longitude=(30,30),latitude=(50,50))
-
-  ccube=mapCube(catCubes,(d1,d2))
 
   #Test Quantiles
   cdata=getCubeData(c,variable=["soil_moisture","gross_primary_productivity"],longitude=(30,30),latitude=(50.75,50.75))
