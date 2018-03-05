@@ -188,7 +188,7 @@ See also loadCube, CABLABdir
 function saveCube{T}(c::CubeMem{T},name::AbstractString)
   newfolder=joinpath(workdir[1],name)
   isdir(newfolder) && error("$(name) alreaday exists, please pick another name")
-  mkdir(newfolder)
+  mkpath(newfolder)
   tc=Cubes.TempCube(c.axes,CartesianIndex(size(c)),folder=newfolder,T=T)
   files=readdir(newfolder)
   filter!(i->startswith(i,"file"),files)
