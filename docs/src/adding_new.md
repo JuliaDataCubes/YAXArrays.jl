@@ -210,5 +210,4 @@ outAxes = OutDims((cube,pargs)->ParameterAxis(pargs[1]),miss=NaNMissing())
 registerDATFunction(polyRegression, indims = inAxes, outdims = outAxes);
 ```
 
-The user can apply the function now using `mapCube(polyRegression, cubedata, regOrder)` where `regOrder` is the order of the
-Regression.
+The user can apply the function now using `mapCube(polyRegression, cubedata, regOrder)` where `regOrder` is the order of the Regression.

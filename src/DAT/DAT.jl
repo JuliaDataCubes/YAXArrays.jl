@@ -8,6 +8,7 @@ importall ..CABLABTools
 importall ..Cubes.TempCubes
 import ...CABLAB
 import ...CABLAB.workdir
+import DataFrames
 using Base.Dates
 import DataArrays: DataArray, ismissing
 import Missings: Missing, missing
@@ -46,6 +47,13 @@ function mask2miss(::DataArrayMissing, a, workAr)
   map!(m->(m & 0x01)==0x01,workAr.na,a[2])
   copy!(workAr.data,a[1])
 end
+function mask2miss(::DataArrayMissing, a, workAr::DataFrames.DataFrame)
+  for icol = 1:size(a[1],2)
+    xnow,mnow = view(a[1],:,icol),view(a[2],:,icol)
+    map!(m->(m & 0x01)==0x01,workAr[icol].na,mnow)
+    copy!(workAr[icol].data,xnow)
+  end
+end
 #mask2miss(::DataArrayMissing, a::Tuple{Number,UInt8}, workAr) = workAr[1]=(a[2] & 0x01)>0 ? missing : a[1]
 mask2miss(::NoMissing,a,workAr) = copy!(workAr,a[1])
 function mask2miss(::MaskMissing,a::Tuple,workAr::Tuple)
@@ -60,6 +68,13 @@ end
 function miss2mask!(::DataArrayMissing, target, source::DataArray)
   map!(j->j ? 0x01 : 0x00,target[2],source.na)
   copy!(target[1],source.data)
+end
+function miss2mask!(::DataArrayMissing, target, source::DataFrames.DataFrame)
+  for icol = 1:size(target[1],2)
+    xnow,mnow = view(target[1],:,icol),view(target[2],:,icol)
+    map!(j->j ? 0x01 : 0x00,mnow,source[icol].na)
+    copy!(xnow,source[icol].data)
+  end
 end
 function miss2mask!(::DataArrayMissing, target, source::Union{Missing,Number})
   if ismissing(source)
@@ -105,7 +120,11 @@ function InputCube(c::AbstractCubeData, desc::InDims)
 end
 gethandle(c::InputCube)=c.handle
 getcube(c::InputCube)=c.cube
-setworkarray(c::InputCube)=c.workarray = createworkarray(c.desc.miss,eltype(c.cube),ntuple(i->length(c.axesSmall[i]),length(c.axesSmall)))
+import AxisArrays
+function setworkarray(c::InputCube)
+  wa = createworkarray(c.desc.miss,eltype(c.cube),ntuple(i->length(c.axesSmall[i]),length(c.axesSmall)))
+  c.workarray = wrapWorkArray(c.desc.artype,wa,c.axesSmall)
+end
 createworkarray(m::NaNMissing,T,s)=Array{T}(s...)
 createworkarray(m::ValueMissing,T,s)=Array{T}(s...)
 createworkarray(m::DataArrayMissing,T,s)=DataArray(Array{T}(s...))
@@ -137,7 +156,8 @@ getsmallax(c::Union{InputCube,OutputCube})=c.axesSmall
 getAxis(desc,c::OutputCube)=getAxis(desc,get(c.cube))
 getAxis(desc,c::InputCube)=getAxis(desc,c.cube)
 function setworkarray(c::OutputCube)
-  c.workarray=createworkarray(c.desc.miss,eltype(get(c.cube)),ntuple(i->length(c.axesSmall[i]),length(c.axesSmall)))
+  wa = createworkarray(c.desc.miss,eltype(get(c.cube)),ntuple(i->length(c.axesSmall[i]),length(c.axesSmall)))
+  c.workarray = wrapWorkArray(c.desc.artype,wa,c.axesSmall)
 end
 
 function OutputCube(outfolder,desc::OutDims,inAxes::Vector{CubeAxis},incubes,pargs)

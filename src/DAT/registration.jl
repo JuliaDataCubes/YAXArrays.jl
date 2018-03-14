@@ -1,5 +1,29 @@
-export InDims, OutDims
+export InDims, OutDims,AsArray,AsDataFrame,AsAxisArray
 const AxisDescriptorAll = Union{AxisDescriptor,String,Type{T},CubeAxis,Function} where T<:CubeAxis
+
+abstract type ArTypeRepr end
+immutable AsArray <: ArTypeRepr end
+immutable AsAxisArray <: ArTypeRepr end
+immutable AsDataFrame <: ArTypeRepr
+  dimcol::Bool
+end
+AsDataFrame()=AsDataFrame(false)
+wrapWorkArray(::AsArray,a,axes) = a
+function wrapWorkArray(::AsAxisArray,a,cablabaxes)
+  newaxes = map(cablabaxes) do ax
+    AxisArrays.Axis{Symbol(axname(ax))}(ax.values)
+  end
+  AxisArrays.AxisArray(a,newaxes...)
+end
+import DataFrames
+function wrapWorkArray(t::AsDataFrame,a,cablabaxes)
+  colnames = map(Symbol,cablabaxes[2].values)
+  df = DataFrames.DataFrame(a,colnames)
+  if t.dimcol
+    df[Symbol(axname(cablabaxes[1]))]=collect(cablabaxes[1].values)
+  end
+  df
+end
 
 """
     InDims(axisdesc)
@@ -10,15 +34,19 @@ Creates a description of an Input Data Cube for cube operations. Takes a single
 
 - axisdesc: List of input axis names
 - miss: Representation of missing values for this input cube, must be a subtype of [MissingRepr](@ref)
+- include_axes: If set to `true` the array will be represented as an AxisArray inside the inner function, so that axes values can be accessed
 """
 type InDims
   axisdesc::Tuple
   miss::MissingRepr
+  artype::ArTypeRepr
 end
-function InDims(axisdesc::AxisDescriptorAll...; miss::MissingRepr=DataArrayMissing())
+function InDims(axisdesc::AxisDescriptorAll...; miss::MissingRepr=DataArrayMissing(),artype::ArTypeRepr=AsArray())
   descs = map(get_descriptor,axisdesc)
   any(i->isa(i,ByFunction),descs) && error("Input cubes can not be specified through a function")
-  InDims(descs,miss)
+  isa(artype,AsDataFrame) && length(descs)!=2 && error("DataFrame representation only possible if for 2D inner arrays")
+  isa(artype,AsDataFrame) && !isa(miss,DataArrayMissing) && error("When using DataFrames, only DataArrayMissing is supported as missing type")
+  InDims(descs,miss,artype)
 end
 
 """
@@ -43,6 +71,7 @@ immutable OutDims
   finalizeOut::Function
   retCubeType::Any
   update::Bool
+  artype::ArTypeRepr
   outtype::Union{Int,DataType}
 end
 function OutDims(axisdesc...;
@@ -52,11 +81,13 @@ function OutDims(axisdesc...;
            finalizeOut=identity,
            retCubeType=:auto,
            update=false,
+           artype::ArTypeRepr=AsArray(),
            outtype=1)
   descs = map(get_descriptor,axisdesc)
   bcdescs = totuple(map(get_descriptor,bcaxisdesc))
+  isa(artype,AsDataFrame) && length(descs)!=2 && error("DataFrame representation only possible if for 2D inner arrays")
   update && !isa(miss,NoMissing) && error("Updating output is only possible for miss=NoMissing()")
-  OutDims(descs,bcdescs,miss,genOut,finalizeOut,retCubeType,update,outtype)
+  OutDims(descs,bcdescs,miss,genOut,finalizeOut,retCubeType,update,artype,outtype)
 end
 
 type DATFunction
@@ -88,7 +119,7 @@ Registers a function so that it can be applied to the whole data cube through ma
   - `inplace::Bool` defaults to true. If `f` returns a single value, instead of writing into an output array, one can set `inplace=false`.
 
 """
-function registerDATFunction(f,dimsin::Tuple{Vararg{Tuple}},dimsout::Tuple{Vararg{Tuple}},addargs...;outtype=Any,inmissing=ntuple(i->DataArrayMissing,length(dimsin)),outmissing=ntuple(i->DataArrayMissing,length(dimsout)),no_ocean=0,inplace=true,genOut=zero,finalizeOut=identity,outbroad=[],retCubeType="auto")
+function registerDATFunction(f,dimsin::Tuple{Vararg{Tuple}},dimsout::Tuple{Vararg{Tuple}},addargs...;outtype=Any,inmissing=ntuple(i->DataArrayMissing(),length(dimsin)),outmissing=ntuple(i->DataArrayMissing(),length(dimsout)),no_ocean=0,inplace=true,genOut=zero,finalizeOut=identity,outbroad=[],retCubeType="auto")
     nIn=length(dimsin)
     nOut=length(dimsout)
     inmissing=expandTuple(inmissing,nIn)
