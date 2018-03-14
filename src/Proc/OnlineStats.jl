@@ -8,16 +8,16 @@ import ...CABLABTools.totuple
 export DATfitOnline
 
 
-function DATfitOnline{T<:Series{0}}(xout::AbstractArray{T},ain,cfun)
+function DATfitOnline(xout::AbstractArray{T},ain,cfun) where T<:Series{0}
   xin,maskin = ain
   for (mi,xi) in zip(maskin,xin)
     (mi & MISSING)==VALID && fit!(xout[1],xi)
   end
 end
 
-function DATfitOnline{T<:Series{0}}(xout::AbstractArray{T},ain,main,cfun)
+function DATfitOnline{T<:Series{0}}(xout::AbstractArray{T},ain,spl,cfun)
   xin,maskin = ain
-  splitmask,msplitmask = main
+  splitmask,msplitmask = spl
   for (mi,xi,si,m2) in zip(maskin,xin,splitmask,msplitmask)
       ((mi | m2) & MISSING)==VALID && fit!(xout[cfun(si)],Float64(xi))
   end
@@ -168,8 +168,8 @@ function mapCube{T<:OnlineStat}(f::Type{T},cdata::AbstractCubeData,pargs...;by=C
   end
   outBroad=[get_descriptor(ob) for ob in outBroad]
   fout(x) = Series(EqualWeight(),getGenFun(f,pargs...)(x))
-  ic = ntuple(i->InputCube(indims[i],miss=MaskMissing()),length(indims))
-  oc = (OutputCube(outdims,bcaxisdesc=outBroad,finalizeOut=getFinalFun(f,funargs...),genOut=fout,outtype=typeof(fout(f)),miss=NoMissing()),)
+  ic = ntuple(i->InDims(indims[i],miss=MaskMissing()),length(indims))
+  oc = (OutDims(outdims,bcaxisdesc=outBroad,finalizeOut=getFinalFun(f,funargs...),genOut=fout,outtype=typeof(fout(f)),miss=NoMissing(),update=true),)
   return mapCube(DATfitOnline,indata,cfun;
     incubes = ic,outcubes = oc,
     kwargs...

@@ -1,6 +1,6 @@
 module DAT
 export registerDATFunction, mapCube, getInAxes, getOutAxes, findAxis, reduceCube, getAxis,
-      NaNMissing, ValueMissing, DataArrayMissing, MaskMissing, NoMissing, InputCubeReal, OutputCubeReal
+      NaNMissing, ValueMissing, DataArrayMissing, MaskMissing, NoMissing, InputCube, OutputCube
 importall ..Cubes
 importall ..CubeAPI
 importall ..CubeAPI.CachedArrays
@@ -38,20 +38,29 @@ toMissRepr(s::Symbol)=  s == :nan  ? NaNMissing() :
                         error("Unknown missing value specifier: $s")
 toMissRepr(n::Number) = ValueMissing(n)
 
-function mask2miss(::NaNMissing, a)
-  map!((m,v)->(m & 0x01)==0x01 ? oftype(v,NaN) : v,a[1],a[2],a[1])
-  a[1]
+function mask2miss(::NaNMissing, a, workAr)
+  map!((m,v)->(m & 0x01)==0x01 ? convert(eltype(workAr),NaN) : v,workAr,a[2],a[1])
+
 end
-mask2miss(::DataArrayMissing, a) = DataArray(a[1],reinterpret(Bool,a[2]))
-mask2miss(::DataArrayMissing, a::Tuple{Number,UInt8}) = (a[2] & 0x01)>0 ? missing : a[1]
-mask2miss(::NoMissing,a) = a[1]
-mask2miss(::MaskMissing,a) = a
-function mask2miss(o::ValueMissing,a)
-  map!((m,v)->(m & 0x01)==0x01 ? oftype(v,o.v) : v,a[1],a[2],a[1])
+function mask2miss(::DataArrayMissing, a, workAr)
+  map!(m->(m & 0x01)==0x01,workAr.na,a[2])
+  copy!(workAr.data,a[1])
+end
+#mask2miss(::DataArrayMissing, a::Tuple{Number,UInt8}, workAr) = workAr[1]=(a[2] & 0x01)>0 ? missing : a[1]
+mask2miss(::NoMissing,a,workAr) = copy!(workAr,a[1])
+function mask2miss(::MaskMissing,a::Tuple,workAr::Tuple)
+  copy!(workAr[1],a[1])
+  copy!(workAr[2],a[2])
+end
+function mask2miss(o::ValueMissing,a,workAr)
+  map!((m,v)->(m & 0x01)==0x01 ? oftype(v,o.v) : v,workAr,a[2],a[1])
   a[1]
 end
 
-miss2mask!(::DataArrayMissing, target, source::DataArray) = map!(j->ismissing(j) ? 0x01 : 0x00,target[2],source)
+function miss2mask!(::DataArrayMissing, target, source::DataArray)
+  map!(j->j ? 0x01 : 0x00,target[2],source.na)
+  copy!(target[1],source.data)
+end
 function miss2mask!(::DataArrayMissing, target, source::Union{Missing,Number})
   if ismissing(source)
     target[2][1] = 0x01
@@ -60,59 +69,82 @@ function miss2mask!(::DataArrayMissing, target, source::Union{Missing,Number})
     target[1][1] = source
   end
 end
-miss2mask!(::NaNMissing, target, source::Array) = map!(j->isnan(j) ? 0x01 : 0x00,target[2],source)
-miss2mask!(::MaskMissing,target,source::Tuple{Array,Array}) = nothing
-miss2mask!(::NoMissing,target,source) = target[2][:] = 0x00
+function miss2mask!(::NaNMissing, target, source::Array)
+  map!(j->isnan(j) ? 0x01 : 0x00,target[2],source)
+  copy!(target[1],source)
+end
+function miss2mask!(::MaskMissing,target,source::Tuple{Array,Array})
+  copy!(target[1],source[1])
+  copy!(target[2],source[2])
+end
+function miss2mask!(::NoMissing,target,source)
+  target[2][:] = 0x00
+  copy!(target[1],source[1])
+end
 
 include("registration.jl")
 
 """
 Internal representation of an input cube for DAT operations
 """
-type InputCubeReal
+type InputCube
   cube::AbstractCubeData     #The input data cube
-  desc::InputCube            #The input description given by the user/registration
+  desc::InDims           #The input description given by the user/registration
   axesSmall::Array{CubeAxis} #List of axes that were actually selected through the desciption
   bcinds::Vector{Int}        #Indices of loop axes that this cube does not contain, i.e. broadcasts
   cachesize::Vector{Int}     #Number of elements to keep in cache along each axis
   isMem::Bool                #is the cube in-memory
   handle::Any                #handle for the input
+  workarray::Any
 end
 
-function InputCubeReal(c::AbstractCubeData, desc::InputCube)
+function InputCube(c::AbstractCubeData, desc::InDims)
   axesSmall = getAxis.(desc.axisdesc,c)
   isMem = isa(c,AbstractCubeMem)
-  InputCubeReal(c,desc,collect(axesSmall),CubeAxis[],Int[],isMem,nothing)
+  InputCube(c,desc,collect(axesSmall),CubeAxis[],Int[],isMem,nothing,nothing)
 end
-gethandle(c::InputCubeReal)=c.handle
-getcube(c::InputCubeReal)=c.cube
+gethandle(c::InputCube)=c.handle
+getcube(c::InputCube)=c.cube
+setworkarray(c::InputCube)=c.workarray = createworkarray(c.desc.miss,eltype(c.cube),ntuple(i->length(c.axesSmall[i]),length(c.axesSmall)))
+createworkarray(m::NaNMissing,T,s)=Array{T}(s...)
+createworkarray(m::ValueMissing,T,s)=Array{T}(s...)
+createworkarray(m::DataArrayMissing,T,s)=DataArray(Array{T}(s...))
+createworkarray(m::NoMissing,T,s)=Array{T}(s...)
+createworkarray(m::MaskMissing,T,s)=(Array{T}(s...),Array{UInt8}(s...))
+
+
 
 
 """
 Internal representation of an output cube for DAT operations
 """
-type OutputCubeReal
+type OutputCube
   cube::Nullable{AbstractCubeData} #The actual outcube cube, once it is generated
-  desc::OutputCube                 #The description of the output axes as given by users or registration
+  desc::OutDims                 #The description of the output axes as given by users or registration
   axesSmall::Array{CubeAxis}       #The list of output axes determined through the description
   allAxes::Vector{CubeAxis}        #List of all the axes of the cube
   broadcastAxes::Vector{CubeAxis}         #List of axes that are broadcasted
   bcinds::Vector{Int}              #Index of the loop axes that are broadcasted for this output cube
   isMem::Bool                      #Shall the output cube be in memory
   handle::Any                      #Access handle for the cube
+  workarray::Any
   folder::String                   #Folder to store the cube to
   outtype::DataType
 end
-gethandle(c::OutputCubeReal)=c.handle
-getcube(c::OutputCubeReal)=get(c.cube)
-getsmallax(c::Union{InputCubeReal,OutputCubeReal})=c.axesSmall
-getAxis(desc,c::Union{InputCubeReal,OutputCubeReal})=getAxis(desc,c.cube)
+gethandle(c::OutputCube)=c.handle
+getcube(c::OutputCube)=get(c.cube)
+getsmallax(c::Union{InputCube,OutputCube})=c.axesSmall
+getAxis(desc,c::OutputCube)=getAxis(desc,get(c.cube))
+getAxis(desc,c::InputCube)=getAxis(desc,c.cube)
+function setworkarray(c::OutputCube)
+  c.workarray=createworkarray(c.desc.miss,eltype(get(c.cube)),ntuple(i->length(c.axesSmall[i]),length(c.axesSmall)))
+end
 
-function OutputCubeReal(outfolder,desc::OutputCube,inAxes::Vector{CubeAxis},incubes,pargs)
+function OutputCube(outfolder,desc::OutDims,inAxes::Vector{CubeAxis},incubes,pargs)
   axesSmall = map(i->getOutAxis(i,inAxes,incubes,pargs),desc.axisdesc)
   broadcastAxes = map(i->getOutAxis(i,inAxes,incubes,pargs),desc.bcaxisdesc)
   outtype = getOuttype(desc.outtype,incubes)
-  OutputCubeReal(Nullable{AbstractCubeData}(),desc,collect(CubeAxis,axesSmall),CubeAxis[],collect(CubeAxis,broadcastAxes),Int[],false,nothing,outfolder,outtype)
+  OutputCube(Nullable{AbstractCubeData}(),desc,collect(CubeAxis,axesSmall),CubeAxis[],collect(CubeAxis,broadcastAxes),Int[],false,nothing,nothing,outfolder,outtype)
 end
 
 """
@@ -154,8 +186,8 @@ It contains the following fields:
 
 """
 type DATConfig{NIN,NOUT}
-  incubes       :: NTuple{NIN,InputCubeReal}
-  outcubes      :: NTuple{NOUT,OutputCubeReal}
+  incubes       :: NTuple{NIN,InputCube}
+  outcubes      :: NTuple{NOUT,OutputCube}
   allInAxes     :: Vector
   LoopAxes      :: Vector
   ispar         :: Bool
@@ -172,8 +204,8 @@ function DATConfig(cdata,reginfo,max_cache,fu,outfolder,ispar,addargs,kwargs)
   length(cdata)==length(reginfo.inCubes) || error("Number of input cubes ($(length(cdata))) differs from registration ($(length(reginfo.inCubes)))")
 
   allInAxes = getAllInaxes(cdata)
-  incubes  = totuple([InputCubeReal(o[1],o[2]) for o in zip(cdata,reginfo.inCubes)])
-  outcubes = totuple(map((i,desc)->OutputCubeReal(string(outfolder,"_",i),desc,allInAxes,cdata,addargs),1:length(reginfo.outCubes),reginfo.outCubes))
+  incubes  = totuple([InputCube(o[1],o[2]) for o in zip(cdata,reginfo.inCubes)])
+  outcubes = totuple(map((i,desc)->OutputCube(string(outfolder,"_",i),desc,allInAxes,cdata,addargs),1:length(reginfo.outCubes),reginfo.outCubes))
 
 
   DATConfig(
@@ -197,16 +229,18 @@ end
 Object to pass to InnerLoop, this condenses the most important information about the calculation into a type so that
 specific code can be generated by the @generated function
 """
-immutable InnerObj{T1,T2,T3,OC,R} end
+immutable InnerObj{T1,T2,T3,OC,R,UPDOUT} end
 function InnerObj(dc::DATConfig)
   T1=totuple(length.(getsmallax.(dc.incubes)))
   T2=totuple(length.(getsmallax.(dc.outcubes)))
   inbroad = collect(Any,map(i->totuple(i.bcinds),dc.incubes))
   outbroad= collect(Any,map(i->totuple(i.bcinds),dc.outcubes))
+  upd = map(i->i.desc.update,dc.outcubes)
+  UPDOUT = totuple(find(upd))
   T3=totuple([inbroad;outbroad])
   OC=dc.no_ocean
   R=dc.inplace
-  InnerObj{T1,T2,T3,OC,R}()
+  InnerObj{T1,T2,T3,OC,R,UPDOUT}()
 end
 
 
@@ -238,9 +272,9 @@ function reduceCube(f::Function,c::CABLAB.Cubes.AbstractCubeData,dim::Tuple,adda
     ww=zeros(sfull).+wone
     wv=Weights(reshape(ww,length(ww)))
     g = length(dim)>1 ? (x,w;kwargs...)->f(DataArray(reshape(x.data,length(x)),reshape(x.na,length(x))),w;kwargs...) : f
-    return mapCube(g,c,wv,addargs...;incubes=map(i->InputCube(get_descriptor.(i)),dim),outcubes=(OutputCube([]),),inplace=false,kwargs...)
+    return mapCube(g,c,wv,addargs...;incubes=map(i->InDims(get_descriptor.(i)),dim),outcubes=(OutDims([]),),inplace=false,kwargs...)
   else
-    return mapCube(f,c,addargs...;incubes=map(i->InputCube(get_descriptor.(i)),dim),outcubes=(OutputCube([]),),inplace=false,kwargs...)
+    return mapCube(f,c,addargs...;incubes=map(i->InDims(get_descriptor.(i)),dim),outcubes=(OutDims([]),),inplace=false,kwargs...)
   end
 end
 
@@ -303,6 +337,7 @@ function mapCube(fu::Function,
   generateOutCubes(dc)
   @debug_print "Generating cube handles"
   getCubeHandles(dc)
+  generateworkarrays(dc)
   @debug_print "Running main Loop"
   debug && return(dc)
   runLoop(dc)
@@ -344,6 +379,8 @@ function runLoop(dc::DATConfig)
                                   CABLAB.CABLABTools.totuple(CABLAB.DAT.gethandle.(Main.PMDATMODULE.dc.outcubes)),
                                   CABLAB.DAT.InnerObj(Main.PMDATMODULE.dc),
                                   r,
+                                  totuple(map(i->i.workarray,Main.PMDATMODULE.dc.incubes)),
+                                  totuple(map(i->i.workarray,Main.PMDATMODULE.dc.outcubes)),
                                   totuple(map(i->i.desc.miss,Main.PMDATMODULE.dc.incubes)),
                                   totuple(map(i->i.desc.miss,Main.PMDATMODULE.dc.outcubes)),
                                   Main.PMDATMODULE.dc.addargs,
@@ -356,6 +393,8 @@ function runLoop(dc::DATConfig)
               totuple(gethandle.(dc.outcubes)),
               InnerObj(dc),
               totuple(length.(dc.LoopAxes)),
+              totuple(map(i->i.workarray,dc.incubes)),
+              totuple(map(i->i.workarray,dc.outcubes)),
               totuple(map(i->i.desc.miss,dc.incubes)),
               totuple(map(i->i.desc.miss,dc.outcubes)),
               dc.addargs,
@@ -380,10 +419,10 @@ function getRetCubeType(oc,ispar,max_cache)
   eltype,cubetype
 end
 
-function generateOutCube{T<:TempCube}(::Type{T},eltype,oc::OutputCubeReal,loopCacheSize)
+function generateOutCube{T<:TempCube}(::Type{T},eltype,oc::OutputCube,loopCacheSize)
   oc.cube=TempCube(oc.allAxes,CartesianIndex(totuple([map(length,oc.axesSmall);loopCacheSize])),folder=oc.folder,T=eltype,persist=false)
 end
-function generateOutCube{T<:CubeMem}(::Type{T},eltype,oc::OutputCubeReal,loopCacheSize)
+function generateOutCube{T<:CubeMem}(::Type{T},eltype,oc::OutputCube,loopCacheSize)
   newsize=map(length,oc.allAxes)
   outar=Array{eltype}(newsize...)
   genFun=oc.desc.genOut
@@ -392,15 +431,16 @@ function generateOutCube{T<:CubeMem}(::Type{T},eltype,oc::OutputCubeReal,loopCac
 end
 
 generateOutCubes(dc::DATConfig)=foreach(c->generateOutCube(c,dc.ispar,dc.max_cache,dc.loopCacheSize),dc.outcubes)
-function generateOutCube(oc::OutputCubeReal,ispar::Bool,max_cache,loopCacheSize)
+function generateOutCube(oc::OutputCube,ispar::Bool,max_cache,loopCacheSize)
   eltype,cubetype = getRetCubeType(oc,ispar,max_cache)
+  println("Output cube has elements ", eltype)
   generateOutCube(cubetype,eltype,oc,loopCacheSize)
 end
 
 gethandle(c::CubeMem) = c
 gethandle(tc::TempCube) = CachedArray(tc,1,tc.block_size,MaskedCacheBlock{eltype(tc),length(tc.block_size.I)})
-sethandle(c::InputCubeReal) = (c.handle = c.isMem ? c.cube : CachedArray(c.cube,1,CartesianIndex(totuple(c.cachesize)),MaskedCacheBlock{eltype(c.cube),ndims(c.cube)}))
-sethandle(c::OutputCubeReal) = c.handle = (gethandle(get(c.cube)))
+sethandle(c::InputCube) = (c.handle = c.isMem ? c.cube : CachedArray(c.cube,1,CartesianIndex(totuple(c.cachesize)),MaskedCacheBlock{eltype(c.cube),ndims(c.cube)}))
+sethandle(c::OutputCube) = c.handle = (gethandle(get(c.cube)))
 
 dcg=nothing
 function getCubeHandles(dc::DATConfig)
@@ -516,6 +556,16 @@ using Base.Cartesian
     end
 end
 
+function generateworkarrays(dc::DATConfig)
+  if dc.ispar
+    @everywhereelsem foreach(CABLAB.DAT.setworkarray,PMDATMODULE.dc.incubes)
+    @everywhereelsem foreach(CABLAB.DAT.setworkarray,PMDATMODULE.dc.outcubes)
+  else
+    foreach(setworkarray,dc.incubes)
+    foreach(setworkarray,dc.outcubes)
+  end
+end
+
 #Comprehensions are not allowed in generated functions so they have to moved to normal function
 # see https://github.com/JuliaLang/julia/issues/21094
 function helpComprehension_nsplit{N}(block_size::NTuple{N,Int},loopR::Vector)
@@ -529,28 +579,46 @@ end
 
 
 using Base.Cartesian
-@generated function innerLoop{T1,T2,T3,T4,OC,R,NIN,NOUT}(f,xin::NTuple{NIN,Union{AbstractCubeData,CachedArray}},xout::NTuple{NOUT,Union{AbstractCubeData,CachedArray}},::InnerObj{T1,T2,T4,OC,R},loopRanges::T3,inmissing,outmissing,addargs,kwargs)
+@generated function innerLoop{T1,T2,T3,T4,OC,R,NIN,NOUT,UPDOUT}(f,xin::NTuple{NIN,Union{AbstractCubeData,CachedArray}},xout::NTuple{NOUT,Union{AbstractCubeData,CachedArray}},::InnerObj{T1,T2,T4,OC,R,UPDOUT},loopRanges::T3,
+  inwork,outwork,inmissing,outmissing,addargs,kwargs)
+
   NinCol      = T1
   NoutCol     = T2
   broadcastvars = T4
   Nloopvars   = length(T3.parameters)
   loopRangesE = Expr(:block)
-  subIn=[NinCol[i] > 0 ? Expr(:call,:(getSubRange2),:(xin[$i]),fill(:(:),NinCol[i])...) : Expr(:call,:(CABLAB.CubeAPI.CachedArrays.getSingVal),:(xin[$i])) for i=1:NIN]
-  subOut=[Expr(:call,:getSubRange2,:(xout[$i]),fill(:(:),NoutCol[i])...) for i=1:NOUT]
-  sub1=copy(subOut)
-  printex=Expr(:call,:println,:outstream)
-  for i=Nloopvars:-1:1
-    isym=Symbol("i_$(i)")
-    push!(printex.args,string(isym),"=",isym," ")
+  unrollEx = Expr(:block)
+  inworksyms = map(i->Symbol(string("inwork_",i)),1:NIN)
+  outworksyms= map(i->Symbol(string("outwork_",i)),1:NOUT)
+  [push!(unrollEx.args,:($(inworksyms[i]) = inwork[$i])) for i=1:NIN]
+  [push!(unrollEx.args,:($(outworksyms[i]) = outwork[$i])) for i=1:NOUT]
+  subIn = map(1:NIN) do i
+    ex = Expr(:call, :getSubRange2, :(inmissing[$i]), inworksyms[i],  :(xin[$i]),  fill(:(:),NinCol[i])...)
+    foreach(j->in(j,broadcastvars[i]) || push!(ex.args,Symbol("i_$j")),1:Nloopvars)
+    ex
   end
+  subOut = Expr[]
+  #Decide how to treat the output, create a view or copy in the end...
+  for i=1:NOUT
+    if !in(i,UPDOUT)
+      ex = Expr(:call, :setSubRange2, :(outmissing[$i]), outworksyms[i], :(xout[$i]), fill(:(:),NoutCol[i])...)
+      foreach(j->in(j,broadcastvars[NIN+i]) || push!(ex.args,Symbol("i_$j")),1:Nloopvars)
+      push!(subOut, ex)
+    else
+      rhs = Expr(:call, :getSubRange, :(xout[$i]),  fill(:(:),NoutCol[i])...)
+      foreach(j->in(j,broadcastvars[NIN+i]) || push!(rhs.args,Symbol("i_$i")),1:Nloopvars)
+      push!(rhs.args,Expr(:kw,:write,true))
+      push!(subIn,:($(outworksyms[i]) = $(rhs)[1]))
+    end
+  end
+  #sub1=copy(subOut)
+  #printex=Expr(:call,:println,:outstream)
+  #for i=Nloopvars:-1:1
+  #    isym=Symbol("i_$(i)")
+  #    push!(printex.args,string(isym),"=",isym," ")
+  #end
   for i=1:Nloopvars
     isym=Symbol("i_$(i)")
-    for j=1:NIN
-      in(i,broadcastvars[j]) || push!(subIn[j].args,isym)
-    end
-    for j=1:NOUT
-      in(i,broadcastvars[NIN+j]) || push!(subOut[j].args,isym)
-    end
     if T3.parameters[i]==UnitRange{Int}
       unshift!(loopRangesE.args,:($isym=loopRanges[$i]))
     elseif T3.parameters[i]==Int
@@ -559,29 +627,22 @@ using Base.Cartesian
       error("Wrong Range argument")
     end
   end
-  sub2=copy(subOut)
-  foreach(asub->push!(asub.args,Expr(:kw,:write,true)),subOut)
-  loopBody=Expr(:block,[:($(Symbol("aout_$i")) = $(subOut[i])) for i=1:NOUT]...)
-  sub3=copy(subOut)
+  #sub2=copy(subOut)
+  #foreach(asub->push!(asub.args,Expr(:kw,:write,true)),subOut)
+  #loopBody=Expr(:block,[:($(Symbol("aout_$i")) = $(subOut[i])) for i=1:NOUT]...)
+  loopBody=quote end
+  #sub3=copy(subOut)
   callargs=Any[:f,Expr(:parameters,Expr(:...,:kwargs))]
   if R
-    for j=1:NOUT
-      push!(callargs,Symbol("aout_miss_$j"))
-      push!(loopBody.args,:($(Symbol("aout_miss_$j"))=mask2miss(outmissing[$j],$(Symbol("aout_$j")))))
-    end
+    foreach(j->push!(callargs,outworksyms[j]),1:NOUT)
   end
-  for (i,s) in enumerate(subIn)
-    ains=Symbol("ain_$i")
-    ainsm=Symbol("ain_miss_$i")
-    push!(loopBody.args,:($ains=$s))
-    push!(loopBody.args,:($ainsm=mask2miss(inmissing[$i],$ains)))
-    push!(callargs,ainsm)
-  end
+  OC>0 && (subIn[OC]=:(oc = $(subIn[OC])))
+  append!(loopBody.args,subIn)
+  append!(callargs,inworksyms)
   if OC>0
-    ocmask = Symbol("ain_$OC")
     ocex=quote
-      if ($(ocmask)[2][1] & OCEAN) == OCEAN
-        $(Expr(:block,[:($(Symbol("aout_$j"))[:]=OCEAN) for j=1:NOUT]...))
+      if oc
+        $(Expr(:block,[Expr(:call, :setSubRangeOC, :(xout[$i]), fill(:(:),NoutCol[i])...) for i=1:NOUT]...))
         continue
       end
     end
@@ -591,31 +652,38 @@ using Base.Cartesian
   if R
     push!(loopBody.args,Expr(:call,callargs...))
   else
-    lhs = Expr(:tuple,[Symbol("aout_miss_$j") for j=1:NOUT]...)
+    lhs = Expr(:tuple,[:($(outworksyms[j])[:]) for j=1:NOUT]...)
     rhs = Expr(:call,callargs...)
     push!(loopBody.args,:($lhs=$rhs))
   end
-  for j=1:NOUT
-    push!(loopBody.args, :(miss2mask!(outmissing[$j],$(Symbol("aout_$j")),$(Symbol("aout_miss_$j")))))
-  end
+  append!(loopBody.args,subOut)
   loopEx = length(loopRangesE.args)==0 ? loopBody : Expr(:for,loopRangesE,loopBody)
+  loopEx = quote
+    $unrollEx
+    $loopEx
+  end
   if debugDAT
     b=IOBuffer()
     show(b,loopEx)
     s=String(take!(b))
     loopEx=quote
       println($s)
-      #println("xin=$xin")
-      #println("xout=$xout")
-      #println("T1=$T1")
-      #println("T4=$T4")
       $loopEx
     end
   end
-  return loopEx
+  loopEx
 end
 
+function getSubRange2(missrep,work,xin,cols...)
+  xview = getSubRange(xin,cols...)
+  mask2miss(missrep,xview,work)
+  return xview[2][1]==OCEAN
+end
 
+function setSubRange2(missrep,work,xout,cols...)
+  xview = getSubRange(xout,cols...,write=true)
+  miss2mask!(missrep,xview,work)
+end
 
 "Calculate an axis permutation that brings the wanted dimensions to the front"
 function getFrontPerm{T}(dc::AbstractCubeData{T},dims)

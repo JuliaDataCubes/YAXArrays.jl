@@ -21,7 +21,7 @@ function getNpY(cube::AbstractCubeData)
     years[end]>years[1]+1 || error("Must have at least 3 years to calculate MSC")
     return count(i->i==years[1]+1,years)
 end
-getNpY(cube::InputCubeReal)=getNpY(cube.cube)
+getNpY(cube::InputCube)=getNpY(cube.cube)
 
 include("OnlineStats.jl")
 include("MSC.jl")

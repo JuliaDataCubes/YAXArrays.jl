@@ -49,22 +49,18 @@ function getSpatiaPointAxis(mask::CubeMem)
     SpatialPointAxis(a)
 end
 
-function toPointAxis(aout,ain,lonax,latax,pointax)
+function toPointAxis(aout,ain,loninds,latinds,pointax)
   xout, maskout = aout
   xin , maskin  = ain
-  lom=LonAxis(lonax)
-  lam=LatAxis(latax)
-  iout=1
-  for (lon,lat) in pointax
-    ilon=axVal2Index(lom,lon)
-    ilat=axVal2Index(lam,lat)
+  iout = 1
+  for (ilon,ilat) in zip(loninds,latinds)
     xout[iout]=xin[ilon,ilat]
     maskout[iout]=maskin[ilon,ilat]
     iout+=1
   end
 end
 export toPointAxis
-registerDATFunction(toPointAxis,((LonAxis,LatAxis),(LonAxis,),(LatAxis,),(SpatialPointAxis,)),(SpatialPointAxis,),inmissing=(:mask,:none,:none,:none),outmissing=:mask)
+registerDATFunction(toPointAxis,(LonAxis,LatAxis),((cube,pargs)->pargs[3],),inmissing=:mask,outmissing=:mask)
 
 """
     extractLonLats(c::AbstractCubeData,pl::Matrix)
@@ -79,12 +75,14 @@ function extractLonLats(c::AbstractCubeData,pl::Matrix)
   axlist=axes(c)
   ilon=findAxis(LonAxis,axlist)
   ilat=findAxis(LatAxis,axlist)
+  ilon>0 || error("Input cube must contain a LonAxis")
+  ilat>0 || error("input cube must contain a LonAxis")
   lonax=axlist[ilon]
   latax=axlist[ilat]
   pointax = SpatialPointAxis([(pl[i,1],pl[i,2]) for i in 1:size(pl,1)])
-  ilon>0 || error("Input cube must contain a LonAxis")
-  ilat>0 || error("input cube must contain a LonAxis")
-  y=mapCube(toPointAxis,(c,axlist[ilon],axlist[ilat],pointax),max_cache=1e8)
+  loninds = map(ll->axVal2Index(lonax,ll[1]),pointax.values)
+  latinds = map(ll->axVal2Index(latax,ll[2]),pointax.values)
+  y=mapCube(toPointAxis,c,loninds,latinds,pointax,max_cache=1e8)
 end
 export extractLonLats
 

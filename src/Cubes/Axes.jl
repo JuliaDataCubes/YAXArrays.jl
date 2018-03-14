@@ -84,6 +84,11 @@ of the aliases:
 """
 abstract type CubeAxis{T,S} <: AbstractCubeMem{T,1} end
 
+Base.size(x::CubeAxis)=(length(x.values),)
+Base.size(x::CubeAxis,i)=i==1 ? length(x.values) : error("Axis has only a single dimension")
+Base.ndims(x::CubeAxis)=1
+
+
 """
     CategoricalAxis{T,S}
 
@@ -139,7 +144,6 @@ Base.length(a::CubeAxis)=length(a.values)
 MSCAxis(n::Int)=MSCAxis(YearStepRange(1900,1,1900,n,ceil(Int,366/n),n))
 
 axes(x::CubeAxis)=CubeAxis[x]
-Base.ndims(::CubeAxis)=1
 
 axname{T,S}(::CategoricalAxis{T,S})=string(S)
 axname{T,S}(::RangeAxis{T,S})=string(S)

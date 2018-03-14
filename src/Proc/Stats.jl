@@ -82,9 +82,9 @@ registerDATFunction(timelonlatquantiles,(TimeAxis,LonAxis,LatAxis),
     length(pargs)==0 ? CategoricalAxis("Quantile",[0.25,0.5,0.75]) : CategoricalAxis("Quantile",pargs[1])
   end,),
   (cube,pargs)->begin
-    tax=getAxis(TimeAxis,cube[1])
-    lonax=getAxis(LonAxis,cube[1])
-    latax=getAxis(LatAxis,cube[1])
+    tax=getAxis(ByName("Time"),cube[1])
+    lonax=getAxis(ByName("Lon"),cube[1])
+    latax=getAxis(ByName("Lat"),cube[1])
     return length(pargs)==1 ? pargs[1] : [0.25,0.5,0.75],zeros(eltype(cube[1].cube),length(tax)*length(lonax)*length(latax))
   end,inmissing=(:nan,),outmissing=:nan)
 

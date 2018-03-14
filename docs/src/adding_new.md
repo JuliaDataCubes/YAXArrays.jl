@@ -6,11 +6,10 @@ It is possible for the user to register their own functions into the data cube
 so that they can easily be applied through the mapCube function as if it was a built-in function.
 
 First of all one needs to define the function that is supposed to be applied on the cube. In general, it should have the following signature:
-`f(x_out,m_out,x_in,m_in,addargs...)`, where `x_out` is the output array, `m_mout` the output mask, `x_in` is the input array and `m_in` the input mask.
+`f(a_out,a_in,addargs...)`, where `a_out` is the output data and `a_in` is the input data.
 This can be followed by an arbitrary number of additional arguments `addargs`.
 
-You can read about cube masks here [Cube Masks](@ref). In case you don't want to treat the cube's mask individually, you can leave out the `m_out` arguments
-and have missing values treated through DataArrays or using NaNs. Once you have defined your function, you can register it with `registerDATFunction`
+You can read about cube masks here [Cube Masks](@ref). Once you have defined your function, you can register it with `registerDATFunction`
 
 In most processing frameworks of this kind, you have some kind of apply function that you pass your function to and specify the dimension number of your
 array that you want to slice. Here we take a different approach. Our datacubes have named axes and usually a function is supposed to be applied on slices
