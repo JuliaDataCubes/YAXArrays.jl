@@ -37,9 +37,9 @@ function fillGaps(xout::Vector, mout::Vector{UInt8}, xin::Vector, min::Vector{UI
   # code goes here
 end
 
-inAxes  = (TimeAxis,)
-outAxes = (TimeAxis,)
-registerDATFunction(fillGaps,inAxes,outAxes);
+inAxes  = InDims("time")
+outAxes = OutDims("time")
+registerDATFunction(fillGaps,indims = inAxes,outdims = outAxes);
 ```
 
 After this you can apply your function like this `mapCube(fillGaps, cubedata)`, where `cubedata` can be any type of cube, the only condition is that it must contain a `TimeAxis`.  
@@ -56,14 +56,15 @@ function timeVariance{T}(xout::Array{T,0}, xin::DataVector)
   xout[1]=var(xin,skipmissing=true)
 end
 
-inAxes  = (TimeAxis,)
+inAxes  = InDims("time",miss = DataArrayMissing())
+outAxes = OutDims(miss=DataArrayMissing())
 
-registerDATFunction(timeVariance, inAxes, (), inmissing=(:data,), outmissing=:data, no_ocean=1);
+registerDATFunction(timeVariance, indims = inAxes, outdims = outAxes, no_ocean=1);
 ```
 
 Here, the only input axis is again the time axis. However, the output axis is an empty tuple, which means that a single value is returned by the function and written
 to the 0-dimensional array `xout`. The optional argument `inmissing` is a tuple of symbols, here it is length one because there is only a single input cube.
-When `:data` is chosen, missing values in the cube will be converted to `missing`s in the function's input array. The same hold true for the `outmissing` argument.
+When `DataArrayMissing` is chosen, missing values in the cube will be converted to `missing`s in the function's input array. The same hold true for the `outmissing` argument.
 Any `missing` value in the output array will be converted to a missing value in the resulting cube's mask.
 
 There is one additional optional argument set, `no_ocean=1`. This tells the kernel to check the landsea mask if a certain value is an ocean point and not enter
@@ -81,9 +82,9 @@ function detectExtremes(xout::Vector, xin::Matrix, method)
   #code goes here
 end
 
-inAxes  = (TimeAxis,VariableAxis)
-outAxes = (TimeAxis,)
-registerDATFunction(detectExtremes, inAxes, outAxes, inmissing=(:nan,), outmissing=:nan, no_ocean=1);
+inAxes  = InDims(TimeAxis,VariableAxis,miss = NaNMissing())
+outAxes = OutDims(TimeAxis,miss=NaNMissing())
+registerDATFunction(detectExtremes, indims = inAxes, outdims = outAxes, no_ocean=1);
 ```
 
 The method would then be called e.g. with `mapCube(fillGaps, cubedata, "KDE")` which would pass the String `"KDE"` as the third positional argument to the registered function.
@@ -125,9 +126,9 @@ function prepareArgs(cubes, pargs) # hide
   xmsc = zeros(Float32,npy) # hide
   return npy,xmsc # hide
 end; # hide
-inAxes  = (TimeAxis,)
-outAxes = (TimeAxis,)
-registerDATFunction(removeMSC, inAxes, outAxes, prepareArgs, inmissing=(:nan,), outmissing=:nan);
+inAxes  = InDims(TimeAxis,miss = NaNMissing())
+outAxes = OutDims(TimeAxis,miss = NaNMissing())
+registerDATFunction(removeMSC, indims = inAxes, outdims = outAxes, args = prepareArgs);
 ```
 
 Now the user can apply the function on the whole cube using `mapCube(removeMSC, cubedata)` without caring about getting the number of time steps or pre-allocating the intermediate array.
@@ -144,17 +145,17 @@ using CABLAB # hide
 function predictCarbonSink{T,U}(xout::Array{T,0}, xin::Matrix, vegmask::Array{U,0})
   #Code goes here
 end
-inAxes=((TimeAxis, VariableAxis), ())
-outAxes=()
-registerDATFunction(predictCarbonSink, inAxes, outAxes, no_ocean=2);
+inAxes=(InDims(TimeAxis, VariableAxis),InDims())
+outAxes=OutDims()
+registerDATFunction(predictCarbonSink, indims = inAxes, outdims = outAxes, no_ocean=2);
 ```
 
-The input axes `inAxes` is now a tuple of tuples, one for each input cube. From `cubedata` we want to extract the whole time series of all variables, while
+The input cubes `inAxes` is now a tuple `InDims`, one for each input cube. From `cubedata` we want to extract the whole time series of all variables, while
 from `staticdata` we only need one value for the current pixel. When calling this function, make sure to put the input cubes into a tuple
 (`mapCube(predictCarbonSink,(cubedata, staticdata))`). Note that we set the optional argument `no_ocean=2` This means that, again, ocean grid cells are skipped,
 but the `2` denotes that this time the second input cube will be checked for ocean cells, not the first one.
 
-### Even Axes are cubes
+### Axes are cubes
 
 In some cases one needs to have access to the value of an axis, for example when one wants to calculate a spatial Aggregation, the latitudes
 are important to determine grid cell weights. To do this, one can pass a cube axis to mapCube as if it was a cube having only one dimension.
@@ -165,9 +166,9 @@ function spatialAggregation{T}(xout::Array{T,0}, xin::Matrix, latitudes::Abstrac
   #code goes here
 end
 
-inAxes=((LonAxis, LatAxis), (LatAxis,))
-outAxes=()
-registerDATFunction(spatialAggregation, inAxes, outAxes, inmissing=(:data,:nan), outmissing=:data);
+inAxes=(InDims(LonAxis, LatAxis,miss=DataArrayMissing()), InDims(LatAxis,miss=NoMissing()))
+outAxes=OutDims()
+registerDATFunction(spatialAggregation, indims = inAxes, outdims = outAxes);
 ```
 
 Here, the function will operate on a lon x lat matrix and one has access to the latitude values inside the function.
@@ -204,10 +205,10 @@ function polyRegression(xout::Vector, xin::Matrix, order::Integer)
   #code here
 end
 
-inAxes=(TimeAxis,)
-outAxes=((cube,pargs)->ParameterAxis(pargs[1]),)
-registerDATFunction(polyRegression, inAxes, outAxes, inmissing=(:nan,), outmissing=:nan);
+inAxes  = InDims(TimeAxis,miss=NaNMissing())
+outAxes = OutDims((cube,pargs)->ParameterAxis(pargs[1]),miss=NaNMissing())
+registerDATFunction(polyRegression, indims = inAxes, outdims = outAxes);
 ```
 
-The user can apply the function now using `mapCube(polyRegression, cubedata, regOrdeer)` where `regOrder` is the order of the
+The user can apply the function now using `mapCube(polyRegression, cubedata, regOrder)` where `regOrder` is the order of the
 Regression.

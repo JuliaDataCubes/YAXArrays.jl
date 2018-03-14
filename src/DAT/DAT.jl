@@ -272,9 +272,9 @@ function reduceCube(f::Function,c::CABLAB.Cubes.AbstractCubeData,dim::Tuple,adda
     ww=zeros(sfull).+wone
     wv=Weights(reshape(ww,length(ww)))
     g = length(dim)>1 ? (x,w;kwargs...)->f(DataArray(reshape(x.data,length(x)),reshape(x.na,length(x))),w;kwargs...) : f
-    return mapCube(g,c,wv,addargs...;incubes=map(i->InDims(get_descriptor.(i)),dim),outcubes=(OutDims([]),),inplace=false,kwargs...)
+    return mapCube(g,c,wv,addargs...;incubes=map(i->InDims((get_descriptor.(i))...),dim),outcubes=(OutDims(),),inplace=false,kwargs...)
   else
-    return mapCube(f,c,addargs...;incubes=map(i->InDims(get_descriptor.(i)),dim),outcubes=(OutDims([]),),inplace=false,kwargs...)
+    return mapCube(f,c,addargs...;incubes=map(i->InDims((get_descriptor.(i))...),dim),outcubes=(OutDims(),),inplace=false,kwargs...)
   end
 end
 
@@ -611,12 +611,6 @@ using Base.Cartesian
       push!(subIn,:($(outworksyms[i]) = $(rhs)[1]))
     end
   end
-  #sub1=copy(subOut)
-  #printex=Expr(:call,:println,:outstream)
-  #for i=Nloopvars:-1:1
-  #    isym=Symbol("i_$(i)")
-  #    push!(printex.args,string(isym),"=",isym," ")
-  #end
   for i=1:Nloopvars
     isym=Symbol("i_$(i)")
     if T3.parameters[i]==UnitRange{Int}
@@ -627,15 +621,9 @@ using Base.Cartesian
       error("Wrong Range argument")
     end
   end
-  #sub2=copy(subOut)
-  #foreach(asub->push!(asub.args,Expr(:kw,:write,true)),subOut)
-  #loopBody=Expr(:block,[:($(Symbol("aout_$i")) = $(subOut[i])) for i=1:NOUT]...)
   loopBody=quote end
-  #sub3=copy(subOut)
   callargs=Any[:f,Expr(:parameters,Expr(:...,:kwargs))]
-  if R
-    foreach(j->push!(callargs,outworksyms[j]),1:NOUT)
-  end
+  R && foreach(j->push!(callargs,outworksyms[j]),1:NOUT)
   OC>0 && (subIn[OC]=:(oc = $(subIn[OC])))
   append!(loopBody.args,subIn)
   append!(callargs,inworksyms)
@@ -683,6 +671,11 @@ end
 function setSubRange2(missrep,work,xout,cols...)
   xview = getSubRange(xout,cols...,write=true)
   miss2mask!(missrep,xview,work)
+end
+
+function setSubRangeOC(xout,cols...)
+  xview = getSubRange(xout,cols...,write=true)
+  xview[2][:] = OCEAN
 end
 
 "Calculate an axis permutation that brings the wanted dimensions to the front"

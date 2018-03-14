@@ -1,4 +1,6 @@
 export InDims, OutDims
+const AxisDescriptorAll = Union{AxisDescriptor,String,Type{T},CubeAxis,Function} where T<:CubeAxis
+
 """
     InDims(axisdesc)
 
@@ -13,9 +15,8 @@ type InDims
   axisdesc::Tuple
   miss::MissingRepr
 end
-function InDims(axisdesc; miss::MissingRepr=DataArrayMissing())
-  isa(axisdesc,AxisDescriptor) && (axisdesc = [axisdesc])
-  descs = totuple(map(get_descriptor,axisdesc))
+function InDims(axisdesc::AxisDescriptorAll...; miss::MissingRepr=DataArrayMissing())
+  descs = map(get_descriptor,axisdesc)
   any(i->isa(i,ByFunction),descs) && error("Input cubes can not be specified through a function")
   InDims(descs,miss)
 end
@@ -44,7 +45,7 @@ immutable OutDims
   update::Bool
   outtype::Union{Int,DataType}
 end
-function OutDims(axisdesc;
+function OutDims(axisdesc...;
            bcaxisdesc=(),
            miss::MissingRepr=DataArrayMissing(),
            genOut=zero,
@@ -52,8 +53,7 @@ function OutDims(axisdesc;
            retCubeType=:auto,
            update=false,
            outtype=1)
-  isa(axisdesc,AxisDescriptor) && (axisdesc = [axisdesc])
-  descs = totuple(map(get_descriptor,axisdesc))
+  descs = map(get_descriptor,axisdesc)
   bcdescs = totuple(map(get_descriptor,bcaxisdesc))
   update && !isa(miss,NoMissing) && error("Updating output is only possible for miss=NoMissing()")
   OutDims(descs,bcdescs,miss,genOut,finalizeOut,retCubeType,update,outtype)
@@ -68,8 +68,8 @@ type DATFunction
 end
 const regDict=Dict{Function,DATFunction}()
 
-function registerDATFunction(f;indims=nothing, outdims=nothing, no_ocean=nothing,inplace=nothing,args...)
-  regDict[f] = regFromScratch(incubes,outcubes,no_ocean,inplace,args)
+function registerDATFunction(f;indims=nothing, outdims=nothing, no_ocean=nothing,inplace=nothing,args=(),kwargs...)
+  regDict[f] = regFromScratch(indims,outdims,no_ocean,inplace,args)
 end
 
 
@@ -104,11 +104,11 @@ function registerDATFunction(f,dimsin::Tuple{Vararg{Tuple}},dimsout::Tuple{Varar
     end
     inCubes = map(dimsin,inmissing) do inax,miss
       !isa(miss,MissingRepr) && (miss=toMissRepr(miss))
-      InDims(inax,miss=miss)
+      isa(inax,Tuple) ? InDims(inax...,miss=miss) : InDims(inax,miss=miss)
     end
     outCubes = map(dimsout,outmissing,genOut,finalizeOut,retCubeType,outtype) do outax,miss,gen,fin,ret,out
       !isa(miss,MissingRepr) && (miss=toMissRepr(miss))
-      OutDims(outax,miss=miss,genOut=gen,finalizeOut=fin,retCubeType=ret,outtype=out)
+      isa(outax,Tuple) ? OutDims(outax...,miss=miss,genOut=gen,finalizeOut=fin,retCubeType=ret,outtype=out) :  OutDims(outax,miss=miss,genOut=gen,finalizeOut=fin,retCubeType=ret,outtype=out)
     end
     regDict[f]=DATFunction(inCubes,outCubes,no_ocean,inplace,addargs)
 end
@@ -119,9 +119,9 @@ function registerDATFunction(f,dimsin,dimsout,addargs...;kwargs...)
   isempty(dimsout) ? (dimsout=((),)) : isa(dimsout[1],Tuple) || (dimsout=(dimsout,))
   registerDATFunction(f,dimsin,dimsout,addargs...;kwargs...)
 end
-function registerDATFunction(f,dimsin;kwargs...)
-  registerDATFunction(f,dimsin,();kwargs...)
-end
+#function registerDATFunction(f,dimsin;kwargs...)
+#  registerDATFunction(f,dimsin,();kwargs...)
+#end
 
 function overwrite_settings!(reginfo::DATFunction,incubes,outcubes,no_ocean,inplace)
   incubes  != nothing && (reginfo.incubes  = isa(incubes,InDims) ? [incubes] : collect(incubes))
@@ -131,8 +131,8 @@ function overwrite_settings!(reginfo::DATFunction,incubes,outcubes,no_ocean,inpl
 end
 
 function regFromScratch(incubes,outcubes,no_ocean,inplace,addargs)
-  incubes  == nothing && (incubes  = InDims([]))
-  outcubes == nothing && (outcubes = OutDims([]))
+  incubes  == nothing && (incubes  = InDims())
+  outcubes == nothing && (outcubes = OutDims())
   no_ocean == nothing && (no_ocean = 0)
   inplace  == nothing && (inplace  = true)
   DATFunction(expandTuple(incubes,1),expandTuple(outcubes,1),no_ocean,inplace,addargs)

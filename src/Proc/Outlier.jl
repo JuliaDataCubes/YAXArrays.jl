@@ -39,8 +39,11 @@ function DAT_detectAnomalies!(xout::AbstractArray, xin::AbstractArray, P::Multiv
  end
  return(xout)
 end
-registerDATFunction(DAT_detectAnomalies!,(TimeAxis,VariableAxis),(TimeAxis,(cube,pargs)->CategoricalAxis("Method",pargs[1])),
-(cube,pargs)->getDetectParameters(pargs[1],pargs[2],length(getAxis(TimeAxis,cube[1].cube))),inmissing=(:nan,),outmissing=:nan,no_ocean=1)
+registerDATFunction(DAT_detectAnomalies!,
+  indims = InDims(TimeAxis,VariableAxis,miss=NaNMissing()),
+  outdims = OutDims(TimeAxis,(cube,pargs)->CategoricalAxis("Method",pargs[1]),miss=NaNMissing()),
+  args = (cube,pargs)->getDetectParameters(pargs[1],pargs[2],length(getAxis(TimeAxis,cube[1].cube))),
+  no_ocean=1)
 
 
 function simpleAnomalies(xout::AbstractArray, xin::AbstractArray,methods)
@@ -54,6 +57,9 @@ function simpleAnomalies(xout::AbstractArray, xin::AbstractArray,methods)
     xout[:]=NaN
     end
 end
-registerDATFunction(simpleAnomalies,(TimeAxis,VariableAxis),(TimeAxis,(cube,pargs)->CategoricalAxis("Method",pargs[1])),inmissing=(:nan,),outmissing=:nan,no_ocean=1)
+registerDATFunction(simpleAnomalies,
+  indims = InDims(TimeAxis,VariableAxis,miss=NaNMissing()),
+  outdims = OutDims(TimeAxis,(cube,pargs)->CategoricalAxis("Method",pargs[1]),miss=NaNMissing()),
+  no_ocean=1)
 
 end

@@ -1,5 +1,12 @@
 # News
 
+## v0.5.0
+
+- the default missing value representation was switched to DataArrays, so by default you will see a DataArray inside an inner function
+- if you choose to use `:mask` as missing value representation the actual data array and the mask will be passed as a tuple to the inner function, instead of being two separate arguments
+- there were lots of changes in the internals of `mapCube` please open issues if you find old code not working anymore or you find some serious performance regressions
+- there is a new method for registering functions available, which avoids all these nested tuples for the input and output dimensions. See
+
 ## v0.4.0
 
 - the package was updated to julia 0.6

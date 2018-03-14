@@ -31,10 +31,15 @@ function removeMSC(aout::Tuple,ain::Tuple,NpY::Integer,tmsc,tnmsc)
     xout
 end
 
-registerDATFunction(removeMSC,(TimeAxis,),(TimeAxis,),(cube,pargs)->begin
-    NpY=getNpY(cube[1])
-    (NpY,zeros(Float64,NpY),zeros(Int,NpY))
-end,no_ocean=1,inmissing=:mask,outmissing=:mask)
+function alloc_msc_helpers(cube,pargs)
+  NpY=getNpY(cube[1])
+  (NpY,zeros(Float64,NpY),zeros(Int,NpY))
+end
+registerDATFunction(removeMSC,
+  indims = InDims("Time",miss=MaskMissing()),
+  outdims = OutDims("Time",miss=MaskMissing()),
+  no_ocean=1,
+  args = alloc_msc_helpers)
 
 """
     gapFillMSC
@@ -57,12 +62,12 @@ function gapFillMSC(aout::Tuple,ain::Tuple,NpY::Integer,tmsc,tnmsc)
   xout,maskout = aout
   getMSC(tmsc,xin,tnmsc,NpY=NpY)
   replaceMisswithMSC(tmsc,xin,xout,maskin,maskout,NpY)
-
 end
-registerDATFunction(gapFillMSC,(TimeAxis,),(TimeAxis,),(cube,pargs)->begin
-    NpY=getNpY(cube[1])
-    (NpY,zeros(Float64,NpY),zeros(Int,NpY))
-end,no_ocean=1,inmissing=:mask,outmissing=:mask)
+registerDATFunction(gapFillMSC,
+  indims = InDims(TimeAxis,miss=MaskMissing()),
+  outdims = OutDims(TimeAxis,miss=MaskMissing()),
+  no_ocean=1,
+  args = alloc_msc_helpers)
 
 
 """
@@ -86,7 +91,11 @@ function getMSC(xout::AbstractVector,xin::AbstractVector,nmsc::Vector{Int}=zeros
     NpY=length(xout)
     fillmsc(imscstart,xout,nmsc,xin,NpY)
 end
-registerDATFunction(getMSC,(TimeAxis,),((cube,pargs)->MSCAxis(getNpY(cube[1])),),(cube,pargs)->(zeros(Int,getNpY(cube[1])),),inmissing=:nan,outmissing=:nan,no_ocean=1)
+registerDATFunction(getMSC,
+  indims = InDims(TimeAxis,miss=NaNMissing()),
+  outdims = OutDims((cube,pargs)->MSCAxis(getNpY(cube[1])),miss=NaNMissing()),
+  args = (cube,pargs)->(zeros(Int,getNpY(cube[1])),),
+  no_ocean=1)
 
 
 
@@ -153,7 +162,10 @@ function getMedSC(aout::Tuple,ain::Tuple)
     end
     xout
 end
-registerDATFunction(getMedSC,(TimeAxis,),((cube,pargs)->MSCAxis(getNpY(cube[1])),),no_ocean=1,inmissing=:mask,outmissing=:mask)
+registerDATFunction(getMedSC,
+  indims = InDims(TimeAxis,miss=MaskMissing()),
+  outdims = OutDims((cube,pargs)->MSCAxis(getNpY(cube[1])),miss=MaskMissing()),
+  no_ocean=1)
 
 
 "Calculates the mean seasonal cycle of a vector"

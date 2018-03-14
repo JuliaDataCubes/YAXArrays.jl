@@ -168,8 +168,8 @@ function mapCube{T<:OnlineStat}(f::Type{T},cdata::AbstractCubeData,pargs...;by=C
   end
   outBroad=[get_descriptor(ob) for ob in outBroad]
   fout(x) = Series(EqualWeight(),getGenFun(f,pargs...)(x))
-  ic = ntuple(i->InDims(indims[i],miss=MaskMissing()),length(indims))
-  oc = (OutDims(outdims,bcaxisdesc=outBroad,finalizeOut=getFinalFun(f,funargs...),genOut=fout,outtype=typeof(fout(f)),miss=NoMissing(),update=true),)
+  ic = ntuple(i->InDims(indims[i]...,miss=MaskMissing()),length(indims))
+  oc = (OutDims(outdims...,bcaxisdesc=outBroad,finalizeOut=getFinalFun(f,funargs...),genOut=fout,outtype=typeof(fout(f)),miss=NoMissing(),update=true),)
   return mapCube(DATfitOnline,indata,cfun;
     incubes = ic,outcubes = oc,
     kwargs...
