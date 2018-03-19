@@ -14,7 +14,7 @@ import DataArrays: DataArray, ismissing
 import Missings: Missing, missing
 import StatsBase.Weights
 importall CABLAB.CubeAPI.Mask
-global const debugDAT=true
+global const debugDAT=false
 macro debug_print(e)
   debugDAT && return(:(println($e)))
   :()
@@ -225,7 +225,9 @@ function DATConfig(cdata,reginfo,max_cache,fu,outfolder,ispar,addargs,kwargs)
 
   allInAxes = getAllInaxes(cdata)
   incubes  = totuple([InputCube(o[1],o[2]) for o in zip(cdata,reginfo.inCubes)])
-  outcubes = totuple(map((i,desc)->OutputCube(string(outfolder,"_",i),desc,allInAxes,cdata,addargs),1:length(reginfo.outCubes),reginfo.outCubes))
+  outcubes = totuple(map(1:length(reginfo.outCubes),reginfo.outCubes) do i,desc 
+     OutputCube( string(outfolder,"_",i),desc,allInAxes,cdata,addargs )
+    end)
 
 
   DATConfig(
@@ -453,7 +455,6 @@ end
 generateOutCubes(dc::DATConfig)=foreach(c->generateOutCube(c,dc.ispar,dc.max_cache,dc.loopCacheSize),dc.outcubes)
 function generateOutCube(oc::OutputCube,ispar::Bool,max_cache,loopCacheSize)
   eltype,cubetype = getRetCubeType(oc,ispar,max_cache)
-  println("Output cube has elements ", eltype)
   generateOutCube(cubetype,eltype,oc,loopCacheSize)
 end
 
@@ -518,10 +519,10 @@ function getCacheSizes(dc::DATConfig)
     dc.loopCacheSize=Int[length(x) for x in dc.LoopAxes]
     return dc
   end
-  inAxlengths      = map(cube->length.(axes(cube.cube)),dc.incubes)
+  inAxlengths      = map(cube->Int.(length.(cube.axesSmall)),dc.incubes)
   inblocksizes     = map((x,T)->prod(x)*sizeof(eltype(T.cube)),inAxlengths,dc.incubes)
   inblocksize,imax = findmax(inblocksizes)
-  outblocksizes    = map(C->length(C.allAxes)>0 ? sizeof(C.outtype)*prod(map(length,C.allAxes)) : 1,dc.outcubes)
+  outblocksizes    = map(C->length(C.axesSmall)>0 ? sizeof(C.outtype)*prod(map(length,C.axesSmall)) : 1,dc.outcubes)
   outblocksize     = length(outblocksizes) > 0 ? findmax(outblocksizes)[1] : 1
   loopCacheSize    = getLoopCacheSize(max(inblocksize,outblocksize),dc.LoopAxes,dc.max_cache)
   for cube in dc.incubes
@@ -648,9 +649,14 @@ using Base.Cartesian
   append!(loopBody.args,subIn)
   append!(callargs,inworksyms)
   if OC>0
+    allocs = map(1:NOUT) do i
+      exoc = Expr(:call, :setSubRangeOC, :(xout[$i]), fill(:(:),NoutCol[i])...)
+      foreach(j->in(j,broadcastvars[NIN+i]) || push!(exoc.args,Symbol("i_$j")),1:Nloopvars)
+      exoc
+    end
     ocex=quote
       if oc
-        $(Expr(:block,[Expr(:call, :setSubRangeOC, :(xout[$i]), fill(:(:),NoutCol[i])...) for i=1:NOUT]...))
+        $(Expr(:block,allocs...))
         continue
       end
     end
