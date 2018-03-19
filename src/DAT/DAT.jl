@@ -225,7 +225,7 @@ function DATConfig(cdata,reginfo,max_cache,fu,outfolder,ispar,addargs,kwargs)
 
   allInAxes = getAllInaxes(cdata)
   incubes  = totuple([InputCube(o[1],o[2]) for o in zip(cdata,reginfo.inCubes)])
-  outcubes = totuple(map(1:length(reginfo.outCubes),reginfo.outCubes) do i,desc 
+  outcubes = totuple(map(1:length(reginfo.outCubes),reginfo.outCubes) do i,desc
      OutputCube( string(outfolder,"_",i),desc,allInAxes,cdata,addargs )
     end)
 
@@ -710,7 +710,7 @@ function getFrontPerm{T}(dc::AbstractCubeData{T},dims)
   N=length(ax)
   perm=Int[i for i=1:length(ax)];
   iold=Int[]
-  for i=1:length(dims) push!(iold,findin(ax,[dims[i];])[1]) end
+  for i=1:length(dims) push!(iold,findAxis(dims[i],ax)) end
   iold2=sort(iold,rev=true)
   for i=1:length(iold) splice!(perm,iold2[i]) end
   perm=Int[iold;perm]
