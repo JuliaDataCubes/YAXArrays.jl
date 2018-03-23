@@ -160,6 +160,7 @@ cubesize{T}(c::AbstractCubeData{T})=(sizeof(T)+1)*prod(map(length,axes(c)))
 cubesize{T}(c::AbstractCubeData{T,0})=sizeof(T)+1
 
 include("TempCubes.jl")
+include("MmapCubes.jl")
 importall .TempCubes
 getCubeDes(c::AbstractSubCube)="Data Cube view"
 getCubeDes(c::TempCube)="Temporary Data Cube"

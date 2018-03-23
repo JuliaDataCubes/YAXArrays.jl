@@ -431,7 +431,7 @@ function getRetCubeType(oc,ispar,max_cache)
   outsize=sizeof(eltype)*(length(oc.allAxes)>0 ? prod(map(length,oc.allAxes)) : 1)
   if string(oc.desc.retCubeType)=="auto"
     if ispar || outsize>max_cache
-      cubetype = TempCube
+      cubetype = MmapCube
     else
       cubetype = CubeMem
     end
@@ -443,6 +443,9 @@ end
 
 function generateOutCube{T<:TempCube}(::Type{T},eltype,oc::OutputCube,loopCacheSize)
   oc.cube=TempCube(oc.allAxes,CartesianIndex(totuple([map(length,oc.axesSmall);loopCacheSize])),folder=oc.folder,T=eltype,persist=false)
+end
+function generateOutCube{T<:MmapCube}(::Type{T},eltype,oc::OutputCube,loopCacheSize)
+  oc.cube=MmapCube(oc.allAxes,folder=oc.folder,T=eltype,persist=false)
 end
 function generateOutCube{T<:CubeMem}(::Type{T},eltype,oc::OutputCube,loopCacheSize)
   newsize=map(length,oc.allAxes)
@@ -459,6 +462,7 @@ function generateOutCube(oc::OutputCube,ispar::Bool,max_cache,loopCacheSize)
 end
 
 gethandle(c::CubeMem) = c
+gethandle(y::MmapCube)=y
 gethandle(tc::TempCube) = CachedArray(tc,1,tc.block_size,MaskedCacheBlock{eltype(tc),length(tc.block_size.I)})
 sethandle(c::InputCube) = (c.handle = c.isMem ? c.cube : CachedArray(c.cube,1,CartesianIndex(totuple(c.cachesize)),MaskedCacheBlock{eltype(c.cube),ndims(c.cube)}))
 sethandle(c::OutputCube) = c.handle = (gethandle(get(c.cube)))
