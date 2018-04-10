@@ -106,8 +106,9 @@ end
 
 TempCube(axlist,block_size::Tuple;kwargs...)=TempCube(axlist,CartesianIndex(block_size);kwargs...)
 
-function openTempCube(folder;persist=true)
-  axlist=load(joinpath(folder,"axinfo.jld"),"axlist")
+function openTempCube(folder;persist=true,axlist=nothing)
+  
+  axlist == nothing && (axlist=load(joinpath(folder,"axinfo.jld"),"axlist"))
   properties=try
       load(joinpath(folder,"axinfo.jld"),"properties")
     catch

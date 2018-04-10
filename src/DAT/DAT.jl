@@ -55,7 +55,9 @@ function mask2miss(::DataArrayMissing, a, workAr::DataFrames.DataFrame)
   end
 end
 #mask2miss(::DataArrayMissing, a::Tuple{Number,UInt8}, workAr) = workAr[1]=(a[2] & 0x01)>0 ? missing : a[1]
-mask2miss(::NoMissing,a,workAr) = copy!(workAr,a[1])
+mask2miss(::NoMissing,a::Tuple,workAr) = copy!(workAr,a[1])
+mask2miss(::NoMissing,a,workAr) = copy!(workAr,a)
+mask2miss(::NoMissing,a::Void,workAr)=nothing
 function mask2miss(::MaskMissing,a::Tuple,workAr::Tuple)
   copy!(workAr[1],a[1])
   copy!(workAr[2],a[2])
@@ -682,6 +684,9 @@ using Base.Cartesian
     s=String(take!(b))
     loopEx=quote
       println($s)
+      #println(xin)
+      #println(inwork)
+      #println(inmissing)
       $loopEx
     end
   end
@@ -689,10 +694,15 @@ using Base.Cartesian
 end
 
 function getSubRange2(missrep,work,xin,cols...)
+  #println(typeof(xin),cols)
   xview = getSubRange(xin,cols...)
+  #println(xview,missrep,typeof(work))
   mask2miss(missrep,xview,work)
-  return xview[2][1]==OCEAN
+  return checkocean(xview[2])
 end
+checkocean(x::AbstractArray)=x[1]==OCEAN
+checkocean(x::UInt8)=x==OCEAN
+checkocean(x)=false
 
 function setSubRange2(missrep,work,xout,cols...)
   xview = getSubRange(xout,cols...,write=true)
