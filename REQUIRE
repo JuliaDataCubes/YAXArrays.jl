@@ -10,3 +10,5 @@ OnlineStats 0.7
 Combinatorics
 MultivariateAnomalies
 MultivariateStats
+DataFrames
+AxisArrays
