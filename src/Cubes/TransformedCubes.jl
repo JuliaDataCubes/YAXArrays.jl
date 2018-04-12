@@ -1,7 +1,7 @@
 export ConcatCube, concatenateCubes
 export mapCubeSimple
 import ..CABLABTools.getiperm
-import ..Cubes._read
+import ..Cubes: _read, needshandle
 
 type PermCube{T,N,C} <: AbstractCubeData{T,N}
   parent::C
@@ -23,7 +23,6 @@ function _read{T,N}(x::PermCube{T,N},thedata::Tuple{Any,Any},r::CartesianRange{C
   permutedims!(thedata[2],mout,perm)
 end
 Base.permutedims{T,N}(x::AbstractCubeData{T,N},perm)=PermCube{T,N,typeof(x)}(x,perm)
-
 
 
 type TransformedCube{T,N,F} <: AbstractCubeData{T,N}

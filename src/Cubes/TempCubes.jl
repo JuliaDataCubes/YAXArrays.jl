@@ -1,5 +1,5 @@
 module TempCubes
-export TempCube, openTempCube, TempCubePerm, saveCube, loadCube,rmCube
+export TempCube, openTempCube, TempCubePerm, saveCube, loadCube,rmCube, AbstractTempCube
 importall ..Cubes
 importall ...CABLABTools
 import ....CABLAB.CABLABdir

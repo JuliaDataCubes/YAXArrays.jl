@@ -6,7 +6,7 @@ module Cubes
 export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, TimeHAxis, QuantileAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, axes,
        AbstractSubCube, CubeMem, openTempCube, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis, axVal2Index, MSCAxis,
        getSingVal, TimeScaleAxis, axname, @caxis_str, rmCube, cubeproperties, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
-       getOutAxis
+       getOutAxis, needshandle, AbstractTempCube
 
 """
     AbstractCubeData{T,N}
@@ -119,8 +119,6 @@ readCubeData(c::CubeMem)=c
 
 getSubRange{T}(c::CubeMem{T,0};write::Bool=true)=(c.data,c.mask)
 
-
-
 import ..CABLABTools.toRange
 function _read(c::CubeMem,thedata::Tuple,r::CartesianRange)
   outar,outmask=thedata
@@ -208,6 +206,10 @@ function Base.show(io::IO,a::CategoricalAxis)
     end
 end
 Base.show(io::IO,a::SpatialPointAxis)=print(io,"Spatial points axis with ",length(a.values)," points")
+
+needshandle(::MmapCube)=false
+needshandle(::AbstractCubeData)=true
+
 
 include("TransformedCubes.jl")
 
