@@ -9,6 +9,7 @@ importall ..Cubes.TempCubes
 import ...CABLAB
 import ...CABLAB.workdir
 import DataFrames
+import ..CubeAPI.CachedArrays.synccube
 using Base.Dates
 import DataArrays: DataArray, ismissing
 import Missings: Missing, missing
@@ -393,11 +394,16 @@ function reOrderInCubes(dc::DATConfig)
   end
 end
 
+function synccube(x::Tuple{Array,Array})
+  Mmap.sync!(x[1])
+  Mmap.sync!(x[2])
+end
+
 function runLoop(dc::DATConfig)
   if dc.ispar
     #TODO CHeck this for multiple output cubes, how to parallelize
     #I thnk this should work, but not 100% sure yet
-    allRanges=distributeLoopRanges(get(dc.outcubes[1].cube).block_size.I[(end-length(dc.LoopAxes)+1):end],map(length,dc.LoopAxes))
+    allRanges=distributeLoopRanges(totuple(dc.loopCacheSize),map(length,dc.LoopAxes))
     pmap(r->CABLAB.DAT.innerLoop( Main.PMDATMODULE.dc.fu,
                                   CABLAB.CABLABTools.totuple(CABLAB.DAT.gethandle.(Main.PMDATMODULE.dc.incubes)),
                                   CABLAB.CABLABTools.totuple(CABLAB.DAT.gethandle.(Main.PMDATMODULE.dc.outcubes)),
@@ -410,7 +416,6 @@ function runLoop(dc::DATConfig)
                                   Main.PMDATMODULE.dc.addargs,
                                   Main.PMDATMODULE.dc.kwargs)
           ,allRanges)
-    @everywhereelsem CachedArrays.synccube.(CABLAB.DAT.gethandle.(dc.outcubes))
   else
     innerLoop(dc.fu,
               totuple(gethandle.(dc.incubes)),
@@ -423,7 +428,6 @@ function runLoop(dc::DATConfig)
               totuple(map(i->i.desc.miss,dc.outcubes)),
               dc.addargs,
               dc.kwargs)
-    CachedArrays.synccube.(gethandle.(dc.outcubes))
   end
   dc.outcubes
 end
@@ -433,7 +437,7 @@ function getRetCubeType(oc,ispar,max_cache)
   outsize=sizeof(eltype)*(length(oc.allAxes)>0 ? prod(map(length,oc.allAxes)) : 1)
   if string(oc.desc.retCubeType)=="auto"
     if ispar || outsize>max_cache
-      cubetype = TempCube
+      cubetype = MmapCube
     else
       cubetype = CubeMem
     end
@@ -445,6 +449,9 @@ end
 
 function generateOutCube{T<:TempCube}(::Type{T},eltype,oc::OutputCube,loopCacheSize)
   oc.cube=TempCube(oc.allAxes,CartesianIndex(totuple([map(length,oc.axesSmall);loopCacheSize])),folder=oc.folder,T=eltype,persist=false)
+end
+function generateOutCube{T<:MmapCube}(::Type{T},eltype,oc::OutputCube,loopCacheSize)
+  oc.cube=MmapCube(oc.allAxes,folder=oc.folder,T=eltype,persist=false)
 end
 function generateOutCube{T<:CubeMem}(::Type{T},eltype,oc::OutputCube,loopCacheSize)
   newsize=map(length,oc.allAxes)
@@ -460,10 +467,13 @@ function generateOutCube(oc::OutputCube,ispar::Bool,max_cache,loopCacheSize)
   generateOutCube(cubetype,eltype,oc,loopCacheSize)
 end
 
-gethandle(c::CubeMem) = c
-gethandle(tc::TempCube) = CachedArray(tc,1,tc.block_size,MaskedCacheBlock{eltype(tc),length(tc.block_size.I)})
-sethandle(c::InputCube) = (c.handle = c.isMem ? c.cube : CachedArray(c.cube,1,CartesianIndex(totuple(c.cachesize)),MaskedCacheBlock{eltype(c.cube),ndims(c.cube)}))
-sethandle(c::OutputCube) = c.handle = (gethandle(get(c.cube)))
+gethandle(c::AbstractCubeMem) = c
+gethandle(y::MmapCube)= getmmaphandles(y)
+gethandle(tc::Union{AbstractTempCube,AbstractSubCube},block_size) = CachedArray(tc,1,block_size,MaskedCacheBlock{eltype(tc),length(block_size.I)})
+gethandle(c,block_size)=gethandle(c)
+sethandle(c::InputCube) = (c.handle = gethandle(c.cube,CartesianIndex(totuple(c.cachesize))))
+sethandle(c::OutputCube) = (c.handle = (gethandle(get(c.cube))))
+
 
 dcg=nothing
 function getCubeHandles(dc::DATConfig)
@@ -602,7 +612,7 @@ end
 
 
 using Base.Cartesian
-@generated function innerLoop{T1,T2,T3,T4,OC,R,NIN,NOUT,UPDOUT}(f,xin::NTuple{NIN,Union{AbstractCubeData,CachedArray}},xout::NTuple{NOUT,Union{AbstractCubeData,CachedArray}},::InnerObj{T1,T2,T4,OC,R,UPDOUT},loopRanges::T3,
+@generated function innerLoop{T1,T2,T3,T4,OC,R,NIN,NOUT,UPDOUT}(f,xin::NTuple{NIN,Union{AbstractCubeData,CachedArray,Tuple{Array,Array}}},xout::NTuple{NOUT,Union{AbstractCubeData,CachedArray,Tuple{Array,Array}}},::InnerObj{T1,T2,T4,OC,R,UPDOUT},loopRanges::T3,
   inwork,outwork,inmissing,outmissing,addargs,kwargs)
 
   NinCol      = T1
@@ -621,6 +631,7 @@ using Base.Cartesian
     ex
   end
   subOut = Expr[]
+  syncex = quote end
   #Decide how to treat the output, create a view or copy in the end...
   for i=1:NOUT
     if !in(i,UPDOUT)
@@ -633,6 +644,7 @@ using Base.Cartesian
       push!(rhs.args,Expr(:kw,:write,true))
       push!(subIn,:($(outworksyms[i]) = $(rhs)[1]))
     end
+    push!(syncex.args,:(synccube(xout[$i])))
   end
   for i=1:Nloopvars
     isym=Symbol("i_$(i)")
@@ -677,6 +689,7 @@ using Base.Cartesian
   loopEx = quote
     $unrollEx
     $loopEx
+
   end
   if debugDAT
     b=IOBuffer()
@@ -713,6 +726,8 @@ function setSubRangeOC(xout,cols...)
   xview = getSubRange(xout,cols...,write=true)
   xview[2][:] = OCEAN
 end
+
+getSubRange(x::Tuple{Array,Array},cols...;write=false)=(view(x[1],cols...),view(x[2],cols...))
 
 "Calculate an axis permutation that brings the wanted dimensions to the front"
 function getFrontPerm{T}(dc::AbstractCubeData{T},dims)
