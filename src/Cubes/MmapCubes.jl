@@ -1,10 +1,17 @@
 export MmapCube,getmmaphandles
 import ..CABLABTools.totuple
 using JLD
-type MmapCube{T,N} <: AbstractCubeData{T,N}
+abstract type AbstractMmapCube{T,N}<:AbstractCubeData{T,N} end
+type MmapCube{T,N} <: AbstractMmapCube{T,N}
   axes::Vector{CubeAxis}
   folder::String
   persist::Bool
+  properties::Dict{Any,Any}
+end
+type MmapCubePerm{T,N} <: AbstractMmapCube{T,N}
+  axes::Vector{CubeAxis}
+  folder::String
+  perm::NTuple{N,Int}
   properties::Dict{Any,Any}
 end
 function cleanMmapCube(y::MmapCube)
@@ -44,6 +51,8 @@ function getmmaphandles(y::MmapCube{T}) where T
   end
   ar,ma
 end
+gethandle(y::MmapCube)= getmmaphandles(y)
+handletype(::MmapCube)=ViewHandle()
 
 function _read{N}(y::MmapCube,thedata::Tuple,r::CartesianRange{CartesianIndex{N}})
     dout,mout = thedata
@@ -53,11 +62,13 @@ function _read{N}(y::MmapCube,thedata::Tuple,r::CartesianRange{CartesianIndex{N}
         mout[i]=min[ic]
     end
 end
-#function getSubRange{T,N}(c::MmapCube{T,N},i...;write::Bool=true)
-#  length(i)==N || error("Wrong number of view arguments to getSubRange. Cube is: $c \n indices are $i")
-#  return (view(c.handle[1],i...),view(c.handle[2],i...))
-#end
-Base.size(y::MmapCube)=ntuple(i->length(y.axes[i]),length(y.axes))
-Base.size(y::MmapCube,i)=length(y.axes[i])
+@generated function Base.size{T,N}(x::MmapCube{T,N})
+  :(@ntuple $N i->length(x.axes[i]))
+end
+@generated function Base.size{T,N}(x::MmapCubePerm{T,N})
+  :(@ntuple $N i->length(x.axes[x.perm[i]]))
+end
 axes(y::MmapCube)=y.axes
+axes(t::MmapCubePerm)=[t.axes[t.perm[i]] for i=1:length(t.axes)]
 getCubeDes(v::MmapCube)="Memory mapped cube"
+Base.permutedims{T,N}(c::MmapCube{T,N},perm)=MmapCubePerm{T,N}(c.axes,c.folder,perm,c.properties)

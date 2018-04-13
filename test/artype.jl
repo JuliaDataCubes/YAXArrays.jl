@@ -9,6 +9,7 @@ d = getCubeData(c,variable=["air_temperature_2m","gross_primary_productivity"],l
 
 dmem=readCubeData(d)
 
+@testset "Dataframe representation" begin
 function docor(xout,xin)
     #Inside this function, xin is now a data frame
     @test isa(xin,DataFrame)
@@ -38,3 +39,4 @@ registerDATFunction(annMean,indims=indims,outdims=outdims)
 o = mapCube(annMean,dmem)
 
 @test all(isapprox.(o.data[1,1,:,:],mean(dmem.data[:,:,1:46,1],3)))
+end

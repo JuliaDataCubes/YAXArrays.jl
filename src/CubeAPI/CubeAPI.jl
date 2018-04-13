@@ -489,12 +489,12 @@ function getMaskFile(cube::RemoteCube)
   end
 end
 
-getLandSeaMask!(mask::Array{UInt8,2},cube::UCube,grid_x1,nx,grid_y1,ny)=getLandSeaMask!(reshape(mask,(size(mask,1),size(mask,2),1)),cube,grid_x1,nx,grid_y1,ny)
-function getLandSeaMask!(mask::Array{UInt8,3},cube::UCube,grid_x1,nx,grid_y1,ny)
+getLandSeaMask!(mask::AbstractArray{UInt8,2},cube::UCube,grid_x1,nx,grid_y1,ny)=getLandSeaMask!(reshape(mask,(size(mask,1),size(mask,2),1)),cube,grid_x1,nx,grid_y1,ny)
+function getLandSeaMask!(mask::AbstractArray{UInt8,3},cube::UCube,grid_x1,nx,grid_y1,ny)
   filename=getMaskFile(cube)
   if !isempty(filename)
-    mask2=reinterpret(Int8,mask)
-    ncread!(filename,"water_mask",view(mask2,:,:,1),start=[grid_x1,grid_y1,1],count=[nx,ny,1])
+    mask2 = ncread(filename,"water_mask",start=[grid_x1,grid_y1,1],count=[nx,ny,1])
+    mask[:,:,1]=mask2
     for ilat=1:size(mask,2),ilon=1:size(mask,1)
       mask[ilon,ilat,1]=(mask[ilon,ilat,1]-0x01)*0x05
     end
@@ -506,11 +506,11 @@ function getLandSeaMask!(mask::Array{UInt8,3},cube::UCube,grid_x1,nx,grid_y1,ny)
   end
 end
 
-function getLandSeaMask!(mask::Array{UInt8,4},cube::UCube,grid_x1,nx,grid_y1,ny)
+function getLandSeaMask!(mask::AbstractArray{UInt8,4},cube::UCube,grid_x1,nx,grid_y1,ny)
   filename=filename=getMaskFile(cube)
   if !isempty(filename)
-    mask2=reinterpret(Int8,mask)
-    ncread!(filename,"water_mask",view(mask2,:,:,1,1),start=[grid_x1,grid_y1,1],count=[nx,ny,1])
+    mask2 = ncread(filename,"water_mask",start=[grid_x1,grid_y1,1],count=[nx,ny,1])
+    mask[:,:,1,1]=mask2
     for ilat=1:size(mask,2),ilon=1:size(mask,1)
       mask[ilon,ilat,1]=(mask[ilon,ilat,1]-0x01)*0x05
     end

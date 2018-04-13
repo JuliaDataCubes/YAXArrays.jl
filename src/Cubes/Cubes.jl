@@ -6,7 +6,7 @@ module Cubes
 export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, TimeHAxis, QuantileAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, axes,
        AbstractSubCube, CubeMem, openTempCube, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis, axVal2Index, MSCAxis,
        getSingVal, TimeScaleAxis, axname, @caxis_str, rmCube, cubeproperties, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
-       getOutAxis, needshandle, AbstractTempCube
+       getOutAxis, needshandle, AbstractTempCube, gethandle, handletype
 
 """
     AbstractCubeData{T,N}
@@ -18,11 +18,6 @@ interface. However, the `CABLAB` functions [mapCube](@ref), [reduceCube](@ref),
 of `AbstractCubeData`
 """
 abstract type AbstractCubeData{T,N} end
-
-"""
-getSubRange reads some Cube data and writes it to a pre-allocated memory.
-"""
-getSubRange(c::AbstractCubeData,a...)=error("getSubrange called in the wrong way with argument types $(typeof(c)), $(map(typeof,a))")
 
 """
 getSingVal reads a single point from the cube's data
@@ -106,24 +101,38 @@ Base.size(c::CubeMem,i)=size(c.data,i)
 Base.similar(c::CubeMem)=cubeMem(c.axes,similar(c.data),copy(c.mask))
 Base.ndims{T,N}(c::CubeMem{T,N})=N
 
-function getSubRange{T,N}(c::CubeMem{T,N},i...;write::Bool=true)
-  length(i)==N || error("Wrong number of view arguments to getSubRange. Cube is: $c \n indices are $i")
-  return (view(c.data,i...),view(c.mask,i...))
-end
-
 getSingVal{T,N}(c::CubeMem{T,N},i...;write::Bool=true)=(c.data[i...],c.mask[i...])
 getSingVal{T}(c::CubeMem{T,0};write::Bool=true)=(c.data[1],c.mask[1])
 getSingVal{T}(c::CubeAxis{T},i;write::Bool=true)=(c.values[i],nothing)
 
 readCubeData(c::CubeMem)=c
 
-getSubRange{T}(c::CubeMem{T,0};write::Bool=true)=(c.data,c.mask)
+function getSubRange{T,N}(c::Tuple{AbstractArray{T,N},AbstractArray{UInt8,N}},i...;write::Bool=true)
+  length(i)==N || error("Wrong number of view arguments to getSubRange. Cube is: $c \n indices are $i")
+  return (view(c[1],i...),view(c[2],i...))
+end
+getSubRange{T}(c::Tuple{AbstractArray{T,0},AbstractArray{UInt8,0}};write::Bool=true)=c
+
+"""
+    gethandle(c::AbstractCubeData, [block_size])
+
+Returns an indexable handle to the data.
+"""
+gethandle(c::AbstractCubeMem) = (c.data,c.mask)
+gethandle(c,block_size)=gethandle(c)
+
+immutable ViewHandle end
+immutable CacheHandle end
+handletype(::AbstractCubeMem)=ViewHandle()
+
 
 import ..CABLABTools.toRange
-function _read(c::CubeMem,thedata::Tuple,r::CartesianRange)
+#Generic fallback method for _read
+function _read{N}(c::AbstractCubeData,thedata::Tuple,r::CartesianRange{N})
   outar,outmask=thedata
-  data=view(c.data,toRange(r)...)
-  mask=view(c.mask,toRange(r)...)
+  rr = convert(NTuple{N,UnitRange},r)
+  h = gethandle(c,size(r))
+  data,mask = getSubRange(h,rr...)
   copy!(outar,data)
   copy!(outmask,mask)
 end
@@ -160,6 +169,9 @@ cubesize{T}(c::AbstractCubeData{T,0})=sizeof(T)+1
 include("TempCubes.jl")
 include("MmapCubes.jl")
 importall .TempCubes
+handletype(::Union{AbstractTempCube,AbstractSubCube})=CacheHandle()
+
+
 getCubeDes(c::AbstractSubCube)="Data Cube view"
 getCubeDes(c::TempCube)="Temporary Data Cube"
 getCubeDes(c::CubeMem)="In-Memory data cube"
@@ -206,9 +218,6 @@ function Base.show(io::IO,a::CategoricalAxis)
     end
 end
 Base.show(io::IO,a::SpatialPointAxis)=print(io,"Spatial points axis with ",length(a.values)," points")
-
-needshandle(::MmapCube)=false
-needshandle(::AbstractCubeData)=true
 
 
 include("TransformedCubes.jl")

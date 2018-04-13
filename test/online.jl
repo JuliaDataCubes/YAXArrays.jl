@@ -2,6 +2,7 @@ using CABLAB
 using Base.Test
 
 using OnlineStats
+@testset "OnlineStats" begin
 c=RemoteCube()
 
 d = getCubeData(c,variable="air_temperature_2m",longitude=(30,31),latitude=(50,51),
@@ -92,3 +93,5 @@ end
 #     @test mean(dhelp) ≈ oogrouped2.data[know]
 #   end
 # end
+
+end

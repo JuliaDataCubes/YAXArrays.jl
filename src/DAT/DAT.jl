@@ -465,10 +465,6 @@ function generateOutCube(oc::OutputCube,ispar::Bool,max_cache,loopCacheSize)
   generateOutCube(cubetype,eltype,oc,loopCacheSize)
 end
 
-gethandle(c::AbstractCubeMem) = c
-gethandle(y::MmapCube)= getmmaphandles(y)
-gethandle(tc::Union{AbstractTempCube,AbstractSubCube},block_size) = CachedArray(tc,1,block_size,MaskedCacheBlock{eltype(tc),length(block_size.I)})
-gethandle(c,block_size)=gethandle(c)
 sethandle(c::InputCube) = (c.handle = gethandle(c.cube,CartesianIndex(totuple(c.cachesize))))
 sethandle(c::OutputCube) = (c.handle = (gethandle(get(c.cube))))
 
