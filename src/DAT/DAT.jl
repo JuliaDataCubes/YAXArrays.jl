@@ -467,7 +467,7 @@ function generateOutCube(oc::OutputCube,ispar::Bool,max_cache,loopCacheSize)
   generateOutCube(cubetype,eltype,oc,loopCacheSize)
 end
 
-sethandle(c::InputCube) = (c.handle = gethandle(c.cube,CartesianIndex(totuple(c.cachesize))))
+sethandle(c::InputCube) = (c.handle = gethandle(c.cube,totuple(c.cachesize)))
 sethandle(c::OutputCube) = (c.handle = (gethandle(get(c.cube))))
 
 
@@ -608,7 +608,7 @@ end
 
 
 using Base.Cartesian
-@generated function innerLoop{T1,T2,T3,T4,OC,R,NIN,NOUT,UPDOUT}(f,xin::NTuple{NIN,Union{AbstractCubeData,CachedArray,Tuple{Array,Array}}},xout::NTuple{NOUT,Union{AbstractCubeData,CachedArray,Tuple{Array,Array}}},::InnerObj{T1,T2,T4,OC,R,UPDOUT},loopRanges::T3,
+@generated function innerLoop{T1,T2,T3,T4,OC,R,NIN,NOUT,UPDOUT}(f,xin::NTuple{NIN,Union{AbstractCubeData,CachedArray,Tuple{AbstractArray,AbstractArray}}},xout::NTuple{NOUT,Union{AbstractCubeData,CachedArray,Tuple{Array,Array}}},::InnerObj{T1,T2,T4,OC,R,UPDOUT},loopRanges::T3,
   inwork,outwork,inmissing,outmissing,addargs,kwargs)
 
   NinCol      = T1

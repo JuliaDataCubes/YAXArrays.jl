@@ -1,7 +1,7 @@
 export ConcatCube, concatenateCubes
 export mapCubeSimple
 import ..CABLABTools.getiperm
-import ..Cubes: _read, needshandle, gethandle
+import ..Cubes: _read, needshandle, gethandle, getcachehandle, handletype
 
 type PermCube{T,N,C} <: AbstractCubeData{T,N}
   parent::C
@@ -49,7 +49,7 @@ function Base.map(op, incubes::AbstractCubeData...; T::Type=eltype(incubes[1]))
   TransformedCube{T,N,typeof(op)}(incubes,op,axlist,props)
 end
 
-gethandle(c::TransformedCube,block_size)=getcachehandle(c,block_size)
+gethandle(c::TransformedCube,block_size)=getcachehandle(c,CartesianIndex(block_size))
 
 Base.size(x::TransformedCube)=size(x.parents[1])
 Base.size{T,N}(x::TransformedCube{T,N},i)=size(x.parents[1],i)
@@ -140,14 +140,7 @@ using Base.Cartesian
 end
 
 using RecursiveArrayTools
-function gethandle(c::ConcatCube,block_size)
-  hts = map(handletype,c.cubelist)
-  if contains(hts,CacheHandle)
-    gethandle(c,block_size,CacheHandle())
-  else
-    gethandle(c,block_size,ViewHandle())
-  end
-end
+gethandle(c::ConcatCube,block_size)=gethandle(c,block_size,handletype(c))
 function gethandle(c::ConcatCube,block_size,::ViewHandle)
   data,mask = gethandle(c.cubelist[1])
   d = [data]
@@ -159,7 +152,8 @@ function gethandle(c::ConcatCube,block_size,::ViewHandle)
   end
   VectorOfArray(d),VectorOfArray(m)
 end
-gethandle(c::ConcatCube,block_size,::CacheHandle) = getcachehandle(c,block_size)
+gethandle(c::ConcatCube,block_size,::CacheHandle) = getcachehandle(c,CartesianIndex(block_size))
+handletype(c::ConcatCube)=any(i->handletype(i)==CacheHandle(),c.cubelist) ? CacheHandle() : ViewHandle()
 
 export SliceCube
 type SliceCube{T,N,iax} <: AbstractCubeData{T,N}
@@ -174,7 +168,7 @@ function SliceCube{T,N}(c::AbstractCubeData{T,N},ax,i)
   axlist = axes(c)
   iax = findAxis(ax,c)
   iax<1 && error("Axis $ax not found in input cube")
-  i = axVal2Index(axlist[iax],i)
+  i = axVal2Index(axlist[iax],i,fuzzy=true)
   0<i<=length(axlist[iax]) || error("Axis index $i out of bounds")
   axlistnew = deleteat!(copy(axlist),iax)
   pnew=copy(c.properties)
@@ -215,4 +209,4 @@ gethandle(c::SliceCube,block_size)=gethandle(c,block_size,handletype(c.parent))
     ($v1,$v2)
   end
 end
-gethandle(c::SliceCube,block_size,::CacheHandle) = getcachehandle(c,block_size)
+gethandle(c::SliceCube,block_size,::CacheHandle) = getcachehandle(c,CartesianIndex(block_size))

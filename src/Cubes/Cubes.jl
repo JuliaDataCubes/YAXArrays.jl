@@ -6,7 +6,7 @@ module Cubes
 export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, TimeHAxis, QuantileAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, axes,
        AbstractSubCube, CubeMem, openTempCube, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis, axVal2Index, MSCAxis,
        getSingVal, TimeScaleAxis, axname, @caxis_str, rmCube, cubeproperties, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
-       getOutAxis, needshandle, AbstractTempCube, gethandle, handletype
+       getOutAxis, needshandle, AbstractTempCube, gethandle, handletype, getcachehandle
 
 """
     AbstractCubeData{T,N}
@@ -120,6 +120,7 @@ Returns an indexable handle to the data.
 """
 gethandle(c::AbstractCubeMem) = (c.data,c.mask)
 gethandle(c,block_size)=gethandle(c)
+function getcachehandle end
 
 immutable ViewHandle end
 immutable CacheHandle end

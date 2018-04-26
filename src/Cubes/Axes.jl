@@ -150,28 +150,28 @@ axname{T,S}(::RangeAxis{T,S})=string(S)
 axunits(::CubeAxis)="unknown"
 axunits(::LonAxis)="degrees_east"
 axunits(::LatAxis)="degrees_north"
-function axVal2Index{T,S,F<:StepRange}(a::RangeAxis{T,S,F},v)
+function axVal2Index{T,S,F<:StepRange}(a::RangeAxis{T,S,F},v;fuzzy=false)
   dt = v-first(a.values)
   r = round(Int,dt/step(a.values))+1
   return max(1,min(length(a.values),r))
 end
-function axVal2Index{T<:DateTime,S,F<:Range}(a::RangeAxis{T,S,F},v)
+function axVal2Index{T<:DateTime,S,F<:Range}(a::RangeAxis{T,S,F},v;fuzzy=false)
   dt = v-first(a.values)
   r = round(Int,dt/Millisecond(step(a.values)))+1
   return max(1,min(length(a.values),r))
 end
-function axVal2Index{T<:Date,S,F<:YearStepRange}(a::RangeAxis{T,S,F},v::Date)
+function axVal2Index{T<:Date,S,F<:YearStepRange}(a::RangeAxis{T,S,F},v::Date;fuzzy=false)
   y = year(v)
   d = dayofyear(v)
   r = (y-a.values.startyear)*a.values.NPY + d÷a.values.step + 1
   return max(1,min(length(a.values),r))
 end
-function axVal2Index{T<:Date,S,F<:StepRange}(a::RangeAxis{T,S,F},v::Date)
+function axVal2Index{T<:Date,S,F<:StepRange}(a::_RangeAxis{T,S,F},v::Date;fuzzy=false)
   dd = map(i->abs((i-v).value),a.values)
   mi,ind = findmin(dd)
   return ind
 end
-axVal2Index{T,S,F<:StepRangeLen}(axis::RangeAxis{T,S,F},v;fuzzy::Bool=false)=min(max(round(Int,(v-first(axis.values))/step(axis.values))+1,1),length(axis))
+axVal2Index{T,S,F<:StepRangeLen}(axis::_RangeAxis{T,S,F},v;fuzzy::Bool=false)=min(max(round(Int,(v-first(axis.values))/step(axis.values))+1,1),length(axis))
 function axVal2Index(axis::CategoricalAxis{String},v::String;fuzzy::Bool=false)
   r=findfirst(axis.values,v)
   if r==0
