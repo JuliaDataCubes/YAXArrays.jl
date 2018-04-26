@@ -9,7 +9,7 @@ Some info on the project...
 module CABLAB
 export Cube, getCubeData,readCubeData,CubeMem,CubeAxis, TimeAxis, TimeHAxis, VariableAxis, LonAxis, FitAxis, LatAxis, CountryAxis, SpatialPointAxis, saveCube, loadCube,
         RangeAxis, CategoricalAxis, MSCAxis, getSingVal, TimeScaleAxis, QuantileAxis, MethodAxis, RemoteCube, showVarInfo, @caxis_str,
-        axVal2Index, mapCubeSimple, concatenateCubes, SliceCube #From Cube module
+        axVal2Index, mapCubeSimple, concatenateCubes, SliceCube, NetCDFCube #From Cube module
 export registerDATFunction, mapCube, reduceCube, getAxis, InDims, OutDims,AsArray,AsAxisArray,AsDataFrame #From DAT module
 export DAT_detectAnomalies!, removeMSC, gapFillMSC, normalizeTS,DATfitOnline,
   sampleLandPoints, toPointAxis, getMSC, filterTSFFT, getNpY,timespacequantiles,
