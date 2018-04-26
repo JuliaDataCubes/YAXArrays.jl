@@ -30,7 +30,7 @@ function MmapCube(axlist;folder=mktempdir(),T=Float32,persist::Bool=true,overwri
       error("Folder $folder is not empty, set overwrite=true to overwrite.")
     end
   end
-  save(joinpath(folder,"axinfo.jld"),"axlist",axlist,"properties",properties)
+  save(joinpath(folder,"axinfo.jld"),"axlist",axlist,"properties",properties,"eltype",T)
   s=map(length,axlist)
   open(f->write(f,zeros(T,s...)),joinpath(folder,"data.bin"),"w")
   open(f->write(f,zeros(UInt8,s...)),joinpath(folder,"mask.bin"),"w")
@@ -51,7 +51,7 @@ function getmmaphandles(y::MmapCube{T}) where T
   end
   ar,ma
 end
-gethandle(y::MmapCube)= getmmaphandles(y)
+gethandle(y::MmapCube)=getmmaphandles(y)
 handletype(::MmapCube)=ViewHandle()
 
 function _read{N}(y::MmapCube,thedata::Tuple,r::CartesianRange{CartesianIndex{N}})
@@ -72,3 +72,28 @@ axes(y::MmapCube)=y.axes
 axes(t::MmapCubePerm)=[t.axes[t.perm[i]] for i=1:length(t.axes)]
 getCubeDes(v::MmapCube)="Memory mapped cube"
 Base.permutedims{T,N}(c::MmapCube{T,N},perm)=MmapCubePerm{T,N}(c.axes,c.folder,perm,c.properties)
+"""
+    saveCube(c::AbstractCubeData, name::String)
+
+Permanently saves a data cube to disk by either moving the folder out of the
+tmp directory (for `TempCube`s) or by storing the data to disk (for `CubeMem`s)
+"""
+function saveCube(c::MmapCube,name::String)
+  newfolder=joinpath(workdir[1],name)
+  isdir(newfolder) && error("$(name) already exists, please pick another name")
+  mv(c.folder,newfolder)
+  c.folder=newfolder
+  c.persist=true
+end
+export openmmapcube
+function openmmapcube(folder;persist=true,axlist=nothing)
+  axlist == nothing && (axlist=load(joinpath(folder,"axinfo.jld"),"axlist"))
+  properties=try
+      load(joinpath(folder,"axinfo.jld"),"properties")
+    catch
+      Dict{String,Any}()
+    end
+    T = load(joinpath(folder,"axinfo.jld"),"eltype")
+  N=length(axlist)
+  return MmapCube{T,length(axlist)}(axlist,folder,persist,properties)
+end

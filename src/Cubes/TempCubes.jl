@@ -1,5 +1,5 @@
 module TempCubes
-export TempCube, openTempCube, TempCubePerm, saveCube, loadCube,rmCube, AbstractTempCube
+export TempCube, openTempCube, TempCubePerm, loadCube,rmCube, AbstractTempCube
 importall ..Cubes
 importall ...CABLABTools
 import ....CABLAB.CABLABdir
@@ -107,7 +107,7 @@ end
 TempCube(axlist,block_size::Tuple;kwargs...)=TempCube(axlist,CartesianIndex(block_size);kwargs...)
 
 function openTempCube(folder;persist=true,axlist=nothing)
-  
+
   axlist == nothing && (axlist=load(joinpath(folder,"axinfo.jld"),"axlist"))
   properties=try
       load(joinpath(folder,"axinfo.jld"),"properties")
@@ -144,8 +144,12 @@ end
 
 function rmCube(f::String)
   if isdir(joinpath(CABLABdir(),f))
-    y=openTempCube(joinpath(CABLABdir(),f),persist=false)
-    cleanTempCube(y)
+    if any(i->basename(i)=="data.bin",readdir(joinpath(CABLABdir(),f)))
+      rm(joinpath(CABLABdir(),f),recursive=true)
+    else
+      y=openTempCube(joinpath(CABLABdir(),f),persist=false)
+      cleanTempCube(y)
+    end
   end
 end
 
@@ -219,7 +223,11 @@ Loads a cube that was previously saved with [`saveCube`](@ref). Returns a
 function loadCube(name::String)
   newfolder=joinpath(workdir[1],name)
   isdir(newfolder) || error("$(name) does not exist")
-  openTempCube(newfolder)
+  if any(i->basename(i)=="data.bin",readdir(newfolder))
+    openmmapcube(newfolder)
+  else
+    openTempCube(newfolder)
+  end
 end
 
 

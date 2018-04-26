@@ -85,7 +85,7 @@ function CachedArray(x,max_blocks::Int,block_size::CartesianIndex,blocktype::Typ
     CachedArray{T,N,blocktype,vtype}(x,max_blocks,block_size,blocks,currentblocks,nullblock)
 end
 getcachehandle(tc::AbstractCubeData,block_size) = CachedArray(tc,1,block_size,MaskedCacheBlock{eltype(tc),length(block_size.I)})
-gethandle(tc::Union{AbstractTempCube,AbstractSubCube},block_size) = getcachehandle(tc,block_size)
+gethandle(tc::Union{AbstractTempCube,AbstractSubCube,NetCDFCube},block_size) = getcachehandle(tc,block_size)
 Base.IndexStyle(::CachedArray)=Base.IndexCartesian()
 #Base.setindex!{T,N}(c::CachedArray{T,N},v,i::CartesianIndex{N})=0.0
 Base.size(c::CachedArray)=size(c.x)

@@ -141,13 +141,10 @@ end
 
 using RecursiveArrayTools
 function gethandle(c::ConcatCube,block_size)
-  hts = map(handletype,c.cubelist)
-  if contains(hts,CacheHandle)
-    gethandle(c,block_size,CacheHandle())
-  else
-    gethandle(c,block_size,ViewHandle())
-  end
+  gethandle(c,block_size,handletype(c))
 end
+handletype(c::ConcatCube) = any(i->handletype(i)==CacheHandle(),c.cubelist) ? CacheHandle() : ViewHandle()
+
 function gethandle(c::ConcatCube,block_size,::ViewHandle)
   data,mask = gethandle(c.cubelist[1])
   d = [data]

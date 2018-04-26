@@ -166,8 +166,9 @@ end
 cubesize{T}(c::AbstractCubeData{T})=(sizeof(T)+1)*prod(map(length,axes(c)))
 cubesize{T}(c::AbstractCubeData{T,0})=sizeof(T)+1
 
-include("TempCubes.jl")
 include("MmapCubes.jl")
+include("TempCubes.jl")
+include("NetCDFCubes.jl")
 importall .TempCubes
 handletype(::Union{AbstractTempCube,AbstractSubCube})=CacheHandle()
 
