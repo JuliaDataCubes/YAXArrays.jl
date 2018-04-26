@@ -203,7 +203,8 @@ end
 gethandle(c::SliceCube,block_size)=gethandle(c,block_size,handletype(c.parent))
 @generated function gethandle{T,N,F}(c::SliceCube{T,N,F},block_size,::ViewHandle)
   iax = F
-  v1 = Expr(:call,:view,insert!(Any[:(:) for i=1:N],iax,:(c.ival))...)
+  v1 = Expr(:call,:view,:data,insert!(Any[:(:) for i=1:N],iax,:(c.ival))...)
+  v2 = Expr(:call,:view,:mask,insert!(Any[:(:) for i=1:N],iax,:(c.ival))...)
   quote
     data,mask = gethandle(c.parent)
     ($v1,$v2)
