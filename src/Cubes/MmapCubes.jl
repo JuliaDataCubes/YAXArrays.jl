@@ -39,9 +39,9 @@ function MmapCube(axlist;folder=mktempdir(),T=Float32,persist::Bool=true,overwri
   ntc
 end
 
-function getmmaphandles(y::MmapCube{T}) where T
-  folder=y.folder
-  axlist = y.axes
+getmmaphandles(y::MmapCube{T}) where T = getmmaphandles(y.folder,y.axes,T)
+function getmmaphandles(folder, axlist,T)
+
   s=map(length,axlist)
   ar = open(joinpath(folder,"data.bin"),"r+") do fd
     Mmap.mmap(fd,Array{T,length(axlist)},totuple(s))
@@ -53,6 +53,12 @@ function getmmaphandles(y::MmapCube{T}) where T
 end
 gethandle(y::MmapCube)=getmmaphandles(y)
 handletype(::MmapCube)=ViewHandle()
+
+function gethandle(y::MmapCubePerm{T}) where T
+    data,mask = getmmaphandles(y.folder,y.axes,T)
+    PermutedDimsArray(data,y.perm),PermutedDimsArray(mask,y.perm)
+end
+handletype(::AbstractMmapCube)=ViewHandle()
 
 function _read{N}(y::MmapCube,thedata::Tuple,r::CartesianRange{CartesianIndex{N}})
     dout,mout = thedata
