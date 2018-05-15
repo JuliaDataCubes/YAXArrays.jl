@@ -65,6 +65,7 @@ type CubeConfig
   grid_y0::Int
   compression::Bool
   grid_x0::Int
+  chunk_sizes::Tuple{Int,Int,Int}
 end
 t0=Date(0)
 CubeConfig()=CubeConfig(t0,t0,t0,0,0,0,0,false,"","",0.0,"",0,false,0)
@@ -76,7 +77,10 @@ function parseEntry(d,e::Union{ConfigEntry{:ref_time},ConfigEntry{:start_time},C
   m=match(r"datetime.datetime\(\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)\)",e.rhs).captures
   setfield!(d,Symbol(e.lhs),Date(parse(Int,m[1]),parse(Int,m[2]),parse(Int,m[3])))
 end
-
+function parseEntry(d,e::ConfigEntry{:chunk_sizes})
+  p=parse("(90,90,46)").args
+  d.chunk_sizes=(p[1],p[2],p[3])
+end
 function parseConfig(x)
   d=CubeConfig()
   for ix in x

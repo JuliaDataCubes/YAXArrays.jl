@@ -493,7 +493,7 @@ function init_DATworkers()
 end
 
 function analyzeAxes{NIN,NOUT}(dc::DATConfig{NIN,NOUT})
-  #First check if one of the axes is a concrete type
+
   for cube in dc.incubes
     for a in axes(cube.cube)
       in(a,cube.axesSmall) || in(a,dc.LoopAxes) || push!(dc.LoopAxes,a)
