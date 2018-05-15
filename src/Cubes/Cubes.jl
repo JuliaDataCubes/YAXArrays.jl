@@ -119,6 +119,7 @@ getSubRange{T}(c::Tuple{AbstractArray{T,0},AbstractArray{UInt8,0}};write::Bool=t
 Returns an indexable handle to the data.
 """
 gethandle(c::AbstractCubeMem) = (c.data,c.mask)
+gethandle(c::CubeAxis) = collect(c.values)
 gethandle(c,block_size)=gethandle(c)
 function getcachehandle end
 

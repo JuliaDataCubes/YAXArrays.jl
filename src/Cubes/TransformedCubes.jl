@@ -28,7 +28,7 @@ function gethandle(c::PermCube,block_size,::ViewHandle)
   data,mask = gethandle(c.parent)
   PermutedDimsArray(data,c.perm),PermutedDimsArray(mask,c.perm)
 end
-gethandle(c::PermCube,block_size,::CacheHandle) = getcachehandle(c,block_size)
+gethandle(c::PermCube,block_size,::CacheHandle) = getcachehandle(c,CartesianIndex(block_size))
 
 
 type TransformedCube{T,N,F} <: AbstractCubeData{T,N}

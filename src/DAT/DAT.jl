@@ -608,7 +608,7 @@ end
 
 
 using Base.Cartesian
-@generated function innerLoop{T1,T2,T3,T4,OC,R,NIN,NOUT,UPDOUT}(f,xin::NTuple{NIN,Union{AbstractCubeData,CachedArray,Tuple{AbstractArray,AbstractArray}}},xout::NTuple{NOUT,Union{AbstractCubeData,CachedArray,Tuple{Array,Array}}},::InnerObj{T1,T2,T4,OC,R,UPDOUT},loopRanges::T3,
+@generated function innerLoop{T1,T2,T3,T4,OC,R,NIN,NOUT,UPDOUT}(f,xin::NTuple{NIN,Any},xout::NTuple{NOUT,Any},::InnerObj{T1,T2,T4,OC,R,UPDOUT},loopRanges::T3,
   inwork,outwork,inmissing,outmissing,addargs,kwargs)
 
   NinCol      = T1
@@ -724,6 +724,7 @@ function setSubRangeOC(xout,cols...)
 end
 
 getSubRange(x::Tuple{Array,Array},cols...;write=false)=(view(x[1],cols...),view(x[2],cols...))
+getSubRange(x::Array,cols...;write=false)=(view(x,cols...),nothing)
 
 "Calculate an axis permutation that brings the wanted dimensions to the front"
 function getFrontPerm{T}(dc::AbstractCubeData{T},dims)
