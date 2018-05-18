@@ -16,7 +16,7 @@ registerDATFunction(sub_and_return_mean,(TimeAxis,),((TimeAxis,),()),inmissing=:
 
 function doTests()
   # Test simple Stats first
-  c=RemoteCube()
+  c=Cube()
 
   d = getCubeData(c,variable="air_temperature_2m",longitude=(30,31),latitude=(50,51),
                 time=(Date("2002-01-01"),Date("2008-12-31")))

@@ -2,7 +2,7 @@ using CABLAB
 using Base.Test
 
 @testset "Transformed cubes" begin
-c=RemoteCube()
+c=Cube()
 
 @testset "ConcatCubes" begin
 d1 = getCubeData(c,variable="air_temperature_2m",longitude=(30,31),latitude=(50,51),

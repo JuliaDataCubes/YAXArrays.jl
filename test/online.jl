@@ -3,7 +3,7 @@ using Base.Test
 
 using OnlineStats
 @testset "OnlineStats" begin
-c=RemoteCube()
+c=Cube()
 
 d = getCubeData(c,variable="air_temperature_2m",longitude=(30,31),latitude=(50,51),
               time=(Date("2002-01-01"),Date("2008-12-31")))
@@ -42,7 +42,7 @@ covmat,means = mapCube(CovMatrix,dm,MDAxis=VariableAxis)
 
 using CABLAB
 using DataStructures
-c=RemoteCube()
+c=Cube()
 d2 = getCubeData(c,variable=["air_temperature_2m","gross_primary_productivity"],longitude=(30,31),latitude=(50,51),
               time=(Date("2002-01-01"),Date("2008-12-31")))
 dm=readCubeData(d2)

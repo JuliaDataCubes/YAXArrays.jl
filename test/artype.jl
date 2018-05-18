@@ -2,7 +2,7 @@ using CABLAB
 using Base.Test
 import DataFrames: DataFrame,aggregate,skipmissing
 import Base.Dates: year
-c=RemoteCube()
+c=Cube()
 
 d = getCubeData(c,variable=["air_temperature_2m","gross_primary_productivity"],longitude=(30,31),latitude=(50,51),
                 time=(Date("2002-01-01"),Date("2008-12-31")))
