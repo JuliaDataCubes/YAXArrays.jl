@@ -3,13 +3,13 @@ using Base.Test
 #Open a remote cube
 @testset "Cube Access" begin
 
-c=RemoteCube()
+c=Cube()
 
 @testset "Access single variable" begin
 d = getCubeData(c,variable="air_temperature_2m",longitude=(30,31),latitude=(51,50),
                 time=(Date("2002-01-01"),Date("2008-12-31")))
 
-@test typeof(c)==RemoteCube
+#@test typeof(c)==RemoteCube
 @test d.variable=="air_temperature_2m"
 @test d.sub_grid==(157,160,841,844)
 @test d.sub_times==(2002,1,2008,46,322,46)

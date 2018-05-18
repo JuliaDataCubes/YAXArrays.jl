@@ -68,7 +68,7 @@ type CubeConfig
   chunk_sizes::Tuple{Int,Int,Int}
 end
 t0=Date(0)
-CubeConfig()=CubeConfig(t0,t0,t0,0,0,0,0,false,"","",0.0,"",0,false,0)
+CubeConfig()=CubeConfig(t0,t0,t0,0,0,0,0,false,"","",0.0,"",0,false,0,(0,0,0))
 
 parseEntry(d,e::ConfigEntry)=setfield!(d,Symbol(e.lhs),parse(e.rhs))
 parseEntry(d,e::Union{ConfigEntry{:compression},ConfigEntry{:static_data}})=setfield!(d,Symbol(e.lhs),e.rhs=="False" ? false : true)
@@ -78,7 +78,7 @@ function parseEntry(d,e::Union{ConfigEntry{:ref_time},ConfigEntry{:start_time},C
   setfield!(d,Symbol(e.lhs),Date(parse(Int,m[1]),parse(Int,m[2]),parse(Int,m[3])))
 end
 function parseEntry(d,e::ConfigEntry{:chunk_sizes})
-  p=parse("(90,90,46)").args
+  p=parse(e.rhs).args
   d.chunk_sizes=(p[1],p[2],p[3])
 end
 function parseConfig(x)
@@ -113,6 +113,10 @@ type Cube
   config::CubeConfig
   dataset_files::Vector{String}
   var_name_to_var_index::OrderedDict{String,Int}
+end
+
+function Cube(;resolution="low")
+  haskey(ENV,"CABLAB_CUBEDIR") ? Cube(joinpath(ENV["CABLAB_CUBEDIR"],"low-res")) : RemoteCube()
 end
 
 function Cube(base_dir::AbstractString)

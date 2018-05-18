@@ -153,41 +153,42 @@ type OutputCube
   folder::String                   #Folder to store the cube to
   outtype::DataType
 end
-gethandle(c::OutputCube)=c.handle
-getcube(c::OutputCube)=get(c.cube)
+gethandle(c::OutputCube)    = c.handle
+getcube(c::OutputCube)      = get(c.cube)
 getsmallax(c::Union{InputCube,OutputCube})=c.axesSmall
-getAxis(desc,c::OutputCube)=getAxis(desc,get(c.cube))
-getAxis(desc,c::InputCube)=getAxis(desc,c.cube)
+getAxis(desc,c::OutputCube) = getAxis(desc,get(c.cube))
+getAxis(desc,c::InputCube)  = getAxis(desc,c.cube)
 function setworkarray(c::OutputCube)
   wa = createworkarray(c.desc.miss,eltype(get(c.cube)),ntuple(i->length(c.axesSmall[i]),length(c.axesSmall)))
   c.workarray = wrapWorkArray(c.desc.artype,wa,c.axesSmall)
 end
 
-function OutputCube(outfolder,desc::OutDims,inAxes::Vector{CubeAxis},incubes,pargs)
-  axesSmall = map(i->getOutAxis(i,inAxes,incubes,pargs),desc.axisdesc)
-  broadcastAxes = map(i->getOutAxis(i,inAxes,incubes,pargs),desc.bcaxisdesc)
-  outtype = getOuttype(desc.outtype,incubes)
+getOutAxis(desc::Tuple,inAxes,incubes,pargs,f)=map(i->getOutAxis(i,inAxes,incubes,pargs,f),desc)
+function OutputCube(outfolder,desc::OutDims,inAxes::Vector{CubeAxis},incubes,pargs,f)
+  axesSmall     = getOutAxis(desc.axisdesc,inAxes,incubes,pargs,f)
+  broadcastAxes = getOutAxis(desc.bcaxisdesc,inAxes,incubes,pargs,f)
+  outtype       = getOuttype(desc.outtype,incubes)
   OutputCube(Nullable{AbstractCubeData}(),desc,collect(CubeAxis,axesSmall),CubeAxis[],collect(CubeAxis,broadcastAxes),Int[],false,nothing,nothing,outfolder,outtype)
 end
 
-"""
-Collects axes from all input cubes into a single vector
-"""
-function getAllInaxes(cdata)
-  o = CubeAxis[]
-  foreach(cdata) do c
-    foreach(axes(c)) do ax
-      namecur = axname(ax)
-      samename = findfirst(i->axname(i)==namecur,o)
-      if samename == 0 #There is no axis of the same name yet
-        push!(o,ax)
-      else
-        o[samename]==ax || error("The axis $namecur appears multiple times, but contains different values. $(o[samename]) $ax")
-      end
-    end
-  end
-  return o
-end
+# """
+# Collects axes from all input cubes into a single vector
+# """
+# function getAllInaxes(cdata)
+#   o = CubeAxis[]
+#   foreach(cdata) do c
+#     foreach(axes(c)) do ax
+#       namecur = axname(ax)
+#       samename = findfirst(i->axname(i)==namecur,o)
+#       if samename == 0 #There is no axis of the same name yet
+#         push!(o,ax)
+#       else
+#         o[samename]==ax || error("The axis $namecur appears multiple times, but contains different values. $(o[samename]) $ax")
+#       end
+#     end
+#   end
+#   return o
+# end
 
 """
 Configuration object of a DAT process. This holds all necessary information to perform the calculations
@@ -227,10 +228,10 @@ function DATConfig(cdata,reginfo,max_cache,fu,outfolder,ispar,include_loopvars,a
 
   length(cdata)==length(reginfo.inCubes) || error("Number of input cubes ($(length(cdata))) differs from registration ($(length(reginfo.inCubes)))")
 
-  allInAxes = getAllInaxes(cdata)
   incubes  = totuple([InputCube(o[1],o[2]) for o in zip(cdata,reginfo.inCubes)])
+  allInAxes = vcat([ic.axesSmall for ic in incubes]...)
   outcubes = totuple(map(1:length(reginfo.outCubes),reginfo.outCubes) do i,desc
-     OutputCube( string(outfolder,"_",i),desc,allInAxes,cdata,addargs )
+     OutputCube( string(outfolder,"_",i),desc,allInAxes,cdata,addargs,fu)
     end)
 
 

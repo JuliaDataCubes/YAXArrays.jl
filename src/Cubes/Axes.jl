@@ -243,8 +243,8 @@ function getAxis{T<:CubeAxis}(desc,axlist::Vector{T})
     return axlist[i]
   end
 end
-getOutAxis(desc,axlist,incubes,pargs) = getAxis(desc,axlist)
-function getOutAxis(desc::ByFunction,axlist,incubes,pargs)
+getOutAxis(desc,axlist,incubes,pargs,f) = getAxis(desc,axlist)
+function getOutAxis(desc::ByFunction,axlist,incubes,pargs,f)
   outax = desc.f(incubes,pargs)
   isa(outax,CubeAxis) || error("Axis Generation function $(desc.f) did not return an axis")
   outax
