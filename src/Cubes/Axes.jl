@@ -274,7 +274,7 @@ function NcDim(a::CubeAxis{Date},start::Integer,count::Integer)
   starttime=a.values[1]
   startyear=Dates.year(starttime)
   atts=Dict{Any,Any}("units"=>"days since $startyear-01-01")
-  d=map(x->(x-starttime).value/86400000,tv)
+  d=map(x->Float64(convert(Day,(x-starttime)).value),tv)
   NcDim(axname(a),length(d),values=d,atts=atts)
 end
 #Default constructor

@@ -23,9 +23,9 @@ d2 = getCubeData(c,variable=["air_temperature_2m","gross_primary_productivity"],
 dm=readCubeData(d2)
 xin=permutedims(dm.data,[4,1,2,3])
 xin=reshape(xin,(2,length(xin) ÷ 2))
-startVal=mean(xin,2)[:].+rand(Float32,2,5)
+#startVal=mean(xin,2)[:].+rand(Float32,2,5)
 
-x=mapCube(KMeans,d2,5,copy(startVal),MDAxis=VariableAxis)
+x=mapCube(KMeans,d2,5,2,MDAxis=VariableAxis)
 
 o2=KMeans(2,5)
 o2.value[:]=startVal

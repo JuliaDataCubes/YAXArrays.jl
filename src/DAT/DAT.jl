@@ -246,8 +246,8 @@ function DATConfig(cdata,reginfo,max_cache,fu,outfolder,ispar,include_loopvars,a
     fu,                                         # fu                                      # loopCacheSize
     reginfo.no_ocean,                                   # no_ocean
     reginfo.inplace,                                    # inplace
-    addargs,                                    # addargs
     include_loopvars,
+    addargs,                                    # addargs
     kwargs
   )
 
@@ -268,7 +268,7 @@ function InnerObj(dc::DATConfig)
   T3=totuple([inbroad;outbroad])
   OC=dc.no_ocean
   R=dc.inplace
-  LR=dc.export_loopvars
+  LR=dc.include_loopvars
   InnerObj{T1,T2,T3,OC,R,UPDOUT,LR}()
 end
 
@@ -418,7 +418,7 @@ function runLoop(dc::DATConfig)
                                   totuple(map(i->i.workarray,Main.PMDATMODULE.dc.outcubes)),
                                   totuple(map(i->i.desc.miss,Main.PMDATMODULE.dc.incubes)),
                                   totuple(map(i->i.desc.miss,Main.PMDATMODULE.dc.outcubes)),
-                                  map(i->i.desc.miss,Main.PMDATMODULE.dc.loopAxes),
+                                  Main.PMDATMODULE.dc.LoopAxes,
                                   Main.PMDATMODULE.dc.addargs,
                                   Main.PMDATMODULE.dc.kwargs)
           ,allRanges)
@@ -432,7 +432,7 @@ function runLoop(dc::DATConfig)
               totuple(map(i->i.workarray,dc.outcubes)),
               totuple(map(i->i.desc.miss,dc.incubes)),
               totuple(map(i->i.desc.miss,dc.outcubes)),
-              dc.loopAxes,
+              dc.LoopAxes,
               dc.addargs,
               dc.kwargs)
   end
@@ -616,7 +616,7 @@ function helpComprehension_baseR{N}(block_size::NTuple{N,Int})
     return baseR
 end
 
-
+using DataStructures: OrderedDict
 using Base.Cartesian
 @generated function innerLoop{T1,T2,T3,T4,OC,R,NIN,NOUT,UPDOUT,LR}(f,xin::NTuple{NIN,Any},xout::NTuple{NOUT,Any},::InnerObj{T1,T2,T4,OC,R,UPDOUT,LR},loopRanges::T3,
   inwork,outwork,inmissing,outmissing,loopaxes,addargs,kwargs)
@@ -629,9 +629,15 @@ using Base.Cartesian
   unrollEx = Expr(:block)
   inworksyms = map(i->Symbol(string("inwork_",i)),1:NIN)
   outworksyms= map(i->Symbol(string("outwork_",i)),1:NOUT)
+
   if LR
-    #Caution! This is actually not tyoe-stable, there might be a better solution to this    
-    push!(unrollEx.args,:(axdict=OrderedDict(CABLAB.axname(i)=>first(i.values) for i in loopaxes)))
+    #Caution! This is actually not tyoe-stable, there might be a better solution to this
+    push!(unrollEx.args,:(axdict=OrderedDict{String,Tuple{Int,Any}}()))
+    push!(unrollEx.args,quote
+      for i in loopaxes
+        axdict[CABLAB.axname(i)] = (1,first(i.values))
+      end
+    end)
   end
   [push!(unrollEx.args,:($(inworksyms[i]) = inwork[$i])) for i=1:NIN]
   [push!(unrollEx.args,:($(outworksyms[i]) = outwork[$i])) for i=1:NOUT]
@@ -688,9 +694,9 @@ using Base.Cartesian
   end
   if LR
     foreach(1:Nloopvars) do il
-      push!(loopBody.args,:(axdict[$i]=loopaxes[i].values[i]))
+      push!(loopBody.args,:(axdict.vals[$il]=($(Symbol("i_$il")),loopaxes[$il].values[$(Symbol("i_$il"))])))
     end
-    push!(callargs,:axdict)  
+    push!(callargs,:axdict)
   end
   push!(callargs,Expr(:...,:addargs))
   if R
