@@ -2,9 +2,10 @@ module Axes
 export CubeAxis, QuantileAxis, TimeAxis, TimeHAxis, VariableAxis, LonAxis, LatAxis, CountryAxis,
 SpatialPointAxis,Axes,YearStepRange,CategoricalAxis,RangeAxis,axVal2Index,MSCAxis,
 TimeScaleAxis, axname, @caxis_str, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
-getOutAxis
+getOutAxis, ByInference
 import NetCDF.NcDim
 importall ..Cubes
+import ...CABLABTools: totuple
 using Base.Dates
 
 immutable YearStepRange <: Range{Date}
@@ -195,7 +196,7 @@ getAxis(d::Any,v::Any)=error("getAxis not defined for $d $v")
 immutable ByName <: AxisDescriptor
   name::String
 end
-
+immutable ByInference <: AxisDescriptor end
 immutable ByType{T} <: AxisDescriptor
   t::Type{T}
 end
@@ -249,7 +250,34 @@ function getOutAxis(desc::ByFunction,axlist,incubes,pargs,f)
   isa(outax,CubeAxis) || error("Axis Generation function $(desc.f) did not return an axis")
   outax
 end
+import DataStructures: counter
+function getOutAxis(desc::Tuple{ByInference},axlist,incubes,pargs,f)
+  inAxes = map(axes,incubes)
+  inAxSmall = map(i->filter(j->in(j,axlist),i) |>collect,inAxes)
+  inSizes = map(i->totuple(map(length,i)),inAxSmall)
+  testars = map(randn,inSizes)
 
+  resu = f(testars...,pargs...)
+  isa(resu,AbstractArray) || isa(resu,Number) || error("Function must return an array or a number")
+  isa(resu,Number) && return ()
+  outsizes = size(resu)
+  outaxes = map(outsizes,1:length(outsizes)) do s,il
+    if s>2
+      i = find(i->i==s,length.(axlist))
+      if length(i)==1
+        return axlist[i[1]]
+      else
+        info("Found multiple matching axes for output dimension $il")
+      end
+    end
+    return RangeAxis("OutAxis$(il)",1:s)
+  end
+  if !allunique(outaxes)
+    #TODO: fallback with axis renaming in this case
+    error("Could not determine unique output axes from output shape")
+  end
+  return totuple(outaxes)
+end
 getAxis(desc,c::AbstractCubeData)=getAxis(desc,axes(c))
 getAxis{T<:CubeAxis}(desc::ByValue,axlist::Vector{T})=desc.v
 

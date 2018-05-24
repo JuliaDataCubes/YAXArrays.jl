@@ -277,6 +277,11 @@ end
 
 mapCube(fu::Function,cdata::AbstractCubeData,addargs...;kwargs...)=mapCube(fu,(cdata,),addargs...;kwargs...)
 
+import Base.mapslices
+function mapslices(f,d::AbstractCubeData,dims,addargs...;inmiss=NaNMissing(),outmiss=NaNMissing(),kwargs...)
+    isa(dims,String) && (dims=(dims,))
+    mapCube(f,d,addargs...;incubes = InDims(dims...,miss=inmiss),outcubes = OutDims(ByInference(),miss=outmiss),inplace=false,kwargs...)
+end
 
 """
     reduceCube(f::Function, cube, dim::Type{T<:CubeAxis};kwargs...)
