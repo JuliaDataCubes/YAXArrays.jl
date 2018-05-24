@@ -130,7 +130,8 @@ handletype(::AbstractCubeMem)=ViewHandle()
 
 import ..CABLABTools.toRange
 #Generic fallback method for _read
-function _read{N}(c::AbstractCubeData,thedata::Tuple,r::CartesianRange{N})
+function _read(c::AbstractCubeData,thedata::Tuple,r::CartesianRange)
+  N=ndims(r)
   outar,outmask=thedata
   rr = convert(NTuple{N,UnitRange},r)
   h = gethandle(c,size(r))
