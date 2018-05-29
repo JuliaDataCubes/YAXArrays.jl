@@ -707,7 +707,7 @@ using Base.Cartesian
   if R
     push!(loopBody.args,Expr(:call,callargs...))
   else
-    lhs = Expr(:tuple,[:($(outworksyms[j])[:]) for j=1:NOUT]...)
+    lhs = NOUT>1 ? Expr(:tuple,[:($(outworksyms[j])[:]) for j=1:NOUT]...) : :($(outworksyms[1])[:])
     rhs = Expr(:call,callargs...)
     push!(loopBody.args,:($lhs=$rhs))
   end

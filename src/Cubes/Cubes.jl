@@ -157,6 +157,41 @@ newShape=(s1...,length(lonAx)*length(latAx),s2...)
 CubeMem(allNewAx,reshape(c.data,newShape),reshape(c.mask,newShape))
 end
 
+#Implement getindex on AbstractCubeData objects
+const IndR = Union{Integer,Colon,UnitRange}
+getfirst(i::Integer,a::CubeAxis)=i
+getlast(i::Integer,a::CubeAxis)=i
+getfirst(i::UnitRange,a::CubeAxis)=first(i)
+getlast(i::UnitRange,a::CubeAxis)=last(i)
+getfirst(i::Colon,a::CubeAxis)=1
+getlast(i::Colon,a::CubeAxis)=length(a)
+
+function Base.getindex(c::AbstractCubeData,i::Integer...)
+  length(i)==ndims(c) || error("You must provide $(ndims(c)) indices")
+  r = CartesianRange(CartesianIndex(i),CartesianIndex(i))
+  aout = zeros(eltype(c),size(r))
+  mout = fill(0xff,size(r))
+  _read(c,(aout,mout),r)
+  return (eltype(c)<:AbstractFloat && (mout[1] & 0x01)!=0x00) ? oftype(aout[1],NaN) : aout[1]
+end
+
+function Base.getindex(c::AbstractCubeData,i::IndR...)
+  length(i)==ndims(c) || error("You must provide $(ndims(c)) indices")
+  ax = totuple(axes(c))
+  starts = CartesianIndex(map(getfirst,i,ax))
+  lasts = CartesianIndex(map(getlast,i,ax))
+  r = CartesianRange(starts,lasts)
+  aout = zeros(eltype(c),size(r))
+  mout = fill(0xff,size(r))
+  _read(c,(aout,mout),r)
+  if eltype(c)<:AbstractFloat
+    map!((m,v)->(m & 0x01)!=0x00 ? convert(eltype(c),NaN) : v,aout,mout,aout)
+  end
+  squeezedims = totuple(find(i->size(aout,i)==1,1:ndims(aout)))
+  squeeze(aout,squeezedims)
+end
+Base.read(d::AbstractCubeData)=getindex(d,fill(Colon(),ndims(d))...)
+
 function formatbytes(x)
   exts=["bytes","KB","MB","GB","TB"]
   i=1
