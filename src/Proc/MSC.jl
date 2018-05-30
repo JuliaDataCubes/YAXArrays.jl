@@ -157,7 +157,7 @@ function getMedSC(aout::Tuple,ain::Tuple)
             maskout[doy]=VALID
         else
             xout[doy]=NaN
-            maskout[doy]=CABLAB.CubeAPI.MISSING
+            maskout[doy]=ESDL.CubeAPI.MISSING
         end
     end
     xout

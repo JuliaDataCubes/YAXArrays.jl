@@ -1,7 +1,7 @@
 module CubeAPI
 importall ..Cubes
 importall ..Cubes.Axes
-importall ..CABLABTools
+importall ..ESDLTools
 import Base.Markdown.@md_str
 export Cube, getCubeData,getTimeRanges,readCubeData, getMemHandle, RemoteCube, known_regions
 export isvalid, isinvalid, isvalid, isvalidorfilled, Mask
@@ -65,9 +65,10 @@ type CubeConfig
   grid_y0::Int
   compression::Bool
   grid_x0::Int
+  chunk_sizes::Tuple{Int,Int,Int}
 end
 t0=Date(0)
-CubeConfig()=CubeConfig(t0,t0,t0,0,0,0,0,false,"","",0.0,"",0,false,0)
+CubeConfig()=CubeConfig(t0,t0,t0,0,0,0,0,false,"","",0.0,"",0,false,0,(0,0,0))
 
 parseEntry(d,e::ConfigEntry)=setfield!(d,Symbol(e.lhs),parse(e.rhs))
 parseEntry(d,e::Union{ConfigEntry{:compression},ConfigEntry{:static_data}})=setfield!(d,Symbol(e.lhs),e.rhs=="False" ? false : true)
@@ -76,7 +77,10 @@ function parseEntry(d,e::Union{ConfigEntry{:ref_time},ConfigEntry{:start_time},C
   m=match(r"datetime.datetime\(\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+),\s*(\d+)\)",e.rhs).captures
   setfield!(d,Symbol(e.lhs),Date(parse(Int,m[1]),parse(Int,m[2]),parse(Int,m[3])))
 end
-
+function parseEntry(d,e::ConfigEntry{:chunk_sizes})
+  p=parse(e.rhs).args
+  d.chunk_sizes=(p[1],p[2],p[3])
+end
 function parseConfig(x)
   d=CubeConfig()
   for ix in x
@@ -111,6 +115,10 @@ type Cube
   var_name_to_var_index::OrderedDict{String,Int}
 end
 
+function Cube(;resolution="low")
+  haskey(ENV,"ESDL_CUBEDIR") ? Cube(joinpath(ENV["ESDL_CUBEDIR"],"low-res")) : RemoteCube()
+end
+
 function Cube(base_dir::AbstractString)
   configfile=joinpath(base_dir,"cube.config")
   x=split(readchomp(configfile),"\n")
@@ -139,7 +147,7 @@ where `base_url` is the datacube's base url.
 * `config` the cube's static configuration [CubeConfig](@ref)
 
 ```@example
-using CABLAB
+using ESDL
 ds=remoteCube()
 ```
 
@@ -188,7 +196,7 @@ function RemoteCube(;resolution="low",url="http://www.brockmann-consult.de/cabla
 end
 
 function Base.show(io::IO,c::Cube)
-  println(io,"CABLAB data cube at ",c.base_dir)
+  println(io,"ESDL data cube at ",c.base_dir)
   println(io,"Spatial resolution:  ",c.config.grid_width,"x",c.config.grid_height," at ",c.config.spatial_res," degrees.")
   println(io,"Temporal resolution: ",c.config.start_time," to ",c.config.end_time," at ",c.config.temporal_res,"daily time steps")
   print(  io,"Variables:           ")
@@ -199,7 +207,7 @@ function Base.show(io::IO,c::Cube)
 end
 
 function Base.show(io::IO,c::RemoteCube)
-  println(io,"Remote CABLAB data cube at ",c.base_url)
+  println(io,"Remote ESDL data cube at ",c.base_url)
   println(io,"Spatial resolution:  ",c.config.grid_width,"x",c.config.grid_height," at ",c.config.spatial_res," degrees.")
   println(io,"Temporal resolution: ",c.config.start_time," to ",c.config.end_time," at ",c.config.temporal_res,"daily time steps")
   print(  io,"Variables:           ")
@@ -392,7 +400,7 @@ Returns a view into the data cube. The following keyword arguments are accepted:
 - *time*: a single Date object or a 2-element iterable (time_start, time_end)
 - *latitude*: a single latitude value or a 2-element iterable (latitude_start, latitude_end)
 - *longitude*: a single longitude value or a 2-element iterable (longitude_start, longitude_end)
-- *region*: specify a country or SREX region by name or ISO_A3 code. Type `?CABLAB.known_regions` to see a list of pre-defined areas
+- *region*: specify a country or SREX region by name or ISO_A3 code. Type `?ESDL.known_regions` to see a list of pre-defined areas
 
 Returns a `SubCube` object which represents a view into the original data cube.
 
@@ -489,12 +497,12 @@ function getMaskFile(cube::RemoteCube)
   end
 end
 
-getLandSeaMask!(mask::Array{UInt8,2},cube::UCube,grid_x1,nx,grid_y1,ny)=getLandSeaMask!(reshape(mask,(size(mask,1),size(mask,2),1)),cube,grid_x1,nx,grid_y1,ny)
-function getLandSeaMask!(mask::Array{UInt8,3},cube::UCube,grid_x1,nx,grid_y1,ny)
+getLandSeaMask!(mask::AbstractArray{UInt8,2},cube::UCube,grid_x1,nx,grid_y1,ny)=getLandSeaMask!(reshape(mask,(size(mask,1),size(mask,2),1)),cube,grid_x1,nx,grid_y1,ny)
+function getLandSeaMask!(mask::AbstractArray{UInt8,3},cube::UCube,grid_x1,nx,grid_y1,ny)
   filename=getMaskFile(cube)
   if !isempty(filename)
-    mask2=reinterpret(Int8,mask)
-    ncread!(filename,"water_mask",view(mask2,:,:,1),start=[grid_x1,grid_y1,1],count=[nx,ny,1])
+    mask2 = ncread(filename,"water_mask",start=[grid_x1,grid_y1,1],count=[nx,ny,1])
+    mask[:,:,1]=mask2
     for ilat=1:size(mask,2),ilon=1:size(mask,1)
       mask[ilon,ilat,1]=(mask[ilon,ilat,1]-0x01)*0x05
     end
@@ -506,11 +514,11 @@ function getLandSeaMask!(mask::Array{UInt8,3},cube::UCube,grid_x1,nx,grid_y1,ny)
   end
 end
 
-function getLandSeaMask!(mask::Array{UInt8,4},cube::UCube,grid_x1,nx,grid_y1,ny)
+function getLandSeaMask!(mask::AbstractArray{UInt8,4},cube::UCube,grid_x1,nx,grid_y1,ny)
   filename=filename=getMaskFile(cube)
   if !isempty(filename)
-    mask2=reinterpret(Int8,mask)
-    ncread!(filename,"water_mask",view(mask2,:,:,1,1),start=[grid_x1,grid_y1,1],count=[nx,ny,1])
+    mask2 = ncread(filename,"water_mask",start=[grid_x1,grid_y1,1],count=[nx,ny,1])
+    mask[:,:,1,1]=mask2
     for ilat=1:size(mask,2),ilon=1:size(mask,1)
       mask[ilon,ilat,1]=(mask[ilon,ilat,1]-0x01)*0x05
     end
@@ -793,7 +801,7 @@ gettoffsnt(::SubCubeStatic,r::CartesianRange{CartesianIndex{2}})=(0,1)
   end
 
 
-immutable CABLABVarInfo
+immutable ESDLVarInfo
   longname::String
   units::String
   url::String
@@ -815,7 +823,7 @@ showVarInfo(cube::SubCubeV)=[showVarInfo(cube,v) for v in cube.variable]
 function showVarInfo(cube, variable::String)
     filename=getremFileName(cube.cube,variable)
     v=NetCDF.open(filename,variable)
-    vi=CABLABVarInfo(
+    vi=ESDLVarInfo(
       get(v.atts,"long_name",variable),
       get(v.atts,"units","unknown"),
       get(v.atts,"url","no link"),
@@ -827,7 +835,7 @@ function showVarInfo(cube, variable::String)
 end
 
 import Base.show
-function show(io::IO,::MIME"text/markdown",v::CABLABVarInfo)
+function show(io::IO,::MIME"text/markdown",v::ESDLVarInfo)
     un=v.units
     url=v.url
     re=v.reference
@@ -844,7 +852,7 @@ function show(io::IO,::MIME"text/markdown",v::CABLABVarInfo)
     mdt[3].items[3][1].content[3]=[" $re"]
     show(io,MIME"text/markdown"(),mdt)
 end
-show(io::IO,::MIME"text/markdown",v::Vector{CABLABVarInfo})=foreach(x->show(io,MIME"text/markdown"(),x),v)
+show(io::IO,::MIME"text/markdown",v::Vector{ESDLVarInfo})=foreach(x->show(io,MIME"text/markdown"(),x),v)
 
 
 getNanVal{T<:AbstractFloat}(::Type{T}) = convert(T,NaN)

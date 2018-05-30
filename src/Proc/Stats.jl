@@ -74,7 +74,7 @@ function timelonlatquantiles(xout::AbstractVector,xin::AbstractArray,q::Abstract
   quantile!(xout,xtest,q)
 end
 
-import CABLAB.Proc.MSC.getNpY
+import ESDL.Proc.MSC.getNpY
 
 
 registerDATFunction(timelonlatquantiles,(TimeAxis,LonAxis,LatAxis),

@@ -1,28 +1,23 @@
 """
-The functions provided by CABLAB are supposed to work on different types of cubes. This module defines the interface for all
+The functions provided by ESDL are supposed to work on different types of cubes. This module defines the interface for all
 Data types that
 """
 module Cubes
 export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, TimeHAxis, QuantileAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, axes,
        AbstractSubCube, CubeMem, openTempCube, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis, axVal2Index, MSCAxis,
        getSingVal, TimeScaleAxis, axname, @caxis_str, rmCube, cubeproperties, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
-       getOutAxis
+       getOutAxis, needshandle, AbstractTempCube, gethandle, handletype, getcachehandle, ByInference
 
 """
     AbstractCubeData{T,N}
 
 Supertype of all cubes. `T` is the data type of the cube and `N` the number of
 dimensions. Beware that an `AbstractCubeData` does not implement the `AbstractArray`
-interface. However, the `CABLAB` functions [mapCube](@ref), [reduceCube](@ref),
+interface. However, the `ESDL` functions [mapCube](@ref), [reduceCube](@ref),
 [readCubeData](@ref), [plotMAP](@ref) and [plotXY](@ref) will work on any subtype
 of `AbstractCubeData`
 """
 abstract type AbstractCubeData{T,N} end
-
-"""
-getSubRange reads some Cube data and writes it to a pre-allocated memory.
-"""
-getSubRange(c::AbstractCubeData,a...)=error("getSubrange called in the wrong way with argument types $(typeof(c)), $(map(typeof,a))")
 
 """
 getSingVal reads a single point from the cube's data
@@ -106,26 +101,41 @@ Base.size(c::CubeMem,i)=size(c.data,i)
 Base.similar(c::CubeMem)=cubeMem(c.axes,similar(c.data),copy(c.mask))
 Base.ndims{T,N}(c::CubeMem{T,N})=N
 
-function getSubRange{T,N}(c::CubeMem{T,N},i...;write::Bool=true)
-  length(i)==N || error("Wrong number of view arguments to getSubRange. Cube is: $c \n indices are $i")
-  return (view(c.data,i...),view(c.mask,i...))
-end
-
 getSingVal{T,N}(c::CubeMem{T,N},i...;write::Bool=true)=(c.data[i...],c.mask[i...])
 getSingVal{T}(c::CubeMem{T,0};write::Bool=true)=(c.data[1],c.mask[1])
 getSingVal{T}(c::CubeAxis{T},i;write::Bool=true)=(c.values[i],nothing)
 
 readCubeData(c::CubeMem)=c
 
-getSubRange{T}(c::CubeMem{T,0};write::Bool=true)=(c.data,c.mask)
+function getSubRange{T,N}(c::Tuple{AbstractArray{T,N},AbstractArray{UInt8,N}},i...;write::Bool=true)
+  length(i)==N || error("Wrong number of view arguments to getSubRange. Cube is: $c \n indices are $i")
+  return (view(c[1],i...),view(c[2],i...))
+end
+getSubRange{T}(c::Tuple{AbstractArray{T,0},AbstractArray{UInt8,0}};write::Bool=true)=c
+
+"""
+    gethandle(c::AbstractCubeData, [block_size])
+
+Returns an indexable handle to the data.
+"""
+gethandle(c::AbstractCubeMem) = (c.data,c.mask)
+gethandle(c::CubeAxis) = collect(c.values)
+gethandle(c,block_size)=gethandle(c)
+function getcachehandle end
+
+immutable ViewHandle end
+immutable CacheHandle end
+handletype(::AbstractCubeMem)=ViewHandle()
 
 
-
-import ..CABLABTools.toRange
-function _read(c::CubeMem,thedata::Tuple,r::CartesianRange)
+import ..ESDLTools.toRange
+#Generic fallback method for _read
+function _read(c::AbstractCubeData,thedata::Tuple,r::CartesianRange)
+  N=ndims(r)
   outar,outmask=thedata
-  data=view(c.data,toRange(r)...)
-  mask=view(c.mask,toRange(r)...)
+  rr = convert(NTuple{N,UnitRange},r)
+  h = gethandle(c,size(r))
+  data,mask = getSubRange(h,rr...)
   copy!(outar,data)
   copy!(outmask,mask)
 end
@@ -147,6 +157,41 @@ newShape=(s1...,length(lonAx)*length(latAx),s2...)
 CubeMem(allNewAx,reshape(c.data,newShape),reshape(c.mask,newShape))
 end
 
+#Implement getindex on AbstractCubeData objects
+const IndR = Union{Integer,Colon,UnitRange}
+getfirst(i::Integer,a::CubeAxis)=i
+getlast(i::Integer,a::CubeAxis)=i
+getfirst(i::UnitRange,a::CubeAxis)=first(i)
+getlast(i::UnitRange,a::CubeAxis)=last(i)
+getfirst(i::Colon,a::CubeAxis)=1
+getlast(i::Colon,a::CubeAxis)=length(a)
+
+function Base.getindex(c::AbstractCubeData,i::Integer...)
+  length(i)==ndims(c) || error("You must provide $(ndims(c)) indices")
+  r = CartesianRange(CartesianIndex(i),CartesianIndex(i))
+  aout = zeros(eltype(c),size(r))
+  mout = fill(0xff,size(r))
+  _read(c,(aout,mout),r)
+  return (eltype(c)<:AbstractFloat && (mout[1] & 0x01)!=0x00) ? oftype(aout[1],NaN) : aout[1]
+end
+
+function Base.getindex(c::AbstractCubeData,i::IndR...)
+  length(i)==ndims(c) || error("You must provide $(ndims(c)) indices")
+  ax = totuple(axes(c))
+  starts = CartesianIndex(map(getfirst,i,ax))
+  lasts = CartesianIndex(map(getlast,i,ax))
+  r = CartesianRange(starts,lasts)
+  aout = zeros(eltype(c),size(r))
+  mout = fill(0xff,size(r))
+  _read(c,(aout,mout),r)
+  if eltype(c)<:AbstractFloat
+    map!((m,v)->(m & 0x01)!=0x00 ? convert(eltype(c),NaN) : v,aout,mout,aout)
+  end
+  squeezedims = totuple(find(i->size(aout,i)==1,1:ndims(aout)))
+  squeeze(aout,squeezedims)
+end
+Base.read(d::AbstractCubeData)=getindex(d,fill(Colon(),ndims(d))...)
+
 function formatbytes(x)
   exts=["bytes","KB","MB","GB","TB"]
   i=1
@@ -159,8 +204,13 @@ end
 cubesize{T}(c::AbstractCubeData{T})=(sizeof(T)+1)*prod(map(length,axes(c)))
 cubesize{T}(c::AbstractCubeData{T,0})=sizeof(T)+1
 
+include("MmapCubes.jl")
 include("TempCubes.jl")
+include("NetCDFCubes.jl")
 importall .TempCubes
+handletype(::Union{AbstractTempCube,AbstractSubCube})=CacheHandle()
+
+
 getCubeDes(c::AbstractSubCube)="Data Cube view"
 getCubeDes(c::TempCube)="Temporary Data Cube"
 getCubeDes(c::CubeMem)="In-Memory data cube"
@@ -176,14 +226,14 @@ function Base.show(io::IO,c::AbstractCubeData)
     println(io,"Total size: ",formatbytes(cubesize(c)))
 end
 
-import ..CABLAB.workdir
+import ..ESDL.workdir
 using NetCDF
 """
     saveCube(cube,name::String)
 
-Save a `TempCube` or `CubeMem` to the folder `name` in the CABLAB working directory.
+Save a `TempCube` or `CubeMem` to the folder `name` in the ESDL working directory.
 
-See also loadCube, CABLABdir
+See also loadCube, ESDLdir
 """
 function saveCube{T}(c::CubeMem{T},name::AbstractString)
   newfolder=joinpath(workdir[1],name)
@@ -207,6 +257,7 @@ function Base.show(io::IO,a::CategoricalAxis)
     end
 end
 Base.show(io::IO,a::SpatialPointAxis)=print(io,"Spatial points axis with ",length(a.values)," points")
+
 
 include("TransformedCubes.jl")
 

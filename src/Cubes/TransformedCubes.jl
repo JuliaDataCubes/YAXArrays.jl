@@ -1,7 +1,7 @@
 export ConcatCube, concatenateCubes
 export mapCubeSimple
-import ..CABLABTools.getiperm
-import ..Cubes._read
+import ..ESDLTools.getiperm
+import ..Cubes: _read, needshandle, gethandle, getcachehandle, handletype
 
 type PermCube{T,N,C} <: AbstractCubeData{T,N}
   parent::C
@@ -23,7 +23,12 @@ function _read{T,N}(x::PermCube{T,N},thedata::Tuple{Any,Any},r::CartesianRange{C
   permutedims!(thedata[2],mout,perm)
 end
 Base.permutedims{T,N}(x::AbstractCubeData{T,N},perm)=PermCube{T,N,typeof(x)}(x,perm)
-
+gethandle(c::PermCube,block_size)=gethandle(c,block_size,handletype(c.parent))
+function gethandle(c::PermCube,block_size,::ViewHandle)
+  data,mask = gethandle(c.parent)
+  PermutedDimsArray(data,c.perm),PermutedDimsArray(mask,c.perm)
+end
+gethandle(c::PermCube,block_size,::CacheHandle) = getcachehandle(c,CartesianIndex(block_size))
 
 
 type TransformedCube{T,N,F} <: AbstractCubeData{T,N}
@@ -43,6 +48,9 @@ function Base.map(op, incubes::AbstractCubeData...; T::Type=eltype(incubes[1]))
   props=merge(cubeproperties.(incubes)...)
   TransformedCube{T,N,typeof(op)}(incubes,op,axlist,props)
 end
+
+gethandle(c::TransformedCube,block_size)=getcachehandle(c,CartesianIndex(block_size))
+
 Base.size(x::TransformedCube)=size(x.parents[1])
 Base.size{T,N}(x::TransformedCube{T,N},i)=size(x.parents[1],i)
 axes(v::TransformedCube)=v.cubeAxes
@@ -131,6 +139,22 @@ using Base.Cartesian
   end
 end
 
+using RecursiveArrayTools
+gethandle(c::ConcatCube,block_size)=gethandle(c,block_size,handletype(c))
+function gethandle(c::ConcatCube,block_size,::ViewHandle)
+  data,mask = gethandle(c.cubelist[1])
+  d = [data]
+  m = [mask]
+  for i=2:length(c.cubelist)
+    data,mask = gethandle(c.cubelist[i])
+    push!(d,data)
+    push!(m,mask)
+  end
+  VectorOfArray(d),VectorOfArray(m)
+end
+gethandle(c::ConcatCube,block_size,::CacheHandle) = getcachehandle(c,CartesianIndex(block_size))
+handletype(c::ConcatCube)=any(i->handletype(i)==CacheHandle(),c.cubelist) ? CacheHandle() : ViewHandle()
+
 export SliceCube
 type SliceCube{T,N,iax} <: AbstractCubeData{T,N}
   parent
@@ -144,7 +168,7 @@ function SliceCube{T,N}(c::AbstractCubeData{T,N},ax,i)
   axlist = axes(c)
   iax = findAxis(ax,c)
   iax<1 && error("Axis $ax not found in input cube")
-  i = axVal2Index(axlist[iax],i)
+  i = axVal2Index(axlist[iax],i,fuzzy=true)
   0<i<=length(axlist[iax]) || error("Axis index $i out of bounds")
   axlistnew = deleteat!(copy(axlist),iax)
   pnew=copy(c.properties)
@@ -174,3 +198,16 @@ using Base.Cartesian
     return aout,mout
   end
 end
+
+
+gethandle(c::SliceCube,block_size)=gethandle(c,block_size,handletype(c.parent))
+@generated function gethandle{T,N,F}(c::SliceCube{T,N,F},block_size,::ViewHandle)
+  iax = F
+  v1 = Expr(:call,:view,:data,insert!(Any[:(:) for i=1:N],iax,:(c.ival))...)
+  v2 = Expr(:call,:view,:mask,insert!(Any[:(:) for i=1:N],iax,:(c.ival))...)
+  quote
+    data,mask = gethandle(c.parent)
+    ($v1,$v2)
+  end
+end
+gethandle(c::SliceCube,block_size,::CacheHandle) = getcachehandle(c,CartesianIndex(block_size))

@@ -11,7 +11,7 @@ datacubes directly. So `newCube = (abs(cube1-cube2))` would work as expected.
 
 # Analysis
 
-The CABLAB package comes with a list of predefined methods for statistical analysis.
+The ESDL package comes with a list of predefined methods for statistical analysis.
 The functions are defined to work on specific axes, for example a function that removes the
 mean annual cycle will alway work an the time axis. It does not matter which other axes are defined
 in the input cube, the function will simply loop over these.
@@ -32,7 +32,7 @@ that might be of interest to a broader community, please feel free to open a pul
 ## Seasonal cycles
 
 ```@autodocs
-Modules = [CABLAB.Proc.MSC]
+Modules = [ESDL.Proc.MSC]
 Private = false
 ```
 
@@ -40,7 +40,7 @@ Private = false
 ## Outlier detection
 
 ```@autodocs
-Modules = [CABLAB.Proc.Outlier]
+Modules = [ESDL.Proc.Outlier]
 Private = false
 ```
 
@@ -61,20 +61,20 @@ call one of the [OnlineStats](@ref) methods.
 Additional simple statistics functions are:
 
 ```@autodocs
-Modules = [CABLAB.Proc.Stats]
+Modules = [ESDL.Proc.Stats]
 Private = false
 ```
 
 
 ## Time series decomposition
 ```@autodocs
-Modules = [CABLAB.Proc.TSDecomposition]
+Modules = [ESDL.Proc.TSDecomposition]
 Private = false
 ```
 
 ## Cube transformations
 ```@autodocs
-Modules = [CABLAB.Proc.CubeIO]
+Modules = [ESDL.Proc.CubeIO]
 Private = false
 ```
 
@@ -113,7 +113,7 @@ splitTemp(t) = ifelse(t>280,2,1)                            # Define the classif
 outAxis      = CategoricalAxis("TempClass",["< 7C",">7C"])  # A two-length output axis, because there are two possible values
 mT    = mapCube(OnlineStats.Mean,cube,by=[t,VariableAxis], cfun=splitTemp, outAxis=outAxis) # Of course we want to split by variable, too
 
-using CABLABPlots
+using ESDLPlots
 plotXY(mT,xaxis="var",group="tempclass")
 ```
 ```@eval
@@ -123,7 +123,7 @@ import Documenter
 Documenter.Documents.RawHTML("<script>$(Patchwork.js_runtime())</script>")
 ```
 ```@eval
-using CABLAB
+using ESDL
 import OnlineStats
 import Documenter
 ds    = RemoteCube()
@@ -137,7 +137,7 @@ splitTemp(t) = ifelse(t>280,2,1)
 outAxis      = CategoricalAxis("TempClass",["< 7C",">7C"])
 mT    = mapCube(OnlineStats.Mean,cube,by=[t,VariableAxis], cfun=splitTemp, outAxis=outAxis)
 
-using CABLABPlots
+using ESDLPlots
 gr()
 p=plotXY(mT,xaxis="var",group="tempclass")
 b=IOBuffer()

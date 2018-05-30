@@ -1,8 +1,8 @@
 module TempCubes
-export TempCube, openTempCube, TempCubePerm, saveCube, loadCube,rmCube
+export TempCube, openTempCube, TempCubePerm, loadCube,rmCube, AbstractTempCube
 importall ..Cubes
-importall ...CABLABTools
-import ....CABLAB.CABLABdir
+importall ...ESDLTools
+import ....ESDL.ESDLdir
 
 "This defines a temporary datacube, written on disk which is usually "
 abstract type AbstractTempCube{T,N} <: AbstractCubeData{T,N} end
@@ -107,7 +107,7 @@ end
 TempCube(axlist,block_size::Tuple;kwargs...)=TempCube(axlist,CartesianIndex(block_size);kwargs...)
 
 function openTempCube(folder;persist=true,axlist=nothing)
-  
+
   axlist == nothing && (axlist=load(joinpath(folder,"axinfo.jld"),"axlist"))
   properties=try
       load(joinpath(folder,"axinfo.jld"),"properties")
@@ -143,9 +143,13 @@ function cleanTempCube(y::TempCube)
 end
 
 function rmCube(f::String)
-  if isdir(joinpath(CABLABdir(),f))
-    y=openTempCube(joinpath(CABLABdir(),f),persist=false)
-    cleanTempCube(y)
+  if isdir(joinpath(ESDLdir(),f))
+    if any(i->basename(i)=="data.bin",readdir(joinpath(ESDLdir(),f)))
+      rm(joinpath(ESDLdir(),f),recursive=true)
+    else
+      y=openTempCube(joinpath(ESDLdir(),f),persist=false)
+      cleanTempCube(y)
+    end
   end
 end
 
@@ -193,7 +197,8 @@ function _read{N}(y::TempCubePerm,thedata::Tuple,r::CartesianRange{CartesianInde
   return nothing
 end
 
-import ...CABLAB.workdir
+
+import ...ESDL.workdir
 
 """
     saveCube(c::AbstractCubeData, name::String)
@@ -218,7 +223,11 @@ Loads a cube that was previously saved with [`saveCube`](@ref). Returns a
 function loadCube(name::String)
   newfolder=joinpath(workdir[1],name)
   isdir(newfolder) || error("$(name) does not exist")
-  openTempCube(newfolder)
+  if any(i->basename(i)=="data.bin",readdir(newfolder))
+    openmmapcube(newfolder)
+  else
+    openTempCube(newfolder)
+  end
 end
 
 

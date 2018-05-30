@@ -1,8 +1,8 @@
-using CABLAB
+using ESDL
 using Base.Test
 
-addprocs(2)
-@everywhere using CABLAB, DataArrays
+#addprocs(2)
+@everywhere using ESDL, DataArrays
 
 @everywhere function sub_and_return_mean(xout1,xout2,xin)
     m=mean(filter(isfinite,xin))
@@ -16,13 +16,14 @@ registerDATFunction(sub_and_return_mean,(TimeAxis,),((TimeAxis,),()),inmissing=:
 
 function doTests()
   # Test simple Stats first
-  c=RemoteCube()
+  c=Cube()
 
   d = getCubeData(c,variable="air_temperature_2m",longitude=(30,31),latitude=(50,51),
                 time=(Date("2002-01-01"),Date("2008-12-31")))
 
   dmem=readCubeData(d)
 
+  @testset "Simple statistics using reduceCube" begin
   # Basic statistics
   m=reduceCube(mean,d,TimeAxis,skipmissing=true)
 
@@ -41,11 +42,12 @@ function doTests()
 
   wv=cosd.(dmem.axes[2].values)
   goodinds=dmem.mask.==0x00
+  end
   # the element-wise operations are right now a problem with the julia 0.6
   #@test Float32(sum(dmem.data[goodinds].*wv[goodinds])/sum(wv[goodinds]))==readCubeData(mtime).data[1]
 
   # Test Mean seasonal cycle retrieval
-
+  @testset "Seasonal cycle statistics and anomalies" begin
   cdata=getCubeData(c,variable="soil_moisture",longitude=(30,30),latitude=(50.75,50.75))
   d=readCubeData(cdata)
   x2=mapCube(getMSC,d)
@@ -58,32 +60,36 @@ function doTests()
   # Test gap filling
   cube_filled=readCubeData(mapCube(gapFillMSC,d))
   imiss=findfirst(d.mask)
-  @test cube_filled.mask[imiss]==CABLAB.Mask.FILLED
+  @test cube_filled.mask[imiss]==ESDL.Mask.FILLED
   its=mod(imiss-1,46)+1
   @test cube_filled.data[imiss]≈readCubeData(x2).data[its]
-  @test !any(cube_filled.mask.==CABLAB.Mask.MISSING)
+  @test !any(cube_filled.mask.==ESDL.Mask.MISSING)
 
   # Test removal of MSC
 
   cube_anomalies=readCubeData(mapCube(removeMSC,cube_filled))
   @test isapprox(cube_anomalies.data[47:92],(cube_filled.data[47:92].-readCubeData(x2).data[1:46]))
 
+
   # Test normalization
   anom_normalized=readCubeData(mapCube(normalizeTS,cube_anomalies))
   @test mean(anom_normalized.data)<1e7
   @test 1.0-1e-6 <= std(anom_normalized.data) <= 1.0+1e-6
-  #test anomaly detection
+  end
 
+  @testset "Anomaly detection" begin
   d3=getCubeData(c,variable=["gross_primary_productivity","air_temperature_2m"],longitude=(30,30),latitude=(50.75,50.75))
   anom_new=mapCube(removeMSC,d3)
   anom_norm=readCubeData(mapCube(normalizeTS,anom_new))
   anoms_detected = mapCube(DAT_detectAnomalies!,anom_norm,["KDE","T2","REC"],reshape(Float64.(anom_norm.data),(506,2)))
-
+  end
 # Test generation of new axes
+
 
   d1=getCubeData(c,variable=["gross_primary_productivity","net_ecosystem_exchange"],longitude=(30,30),latitude=(50,50))
   d2=getCubeData(c,variable=["gross_primary_productivity","air_temperature_2m"],longitude=(30,30),latitude=(50,50))
 
+  @testset "Quantiles" begin
   #Test Quantiles
   cdata=getCubeData(c,variable=["soil_moisture","gross_primary_productivity"],longitude=(30,30),latitude=(50.75,50.75))
   o=readCubeData(mapCube(timelonlatquantiles,cdata,[0.1,0.5,0.9]))
@@ -91,8 +97,10 @@ function doTests()
   size(o2.data)
   o2=o2.data[:,:,:,1][o2.mask[:,:,:,1].==0x00]
   @test quantile(o2,[0.1,0.5,0.9])==o.data[:,1]
-
+  end
   nothing
+
+  @testset "Multiple output cubes" begin
   #Test onvolving multiple output cubes
   c1=getCubeData(c,variable="gross_primary_productivity",longitude=(30,31),latitude=(50,51))
 
@@ -102,9 +110,14 @@ function doTests()
 
   @test isapprox(permutedims(c2.data.-mean(c2.data,3),(3,1,2)),readCubeData(cube_wo_mean).data)
   @test isapprox(mean(c2.data,3)[:,:,1],readCubeData(cube_means).data)
+  end
 end
 
+@testset "Parallel processing" begin
 doTests()
+end
 rmprocs(workers())
 
+@testset "Single proc processing" begin
 doTests()
+end

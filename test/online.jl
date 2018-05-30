@@ -1,8 +1,9 @@
-using CABLAB
+using ESDL
 using Base.Test
 
 using OnlineStats
-c=RemoteCube()
+@testset "OnlineStats" begin
+c=Cube()
 
 d = getCubeData(c,variable="air_temperature_2m",longitude=(30,31),latitude=(50,51),
               time=(Date("2002-01-01"),Date("2008-12-31")))
@@ -22,9 +23,9 @@ d2 = getCubeData(c,variable=["air_temperature_2m","gross_primary_productivity"],
 dm=readCubeData(d2)
 xin=permutedims(dm.data,[4,1,2,3])
 xin=reshape(xin,(2,length(xin) ÷ 2))
-startVal=mean(xin,2)[:].+rand(Float32,2,5)
+#startVal=mean(xin,2)[:].+rand(Float32,2,5)
 
-x=mapCube(KMeans,d2,5,copy(startVal),MDAxis=VariableAxis)
+x=mapCube(KMeans,d2,5,2,MDAxis=VariableAxis)
 
 o2=KMeans(2,5)
 o2.value[:]=startVal
@@ -39,9 +40,9 @@ covmat,means = mapCube(CovMatrix,dm,MDAxis=VariableAxis)
 
 @test all(isapprox.(covmat.data,cov(reshape(dm.data,length(dm.data) ÷ 2,2))))
 
-using CABLAB
+using ESDL
 using DataStructures
-c=RemoteCube()
+c=Cube()
 d2 = getCubeData(c,variable=["air_temperature_2m","gross_primary_productivity"],longitude=(30,31),latitude=(50,51),
               time=(Date("2002-01-01"),Date("2008-12-31")))
 dm=readCubeData(d2)
@@ -92,3 +93,5 @@ end
 #     @test mean(dhelp) ≈ oogrouped2.data[know]
 #   end
 # end
+
+end

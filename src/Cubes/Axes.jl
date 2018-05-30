@@ -2,9 +2,10 @@ module Axes
 export CubeAxis, QuantileAxis, TimeAxis, TimeHAxis, VariableAxis, LonAxis, LatAxis, CountryAxis,
 SpatialPointAxis,Axes,YearStepRange,CategoricalAxis,RangeAxis,axVal2Index,MSCAxis,
 TimeScaleAxis, axname, @caxis_str, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
-getOutAxis
+getOutAxis, ByInference
 import NetCDF.NcDim
 importall ..Cubes
+import ...ESDLTools: totuple
 using Base.Dates
 
 immutable YearStepRange <: Range{Date}
@@ -150,28 +151,28 @@ axname{T,S}(::RangeAxis{T,S})=string(S)
 axunits(::CubeAxis)="unknown"
 axunits(::LonAxis)="degrees_east"
 axunits(::LatAxis)="degrees_north"
-function axVal2Index{T,S,F<:StepRange}(a::RangeAxis{T,S,F},v)
+function axVal2Index{T,S,F<:StepRange}(a::RangeAxis{T,S,F},v;fuzzy=false)
   dt = v-first(a.values)
   r = round(Int,dt/step(a.values))+1
   return max(1,min(length(a.values),r))
 end
-function axVal2Index{T<:DateTime,S,F<:Range}(a::RangeAxis{T,S,F},v)
+function axVal2Index{T<:DateTime,S,F<:Range}(a::RangeAxis{T,S,F},v;fuzzy=false)
   dt = v-first(a.values)
   r = round(Int,dt/Millisecond(step(a.values)))+1
   return max(1,min(length(a.values),r))
 end
-function axVal2Index{T<:Date,S,F<:YearStepRange}(a::RangeAxis{T,S,F},v::Date)
+function axVal2Index{T<:Date,S,F<:YearStepRange}(a::RangeAxis{T,S,F},v::Date;fuzzy=false)
   y = year(v)
   d = dayofyear(v)
   r = (y-a.values.startyear)*a.values.NPY + d÷a.values.step + 1
   return max(1,min(length(a.values),r))
 end
-function axVal2Index{T<:Date,S,F<:StepRange}(a::RangeAxis{T,S,F},v::Date)
+function axVal2Index{T<:Date,S,F<:StepRange}(a::_RangeAxis{T,S,F},v::Date;fuzzy=false)
   dd = map(i->abs((i-v).value),a.values)
   mi,ind = findmin(dd)
   return ind
 end
-axVal2Index{T,S,F<:StepRangeLen}(axis::RangeAxis{T,S,F},v;fuzzy::Bool=false)=min(max(round(Int,(v-first(axis.values))/step(axis.values))+1,1),length(axis))
+axVal2Index{T,S,F<:StepRangeLen}(axis::_RangeAxis{T,S,F},v;fuzzy::Bool=false)=min(max(round(Int,(v-first(axis.values))/step(axis.values))+1,1),length(axis))
 function axVal2Index(axis::CategoricalAxis{String},v::String;fuzzy::Bool=false)
   r=findfirst(axis.values,v)
   if r==0
@@ -195,7 +196,7 @@ getAxis(d::Any,v::Any)=error("getAxis not defined for $d $v")
 immutable ByName <: AxisDescriptor
   name::String
 end
-
+immutable ByInference <: AxisDescriptor end
 immutable ByType{T} <: AxisDescriptor
   t::Type{T}
 end
@@ -243,13 +244,40 @@ function getAxis{T<:CubeAxis}(desc,axlist::Vector{T})
     return axlist[i]
   end
 end
-getOutAxis(desc,axlist,incubes,pargs) = getAxis(desc,axlist)
-function getOutAxis(desc::ByFunction,axlist,incubes,pargs)
+getOutAxis(desc,axlist,incubes,pargs,f) = getAxis(desc,axlist)
+function getOutAxis(desc::ByFunction,axlist,incubes,pargs,f)
   outax = desc.f(incubes,pargs)
   isa(outax,CubeAxis) || error("Axis Generation function $(desc.f) did not return an axis")
   outax
 end
+import DataStructures: counter
+function getOutAxis(desc::Tuple{ByInference},axlist,incubes,pargs,f)
+  inAxes = map(axes,incubes)
+  inAxSmall = map(i->filter(j->in(j,axlist),i) |>collect,inAxes)
+  inSizes = map(i->totuple(map(length,i)),inAxSmall)
+  testars = map(randn,inSizes)
 
+  resu = f(testars...,pargs...)
+  isa(resu,AbstractArray) || isa(resu,Number) || error("Function must return an array or a number")
+  isa(resu,Number) && return ()
+  outsizes = size(resu)
+  outaxes = map(outsizes,1:length(outsizes)) do s,il
+    if s>2
+      i = find(i->i==s,length.(axlist))
+      if length(i)==1
+        return axlist[i[1]]
+      else
+        info("Found multiple matching axes for output dimension $il")
+      end
+    end
+    return RangeAxis("OutAxis$(il)",1:s)
+  end
+  if !allunique(outaxes)
+    #TODO: fallback with axis renaming in this case
+    error("Could not determine unique output axes from output shape")
+  end
+  return totuple(outaxes)
+end
 getAxis(desc,c::AbstractCubeData)=getAxis(desc,axes(c))
 getAxis{T<:CubeAxis}(desc::ByValue,axlist::Vector{T})=desc.v
 
@@ -274,7 +302,7 @@ function NcDim(a::CubeAxis{Date},start::Integer,count::Integer)
   starttime=a.values[1]
   startyear=Dates.year(starttime)
   atts=Dict{Any,Any}("units"=>"days since $startyear-01-01")
-  d=map(x->(x-starttime).value/86400000,tv)
+  d=map(x->Float64(convert(Day,(x-starttime)).value),tv)
   NcDim(axname(a),length(d),values=d,atts=atts)
 end
 #Default constructor

@@ -1,14 +1,15 @@
-using CABLAB
+using ESDL
 using Base.Test
 import DataFrames: DataFrame,aggregate,skipmissing
 import Base.Dates: year
-c=RemoteCube()
+c=Cube()
 
 d = getCubeData(c,variable=["air_temperature_2m","gross_primary_productivity"],longitude=(30,31),latitude=(50,51),
                 time=(Date("2002-01-01"),Date("2008-12-31")))
 
 dmem=readCubeData(d)
 
+@testset "Dataframe representation" begin
 function docor(xout,xin)
     #Inside this function, xin is now a data frame
     @test isa(xin,DataFrame)
@@ -38,3 +39,4 @@ registerDATFunction(annMean,indims=indims,outdims=outdims)
 o = mapCube(annMean,dmem)
 
 @test all(isapprox.(o.data[1,1,:,:],mean(dmem.data[:,:,1:46,1],3)))
+end

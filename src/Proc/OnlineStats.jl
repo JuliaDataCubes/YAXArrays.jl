@@ -4,18 +4,18 @@ using Combinatorics
 importall ..DAT
 importall ..Cubes
 importall ..Mask
-import ...CABLABTools.totuple
+import ...ESDLTools.totuple
 export DATfitOnline
 
 
-function DATfitOnline(xout::AbstractArray{T},ain,cfun) where T<:Series{0}
+function DATfitOnline(xout::AbstractArray{T},ain,cfun) where T<:Series{Number}
   xin,maskin = ain
   for (mi,xi) in zip(maskin,xin)
     (mi & MISSING)==VALID && fit!(xout[1],xi)
   end
 end
 
-function DATfitOnline{T<:Series{0}}(xout::AbstractArray{T},ain,spl,cfun)
+function DATfitOnline{T<:Series{Number}}(xout::AbstractArray{T},ain,spl,cfun)
   xin,maskin = ain
   splitmask,msplitmask = spl
   for (mi,xi,si,m2) in zip(maskin,xin,splitmask,msplitmask)
@@ -167,9 +167,13 @@ function mapCube{T<:OnlineStat}(f::Type{T},cdata::AbstractCubeData,pargs...;by=C
     indims=length(bycubes)==0 ? [get_descriptor.(iain)] : [get_descriptor.(ia1),[]]
   end
   outBroad=[get_descriptor(ob) for ob in outBroad]
-  fout(x) = Series(EqualWeight(),getGenFun(f,pargs...)(x))
+  fout(x) = Series(getGenFun(f,pargs...)(x))
   ic = ntuple(i->InDims(indims[i]...,miss=MaskMissing()),length(indims))
   oc = (OutDims(outdims...,bcaxisdesc=outBroad,finalizeOut=getFinalFun(f,funargs...),genOut=fout,outtype=typeof(fout(f)),miss=NoMissing(),update=true),)
+  @show indata
+  @show ic
+  @show oc
+  @show kwargs
   return mapCube(DATfitOnline,indata,cfun;
     incubes = ic,outcubes = oc,
     kwargs...

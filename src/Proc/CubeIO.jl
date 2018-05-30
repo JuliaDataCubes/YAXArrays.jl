@@ -119,4 +119,58 @@ function sampleLandPoints(cdata::CubeAPI.AbstractCubeData,nsample::Integer,nomis
   y=mapCube(toPointAxis,(cdata,axlist[ilon],axlist[ilat],sax2),max_cache=1e8);
 end
 export sampleLandPoints
+
+using NetCDF
+import IterTools: product
+function writefun(xout,xin,a,nd,cont_loop,filename)
+  x = map((m,v)->m==0x00 ? v : oftype(v,-9999.0),xin[2],xin[1])
+
+  count_vec = fill(-1,nd)
+  start_vec = fill(1,nd)
+
+  used_names = String[]
+  for (k,v) in cont_loop
+    count_vec[k] = 1
+    start_vec[k] = a[v][1]
+    push!(used_names,v)
+  end
+
+  splnames = Iterators.filter(i->!in(i,used_names),keys(a))
+  vn = join(string.([a[s][2] for s in splnames]),"_")
+  isempty(vn) && (vn="layer")
+
+  ncwrite(x,filename,vn,start=start_vec,count=count_vec)
+end
+
+"""
+    exportcube(r::AbstractCubeData,filename::String)
+
+Saves a cube object to a portable NetCDF in `filename`.
+"""
+function exportcube(r::AbstractCubeData,filename::String;priorities = Dict("LON"=>1,"LAT"=>2,"TIME"=>3))
+
+  ax = axes(r)
+  ax_cont = collect(filter(i->isa(i,RangeAxis),ax))
+  ax_cat  = filter(i->!isa(i,RangeAxis),ax)
+  prir = map(i->get(priorities,uppercase(axname(i)),10),ax_cont)
+  ax_cont=ax_cont[sortperm(prir)]
+  dims = map(NcDim,ax_cont)
+  isempty(ax_cat) && (ax_cat=[VariableAxis(["layer"])])
+  it = map(i->i.values,ax_cat)
+  vars = NcVar[NcVar(join(collect(string.(a)),"_"),dims,t=eltype(r),atts=Dict("missing_value"=>-9999.0)) for a in product(it...)]
+  file = NetCDF.create(filename,vars)
+  for d in dims
+    ncwrite(d.vals,filename,d.name)
+  end
+  dl = map(i->i.dimlen,dims) |> cumprod
+  isplit = findfirst(i->i>1e6,dl)
+  isplit < 1 && (isplit=length(dl)+1)
+  incubes = InDims(ax_cont[1:(isplit-1)]...,miss=MaskMissing())
+  cont_loop = Dict(ii=>axname.(ax_cont[ii]) for ii in isplit:length(ax_cont))
+
+  mapCube(writefun,r,length(ax_cont),cont_loop,filename,incubes=incubes,include_loopvars=true,ispar=false)
+  ncclose(filename)
+  nothing
+end
+export exportcube
 end

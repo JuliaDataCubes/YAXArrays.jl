@@ -4,7 +4,7 @@ importall ..Cubes.TempCubes
 import ..Cubes.TempCubes.tofilename
 export CachedArray, MaskedCacheBlock, getSubRange, getSubRange2
 importall ..CubeAPI
-importall ..CABLABTools
+importall ..ESDLTools
 importall ..Mask
 using Base.Cartesian
 
@@ -84,6 +84,8 @@ function CachedArray(x,max_blocks::Int,block_size::CartesianIndex,blocktype::Typ
     end
     CachedArray{T,N,blocktype,vtype}(x,max_blocks,block_size,blocks,currentblocks,nullblock)
 end
+getcachehandle(tc::AbstractCubeData,block_size) = CachedArray(tc,1,block_size,MaskedCacheBlock{eltype(tc),length(block_size.I)})
+gethandle(tc::Union{AbstractTempCube,AbstractSubCube},block_size) = getcachehandle(tc,CartesianIndex(block_size))
 Base.IndexStyle(::CachedArray)=Base.IndexCartesian()
 #Base.setindex!{T,N}(c::CachedArray{T,N},v,i::CartesianIndex{N})=0.0
 Base.size(c::CachedArray)=size(c.x)
@@ -305,9 +307,9 @@ function read_subblock!{T,N}(x::SimpleCacheBlock{T,N},y::NcVar{T,N},block_size::
     NetCDF.readvar!(y,x.data,asRanges(istart+CartesianIndex{N}(),block_size)...)
 end
 
-import CABLAB.CubeAPI.SubCube, CABLAB.CubeAPI.SubCubePerm
-import CABLAB.CubeAPI._read
-import CABLAB.CubeAPI.SubCubeV, CABLAB.CubeAPI.SubCubeVPerm
+import ESDL.CubeAPI.SubCube, ESDL.CubeAPI.SubCubePerm
+import ESDL.CubeAPI._read
+import ESDL.CubeAPI.SubCubeV, ESDL.CubeAPI.SubCubeVPerm
 
 toSymbol(d::DataType)=Symbol(split(replace(string(d),r"\{\S*\}",""),".")[end])
 
