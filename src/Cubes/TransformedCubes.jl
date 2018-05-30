@@ -1,6 +1,6 @@
 export ConcatCube, concatenateCubes
 export mapCubeSimple
-import ..CABLABTools.getiperm
+import ..ESDLTools.getiperm
 import ..Cubes: _read, needshandle, gethandle, getcachehandle, handletype
 
 type PermCube{T,N,C} <: AbstractCubeData{T,N}

@@ -1,4 +1,4 @@
-# CABLAB.jl
+# ESDL.jl
 
 *A package to explore and analyze the Earth System Data Cube*
 
@@ -6,7 +6,7 @@
 
 ## Example Notebooks
 
-You can find some example Jupyter Notebooks that using *CABLAB.jl* [here](https://github.com/CAB-LAB/JuliaDatDemo)
+You can find some example Jupyter Notebooks that using *ESDL.jl* [here](https://github.com/CAB-LAB/JuliaDatDemo)
 
 ## Manual Outline
 

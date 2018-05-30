@@ -6,11 +6,11 @@ Before one can read data from a cube, it has to be opened. To open a data cube
 which is accesible through the file system, use the `Cube` constructor:
 
  ```julia
-using CABLAB
+using ESDL
 c = Cube("/patch/to/cube")
 ```
 ```
-CABLAB data cube at /Net/Groups/BGI/scratch/DataCube/v0.2.0/high-res/
+ESDL data cube at /Net/Groups/BGI/scratch/DataCube/v0.2.0/high-res/
 Spatial resolution:  4320x2160 at 0.083333 degrees.
 Temporal resolution: 2001-01-01T00:00:00 to 2012-01-01T00:00:00 at 8daily time steps
 Variables:           aerosol_optical_thickness_1610 aerosol_optical_thickness_550 aerosol_optical_thickness_555 aerosol_optical_thickness_659 aerosol_optical_thickness_865 air_temperature_2m bare_soil_evaporation black_sky_albedo burnt_area c_emissions country_mask evaporation evaporative_stress fractional_snow_cover gross_primary_productivity interception_loss land_surface_temperature latent_energy net_ecosystem_exchange open_water_evaporation ozone potential_evaporation precipitation root_moisture sensible_heat snow_sublimation snow_water_equivalent soil_moisture surface_moisture terrestrial_ecosystem_respiration transpiration water_mask water_vapour white_sky_albedo
@@ -21,7 +21,7 @@ This returns a `Cube` object that contains some basics information about the cub
 ## Getting a data handle
 
 ```@setup 1
-using CABLAB
+using ESDL
 c=RemoteCube()
 ```
 
@@ -36,7 +36,7 @@ All keyword arguments default to the full range, so calling `getCubeData` withou
 keyword arguments will return a view into the whole data cube.
 
 ```@docs
-CABLAB.CubeAPI.getCubeData
+ESDL.CubeAPI.getCubeData
 ```
 
 
@@ -52,7 +52,7 @@ needed for the analysis. One can extract such a list by first creating a cube vi
 containing all the needed variables and then apply the `extractLonLats` function.
 
 ```@docs
-CABLAB.Proc.CubeIO.extractLonLats
+ESDL.Proc.CubeIO.extractLonLats
 ```
 
 Here is an example how to apply the function:
@@ -67,56 +67,56 @@ cubenew  = extractLonLats(cubedata,ll)
 
 ## Cube Types
 
-In CABLAB, you will
+In ESDL, you will
 
 ```@docs
-CABLAB.Cubes.AbstractCubeData
+ESDL.Cubes.AbstractCubeData
 ```
 
 ```@docs
-CABLAB.Cubes.CubeMem
-```
-
-
-```@docs
-CABLAB.CubeAPI.SubCube
-```
-
-```@docs
-CABLAB.CubeAPI.SubCubeV
+ESDL.Cubes.CubeMem
 ```
 
 
 ```@docs
-CABLAB.Cubes.TempCubes.TempCube
+ESDL.CubeAPI.SubCube
+```
+
+```@docs
+ESDL.CubeAPI.SubCubeV
+```
+
+
+```@docs
+ESDL.Cubes.TempCubes.TempCube
 ```
 
 
 ## Cube Axes
 
-Axes are an essential part of each Cube in CABLAB. Every dimension that a cube has is associated
+Axes are an essential part of each Cube in ESDL. Every dimension that a cube has is associated
 with an axis that stores the values of the dimension. For example, a `LatitudeAxis` will contains a
 field `values` representing the chosen latitudes. Similarly, a `VariableAxis` will contain a list of
 Variable names. Axes types are divided in categorical axes and axes represented by ranges. All of them
 are subtypes of the abstract type `CubeAxis`.
 
 ```@docs
-CABLAB.Cubes.Axes.CubeAxis
+ESDL.Cubes.Axes.CubeAxis
 ```
 
 ```@docs
-CABLAB.Cubes.Axes.CategoricalAxis
+ESDL.Cubes.Axes.CategoricalAxis
 ```
 
 ```@docs
-CABLAB.Cubes.Axes.RangeAxis
+ESDL.Cubes.Axes.RangeAxis
 ```
 
 ## Cube Masks
 
-Every data cube type in CABLAB contains has a representation for the mask, which
+Every data cube type in ESDL contains has a representation for the mask, which
 has the primary purpose of describing missing values and the reason for missingness.
-CABLAB masks are represented as `UInt8`-arrays, where each value can be one of the following:
+ESDL masks are represented as `UInt8`-arrays, where each value can be one of the following:
 
 * `VALID` a regular data entry
 * `MISSING` classical missing value
@@ -124,13 +124,13 @@ CABLAB masks are represented as `UInt8`-arrays, where each value can be one of t
 * `OUTOFPERIOD` current time step is not inside the measurement period
 * `FILLED` does not count as missing, but still denotes that the value is gap filled and not measured
 
-These names can be imported by `using CABLAB.Mask`. The user can decide if he wants to use
+These names can be imported by `using ESDL.Mask`. The user can decide if he wants to use
 the masks in his analyses or rather wants to refer to a different representation with
 `DataArray`s or just representing missings with `NaN`s. See [registerDATFunction](@ref) for details.
 
 ## Opening Remote Data Cubes
 
-If you just want to try the CABLAB data cube and don't have access to the full data set, you can open a remote cube through
+If you just want to try the ESDL data cube and don't have access to the full data set, you can open a remote cube through
 a THREDDS server. All you need is a working internet connection to do this:
 
 ```@docs
@@ -152,5 +152,5 @@ sampleLandPoints
 ## List of known regions
 
 ```@docs
-CABLAB.CubeAPI.known_regions
+ESDL.CubeAPI.known_regions
 ```

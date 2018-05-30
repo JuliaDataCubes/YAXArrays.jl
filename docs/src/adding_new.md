@@ -32,7 +32,7 @@ In order to understand better what happens, lets look at some examples. We want 
 and returns time series of the same length. We register the function the following way:                  
 
 ```@example
-using CABLAB # hide
+using ESDL # hide
 function fillGaps(xout::Vector, mout::Vector{UInt8}, xin::Vector, min::Vector{UInt8})
   # code goes here
 end
@@ -50,7 +50,7 @@ In the next example we assume want to register a function that calculates the ti
 calculate the variance in the presence of missing data. To do this, the input data is best represented as `missing` form the Missing package. We register the function in the following way:
 
 ```@example
-using CABLAB # hide
+using ESDL # hide
 using DataArrays
 function timeVariance{T}(xout::Array{T,0}, xin::DataVector)
   xout[1]=var(xin,skipmissing=true)
@@ -77,7 +77,7 @@ If a function call needs additional arguments, they are simple appended to the `
 to register a multivariate extreme event detection method `detectExtremes`, where one can choose from several methods, the function signature would look like this:
 
 ```@example
-using CABLAB # hide
+using ESDL # hide
 function detectExtremes(xout::Vector, xin::Matrix, method)
   #code goes here
 end
@@ -95,7 +95,7 @@ Sometimes the registered function depends on additional arguments that are not u
 removes the mean annual cycle from a time series might have the following signature:
 
 ```@example
-using CABLAB # hide
+using ESDL # hide
 function removeMSC(xout,xin,NpY,xmsc)
   #code
 end
@@ -106,9 +106,9 @@ it makes sense to allocate this array once and then re-use it for each grid cell
 choices, we either let the user determine these two additional function arguments or we write a callback function that does this automatically. Here is an example:
 
 ```@example
-using CABLAB # hide
+using ESDL # hide
 function prepareArgs(cubes, pargs)
-  timeAxis = CABLAB.DAT.getAxis(TimeAxis,cube[1])
+  timeAxis = ESDL.DAT.getAxis(TimeAxis,cube[1])
   npy = timeAxis.values.NPY
   xmsc = zeros(Float32,npy)
   return npy,xmsc
@@ -119,9 +119,9 @@ The callback function accepts two arguments, a tuple of input cubes (`cubes`) an
 arguments that are appended to each call of the registered function. So we can register the `removeMSC` function the following way:
 
 ```@example
-using CABLAB # hide
+using ESDL # hide
 function prepareArgs(cubes, pargs) # hide
-  timeAxis = CABLAB.DAT.getAxis(TimeAxis,cube[1]) # hide
+  timeAxis = ESDL.DAT.getAxis(TimeAxis,cube[1]) # hide
   npy = timeAxis.values.NPY # hide
   xmsc = zeros(Float32,npy) # hide
   return npy,xmsc # hide
@@ -141,7 +141,7 @@ This model depends on the vegetation type of each grid cell, which is a static v
 Registering the function is quite straightforward:
 
 ```@example
-using CABLAB # hide
+using ESDL # hide
 function predictCarbonSink{T,U}(xout::Array{T,0}, xin::Matrix, vegmask::Array{U,0})
   #Code goes here
 end
@@ -161,7 +161,7 @@ In some cases one needs to have access to the value of an axis, for example when
 are important to determine grid cell weights. To do this, one can pass a cube axis to mapCube as if it was a cube having only one dimension.
 
 ```@example
-using CABLAB # hide
+using ESDL # hide
 function spatialAggregation{T}(xout::Array{T,0}, xin::Matrix, latitudes::AbstractVector)
   #code goes here
 end
@@ -174,7 +174,7 @@ registerDATFunction(spatialAggregation, indims = inAxes, outdims = outAxes);
 Here, the function will operate on a lon x lat matrix and one has access to the latitude values inside the function.
 For the second input cube the input axis we extract the latitude axis from the first
 user-supplied cube and pass it to the calculation as a second input cube. So we apply the function using:
-`mapCube(spatialAggregation, (cubedata, CABLAB.DAT.getAxis(LatAxis, cubedata))`.
+`mapCube(spatialAggregation, (cubedata, ESDL.DAT.getAxis(LatAxis, cubedata))`.
 
 ### Determine output axis from cube properties
 
@@ -185,7 +185,7 @@ are the regression parameters, so the output axis will be a newly created `Param
 the fitting parameters. In this example we create a ParameterAxis for a quadratic regression.
 
 ```@example
-using CABLAB # hide
+using ESDL # hide
 function ParameterAxis(order::Integer)
   order > 0 || error("Regression must be at least linear")
   CategoricalAxis("Parameter",["offset";["p$i" for i=1:order]])
@@ -196,7 +196,7 @@ ParameterAxis(2)
 Now we can go and register the function, while we specify the output axis with a function calling the Axis constructor.
 
 ```@example
-using CABLAB # hide
+using ESDL # hide
 function ParameterAxis(order::Integer) # hide
   order > 0 || error("Regression must be at least linear") # hide
   ParameterAxis(["offset";["p$i" for i=1:order]]) # hide

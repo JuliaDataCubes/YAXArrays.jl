@@ -1,7 +1,7 @@
 module CubeAPI
 importall ..Cubes
 importall ..Cubes.Axes
-importall ..CABLABTools
+importall ..ESDLTools
 import Base.Markdown.@md_str
 export Cube, getCubeData,getTimeRanges,readCubeData, getMemHandle, RemoteCube, known_regions
 export isvalid, isinvalid, isvalid, isvalidorfilled, Mask
@@ -116,7 +116,7 @@ type Cube
 end
 
 function Cube(;resolution="low")
-  haskey(ENV,"CABLAB_CUBEDIR") ? Cube(joinpath(ENV["CABLAB_CUBEDIR"],"low-res")) : RemoteCube()
+  haskey(ENV,"ESDL_CUBEDIR") ? Cube(joinpath(ENV["ESDL_CUBEDIR"],"low-res")) : RemoteCube()
 end
 
 function Cube(base_dir::AbstractString)
@@ -147,7 +147,7 @@ where `base_url` is the datacube's base url.
 * `config` the cube's static configuration [CubeConfig](@ref)
 
 ```@example
-using CABLAB
+using ESDL
 ds=remoteCube()
 ```
 
@@ -196,7 +196,7 @@ function RemoteCube(;resolution="low",url="http://www.brockmann-consult.de/cabla
 end
 
 function Base.show(io::IO,c::Cube)
-  println(io,"CABLAB data cube at ",c.base_dir)
+  println(io,"ESDL data cube at ",c.base_dir)
   println(io,"Spatial resolution:  ",c.config.grid_width,"x",c.config.grid_height," at ",c.config.spatial_res," degrees.")
   println(io,"Temporal resolution: ",c.config.start_time," to ",c.config.end_time," at ",c.config.temporal_res,"daily time steps")
   print(  io,"Variables:           ")
@@ -207,7 +207,7 @@ function Base.show(io::IO,c::Cube)
 end
 
 function Base.show(io::IO,c::RemoteCube)
-  println(io,"Remote CABLAB data cube at ",c.base_url)
+  println(io,"Remote ESDL data cube at ",c.base_url)
   println(io,"Spatial resolution:  ",c.config.grid_width,"x",c.config.grid_height," at ",c.config.spatial_res," degrees.")
   println(io,"Temporal resolution: ",c.config.start_time," to ",c.config.end_time," at ",c.config.temporal_res,"daily time steps")
   print(  io,"Variables:           ")
@@ -400,7 +400,7 @@ Returns a view into the data cube. The following keyword arguments are accepted:
 - *time*: a single Date object or a 2-element iterable (time_start, time_end)
 - *latitude*: a single latitude value or a 2-element iterable (latitude_start, latitude_end)
 - *longitude*: a single longitude value or a 2-element iterable (longitude_start, longitude_end)
-- *region*: specify a country or SREX region by name or ISO_A3 code. Type `?CABLAB.known_regions` to see a list of pre-defined areas
+- *region*: specify a country or SREX region by name or ISO_A3 code. Type `?ESDL.known_regions` to see a list of pre-defined areas
 
 Returns a `SubCube` object which represents a view into the original data cube.
 
@@ -801,7 +801,7 @@ gettoffsnt(::SubCubeStatic,r::CartesianRange{CartesianIndex{2}})=(0,1)
   end
 
 
-immutable CABLABVarInfo
+immutable ESDLVarInfo
   longname::String
   units::String
   url::String
@@ -823,7 +823,7 @@ showVarInfo(cube::SubCubeV)=[showVarInfo(cube,v) for v in cube.variable]
 function showVarInfo(cube, variable::String)
     filename=getremFileName(cube.cube,variable)
     v=NetCDF.open(filename,variable)
-    vi=CABLABVarInfo(
+    vi=ESDLVarInfo(
       get(v.atts,"long_name",variable),
       get(v.atts,"units","unknown"),
       get(v.atts,"url","no link"),
@@ -835,7 +835,7 @@ function showVarInfo(cube, variable::String)
 end
 
 import Base.show
-function show(io::IO,::MIME"text/markdown",v::CABLABVarInfo)
+function show(io::IO,::MIME"text/markdown",v::ESDLVarInfo)
     un=v.units
     url=v.url
     re=v.reference
@@ -852,7 +852,7 @@ function show(io::IO,::MIME"text/markdown",v::CABLABVarInfo)
     mdt[3].items[3][1].content[3]=[" $re"]
     show(io,MIME"text/markdown"(),mdt)
 end
-show(io::IO,::MIME"text/markdown",v::Vector{CABLABVarInfo})=foreach(x->show(io,MIME"text/markdown"(),x),v)
+show(io::IO,::MIME"text/markdown",v::Vector{ESDLVarInfo})=foreach(x->show(io,MIME"text/markdown"(),x),v)
 
 
 getNanVal{T<:AbstractFloat}(::Type{T}) = convert(T,NaN)

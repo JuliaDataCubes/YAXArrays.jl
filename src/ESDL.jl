@@ -6,7 +6,7 @@
 
 Some info on the project...
 """
-module CABLAB
+module ESDL
 export Cube, getCubeData,readCubeData,CubeMem,CubeAxis, TimeAxis, TimeHAxis, VariableAxis, LonAxis, FitAxis, LatAxis, CountryAxis, SpatialPointAxis, saveCube, loadCube,
         RangeAxis, CategoricalAxis, MSCAxis, getSingVal, TimeScaleAxis, QuantileAxis, MethodAxis, RemoteCube, showVarInfo, @caxis_str,
         axVal2Index, mapCubeSimple, concatenateCubes, SliceCube, NetCDFCube #From Cube module
@@ -16,23 +16,23 @@ export DAT_detectAnomalies!, removeMSC, gapFillMSC, normalizeTS,DATfitOnline,
   timelonlatquantiles, getMedSC, extractLonLats,simpleAnomalies,
   cubePCA, rotation_matrix, transformPCA, explained_variance, exportcube #From Proc module
 export TempCube, openTempCube, rmCube # From CachedArrays
-export @loadOrGenerate # from CABLAB Tools
+export @loadOrGenerate # from ESDL Tools
 
 global const workdir=String["./"]
 global const recal=Bool[false]
-haskey(ENV,"CABLAB_WORKDIR") && (workdir[1]=ENV["CABLAB_WORKDIR"])
-CABLABdir(x::String)=workdir[1]=x
+haskey(ENV,"ESDL_WORKDIR") && (workdir[1]=ENV["ESDL_WORKDIR"])
+ESDLdir(x::String)=workdir[1]=x
 recalculate(x::Bool)=recal[1]=x
 recalculate()=recal[1]
-CABLABdir()=workdir[1]
-export CABLABdir
+ESDLdir()=workdir[1]
+export ESDLdir
 
-include("CABLABTools.jl")
+include("ESDLTools.jl")
 include("Cubes/Cubes.jl")
 include("CubeAPI/CubeAPI.jl")
 include("DAT/DAT.jl")
 include("Proc/Proc.jl")
 
-importall .Cubes, .CubeAPI, .DAT, .Proc, .CABLABTools
+importall .Cubes, .CubeAPI, .DAT, .Proc, .ESDLTools
 
 end # module

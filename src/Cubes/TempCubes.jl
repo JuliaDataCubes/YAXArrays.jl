@@ -1,8 +1,8 @@
 module TempCubes
 export TempCube, openTempCube, TempCubePerm, loadCube,rmCube, AbstractTempCube
 importall ..Cubes
-importall ...CABLABTools
-import ....CABLAB.CABLABdir
+importall ...ESDLTools
+import ....ESDL.ESDLdir
 
 "This defines a temporary datacube, written on disk which is usually "
 abstract type AbstractTempCube{T,N} <: AbstractCubeData{T,N} end
@@ -143,11 +143,11 @@ function cleanTempCube(y::TempCube)
 end
 
 function rmCube(f::String)
-  if isdir(joinpath(CABLABdir(),f))
-    if any(i->basename(i)=="data.bin",readdir(joinpath(CABLABdir(),f)))
-      rm(joinpath(CABLABdir(),f),recursive=true)
+  if isdir(joinpath(ESDLdir(),f))
+    if any(i->basename(i)=="data.bin",readdir(joinpath(ESDLdir(),f)))
+      rm(joinpath(ESDLdir(),f),recursive=true)
     else
-      y=openTempCube(joinpath(CABLABdir(),f),persist=false)
+      y=openTempCube(joinpath(ESDLdir(),f),persist=false)
       cleanTempCube(y)
     end
   end
@@ -198,7 +198,7 @@ function _read{N}(y::TempCubePerm,thedata::Tuple,r::CartesianRange{CartesianInde
 end
 
 
-import ...CABLAB.workdir
+import ...ESDL.workdir
 
 """
     saveCube(c::AbstractCubeData, name::String)

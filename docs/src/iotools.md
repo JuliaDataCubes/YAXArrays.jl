@@ -1,7 +1,7 @@
 # Loading and saving results
 
 ```@meta
-CurrentModule = CABLAB.Cubes.TempCubes
+CurrentModule = ESDL.Cubes.TempCubes
 ```
 ```@docs
 saveCube
@@ -12,7 +12,7 @@ loadCube
 ```
 
 ```@meta
-CurrentModule = CABLAB.CABLABTools
+CurrentModule = ESDL.ESDLTools
 ```
 ```@docs
 @loadOrGenerate

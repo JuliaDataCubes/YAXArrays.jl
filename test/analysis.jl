@@ -1,8 +1,8 @@
-using CABLAB
+using ESDL
 using Base.Test
 
 #addprocs(2)
-@everywhere using CABLAB, DataArrays
+@everywhere using ESDL, DataArrays
 
 @everywhere function sub_and_return_mean(xout1,xout2,xin)
     m=mean(filter(isfinite,xin))
@@ -60,10 +60,10 @@ function doTests()
   # Test gap filling
   cube_filled=readCubeData(mapCube(gapFillMSC,d))
   imiss=findfirst(d.mask)
-  @test cube_filled.mask[imiss]==CABLAB.Mask.FILLED
+  @test cube_filled.mask[imiss]==ESDL.Mask.FILLED
   its=mod(imiss-1,46)+1
   @test cube_filled.data[imiss]≈readCubeData(x2).data[its]
-  @test !any(cube_filled.mask.==CABLAB.Mask.MISSING)
+  @test !any(cube_filled.mask.==ESDL.Mask.MISSING)
 
   # Test removal of MSC
 

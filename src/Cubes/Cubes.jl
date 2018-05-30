@@ -1,5 +1,5 @@
 """
-The functions provided by CABLAB are supposed to work on different types of cubes. This module defines the interface for all
+The functions provided by ESDL are supposed to work on different types of cubes. This module defines the interface for all
 Data types that
 """
 module Cubes
@@ -13,7 +13,7 @@ export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesC
 
 Supertype of all cubes. `T` is the data type of the cube and `N` the number of
 dimensions. Beware that an `AbstractCubeData` does not implement the `AbstractArray`
-interface. However, the `CABLAB` functions [mapCube](@ref), [reduceCube](@ref),
+interface. However, the `ESDL` functions [mapCube](@ref), [reduceCube](@ref),
 [readCubeData](@ref), [plotMAP](@ref) and [plotXY](@ref) will work on any subtype
 of `AbstractCubeData`
 """
@@ -128,7 +128,7 @@ immutable CacheHandle end
 handletype(::AbstractCubeMem)=ViewHandle()
 
 
-import ..CABLABTools.toRange
+import ..ESDLTools.toRange
 #Generic fallback method for _read
 function _read(c::AbstractCubeData,thedata::Tuple,r::CartesianRange)
   N=ndims(r)
@@ -226,14 +226,14 @@ function Base.show(io::IO,c::AbstractCubeData)
     println(io,"Total size: ",formatbytes(cubesize(c)))
 end
 
-import ..CABLAB.workdir
+import ..ESDL.workdir
 using NetCDF
 """
     saveCube(cube,name::String)
 
-Save a `TempCube` or `CubeMem` to the folder `name` in the CABLAB working directory.
+Save a `TempCube` or `CubeMem` to the folder `name` in the ESDL working directory.
 
-See also loadCube, CABLABdir
+See also loadCube, ESDLdir
 """
 function saveCube{T}(c::CubeMem{T},name::AbstractString)
   newfolder=joinpath(workdir[1],name)

@@ -6,8 +6,8 @@ Documenter.Documents.RawHTML("<script>$(Patchwork.js_runtime())</script>")
 ```
 
 ```@setup 1
-using CABLAB # hide
-using CABLABPlots
+using ESDL # hide
+using ESDLPlots
 import Documenter
 ds=RemoteCube() # hide
 ```
@@ -15,7 +15,7 @@ ds=RemoteCube() # hide
 # Plotting
 
 ```@meta
-CurrentModule = Main.CABLABPlots
+CurrentModule = Main.ESDLPlots
 ```
 
 ## Plot geographical maps
@@ -118,8 +118,8 @@ nothing # hide
 ```
 
 ````@eval
-using CABLAB # hide
-using CABLABPlots
+using ESDL # hide
+using ESDLPlots
 gr()
 import Documenter # hide
 ds=RemoteCube() # hide
@@ -140,8 +140,8 @@ plotXY(m,xaxis="variable",group="lat",lon=30)
 ```
 
 ````@eval
-using CABLAB # hide
-using CABLABPlots
+using ESDL # hide
+using ESDLPlots
 gr()
 import Documenter # hide
 ds=RemoteCube() # hide
@@ -184,8 +184,8 @@ p=plotScatter(cdata,alongaxis=TimeAxis,xaxis=1,yaxis=2,group="lat",lon=30)
 ```
 
 ````@eval
-using CABLAB # hide
-using CABLABPlots
+using ESDL # hide
+using ESDLPlots
 gr()
 import Documenter # hide
 ds=RemoteCube() # hide

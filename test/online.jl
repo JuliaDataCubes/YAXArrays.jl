@@ -1,4 +1,4 @@
-using CABLAB
+using ESDL
 using Base.Test
 
 using OnlineStats
@@ -40,7 +40,7 @@ covmat,means = mapCube(CovMatrix,dm,MDAxis=VariableAxis)
 
 @test all(isapprox.(covmat.data,cov(reshape(dm.data,length(dm.data) ÷ 2,2))))
 
-using CABLAB
+using ESDL
 using DataStructures
 c=Cube()
 d2 = getCubeData(c,variable=["air_temperature_2m","gross_primary_productivity"],longitude=(30,31),latitude=(50,51),

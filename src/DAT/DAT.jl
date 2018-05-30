@@ -4,17 +4,17 @@ export registerDATFunction, mapCube, getInAxes, getOutAxes, findAxis, reduceCube
 importall ..Cubes
 importall ..CubeAPI
 importall ..CubeAPI.CachedArrays
-importall ..CABLABTools
+importall ..ESDLTools
 importall ..Cubes.TempCubes
-import ...CABLAB
-import ...CABLAB.workdir
+import ...ESDL
+import ...ESDL.workdir
 import DataFrames
 import ..CubeAPI.CachedArrays.synccube
 using Base.Dates
 import DataArrays: DataArray, ismissing
 import Missings: Missing, missing
 import StatsBase.Weights
-importall CABLAB.CubeAPI.Mask
+importall ESDL.CubeAPI.Mask
 global const debugDAT=false
 macro debug_print(e)
   debugDAT && return(:(println($e)))
@@ -293,8 +293,8 @@ Apply a reduction function `f` on slices of the cube `cube`. The dimension(s) ar
 either an Axis type or a tuple of axis types. Keyword arguments are passed to `mapCube` or, if unknown passed again to `f`.
 It is assumed that `f` takes an array input and returns a single value.
 """
-reduceCube{T<:CubeAxis}(f::Function,c::CABLAB.Cubes.AbstractCubeData,dim::Type{T},addargs...;kwargs...)=reduceCube(f,c,(dim,),addargs...;kwargs...)
-function reduceCube(f::Function,c::CABLAB.Cubes.AbstractCubeData,dim::Tuple,addargs...;kwargs...)
+reduceCube{T<:CubeAxis}(f::Function,c::ESDL.Cubes.AbstractCubeData,dim::Type{T},addargs...;kwargs...)=reduceCube(f,c,(dim,),addargs...;kwargs...)
+function reduceCube(f::Function,c::ESDL.Cubes.AbstractCubeData,dim::Tuple,addargs...;kwargs...)
   isa(dim[1],Tuple) || (dim=(dim,))
   if in(LatAxis,dim)
     axlist=axes(c)
@@ -332,7 +332,7 @@ Map a given function `fun` over slices of the data cube `cube`.
 * `kwargs` additional keyword arguments passed to the inner function
 
 The first argument is always the function to be applied, the second is the input cube or
-a tuple input cubes if needed. If the function to be applied is registered (either as part of CABLAB or through [registerDATFunction](@ref)),
+a tuple input cubes if needed. If the function to be applied is registered (either as part of ESDL or through [registerDATFunction](@ref)),
 all of the keyword arguments have reasonable defaults and don't need to be supplied. Some of the function still need additional arguments or keyword
 arguments as is stated in the documentation.
 
@@ -414,10 +414,10 @@ function runLoop(dc::DATConfig)
     #TODO CHeck this for multiple output cubes, how to parallelize
     #I thnk this should work, but not 100% sure yet
     allRanges=distributeLoopRanges(totuple(dc.loopCacheSize),map(length,dc.LoopAxes))
-    pmap(r->CABLAB.DAT.innerLoop( Main.PMDATMODULE.dc.fu,
-                                  CABLAB.CABLABTools.totuple(CABLAB.DAT.gethandle.(Main.PMDATMODULE.dc.incubes)),
-                                  CABLAB.CABLABTools.totuple(CABLAB.DAT.gethandle.(Main.PMDATMODULE.dc.outcubes)),
-                                  CABLAB.DAT.InnerObj(Main.PMDATMODULE.dc),
+    pmap(r->ESDL.DAT.innerLoop( Main.PMDATMODULE.dc.fu,
+                                  ESDL.ESDLTools.totuple(ESDL.DAT.gethandle.(Main.PMDATMODULE.dc.incubes)),
+                                  ESDL.ESDLTools.totuple(ESDL.DAT.gethandle.(Main.PMDATMODULE.dc.outcubes)),
+                                  ESDL.DAT.InnerObj(Main.PMDATMODULE.dc),
                                   r,
                                   totuple(map(i->i.workarray,Main.PMDATMODULE.dc.incubes)),
                                   totuple(map(i->i.workarray,Main.PMDATMODULE.dc.outcubes)),
@@ -488,11 +488,11 @@ function getCubeHandles(dc::DATConfig)
   if dc.ispar
     freshworkermodule()
     global dcg=dc
-      passobj(1, workers(), [:dcg],from_mod=CABLAB.DAT,to_mod=Main.PMDATMODULE)
+      passobj(1, workers(), [:dcg],from_mod=ESDL.DAT,to_mod=Main.PMDATMODULE)
     @everywhereelsem begin
       dc=Main.PMDATMODULE.dcg
-      foreach(CABLAB.DAT.sethandle,dc.outcubes)
-      foreach(CABLAB.DAT.sethandle,dc.incubes)
+      foreach(ESDL.DAT.sethandle,dc.outcubes)
+      foreach(ESDL.DAT.sethandle,dc.incubes)
     end
   else
     foreach(sethandle,dc.outcubes)
@@ -602,8 +602,8 @@ end
 
 function generateworkarrays(dc::DATConfig)
   if dc.ispar
-    @everywhereelsem foreach(CABLAB.DAT.setworkarray,PMDATMODULE.dc.incubes)
-    @everywhereelsem foreach(CABLAB.DAT.setworkarray,PMDATMODULE.dc.outcubes)
+    @everywhereelsem foreach(ESDL.DAT.setworkarray,PMDATMODULE.dc.incubes)
+    @everywhereelsem foreach(ESDL.DAT.setworkarray,PMDATMODULE.dc.outcubes)
   else
     foreach(setworkarray,dc.incubes)
     foreach(setworkarray,dc.outcubes)
@@ -640,7 +640,7 @@ using Base.Cartesian
     push!(unrollEx.args,:(axdict=OrderedDict{String,Tuple{Int,Any}}()))
     push!(unrollEx.args,quote
       for i in loopaxes
-        axdict[CABLAB.axname(i)] = (1,first(i.values))
+        axdict[ESDL.axname(i)] = (1,first(i.values))
       end
     end)
   end

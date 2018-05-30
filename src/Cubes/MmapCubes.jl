@@ -1,5 +1,5 @@
 export MmapCube,getmmaphandles
-import ..CABLABTools.totuple
+import ..ESDLTools.totuple
 using JLD
 abstract type AbstractMmapCube{T,N}<:AbstractCubeData{T,N} end
 type MmapCube{T,N} <: AbstractMmapCube{T,N}
