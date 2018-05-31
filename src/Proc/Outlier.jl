@@ -1,5 +1,5 @@
 module Outlier
-export DAT_detectAnomalies!, simpleAnomalies
+export cubeAnomalies, simpleAnomalies
 importall ..DAT
 importall ..CubeAPI
 importall ..Cubes
@@ -9,18 +9,14 @@ using MultivariateAnomalies
 function getDetectParameters(methodlist,trainarray,ntime)
   P = getParameters(methodlist,trainarray);
   init_detectAnomalies(zeros(Float64,ntime,size(trainarray,2)), P);
-  (P,)
+  P
 end
 
 """
-    DAT_detectAnomalies!
+    cubeAnomalies(cube, methods, trainArray)
 
 A simple wrapper around the function `detectAnomalies!` from the [MultivariateAnomalies](https://github.com/milanflach/MultivariateAnomalies.jl)
 package.
-
-### Call signature
-
-    mapCube(DAT_detectAnomalies!, cube, methods, trainArray)
 
 * `cube` data cube with a axes: `TimeAxis`, `VariableAxis`
 * `methods` vector of methods to be applied, choose from: `KDE`,`T2`,`REC`,`KNN-Gamma`,`KNN-Delta`,`SVDD`,`KNFST`
@@ -29,22 +25,28 @@ package.
 **Input Axes** `TimeAxis`, `Variable`axis
 
 **Output Axes** `TimeAxis`, `Method`axis
-
-For an example on how to apply this function, see [this notebook](https://github.com/CAB-LAB/JuliaDatDemo/blob/master/eventdetection2.ipynb).
 """
-function DAT_detectAnomalies!(xout::AbstractArray, xin::AbstractArray, P::MultivariateAnomalies.PARAMS)
+function cubeAnomalies(c::AbstractCubeData,methods,trainArray)
+  indims = InDims(TimeAxis,VariableAxis,miss=NaNMissing())
+  outdims = OutDims(TimeAxis,CategoricalAxis("Method",trainArray),miss=NaNMissing())
+  P = getDetectParameters(methods,trainArray,length(getAxis(TimeAxis,c)))
+  mapCube(cubeAnomalies,c,P,indims=indims,outdims=outdims)
+end
+
+function cubeAnomalies(xout::AbstractArray, xin::AbstractArray, P::MultivariateAnomalies.PARAMS)
  detectAnomalies!(Float64.(xin), P)
  for i = 1:length(P.algorithms)
    copy!(view(xout, :, i), MultivariateAnomalies.return_scores(i, P))
  end
  return(xout)
 end
-registerDATFunction(DAT_detectAnomalies!,
-  indims = InDims(TimeAxis,VariableAxis,miss=NaNMissing()),
-  outdims = OutDims(TimeAxis,(cube,pargs)->CategoricalAxis("Method",pargs[1]),miss=NaNMissing()),
-  args = (cube,pargs)->getDetectParameters(pargs[1],pargs[2],length(getAxis(TimeAxis,cube[1].cube))),
-  no_ocean=1)
 
+
+function simpleAnomalies(c::AbstractCubeData,methods)
+  indims = InDims(TimeAxis,VariableAxis,miss=NaNMissing()),
+  outdims = OutDims(TimeAxis,CategoricalAxis("Method",methods),miss=NaNMissing())
+  mapCube(simpleAnomalies,c,methods,indims=indims,outdims=outdims)
+end
 
 function simpleAnomalies(xout::AbstractArray, xin::AbstractArray,methods)
   if !any(isnan,xin)
@@ -57,9 +59,5 @@ function simpleAnomalies(xout::AbstractArray, xin::AbstractArray,methods)
     xout[:]=NaN
     end
 end
-registerDATFunction(simpleAnomalies,
-  indims = InDims(TimeAxis,VariableAxis,miss=NaNMissing()),
-  outdims = OutDims(TimeAxis,(cube,pargs)->CategoricalAxis("Method",pargs[1]),miss=NaNMissing()),
-  no_ocean=1)
 
 end
