@@ -17,7 +17,7 @@ Normalize a time series to zeros mean and unit variance
 **Output Axes** `TimeAxis`
 """
 function normalizeTS(c::AbstractCubeData)
-  mapCube(normalizeTS,c,indims=InDims("Time",miss=NaNMissing()),outdims=OutDims("Time",mis=NaNMissing()))
+  mapCube(normalizeTS,c,indims=InDims("Time",miss=NaNMissing()),outdims=OutDims("Time",miss=NaNMissing()))
 end
 function normalizeTS(xout::AbstractVector,xin::AbstractVector)
   xin2 = filter(i->!isnan(i),xin)

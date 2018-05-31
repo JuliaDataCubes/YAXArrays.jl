@@ -28,7 +28,7 @@ package.
 """
 function cubeAnomalies(c::AbstractCubeData,methods,trainArray)
   indims = InDims(TimeAxis,VariableAxis,miss=NaNMissing())
-  outdims = OutDims(TimeAxis,CategoricalAxis("Method",trainArray),miss=NaNMissing())
+  outdims = OutDims(TimeAxis,CategoricalAxis("Method",methods),miss=NaNMissing())
   P = getDetectParameters(methods,trainArray,length(getAxis(TimeAxis,c)))
   mapCube(cubeAnomalies,c,P,indims=indims,outdims=outdims)
 end
