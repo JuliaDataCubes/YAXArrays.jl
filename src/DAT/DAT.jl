@@ -224,14 +224,16 @@ type DATConfig{NIN,NOUT}
   addargs
   kwargs
 end
-function DATConfig(cdata,reginfo,max_cache,fu,outfolder,ispar,include_loopvars,addargs,kwargs)
+function DATConfig(cdata,indims,outdims,no_ocean,inplace,max_cache,fu,outfolder,ispar,include_loopvars,addargs,kwargs)
 
-  length(cdata)==length(reginfo.inCubes) || error("Number of input cubes ($(length(cdata))) differs from registration ($(length(reginfo.inCubes)))")
+  isa(indims,InDims) && (indims=(indims,))
+  isa(outdims,OutDims) && (outdims=(outdims,))
+  length(cdata)==length(indims) || error("Number of input cubes ($(length(cdata))) differs from registration ($(length(indims)))")
 
-  incubes  = totuple([InputCube(o[1],o[2]) for o in zip(cdata,reginfo.inCubes)])
+  incubes  = totuple([InputCube(o[1],o[2]) for o in zip(cdata,indims)])
   allInAxes = vcat([ic.axesSmall for ic in incubes]...)
-  outcubes = totuple(map(1:length(reginfo.outCubes),reginfo.outCubes) do i,desc
-     OutputCube( string(outfolder,"_",i),desc,allInAxes,cdata,addargs,fu)
+  outcubes = totuple(map(1:length(outdims),outdims) do i,desc
+     OutputCube(string(outfolder,"_",i),desc,allInAxes,cdata,addargs,fu)
     end)
 
 
@@ -244,8 +246,8 @@ function DATConfig(cdata,reginfo,max_cache,fu,outfolder,ispar,include_loopvars,a
     Int[],
     max_cache,                                  # max_cache
     fu,                                         # fu                                      # loopCacheSize
-    reginfo.no_ocean,                                   # no_ocean
-    reginfo.inplace,                                    # inplace
+    no_ocean,                                   # no_ocean
+    inplace,                                    # inplace
     include_loopvars,
     addargs,                                    # addargs
     kwargs
@@ -283,7 +285,7 @@ mapCube(fu::Function,cdata::AbstractCubeData,addargs...;kwargs...)=mapCube(fu,(c
 import Base.mapslices
 function mapslices(f,d::AbstractCubeData,dims,addargs...;inmiss=NaNMissing(),outmiss=NaNMissing(),kwargs...)
     isa(dims,String) && (dims=(dims,))
-    mapCube(f,d,addargs...;incubes = InDims(dims...,miss=inmiss),outcubes = OutDims(ByInference(),miss=outmiss),inplace=false,kwargs...)
+    mapCube(f,d,addargs...;indims = InDims(dims...,miss=inmiss),outdims = OutDims(ByInference(),miss=outmiss),inplace=false,kwargs...)
 end
 
 """
@@ -306,9 +308,9 @@ function reduceCube(f::Function,c::ESDL.Cubes.AbstractCubeData,dim::Tuple,addarg
     ww=zeros(sfull).+wone
     wv=Weights(reshape(ww,length(ww)))
     g = length(dim)>1 ? (x,w;kwargs...)->f(DataArray(reshape(x.data,length(x)),reshape(x.na,length(x))),w;kwargs...) : f
-    return mapCube(g,c,wv,addargs...;incubes=map(i->InDims((get_descriptor.(i))...),dim),outcubes=(OutDims(),),inplace=false,kwargs...)
+    return mapCube(g,c,wv,addargs...;indims=map(i->InDims((get_descriptor.(i))...),dim),outdims=(OutDims(),),inplace=false,kwargs...)
   else
-    return mapCube(f,c,addargs...;incubes=map(i->InDims((get_descriptor.(i))...),dim),outcubes=(OutDims(),),inplace=false,kwargs...)
+    return mapCube(f,c,addargs...;indims=map(i->InDims((get_descriptor.(i))...),dim),outdims=(OutDims(),),inplace=false,kwargs...)
   end
 end
 
@@ -342,26 +344,19 @@ input and output dimensions etc.
 function mapCube(fu::Function,
     cdata::Tuple,addargs...;
     max_cache=1e7,
-    incubes=nothing,
-    outcubes=nothing,
-    no_ocean=nothing,
-    inplace=nothing,
+    indims=InDims(),
+    outdims=OutDims(),
+    no_ocean=0,
+    inplace=true,
     outfolder=joinpath(workdir[1],string(tempname()[2:end],fu)),
     ispar=nprocs()>1,
     debug=false,
     include_loopvars=false,
     kwargs...)
   @debug_print "Check if function is registered"
-  if haskey(regDict,fu)
-    reginfo = regDict[fu]
-    overwrite_settings!(reginfo,incubes,outcubes,no_ocean,inplace)
-  else
-    reginfo = regFromScratch(incubes,outcubes,no_ocean,inplace,addargs)
-  end
   @debug_print "Generating DATConfig"
-  dc=DATConfig(cdata,reginfo,
+  dc=DATConfig(cdata,indims,outdims,no_ocean,inplace,
     max_cache,fu,outfolder,ispar,include_loopvars,addargs,kwargs)
-  analyseaddargs(reginfo,dc)
   @debug_print "Reordering Cubes"
   reOrderInCubes(dc)
   @debug_print "Analysing Axes"
@@ -385,11 +380,6 @@ function mapCube(fu::Function,
   end
 
 end
-
-function analyseaddargs(sfu::DATFunction,dc)
-    dc.addargs=isa(sfu.args,Function) ? sfu.args(dc.incubes,dc.addargs) : dc.addargs
-end
-analyseaddargs(sfu::Function,dc)=nothing
 
 mustReorder(cdata,inAxes)=!all(axes(cdata)[1:length(inAxes)].==inAxes)
 

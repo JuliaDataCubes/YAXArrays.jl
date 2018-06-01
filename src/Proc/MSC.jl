@@ -5,22 +5,7 @@ importall ..DAT
 importall ..CubeAPI
 importall ..Proc
 importall ..CubeAPI.Mask
-"""
-    removeMSC
 
-Removes the mean annual cycle from each time series.
-
-### Call signature
-
-    mapCube(removeMSC, cube)
-
-* `cube` data cube with a axes: `TimeAxis`
-
-**Input Axes** `Time`axis
-
-**Output Axes** `Time`axis
-
-"""
 function removeMSC(aout::Tuple,ain::Tuple,NpY::Integer,tmsc,tnmsc)
   xout,maskout = aout
   xin, maskin  = ain
@@ -31,43 +16,45 @@ function removeMSC(aout::Tuple,ain::Tuple,NpY::Integer,tmsc,tnmsc)
     xout
 end
 
-function alloc_msc_helpers(cube,pargs)
-  NpY=getNpY(cube[1])
+function alloc_msc_helpers(cube)
+  NpY=getNpY(cube)
   (NpY,zeros(Float64,NpY),zeros(Int,NpY))
 end
-registerDATFunction(removeMSC,
-  indims = InDims("Time",miss=MaskMissing()),
-  outdims = OutDims("Time",miss=MaskMissing()),
-  no_ocean=1,
-  args = alloc_msc_helpers)
 
 """
-    gapFillMSC
+    removeMSC(c::AbstractCubeData)
 
-Fills missing values of each time series with the mean annual cycle.
-
-### Call signature
-
-    mapCube(gapFillMSC, cube)
-
-* `cube` data cube with a axes: `TimeAxis`
+Removes the mean annual cycle from each time series of a data cube.
 
 **Input Axes** `Time`axis
 
 **Output Axes** `Time`axis
+"""
+function removeMSC(c::AbstractCubeData)
+  NpY=getNpY(c)
+  mapCube(removeMSC,c,NpY,zeros(NpY),zeros(Int,NpY),indims=InDims("Time",miss=MaskMissing()),outdims=OutDims("Time",miss=MaskMissing()))
+end
 
 """
+    gapFillMSC
+
+Fills missing values of each time series in a cube with the mean annual cycle.
+
+**Input Axes** `Time`axis
+
+**Output Axes** `Time`axis
+"""
+function gapFillMSC(c::AbstractCubeData)
+  NpY=getNpY(c)
+  mapCube(gapFillMSC,c,NpY,zeros(NpY),zeros(Int,NpY),indims=InDims("Time",miss=MaskMissing()),outdims=OutDims("Time",miss=MaskMissing()))
+end
+
 function gapFillMSC(aout::Tuple,ain::Tuple,NpY::Integer,tmsc,tnmsc)
   xin,maskin = ain
   xout,maskout = aout
   getMSC(tmsc,xin,tnmsc,NpY=NpY)
   replaceMisswithMSC(tmsc,xin,xout,maskin,maskout,NpY)
 end
-registerDATFunction(gapFillMSC,
-  indims = InDims(TimeAxis,miss=MaskMissing()),
-  outdims = OutDims(TimeAxis,miss=MaskMissing()),
-  no_ocean=1,
-  args = alloc_msc_helpers)
 
 
 """
@@ -75,27 +62,21 @@ registerDATFunction(gapFillMSC,
 
 Returns the mean annual cycle from each time series.
 
-### Call signature
-
-    mapCube(getMSC, cube)
-
-* `cube` data cube with a axes: `TimeAxis`
-
 **Input Axes** `Time`axis
 
 **Output Axes** `MSC`axis
 
 """
+function getMSC(c::AbstractCubeData)
+  outdims = OutDims(MSCAxis(getNpY(c)),miss=NaNMissing())
+  indims = InDims(TimeAxis,miss=NaNMissing())
+  mapCube(getMSC,c,zeros(Int,getNpY(c)),indims=indims,outdims=outdims)
+end
 function getMSC(xout::AbstractVector,xin::AbstractVector,nmsc::Vector{Int}=zeros(Int,length(xout));imscstart::Int=1,NpY=length(xout))
     #Reshape the cube to squeeze unimportant variables
     NpY=length(xout)
     fillmsc(imscstart,xout,nmsc,xin,NpY)
 end
-registerDATFunction(getMSC,
-  indims = InDims(TimeAxis,miss=NaNMissing()),
-  outdims = OutDims((cube,pargs)->MSCAxis(getNpY(cube[1])),miss=NaNMissing()),
-  args = (cube,pargs)->(zeros(Int,getNpY(cube[1])),),
-  no_ocean=1)
 
 
 
@@ -125,21 +106,20 @@ function replaceMisswithMSC(msc::AbstractVector,xin::AbstractArray,xout::Abstrac
 end
 
 """
-    getMedMSC
+    getMedMSC(c::AbstractCubeData)
 
 Returns the median annual cycle from each time series.
-
-### Call signature
-
-    mapCube(getMedMSC, cube)
-
-* `cube` data cube with a axes: `TimeAxis`
 
 **Input Axes** `Time`axis
 
 **Output Axes** `MSC`axis
-
 """
+function getMedSC(c::AbstractCubeData)
+  outdims = OutDims(MSCAxis(getNpY(c)),miss=MaskMissing())
+  indims = InDims(TimeAxis,miss=MaskMissing())
+  mapCube(getMedSC,c,indims=indims,outdims=outdims)
+end
+
 function getMedSC(aout::Tuple,ain::Tuple)
   xout,maskout = aout
   xin,maskin   = ain
@@ -162,10 +142,6 @@ function getMedSC(aout::Tuple,ain::Tuple)
     end
     xout
 end
-registerDATFunction(getMedSC,
-  indims = InDims(TimeAxis,miss=MaskMissing()),
-  outdims = OutDims((cube,pargs)->MSCAxis(getNpY(cube[1])),miss=MaskMissing()),
-  no_ocean=1)
 
 
 "Calculates the mean seasonal cycle of a vector"

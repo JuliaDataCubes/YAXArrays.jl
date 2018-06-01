@@ -5,17 +5,19 @@ importall ..DAT
 importall ..Cubes
 importall ..Mask
 import ...ESDLTools.totuple
+import NamedTuples
+import OnlineStats: VectorOb
 export DATfitOnline
 
 
-function DATfitOnline(xout::AbstractArray{T},ain,cfun) where T<:Series{Number}
+function DATfitOnline(xout::AbstractArray{T},ain,cfun) where T<:OnlineStat{Number}
   xin,maskin = ain
   for (mi,xi) in zip(maskin,xin)
     (mi & MISSING)==VALID && fit!(xout[1],xi)
   end
 end
 
-function DATfitOnline{T<:Series{Number}}(xout::AbstractArray{T},ain,spl,cfun)
+function DATfitOnline(xout::AbstractArray{T},ain,spl,cfun) where T<:OnlineStat{Number}
   xin,maskin = ain
   splitmask,msplitmask = spl
   for (mi,xi,si,m2) in zip(maskin,xin,splitmask,msplitmask)
@@ -23,7 +25,7 @@ function DATfitOnline{T<:Series{Number}}(xout::AbstractArray{T},ain,spl,cfun)
   end
 end
 
-function DATfitOnline{T<:Series{1}}(xout::AbstractArray{T},ain,cfun)
+function DATfitOnline(xout::AbstractArray{S},ain,cfun) where S<:OnlineStat{VectorOb}
   xin,maskin = ain
     offs=1
     offsinc=size(xin,1)
@@ -38,7 +40,7 @@ function DATfitOnline{T<:Series{1}}(xout::AbstractArray{T},ain,cfun)
     end
 end
 
-function DATfitOnline{T<:Series{1}}(xout::AbstractArray{T},ain,spl,cfun)
+function DATfitOnline(xout::AbstractArray{S},ain,spl,cfun) where S<:OnlineStat{VectorOb}
   xin,maskin = ain
   splitmask,msplitmask = spl
   offs=1
@@ -53,7 +55,7 @@ function DATfitOnline{T<:Series{1}}(xout::AbstractArray{T},ain,spl,cfun)
 end
 
 function finalizeOnlineCube(c::CubeMem)
-    CubeMem(c.axes,map(i->nobs(i)>0 ? OnlineStats.value(i)[1] : NaN,c.data),c.mask)
+    CubeMem(c.axes,map(i->nobs(i)>0 ? OnlineStats.value(i) : NaN,c.data),c.mask)
 end
 
 function finalizeOnlineCube(c::CubeMem,varAx::CubeAxis, statType::Type{T}) where {T<:CovMatrix}
@@ -63,9 +65,9 @@ function finalizeOnlineCube(c::CubeMem,varAx::CubeAxis, statType::Type{T}) where
   cout2 = zeros(Float32,nV,size(c.data)...)
   maskout2=zeros(UInt8,nV,size(c.data)...)
   for ii in CartesianRange(size(c.data))
-    cout[:,:,ii]=OnlineStats.value(c.data[ii])[1]
+    cout[:,:,ii]=OnlineStats.value(c.data[ii])
     maskout[:,:,ii]=c.mask[ii]
-    cout2[:,ii]=OnlineStats.mean(c.data[ii].stats[1])
+    cout2[:,ii]=OnlineStats.mean(c.data[ii].b)
     maskout2[:,ii]=c.mask[ii]
   end
   varAx1 = isa(varAx,CategoricalAxis) ? CategoricalAxis(string(axname(varAx)," 1"),varAx.values) : RangeAxis(string(axname(varAx)," 1"),varAx.values)
@@ -74,11 +76,11 @@ function finalizeOnlineCube(c::CubeMem,varAx::CubeAxis, statType::Type{T}) where
 end
 
 function finalizeOnlineCube(c::CubeMem,varAx::CubeAxis,statType::Type{T}) where {T<:KMeans}
-  nV,nC=size(OnlineStats.value(c.data[1])[1])
+  nV,nC=size(OnlineStats.value(c.data[1]))
   cout=zeros(Float32,nV,nC,size(c.data)...)
   maskout=zeros(UInt8,nV,nC,size(c.data)...)
   for ii in CartesianRange(size(c.data))
-    cout[:,:,ii]=OnlineStats.value(c.data[ii])[1]
+    cout[:,:,ii]=OnlineStats.value(c.data[ii])
     maskout[:,:,ii]=c.mask[ii]
   end
   classAx=CategoricalAxis("Class",["Class $i" for i=1:nC])
@@ -104,7 +106,7 @@ function mapCube{T<:OnlineStat}(f::Type{T},cdata::AbstractCubeData,pargs...;by=C
   inAxes=axes(cdata)
   #Now analyse additional by axes
   inaxtypes=map(typeof,inAxes)
-  if issubtype(T,OnlineStat{1})
+  if issubtype(T,OnlineStat{VectorOb})
     MDAxis<:Void && error("$T Requires a Vector Input, you have to specify the MDAxis keyword argument.")
     issubtype(MDAxis,CubeAxis) || error("MDAxis must be an Axis type")
     mdAx = getAxis(MDAxis,inAxes)
@@ -161,21 +163,17 @@ function mapCube{T<:OnlineStat}(f::Type{T},cdata::AbstractCubeData,pargs...;by=C
     iain=[ia1;map(typeof,axcombs[i])]
     ia  = map(typeof,axcombs[i])
     outBroad=filter(ax->!in(ax,by2) && !in(typeof(ax),iain),inAxes)
-    indims=length(bycubes)==0 ? [get_descriptor.(iain)] : [get_descriptor.(iain),get_descriptor.(ia)]
+    indims=isempty(bycubes) ? [get_descriptor.(iain)] : [get_descriptor.(iain),get_descriptor.(ia)]
   else
     outBroad=filter(ax->!in(ax,by2),inAxes)
-    indims=length(bycubes)==0 ? [get_descriptor.(iain)] : [get_descriptor.(ia1),[]]
+    indims=isempty(bycubes) ? [get_descriptor.(ia1)] : [get_descriptor.(ia1),[]]
   end
-  outBroad=[get_descriptor(ob) for ob in outBroad]
-  fout(x) = Series(getGenFun(f,pargs...)(x))
+  outBroad=map(get_descriptor,outBroad)
+  fout(x) = getGenFun(f,pargs...)(x)
   ic = ntuple(i->InDims(indims[i]...,miss=MaskMissing()),length(indims))
-  oc = (OutDims(outdims...,bcaxisdesc=outBroad,finalizeOut=getFinalFun(f,funargs...),genOut=fout,outtype=typeof(fout(f)),miss=NoMissing(),update=true),)
-  @show indata
-  @show ic
-  @show oc
-  @show kwargs
+  oc = OutDims(outdims...,bcaxisdesc=outBroad,finalizeOut=getFinalFun(f,funargs...),genOut=fout,outtype=typeof(fout(f)),miss=NoMissing(),update=true)
   return mapCube(DATfitOnline,indata,cfun;
-    incubes = ic,outcubes = oc,
+    indims = ic,outdims = oc,
     kwargs...
 )
 end

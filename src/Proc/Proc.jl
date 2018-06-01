@@ -1,6 +1,6 @@
 module Proc
-export DAT_detectAnomalies!, removeMSC, gapFillMSC, normalizeTS, simpleAnomalies,
-  sampleLandPoints, toPointAxis, getMSC, filterTSFFT, getNpY,timespacequantiles,timelonlatquantiles, getMedSC,DATfitOnline,
+export cubeAnomalies, removeMSC, gapFillMSC, normalizeTS, simpleAnomalies,
+  sampleLandPoints, getMSC, filterTSFFT, getNpY, getMedSC, DATfitOnline,
   extractLonLats, cubePCA, rotation_matrix, transformPCA, explained_variance,exportcube
 importall ..DAT, ..CubeAPI, ..Cubes
 macro no_ocean(maskin,maskout)

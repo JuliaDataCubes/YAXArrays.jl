@@ -23,17 +23,14 @@ d2 = getCubeData(c,variable=["air_temperature_2m","gross_primary_productivity"],
 dm=readCubeData(d2)
 xin=permutedims(dm.data,[4,1,2,3])
 xin=reshape(xin,(2,length(xin) ÷ 2))
-#startVal=mean(xin,2)[:].+rand(Float32,2,5)
+startVal=mean(xin,2)[:].+rand(Float32,2,5)
 
 x=mapCube(KMeans,d2,5,2,MDAxis=VariableAxis)
 
 o2=KMeans(2,5)
 o2.value[:]=startVal
-o2=Series(EqualWeight(),o2)
 fit!(o2,xin')
-#This test fails, I honestly could noot find out why
-#TODO please check what is going on
-#@test all(isapprox.(OnlineStats.value(o2),x.data))
+@test all(isapprox.(OnlineStats.value(o2),x.data))
 
 #Test covariance Matrix
 covmat,means = mapCube(CovMatrix,dm,MDAxis=VariableAxis)
@@ -62,36 +59,36 @@ end
 
 
 
-# p=cubePCA(dm,by=[randmask],noutdims=2)
-#
-# @test all([0.984 0.45; 0.09 0.45] .< explained_variance(p).data[1,1])
-# rotation_matrix(p)
-# transformPCA(p,dm).data
-#
-# srand(1)
-# d2=readCubeData(d)
-# mask=CubeMem(d2.axes,rand(1:10,size(d2.data)),zeros(UInt8,size(d2.data)),Dict("labels"=>Dict(i=>string(i) for i=1:10)))
-# mask2=CubeMem(d2.axes[1:2],rand(1:10,4,4),zeros(UInt8,4,4),Dict("labels"=>Dict(i=>string(i) for i=1:10)))
-#
-# oogrouped = mapCube(Mean,d2,by=(mask,))
-# @test isa(oogrouped.axes[1],CategoricalAxis{String,:Label})
-#
-# oogrouped2 = mapCube(Mean,d2,by=(mask2,))
-#
-# for k=1:10
-#   know = findfirst(j->j==string(k),oogrouped2.axes[1].values)
-#   @test oogrouped.data[know] ≈ mean(d2.data[mask.data.==k])
-#
-#   i=find(mask2.data.==k)
-#
-#   if length(i) > 0
-#     i1,i2=ind2sub((4,4),i)
-#     dhelp=Float32[]
-#     for (j1,j2) in zip(i1,i2)
-#       append!(dhelp,d2.data[j1,j2,:])
-#     end
-#     @test mean(dhelp) ≈ oogrouped2.data[know]
-#   end
-# end
+p=cubePCA(dm,by=[randmask],noutdims=2)
+
+@test all([0.984 0.45; 0.09 0.45] .< explained_variance(p).data[1,1])
+rotation_matrix(p)
+transformPCA(p,dm).data
+
+srand(1)
+d2=readCubeData(d)
+mask=CubeMem(d2.axes,rand(1:10,size(d2.data)),zeros(UInt8,size(d2.data)),Dict("labels"=>Dict(i=>string(i) for i=1:10)))
+mask2=CubeMem(d2.axes[1:2],rand(1:10,4,4),zeros(UInt8,4,4),Dict("labels"=>Dict(i=>string(i) for i=1:10)))
+
+oogrouped = mapCube(Mean,d2,by=(mask,))
+@test isa(oogrouped.axes[1],CategoricalAxis{String,:Label})
+
+oogrouped2 = mapCube(Mean,d2,by=(mask2,))
+
+for k=1:10
+  know = findfirst(j->j==string(k),oogrouped2.axes[1].values)
+  @test oogrouped.data[know] ≈ mean(d2.data[mask.data.==k])
+
+  i=find(mask2.data.==k)
+
+  if length(i) > 0
+    i1,i2=ind2sub((4,4),i)
+    dhelp=Float32[]
+    for (j1,j2) in zip(i1,i2)
+      append!(dhelp,d2.data[j1,j2,:])
+    end
+    @test mean(dhelp) ≈ oogrouped2.data[know]
+  end
+end
 
 end
