@@ -43,7 +43,7 @@ end
 
 
 function simpleAnomalies(c::AbstractCubeData,methods;kwargs...)
-  indims = InDims(TimeAxis,VariableAxis,miss=NaNMissing()),
+  indims = InDims(TimeAxis,VariableAxis,miss=NaNMissing())
   outdims = OutDims(TimeAxis,CategoricalAxis("Method",methods),miss=NaNMissing())
   mapCube(simpleAnomalies,c,methods;indims=indims,outdims=outdims,kwargs...)
 end
