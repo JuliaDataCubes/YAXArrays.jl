@@ -117,14 +117,14 @@ or which can be used to perform the projection on a dataset.
 
 """
 function cubePCA(cube::AbstractCubeData;MDAxis=VariableAxis,by=CubeAxis[],max_cache=1e7,noutdims=3,kwargs...)
-    covmat,means = mapCube(CovMatrix,cube,MDAxis=MDAxis,by=by)
+    covmat,means = mapCube(CovMatrix,cube,MDAxis=MDAxis,by=by,kwargs...)
     varAx  = getAxis(MDAxis,cube)
     varAx1 = isa(varAx,CategoricalAxis) ? CategoricalAxis(string(axname(varAx)," 1"),varAx.values) : RangeAxis(string(axname(varAx)," 1"),varAx.values)
     varAx2 = isa(varAx,CategoricalAxis) ? CategoricalAxis(string(axname(varAx)," 2"),varAx.values) : RangeAxis(string(axname(varAx)," 2"),varAx.values)
     T      = eltype(covmat)
     indims = (InDims(varAx1,varAx2,miss=MaskMissing()),InDims(MDAxis,miss=MaskMissing()))
     outdims = OutDims(outtype=(PCA{T}),genOut=i->PCA(zeros(T,0),zeros(T,0,0),zeros(T,0),zero(T),zero(T)),miss=MaskMissing())
-    pcares = mapCube(pcafromcov,(covmat,means),indims=indims,outdims=outdims;maxoutdim=noutdims,pratio=1.0)
+    pcares = mapCube(pcafromcov,(covmat,means);indims=indims,outdims=outdims,maxoutdim=noutdims,pratio=1.0)
     return OnlinePCA(pcares,noutdims,varAx,varAx1,varAx2,filter(i->!isa(i,DataType),by))
 end
 
@@ -168,7 +168,7 @@ function transformPCA(pca::OnlinePCA,c::AbstractCubeData;max_cache=1e7,kwargs...
     ia = isempty(totlengths) ? [] : map(typeof,axcombs[findmax(totlengths)[2]])
     indims = isempty(pca.bycube) ? (InDims(pca.varAx,ia...,miss=NaNMissing()),InDims(miss=MaskMissing())) : (InDims(pca.varAx,ia...,miss=NaNMissing()),InDims(indimspca...,miss=MaskMissing()),InDims(ia...,miss=MaskMissing()))
     outdims = OutDims(PCAxis(pca.noutdims),ia...,outtype=Float32,miss=NaNMissing())
-    pcpred = mapCube(pcapredict,indata,cfun,indims=indims,outdims=outdims,max_cache=max_cache;kwargs...)
+    pcpred = mapCube(pcapredict,indata,cfun;indims=indims,outdims=outdims,max_cache=max_cache,kwargs...)
     pcpred
 end
 
@@ -184,6 +184,6 @@ explained_variance(c::OnlinePCA) = mapCube(explained_variance,(c.PCA,),indims=In
 
 Returns the rotations matrix as a datacube.
 """
-rotation_matrix(c::OnlinePCA) = mapCube(rotation,(c.PCA,),indims=InDims(miss=MaskMissing()),
-  outdims=OutDims(c.varAx,PCAxis(c.noutdims),outtype=Float32))
+rotation_matrix(c::OnlinePCA;kwargs...) = mapCube(rotation,(c.PCA,);indims=InDims(miss=MaskMissing()),
+  outdims=OutDims(c.varAx,PCAxis(c.noutdims),outtype=Float32),kwargs...)
 #End

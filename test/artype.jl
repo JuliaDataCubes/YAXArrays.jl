@@ -15,10 +15,9 @@ function docor(xout,xin)
     @test isa(xin,DataFrame)
     xout[1]=cor(xin[:air_temperature_2m],xin[:gross_primary_productivity])
 end
-incubes = InDims(TimeAxis,VariableAxis,artype = AsDataFrame())
-outcubes = OutDims()
-registerDATFunction(docor,indims=incubes,outdims=outcubes)
-o = mapCube(docor,dmem)
+indims = InDims(TimeAxis,VariableAxis,artype = AsDataFrame())
+outdims = OutDims()
+o = mapCube(docor,dmem,indims=indims,outdims=outdims)
 
 @test o.data == [cor(dmem.data[i,j,:,1],dmem.data[i,j,:,2]) for i=1:4, j=1:4]
 
@@ -34,9 +33,8 @@ function annMean(xout,xin)
 end
 indims = InDims("time","var",artype=AsDataFrame(true))
 outdims = OutDims(RangeAxis("Year",2002:2008),"var")
-registerDATFunction(annMean,indims=indims,outdims=outdims)
 
-o = mapCube(annMean,dmem)
+o = mapCube(annMean,dmem,indims=indims,outdims=outdims)
 
 @test all(isapprox.(o.data[1,1,:,:],mean(dmem.data[:,:,1:46,1],3)))
 end
