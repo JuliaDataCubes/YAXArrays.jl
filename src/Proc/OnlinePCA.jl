@@ -1,7 +1,10 @@
 using OnlineStats
 using MultivariateStats
 export cubePCA, rotation_matrix, transformPCA, explained_variance
-function pcafromcov(xout,maskout,covs,covmask,means,meanmask;pratio=0.9,maxoutdim=3)
+function pcafromcov(aout,covsin,meanin;pratio=0.9,maxoutdim=3)
+  xout,maskout = aout
+  covs,covmask = covsin
+  means,meanmask = meanin
     if (covmask[1] & MISSING)==0x00
         xout[1] = pcacov(covs,copy(means),pratio=pratio,maxoutdim=maxoutdim)
         maskout[1] = VALID
@@ -10,61 +13,69 @@ function pcafromcov(xout,maskout,covs,covmask,means,meanmask;pratio=0.9,maxoutdi
     end
 end
 
-function pcapredict(xout,xin::Union{Vector,Matrix},pcain,pcamask,cfun)
-    if (pcamask[1] & MISSING)==0x00
-        ttransformed = MultivariateStats.transform(pcain,xin)
-        xout[1:length(ttransformed)] = ttransformed
-    else
-        xout[:] = NaN
-    end
+function pcapredict(xout,xin::Union{Vector,Matrix},pca,cfun)
+  pcain,pcamask = pca
+  if (pcamask[1] & MISSING)==0x00
+    ttransformed = MultivariateStats.transform(pcain,xin)
+    xout[1:length(ttransformed)] = ttransformed
+  else
+    xout[:] = NaN
+  end
 end
-function pcapredict(xout,xin::Array,pcain,pcamask,cfun)
-    xout2 = reshape(xout,(size(xout,1),length(xout)÷size(xout,1)))
-    xin2 = reshape(xin,(size(xin,1),length(xin)÷size(xin,1)))
-    if (pcamask[1] & MISSING)==0x00
-        ttransformed=MultivariateStats.transform(pcain,xin2)
-        xout2[1:length(ttransformed)] = ttransformed
-    else
-        xout2[:] = NaN
-    end
+function pcapredict(xout,xin::Array,pca,cfun)
+  pcain,pcamask = pca
+  xout2 = reshape(xout,(size(xout,1),length(xout)÷size(xout,1)))
+  xin2 = reshape(xin,(size(xin,1),length(xin)÷size(xin,1)))
+  if (pcamask[1] & MISSING)==0x00
+    ttransformed=MultivariateStats.transform(pcain,xin2)
+    xout2[1:length(ttransformed)] = ttransformed
+  else
+    xout2[:] = NaN
+  end
 end
-function pcapredict(xout,xin::Union{Vector,Matrix},pcain,pcamask,by,bymask,cfun::Function)
-    if ((pcamask[1] | bymask) & MISSING)==0x00
-        ttransformed = MultivariateStats.transform(pcain[cfun(by)],xin)
-        xout[1:length(ttransformed)] = ttransformed
-    else
-        xout[:] = NaN
-    end
+function pcapredict(xout,xin::Union{Vector,Matrix},pca,byc,cfun::Function)
+  pcain,pcamask = pca
+  by,bymask     = byc
+  if ((pcamask[1] | bymask) & MISSING)==0x00
+    ttransformed = MultivariateStats.transform(pcain[cfun(by)],xin)
+    xout[1:length(ttransformed)] = ttransformed
+  else
+    xout[:] = NaN
+  end
 end
-function pcapredict(xout,xin::Array,pcain,pcamask,by,bymask,cfun::Function)
-    xout2 = reshape(xout,(size(xout,1),length(xout)÷size(xout,1)))
-    xin2 = reshape(xin,(size(xin,1),length(xin)÷size(xin,1)))
-    @assert size(xout2,2)==size(xin2,2)
-    xhelp = zeros(eltype(xin),size(xin,1))
-    if (pcamask[1] & MISSING)==0x00
-      for i=1:size(xin2,2)
-        if ((bymask[i] & MISSING)==0x00)
-          copy!(xhelp,view(xin2,:,i))
-          ttransformed = MultivariateStats.transform(pcain[cfun(by[i])],xhelp)
-                xout2[1:size(ttransformed,1),i] = ttransformed
-        else
-          xout2[:,i] = NaN
-        end
+function pcapredict(xout,xin::Array,pca,byc,cfun::Function)
+  pcain,pcamask = pca
+  by,bymask = byc
+  xout2 = reshape(xout,(size(xout,1),length(xout)÷size(xout,1)))
+  xin2 = reshape(xin,(size(xin,1),length(xin)÷size(xin,1)))
+  @assert size(xout2,2)==size(xin2,2)
+  xhelp = zeros(eltype(xin),size(xin,1))
+  if (pcamask[1] & MISSING)==0x00
+    for i=1:size(xin2,2)
+      if ((bymask[i] & MISSING)==0x00)
+        copy!(xhelp,view(xin2,:,i))
+        ttransformed = MultivariateStats.transform(pcain[cfun(by[i])],xhelp)
+        xout2[1:size(ttransformed,1),i] = ttransformed
+      else
+        xout2[:,i] = NaN
       end
-    else
-        xout2[:] = NaN
     end
+  else
+    xout2[:] = NaN
+  end
 end
-function explained_variance(xout,xin,inmask)
-  pv = principalvars(xin)
+function explained_variance(xout,ain)
+  xin,inmask = ain
+  pv = principalvars(xin[1])
   if size(pv)==size(xout)
     xout[:] = pv/sum(pv)
   else
     xout[:] = NaN
   end
 end
-function rotation(xout,xin,inmask)
-  p=projection(xin)
+function rotation(xout,ain)
+  xin,inmask = ain
+  p=projection(xin[1])
   if size(p)==size(xout)
     xout[:]=p
   else
@@ -111,9 +122,9 @@ function cubePCA(cube::AbstractCubeData;MDAxis=VariableAxis,by=CubeAxis[],max_ca
     varAx1 = isa(varAx,CategoricalAxis) ? CategoricalAxis(string(axname(varAx)," 1"),varAx.values) : RangeAxis(string(axname(varAx)," 1"),varAx.values)
     varAx2 = isa(varAx,CategoricalAxis) ? CategoricalAxis(string(axname(varAx)," 2"),varAx.values) : RangeAxis(string(axname(varAx)," 2"),varAx.values)
     T      = eltype(covmat)
-
-    pcares = mapCube(pcafromcov,(covmat,means),indims=((typeof(varAx1),typeof(varAx2)),(MDAxis,)),outdims=((),),outtype=(PCA{T},),
-                genOut=(i->PCA(zeros(T,0),zeros(T,0,0),zeros(T,0),zero(T),zero(T)),);maxoutdim=noutdims,pratio=1.0)
+    indims = (InDims(varAx1,varAx2,miss=MaskMissing()),InDims(MDAxis,miss=MaskMissing()))
+    outdims = OutDims(outtype=(PCA{T}),genOut=i->PCA(zeros(T,0),zeros(T,0,0),zeros(T,0),zero(T),zero(T)),miss=MaskMissing())
+    pcares = mapCube(pcafromcov,(covmat,means),indims=indims,outdims=outdims;maxoutdim=noutdims,pratio=1.0)
     return OnlinePCA(pcares,noutdims,varAx,varAx1,varAx2,filter(i->!isa(i,DataType),by))
 end
 
@@ -139,14 +150,12 @@ function transformPCA(pca::OnlinePCA,c::AbstractCubeData;max_cache=1e7,kwargs...
       cfun=x->convertdict[x]
       indata=(c,pca.PCA,pca.bycube[1])
       indimspca = [outAxis,]
-      inmissing = (:nan,:mask,:mask)
       lout = length(outAxis)
       push!(forbiddenAxes,filter(i->!in(i,axes(pca.bycube[1])),axes(c))...)
       push!(forbiddenAxes,outAxis)
     else
       cfun = identity
       indata = (c,pca.PCA)
-      inmissing = (:nan,:mask)
       indimspca = []
       lout = 1
     end
@@ -157,9 +166,9 @@ function transformPCA(pca::OnlinePCA,c::AbstractCubeData;max_cache=1e7,kwargs...
     axcombs=collect(axcombs)[smallenough]
     totlengths=totlengths[smallenough]
     ia = isempty(totlengths) ? [] : map(typeof,axcombs[findmax(totlengths)[2]])
-    indims = isempty(pca.bycube) ? (totuple([typeof(pca.varAx);ia]),()) : (totuple([typeof(pca.varAx);ia]),totuple(typeof.(indimspca)),totuple(ia))
-    outdims = (totuple([PCAxis(pca.noutdims);ia]),)
-    pcpred = mapCube(pcapredict,indata,cfun,indims=indims,outdims=outdims,outtype=(Float32,),inmissing=inmissing,outmissing=(:nan,),max_cache=max_cache;kwargs...)
+    indims = isempty(pca.bycube) ? (InDims(pca.varAx,ia...,miss=NaNMissing()),InDims(miss=MaskMissing())) : (InDims(pca.varAx,ia...,miss=NaNMissing()),InDims(indimspca...,miss=MaskMissing()),InDims(ia...,miss=MaskMissing()))
+    outdims = OutDims(PCAxis(pca.noutdims),ia...,outtype=Float32,miss=NaNMissing())
+    pcpred = mapCube(pcapredict,indata,cfun,indims=indims,outdims=outdims,max_cache=max_cache;kwargs...)
     pcpred
 end
 
@@ -168,14 +177,13 @@ end
 
 Returns the relative explained variance of each PC as a datacube.
 """
-explained_variance(c::OnlinePCA) = mapCube(explained_variance,(c.PCA,),indims=((),),outdims=((PCAxis(c.noutdims),),),outtype=(Float32,),inmissing=(:mask,),outmissing=(:nan,))
+explained_variance(c::OnlinePCA) = mapCube(explained_variance,(c.PCA,),indims=InDims(miss=MaskMissing()),outdims=OutDims(PCAxis(c.noutdims),miss=NaNMissing(),outtype=Float32))
 
 """
     rotation_matrix(c::OnlinePCA)
 
 Returns the rotations matrix as a datacube.
 """
-rotation_matrix(c::OnlinePCA)    = mapCube(rotation,(c.PCA,),indims=((),),outdims=((c.varAx,PCAxis(c.noutdims)),),outtype=(Float32,),inmissing=(:mask,),outmissing=(:nan,))
-
-
+rotation_matrix(c::OnlinePCA) = mapCube(rotation,(c.PCA,),indims=InDims(miss=MaskMissing()),
+  outdims=OutDims(c.varAx,PCAxis(c.noutdims),outtype=Float32))
 #End
