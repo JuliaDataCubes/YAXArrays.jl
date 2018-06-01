@@ -384,7 +384,9 @@ using Requires
 
 const hasprogress=[false]
 const hasparprogress=[false]
-@require PmapProgressMeter hasparprogress[1]=true
+const progresscolor=[:cyan]
+@require IPython begin progresscolor[1]=[:blue] end
+@require PmapProgressMeter begin hasparprogress[1]=true end
 @require ProgressMeter begin
   import ProgressMeter: Progress, next!
   hasprogress[1]=true
@@ -395,7 +397,12 @@ function runLoop(dc::DATConfig)
     #TODO CHeck this for multiple output cubes, how to parallelize
     #I thnk this should work, but not 100% sure yet
     allRanges=distributeLoopRanges(totuple(dc.loopCacheSize),map(length,dc.LoopAxes))
-    allRanges = hasparprogress[1] ? (Progress(length(allRanges),1),allRanges) : (allRanges,)
+    if hasparprogress[1]
+      @everywhereelsem using PmapProgressMeter
+      allRanges = (Progress(length(allRanges),1),allRanges)
+    else
+      allRanges = (allRanges,)
+    end
     pmap(r->ESDL.DAT.innerLoop( Main.PMDATMODULE.dc.fu,
                                   ESDL.ESDLTools.totuple(ESDL.DAT.gethandle.(Main.PMDATMODULE.dc.incubes)),
                                   ESDL.ESDLTools.totuple(ESDL.DAT.gethandle.(Main.PMDATMODULE.dc.outcubes)),
