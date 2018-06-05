@@ -128,6 +128,7 @@ function mapCube{T<:OnlineStat}(f::Type{T},cdata::AbstractCubeData,pargs...;by=C
   end
   by2 = map(a->interpretBycubes(a,cdata),by)
   bycubes=filter(i->!isa(i,CubeAxis),collect(by2))
+  byaxes =filter(i->isa(i,CubeAxis),collect(by2))
   if length(bycubes)==1
     if outAxis==nothing
       if haskey(bycubes[1].properties,"labels")
@@ -151,7 +152,7 @@ function mapCube{T<:OnlineStat}(f::Type{T},cdata::AbstractCubeData,pargs...;by=C
     indata=cdata
     lout=lout * 1
     outdims=[]
-    inAxes2=filter(i->!in(i,by2) && !isa(i,MDAxis),inAxes)
+    inAxes2=filter(i->!in(i,byaxes) && !isa(i,MDAxis),inAxes)
   end
   axcombs=combinations(inAxes2)
   totlengths=map(a->prod(map(length,a)),axcombs)*sizeof(Float32)*lout
@@ -162,10 +163,10 @@ function mapCube{T<:OnlineStat}(f::Type{T},cdata::AbstractCubeData,pargs...;by=C
     m,i=findmax(totlengths)
     iain=[ia1;map(typeof,axcombs[i])]
     ia  = map(typeof,axcombs[i])
-    outBroad=filter(ax->!in(ax,by2) && !in(typeof(ax),iain),inAxes)
+    outBroad=filter(ax->!in(ax,byaxes) && !in(typeof(ax),iain),inAxes)
     indims=isempty(bycubes) ? [get_descriptor.(iain)] : [get_descriptor.(iain),get_descriptor.(ia)]
   else
-    outBroad=filter(ax->!in(ax,by2),inAxes)
+    outBroad=filter(ax->!in(ax,byaxes),inAxes)
     indims=isempty(bycubes) ? [get_descriptor.(ia1)] : [get_descriptor.(ia1),[]]
   end
   outBroad=map(get_descriptor,outBroad)

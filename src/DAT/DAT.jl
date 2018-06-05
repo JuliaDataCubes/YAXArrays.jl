@@ -382,22 +382,20 @@ end
 
 using Requires
 
-const hasprogress=[false]
 const hasparprogress=[false]
 const progresscolor=[:cyan]
-@require IPython begin progresscolor[1]=[:blue] end
-@require PmapProgressMeter begin hasparprogress[1]=true end
+@require IJulia begin progresscolor[1] = :blue end
 @require ProgressMeter begin
   import ProgressMeter: Progress, next!
-  hasprogress[1]=true
 end
+
 
 function runLoop(dc::DATConfig)
   if dc.ispar
     #TODO CHeck this for multiple output cubes, how to parallelize
     #I thnk this should work, but not 100% sure yet
     allRanges=distributeLoopRanges(totuple(dc.loopCacheSize),map(length,dc.LoopAxes))
-    if hasparprogress[1]
+    if isdefined(Main,:PmapProgressMeter)
       @everywhereelsem using PmapProgressMeter
       allRanges = (Progress(length(allRanges),1),allRanges)
     else
@@ -428,7 +426,7 @@ function runLoop(dc::DATConfig)
               totuple(map(i->i.desc.miss,dc.incubes)),
               totuple(map(i->i.desc.miss,dc.outcubes)),
               dc.LoopAxes,
-              Val{hasprogress[1]},
+              Val{isdefined(Main,:Progress)},
               dc.addargs,
               dc.kwargs)
   end
@@ -655,7 +653,7 @@ using Base.Cartesian
       push!(subOut, ex)
     else
       rhs = Expr(:call, :getSubRange, :(xout[$i]),  fill(:(:),NoutCol[i])...)
-      foreach(j->in(j,broadcastvars[NIN+i]) || push!(rhs.args,Symbol("i_$i")),1:Nloopvars)
+      foreach(j->in(j,broadcastvars[NIN+i]) || push!(rhs.args,Symbol("i_$j")),1:Nloopvars)
       push!(rhs.args,Expr(:kw,:write,true))
       push!(subIn,:($(outworksyms[i]) = $(rhs)[1]))
     end
