@@ -45,7 +45,7 @@ function Base.quantile(d::HistogramCube,q)
   quantileax=CategoricalAxis("Quantile",collect(q))
   CubeMem(CubeAxis[quantileax,c.axes...],cout,maskout)
 end
-Base.quantile(d::AbstractCubeData,q;kwargs...) = quantile(mapCube(Hist,d,100;kwargs...),q)
+Base.quantile(d::AbstractCubeData,q;nbins=100,kwargs...) = quantile(mapCube(Hist,d,nbins;kwargs...),q)
 
 using OnlineStats
 getGenFun{T<:OnlineStats.Hist}(f::Type{T},nbins)=i->f(nbins)
