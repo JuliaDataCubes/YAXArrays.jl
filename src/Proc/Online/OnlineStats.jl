@@ -180,5 +180,5 @@ function mapCube{T<:OnlineStat}(f::Type{T},cdata::AbstractCubeData,pargs...;by=C
 end
 
 include("OnlinePCA.jl")
-
+include("OnlineHist.jl")
 end
