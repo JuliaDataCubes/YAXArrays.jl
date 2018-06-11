@@ -68,7 +68,7 @@ are specified through the matrix `pl` where `size(pl)==(N,2)` and N is the numbe
 of extracted coordinates. Returns a data cube without `LonAxis` and `LatAxis` but with a
 `SpatialPointAxis` containing the input locations.
 """
-function extractLonLats(c::AbstractCubeData,pl::Matrix)
+function extractLonLats(c::AbstractCubeData,pl::Matrix;kwargs...)
   size(pl,2)==2 || error("Coordinate list must have exactly 2 columns")
   axlist=axes(c)
   ilon=findAxis(LonAxis,axlist)
@@ -82,7 +82,7 @@ function extractLonLats(c::AbstractCubeData,pl::Matrix)
   latinds = map(ll->axVal2Index(latax,ll[2]),pointax.values)
   incubes=InDims("Lon","Lat",miss=MaskMissing())
   outcubes=OutDims(pointax,miss=MaskMissing())
-  y=mapCube(toPointAxis,c,loninds,latinds,indims=incubes,outdims=outcubes,max_cache=1e8)
+  y=mapCube(toPointAxis,c,loninds,latinds;indims=incubes,outdims=outcubes,max_cache=1e8,kwargs...)
 end
 export extractLonLats
 

@@ -26,11 +26,11 @@ package.
 
 **Output Axes** `TimeAxis`, `Method`axis
 """
-function cubeAnomalies(c::AbstractCubeData,methods,trainArray)
+function cubeAnomalies(c::AbstractCubeData,methods,trainArray;kwargs...)
   indims = InDims(TimeAxis,VariableAxis,miss=NaNMissing())
   outdims = OutDims(TimeAxis,CategoricalAxis("Method",methods),miss=NaNMissing())
   P = getDetectParameters(methods,trainArray,length(getAxis(TimeAxis,c)))
-  mapCube(cubeAnomalies,c,P,indims=indims,outdims=outdims)
+  mapCube(cubeAnomalies,c,P;indims=indims,outdims=outdims,kwargs...)
 end
 
 function cubeAnomalies(xout::AbstractArray, xin::AbstractArray, P::MultivariateAnomalies.PARAMS)
@@ -42,10 +42,10 @@ function cubeAnomalies(xout::AbstractArray, xin::AbstractArray, P::MultivariateA
 end
 
 
-function simpleAnomalies(c::AbstractCubeData,methods)
-  indims = InDims(TimeAxis,VariableAxis,miss=NaNMissing()),
+function simpleAnomalies(c::AbstractCubeData,methods;kwargs...)
+  indims = InDims(TimeAxis,VariableAxis,miss=NaNMissing())
   outdims = OutDims(TimeAxis,CategoricalAxis("Method",methods),miss=NaNMissing())
-  mapCube(simpleAnomalies,c,methods,indims=indims,outdims=outdims)
+  mapCube(simpleAnomalies,c,methods;indims=indims,outdims=outdims,kwargs...)
 end
 
 function simpleAnomalies(xout::AbstractArray, xin::AbstractArray,methods)

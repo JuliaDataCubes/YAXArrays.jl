@@ -30,9 +30,9 @@ Removes the mean annual cycle from each time series of a data cube.
 
 **Output Axes** `Time`axis
 """
-function removeMSC(c::AbstractCubeData)
+function removeMSC(c::AbstractCubeData;kwargs...)
   NpY=getNpY(c)
-  mapCube(removeMSC,c,NpY,zeros(NpY),zeros(Int,NpY),indims=InDims("Time",miss=MaskMissing()),outdims=OutDims("Time",miss=MaskMissing()))
+  mapCube(removeMSC,c,NpY,zeros(NpY),zeros(Int,NpY);indims=InDims("Time",miss=MaskMissing()),outdims=OutDims("Time",miss=MaskMissing()),kwargs...)
 end
 
 """
@@ -44,9 +44,9 @@ Fills missing values of each time series in a cube with the mean annual cycle.
 
 **Output Axes** `Time`axis
 """
-function gapFillMSC(c::AbstractCubeData)
+function gapFillMSC(c::AbstractCubeData;kwargs...)
   NpY=getNpY(c)
-  mapCube(gapFillMSC,c,NpY,zeros(NpY),zeros(Int,NpY),indims=InDims("Time",miss=MaskMissing()),outdims=OutDims("Time",miss=MaskMissing()))
+  mapCube(gapFillMSC,c,NpY,zeros(NpY),zeros(Int,NpY);indims=InDims("Time",miss=MaskMissing()),outdims=OutDims("Time",miss=MaskMissing()),kwargs...)
 end
 
 function gapFillMSC(aout::Tuple,ain::Tuple,NpY::Integer,tmsc,tnmsc)
@@ -67,10 +67,10 @@ Returns the mean annual cycle from each time series.
 **Output Axes** `MSC`axis
 
 """
-function getMSC(c::AbstractCubeData)
+function getMSC(c::AbstractCubeData;kwargs...)
   outdims = OutDims(MSCAxis(getNpY(c)),miss=NaNMissing())
   indims = InDims(TimeAxis,miss=NaNMissing())
-  mapCube(getMSC,c,zeros(Int,getNpY(c)),indims=indims,outdims=outdims)
+  mapCube(getMSC,c,zeros(Int,getNpY(c));indims=indims,outdims=outdims,kwargs...)
 end
 function getMSC(xout::AbstractVector,xin::AbstractVector,nmsc::Vector{Int}=zeros(Int,length(xout));imscstart::Int=1,NpY=length(xout))
     #Reshape the cube to squeeze unimportant variables
@@ -114,10 +114,10 @@ Returns the median annual cycle from each time series.
 
 **Output Axes** `MSC`axis
 """
-function getMedSC(c::AbstractCubeData)
+function getMedSC(c::AbstractCubeData;kwargs...)
   outdims = OutDims(MSCAxis(getNpY(c)),miss=MaskMissing())
   indims = InDims(TimeAxis,miss=MaskMissing())
-  mapCube(getMedSC,c,indims=indims,outdims=outdims)
+  mapCube(getMedSC,c;indims=indims,outdims=outdims,kwargs...)
 end
 
 function getMedSC(aout::Tuple,ain::Tuple)

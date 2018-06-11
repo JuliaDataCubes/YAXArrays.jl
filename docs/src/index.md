@@ -6,7 +6,7 @@
 
 ## Example Notebooks
 
-You can find some example Jupyter Notebooks that using *ESDL.jl* [here](https://github.com/CAB-LAB/JuliaDatDemo)
+You can find some example Jupyter Notebooks that using *ESDL.jl* [here](https://github.com/esa-esdl/esdl-shared)
 
 ## Manual Outline
 

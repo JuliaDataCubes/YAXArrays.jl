@@ -116,7 +116,7 @@ type Cube
 end
 
 function Cube(;resolution="low")
-  haskey(ENV,"ESDL_CUBEDIR") ? Cube(joinpath(ENV["ESDL_CUBEDIR"],"low-res")) : RemoteCube()
+  haskey(ENV,"ESDL_CUBEDIR") ? Cube(joinpath(ENV["ESDL_CUBEDIR"],"$(resolution)-res")) : RemoteCube()
 end
 
 function Cube(base_dir::AbstractString)

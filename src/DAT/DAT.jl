@@ -171,25 +171,6 @@ function OutputCube(outfolder,desc::OutDims,inAxes::Vector{CubeAxis},incubes,par
   OutputCube(Nullable{AbstractCubeData}(),desc,collect(CubeAxis,axesSmall),CubeAxis[],collect(CubeAxis,broadcastAxes),Int[],false,nothing,nothing,outfolder,outtype)
 end
 
-# """
-# Collects axes from all input cubes into a single vector
-# """
-# function getAllInaxes(cdata)
-#   o = CubeAxis[]
-#   foreach(cdata) do c
-#     foreach(axes(c)) do ax
-#       namecur = axname(ax)
-#       samename = findfirst(i->axname(i)==namecur,o)
-#       if samename == 0 #There is no axis of the same name yet
-#         push!(o,ax)
-#       else
-#         o[samename]==ax || error("The axis $namecur appears multiple times, but contains different values. $(o[samename]) $ax")
-#       end
-#     end
-#   end
-#   return o
-# end
-
 """
 Configuration object of a DAT process. This holds all necessary information to perform the calculations
 It contains the following fields:
@@ -399,11 +380,27 @@ function synccube(x::Tuple{Array,Array})
   Mmap.sync!(x[2])
 end
 
+using Requires
+
+const hasparprogress=[false]
+const progresscolor=[:cyan]
+@require IJulia begin progresscolor[1] = :blue end
+@require ProgressMeter begin
+  import ProgressMeter: Progress, next!
+end
+
+
 function runLoop(dc::DATConfig)
   if dc.ispar
     #TODO CHeck this for multiple output cubes, how to parallelize
     #I thnk this should work, but not 100% sure yet
     allRanges=distributeLoopRanges(totuple(dc.loopCacheSize),map(length,dc.LoopAxes))
+    if isdefined(Main,:PmapProgressMeter)
+      @everywhereelsem using PmapProgressMeter
+      allRanges = (Progress(length(allRanges),1),allRanges)
+    else
+      allRanges = (allRanges,)
+    end
     pmap(r->ESDL.DAT.innerLoop( Main.PMDATMODULE.dc.fu,
                                   ESDL.ESDLTools.totuple(ESDL.DAT.gethandle.(Main.PMDATMODULE.dc.incubes)),
                                   ESDL.ESDLTools.totuple(ESDL.DAT.gethandle.(Main.PMDATMODULE.dc.outcubes)),
@@ -414,9 +411,10 @@ function runLoop(dc::DATConfig)
                                   totuple(map(i->i.desc.miss,Main.PMDATMODULE.dc.incubes)),
                                   totuple(map(i->i.desc.miss,Main.PMDATMODULE.dc.outcubes)),
                                   Main.PMDATMODULE.dc.LoopAxes,
+                                  Val{false},
                                   Main.PMDATMODULE.dc.addargs,
                                   Main.PMDATMODULE.dc.kwargs)
-          ,allRanges)
+          ,allRanges...)
   else
     innerLoop(dc.fu,
               totuple(gethandle.(dc.incubes)),
@@ -428,6 +426,7 @@ function runLoop(dc::DATConfig)
               totuple(map(i->i.desc.miss,dc.incubes)),
               totuple(map(i->i.desc.miss,dc.outcubes)),
               dc.LoopAxes,
+              Val{isdefined(Main,:Progress)},
               dc.addargs,
               dc.kwargs)
   end
@@ -613,17 +612,20 @@ end
 
 using DataStructures: OrderedDict
 using Base.Cartesian
-@generated function innerLoop{T1,T2,T3,T4,OC,R,NIN,NOUT,UPDOUT,LR}(f,xin::NTuple{NIN,Any},xout::NTuple{NOUT,Any},::InnerObj{T1,T2,T4,OC,R,UPDOUT,LR},loopRanges::T3,
-  inwork,outwork,inmissing,outmissing,loopaxes,addargs,kwargs)
+@generated function innerLoop{T1,T2,T3,T4,OC,R,NIN,NOUT,UPDOUT,LR,PROG}(f,xin::NTuple{NIN,Any},xout::NTuple{NOUT,Any},::InnerObj{T1,T2,T4,OC,R,UPDOUT,LR},loopRanges::T3,
+  inwork,outwork,inmissing,outmissing,loopaxes,::Type{Val{PROG}},addargs,kwargs)
 
   NinCol      = T1
   NoutCol     = T2
   broadcastvars = T4
   Nloopvars   = length(T3.parameters)
   loopRangesE = Expr(:block)
-  unrollEx = Expr(:block)
   inworksyms = map(i->Symbol(string("inwork_",i)),1:NIN)
   outworksyms= map(i->Symbol(string("outwork_",i)),1:NOUT)
+
+  #Add Progressmeter
+  unrollEx = quote end
+  PROG && push!(unrollEx.args,:(progm=Progress(prod(loopRanges))))
 
   if LR
     #Caution! This is actually not tyoe-stable, there might be a better solution to this
@@ -651,7 +653,7 @@ using Base.Cartesian
       push!(subOut, ex)
     else
       rhs = Expr(:call, :getSubRange, :(xout[$i]),  fill(:(:),NoutCol[i])...)
-      foreach(j->in(j,broadcastvars[NIN+i]) || push!(rhs.args,Symbol("i_$i")),1:Nloopvars)
+      foreach(j->in(j,broadcastvars[NIN+i]) || push!(rhs.args,Symbol("i_$j")),1:Nloopvars)
       push!(rhs.args,Expr(:kw,:write,true))
       push!(subIn,:($(outworksyms[i]) = $(rhs)[1]))
     end
@@ -668,6 +670,8 @@ using Base.Cartesian
     end
   end
   loopBody=quote end
+  PROG && push!(loopBody.args,:(next!(progm)))
+
   callargs=Any[:f,Expr(:parameters,Expr(:...,:kwargs))]
   R && foreach(j->push!(callargs,outworksyms[j]),1:NOUT)
   OC>0 && (subIn[OC]=:(oc = $(subIn[OC])))
