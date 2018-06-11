@@ -38,9 +38,14 @@ function Base.quantile(d::HistogramCube,q)
   cout=zeros(Float32,length(q),size(c.data)...)
   maskout=zeros(UInt8,length(q),size(c.data)...)
   for ii in CartesianRange(size(c.data))
-    qu = OnlineStats.quantile(c.data[ii],q)
-    cout[:,ii]=qu
-    maskout[:,ii]=c.mask[ii]
+    if OnlineStats.nobs(c.data[ii])>0
+      qu = OnlineStats.quantile(c.data[ii],q)
+      cout[:,ii]=qu
+      maskout[:,ii]=c.mask[ii]
+    else
+      cout[:,ii]=q
+      maskout[:,ii]=0x01
+    end
   end
   quantileax=CategoricalAxis("Quantile",collect(q))
   CubeMem(CubeAxis[quantileax,c.axes...],cout,maskout)
