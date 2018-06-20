@@ -146,7 +146,13 @@ end
 """
     exportcube(r::AbstractCubeData,filename::String)
 
-Saves a cube object to a portable NetCDF in `filename`.
+Saves a cube object to a portable NetCDF file in `filename`.
+
+When saving, every RangeAxis will be converted to an axis in the NetCDF cube,
+while every categorical axis will be represented by a different variable
+inside the resulting file. Dimensions will be ordered according to the
+`priorities` keyword argument, which defaults to `Dict("LON"=>1,"LAT"=>2,"TIME"=>3)`,
+which means that the file will be stored with longitudes varuing fastest. 
 """
 function exportcube(r::AbstractCubeData,filename::String;priorities = Dict("LON"=>1,"LAT"=>2,"TIME"=>3))
 
