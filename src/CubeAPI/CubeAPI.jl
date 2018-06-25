@@ -116,7 +116,11 @@ type Cube
 end
 
 function Cube(;resolution="low")
-  haskey(ENV,"ESDL_CUBEDIR") ? Cube(joinpath(ENV["ESDL_CUBEDIR"],"$(resolution)-res")) : RemoteCube()
+  try
+    Cube(joinpath(ENV["ESDL_CUBEDIR"],"$(resolution)-res"))
+  catch
+    RemoteCube(resolution=resolution)
+  end
 end
 
 function Cube(base_dir::AbstractString)
@@ -173,10 +177,10 @@ end
 
 function RemoteCube(;resolution="low",url="http://www.brockmann-consult.de/cablab-thredds/")
   testDAP() || error("NetCDF built without DAP support. Accessing remote cubes is not possible.")
-  resExt=resolution=="high" ? "fileServer/datacube/high-res/cube.config" : "fileServer/datacube/low-res/cube.config"
-  res=get(string(url,"catalog.xml"))
+  resExt=resolution == "low" ? "fileServer/datacube-low-res/cube.config" : "fileServer/datacube-high-res/cube.config"
   xconfig=split(readstring(get(string(url,resExt))),"\n")
   config=parseConfig(xconfig)
+  res=get(string(url,"catalog.xml"))
   xmldoc=parse_string(readstring(res));
   xroot=root(xmldoc)
   datasets=get_elements_by_tagname(xroot,"dataset")
@@ -487,7 +491,7 @@ function getMaskFile(cube::Cube)
 end
 function getMaskFile(cube::RemoteCube)
 
-  filename=cube.config.spatial_res==0.25 ? string(cube.base_url,"dodsC/datacube/low-res/data/water_mask/2001_water_mask.nc") : string(cube.base_url,"dodsC/datacube/high-res/data/water_mask/2001_water_mask.nc")
+  filename=cube.config.spatial_res==0.25 ? string(cube.base_url,"dodsC/datasetRoot-low-res/data/water_mask/2001_water_mask.nc") : string(cube.base_url,"dodsC/datasetRoot-high-res/data/water_mask/2001_water_mask.nc")
   try
     nc=NetCDF.open(filename)
     NetCDF.close(nc)
