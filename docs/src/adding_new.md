@@ -14,54 +14,55 @@ First of all one needs to define the function that is supposed to be applied on 
 `f(a_out,a_in,addargs...;kwargs...)`, where `a_out` is the output data and `a_in` is the input data.
 This might be followed by an arbitrary number of additional arguments `addargs` and keyword arguments.
 
-In most processing frameworks of this kind, you have some kind of
-apply function that you pass your function to and specify the
-dimension number of your array that you want to slice. Here
-we take a different approach. Our datacubes have named axes
+Then we can apply this function repeatedly on slices of the cube. In other programming languages this is done using some `apply` or `mapdim` functions. 
+Our datacubes have named axes
 and usually a function is supposed to be applied on slices
 of a certain axis type. For example, a time series decomposition
-will always be applied along the time dimension.
+will always be applied along the time dimension. 
 
 ## Examples
 
-### Simple registration
+### Using the `mapCube` function
 
-In order to understand better what happens, lets look at some examples. We want to register a gap filling function which accepts single time series
-and returns time series of the same length. We register the function the following way:                  
+In order to understand better what happens, lets look at some examples. We want to apply a gap filling function which accepts single time series
+and returns time series of the same length. We do this the following way:                  
 
-```@example
+```julia
 using ESDL # hide
-function fillGaps(xout::Vector, mout::Vector{UInt8}, xin::Vector, min::Vector{UInt8})
-  # code goes here
+function fillGaps(xout::Vector, xin::Vector)
+  # code goes here, for example
+  # xout[:] = my_new_gapfill_algo(xin)
 end
 
 inAxes  = InDims("time")
 outAxes = OutDims("time")
-registerDATFunction(fillGaps,indims = inAxes,outdims = outAxes);
+mapCube(fillGaps, cube, indims = inAxes,outdims = outAxes)
 ```
 
+Much of this might be well known from other programming languages that let you perform sliced operations on multidimensional arrays. The main difference is that in the `ESDL` framework
+you have to specify the output dimensions of your `fillGaps` function. This is necessary to efficiently reserve some storage on the hard drive before starting the computation. 
+Then instead of returning the gap-filled 
 After this you can apply your function like this `mapCube(fillGaps, cubedata)`, where `cubedata` can be any type of cube, the only condition is that it must contain a `TimeAxis`.  
 
 ### Using missing for missing data
 
 In the next example we assume want to register a function that calculates the time variance of a variable. Internally we want to use the `StatsBase` methods to
-calculate the variance in the presence of missing data. To do this, the input data is best represented as `missing` form the Missing package. We register the function in the following way:
+calculate the variance in the presence of missing data. To do this, the input data is best represented as `missing` from the Missing package. We register the function in the following way:
 
-```@example
-using ESDL # hide
+```julia
 using DataArrays
 function timeVariance{T}(xout::Array{T,0}, xin::DataVector)
   xout[1]=var(xin,skipmissing=true)
 end
 
-inAxes  = InDims("time",miss = DataArrayMissing())
+inAxes  = InDims("time",miss = ESDL.DataArrayMissing())
 outAxes = OutDims(miss=DataArrayMissing())
 
-registerDATFunction(timeVariance, indims = inAxes, outdims = outAxes, no_ocean=1);
+mapCube(timeVariance, myCube, indims = inAxes, outdims = outAxes, no_ocean=1);
 ```
 
-Here, the only input axis is again the time axis. However, the output axis is an empty tuple, which means that a single value is returned by the function and written
-to the 0-dimensional array `xout`. The optional argument `inmissing` is a tuple of symbols, here it is length one because there is only a single input cube.
+Here, the only input axis is again the time axis. However, the output axis is not given, which means that a single value is returned by the function and written
+to the 0-dimensional array `xout`. The optional argument `missing` describes how missing values are represented.
 When `DataArrayMissing` is chosen, missing values in the cube will be converted to `missing`s in the function's input array. The same hold true for the `outmissing` argument.
 Any `missing` value in the output array will be converted to a missing value in the resulting cube's mask.
 
@@ -76,6 +77,7 @@ to register a multivariate extreme event detection method `detectExtremes`, wher
 
 ```@example
 using ESDL # hide
+using ESDL: 
 function detectExtremes(xout::Vector, xin::Matrix, method)
   #code goes here
 end
@@ -118,14 +120,15 @@ arguments that are appended to each call of the registered function. So we can r
 
 ```@example
 using ESDL # hide
+using ESDL: NaNMissing
 function prepareArgs(cubes, pargs) # hide
   timeAxis = ESDL.DAT.getAxis(TimeAxis,cube[1]) # hide
   npy = timeAxis.values.NPY # hide
   xmsc = zeros(Float32,npy) # hide
   return npy,xmsc # hide
 end; # hide
-inAxes  = InDims(TimeAxis,miss = NaNMissing())
-outAxes = OutDims(TimeAxis,miss = NaNMissing())
+inAxes  = InDims(TimeAxis,miss = ESDL.NaNMissing())
+outAxes = OutDims(TimeAxis,miss = ESDL.NaNMissing())
 registerDATFunction(removeMSC, indims = inAxes, outdims = outAxes, args = prepareArgs);
 ```
 
@@ -164,7 +167,7 @@ function spatialAggregation{T}(xout::Array{T,0}, xin::Matrix, latitudes::Abstrac
   #code goes here
 end
 
-inAxes=(InDims(LonAxis, LatAxis,miss=DataArrayMissing()), InDims(LatAxis,miss=NoMissing()))
+inAxes=(InDims(LonAxis, LatAxis,miss=DataArrayMissing()), InDims(LatAxis,miss=ESDL.NoMissing()))
 outAxes=OutDims()
 registerDATFunction(spatialAggregation, indims = inAxes, outdims = outAxes);
 ```
