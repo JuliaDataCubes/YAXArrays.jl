@@ -12,7 +12,7 @@ before_install:
 script:
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
   - julia -e 'Pkg.clone(pwd()); Pkg.build("ESDL")'
-  - julia -e 'using Conda; Conda.add("libnetcdf"); Pkg.build("NetCDF"); Pkg.test("ESDL"; coverage=true)'
+  - julia -e 'Pkg.test("ESDL"; coverage=true)'
 after_success:
   - julia -e 'Pkg.add("Documenter")'
   - julia -e 'Pkg.clone("https://github.com/CAB-LAB/ESDLPlots.jl");Pkg.add("GR")'
