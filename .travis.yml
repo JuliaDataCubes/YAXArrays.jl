@@ -10,8 +10,6 @@ notifications:
 # uncomment the following lines to override the default test script
 script:
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-  - julia -e 'Pkg.clone("https://github.com/milanflach/LIBSVM.jl.git"); Pkg.checkout("LIBSVM", "mutating_versions"); Pkg.build("LIBSVM")'
-  - julia -e 'Pkg.clone("https://github.com/milanflach/MultivariateAnomalies.jl")'
   - julia -e 'Pkg.clone(pwd()); Pkg.build("ESDL")' 
   - julia -e 'using Conda; Conda.add("libnetcdf"); Pkg.build("NetCDF"); Pkg.test("ESDL"; coverage=true)'
 after_success:
