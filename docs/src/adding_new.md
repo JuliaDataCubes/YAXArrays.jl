@@ -35,7 +35,7 @@ indims = InDims("Time")
 
 The [`InDims`](@ref) constructor takes any number of positional arguments and tries to convert them into a description of a cube axis, so you can pass it a string, an axis type or an axis itself, all of which will be matched against the axes of the input data cube. Next we define the output axis:
 
-```example 1
+```@example 1
 outdims = OutDims("Time")
 ```
 

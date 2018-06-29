@@ -7,7 +7,7 @@ julia:
 notifications:
   email: false
 before_install:
-  - sudo apt-get install -y libnetcdf-dev libhdf5-dev
+  - sudo apt-get install -y libnetcdf-dev libhdf5-dev netcdf-bin
 # uncomment the following lines to override the default test script
 script:
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
