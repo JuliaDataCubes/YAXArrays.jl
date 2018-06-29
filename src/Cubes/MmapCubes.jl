@@ -2,6 +2,14 @@ export MmapCube,getmmaphandles
 import ..ESDLTools.totuple
 using JLD
 abstract type AbstractMmapCube{T,N}<:AbstractCubeData{T,N} end
+
+
+"""
+    MmapCube{T,N}
+
+Defines a Memory-Mapped data cube which is stored on disk. Is generally returned
+by mapCube applications. 
+"""
 type MmapCube{T,N} <: AbstractMmapCube{T,N}
   axes::Vector{CubeAxis}
   folder::String

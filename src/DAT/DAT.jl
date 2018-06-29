@@ -1,5 +1,5 @@
 module DAT
-export registerDATFunction, mapCube, getInAxes, getOutAxes, findAxis, reduceCube, getAxis,
+export mapCube, getInAxes, getOutAxes, findAxis, reduceCube, getAxis,
       NaNMissing, ValueMissing, DataArrayMissing, MaskMissing, NoMissing, InputCube, OutputCube
 importall ..Cubes
 importall ..CubeAPI
@@ -20,8 +20,6 @@ macro debug_print(e)
   debugDAT && return(:(println($e)))
   :()
 end
-#Clear Temp Folder when loading
-#myid()==1 && isdir(joinpath(workdir[1],"tmp")) && rm(joinpath(workdir[1],"tmp"),recursive=true)
 
 "Supertype of missing value representations"
 abstract type MissingRepr end
@@ -305,22 +303,18 @@ Map a given function `fun` over slices of the data cube `cube`.
 
 * `max_cache=1e7` maximum size of blocks that are read into memory, defaults to approx 10Mb
 * `outtype::DataType` output data type of the operation
-* `indims::Tuple{Tuple{Vararg{CubeAxis}}}` List of input axis types for each input data cube
-* `outdims::Tuple` List of output axes, can be either an axis type that has a default constructor or an instance of a `CubeAxis`
-* `inmissing::Tuple` How to treat missing values in input data for each input cube. Possible values are `:data` `:mask` `:nan` or a value that is inserted for missing data, defaults to `:mask`
-* `outmissing` How are missing values written to the output array, possible values are `:data`, `:mask`, `:nan`, defaults to `:mask`
+* `indims::InDims List of input cube descriptors of type [`InDims`](@ref) for each input data cube
+* `outdims::OutDims` List of output cube descriptors of type [`OutDims`](@ref) for each output cube
 * `no_ocean` should values containing ocean data be omitted, an integer specifying the cube whose input mask is used to determine land-sea points.
 * `inplace` does the function write to an output array inplace or return a single value> defaults to `true`
 * `ispar` boolean to determine if parallelisation should be applied, defaults to `true` if workers are available.
+* `outfolder` a folder where the output cube is stroed, defaults to the result of `ESDLdir()`
 * `kwargs` additional keyword arguments passed to the inner function
 
 The first argument is always the function to be applied, the second is the input cube or
-a tuple input cubes if needed. If the function to be applied is registered (either as part of ESDL or through [registerDATFunction](@ref)),
-all of the keyword arguments have reasonable defaults and don't need to be supplied. Some of the function still need additional arguments or keyword
-arguments as is stated in the documentation.
+a tuple input cubes if needed.
 
-If you want to call mapCube directly on an unregistered function, please have a look at [Applying custom functions](@ref) to get an idea about the usage of the
-input and output dimensions etc.
+
 """
 function mapCube(fu::Function,
     cdata::Tuple,addargs...;
@@ -410,7 +404,7 @@ function runLoop(dc::DATConfig)
                                   totuple(map(i->i.workarray,Main.PMDATMODULE.dc.outcubes)),
                                   totuple(map(i->i.desc.miss,Main.PMDATMODULE.dc.incubes)),
                                   totuple(map(i->i.desc.miss,Main.PMDATMODULE.dc.outcubes)),
-                                  Main.PMDATMODULE.dc.LoopAxes,
+                                  totuple(Main.PMDATMODULE.dc.LoopAxes),
                                   Val{false},
                                   Main.PMDATMODULE.dc.addargs,
                                   Main.PMDATMODULE.dc.kwargs)
@@ -425,7 +419,7 @@ function runLoop(dc::DATConfig)
               totuple(map(i->i.workarray,dc.outcubes)),
               totuple(map(i->i.desc.miss,dc.incubes)),
               totuple(map(i->i.desc.miss,dc.outcubes)),
-              dc.LoopAxes,
+              totuple(dc.LoopAxes),
               Val{isdefined(Main,:Progress)},
               dc.addargs,
               dc.kwargs)
@@ -612,13 +606,16 @@ end
 
 using DataStructures: OrderedDict
 using Base.Cartesian
-@generated function innerLoop{T1,T2,T3,T4,OC,R,NIN,NOUT,UPDOUT,LR,PROG}(f,xin::NTuple{NIN,Any},xout::NTuple{NOUT,Any},::InnerObj{T1,T2,T4,OC,R,UPDOUT,LR},loopRanges::T3,
-  inwork,outwork,inmissing,outmissing,loopaxes,::Type{Val{PROG}},addargs,kwargs)
+import NamedTuples: @NT
+@generated function innerLoop{T1,T2,T3,T4,OC,R,NIN,NOUT,UPDOUT,LR,PROG,LAX}(f,xin::NTuple{NIN,Any},xout::NTuple{NOUT,Any},::InnerObj{T1,T2,T4,OC,R,UPDOUT,LR},loopRanges::T3,
+  inwork,outwork,inmissing,outmissing,loopaxes::LAX,::Type{Val{PROG}},addargs,kwargs)
+
 
   NinCol      = T1
   NoutCol     = T2
   broadcastvars = T4
   Nloopvars   = length(T3.parameters)
+  loopnames   = map(axname,LAX.parameters)
   loopRangesE = Expr(:block)
   inworksyms = map(i->Symbol(string("inwork_",i)),1:NIN)
   outworksyms= map(i->Symbol(string("outwork_",i)),1:NOUT)
@@ -627,15 +624,6 @@ using Base.Cartesian
   unrollEx = quote end
   PROG && push!(unrollEx.args,:(progm=Progress(prod(loopRanges))))
 
-  if LR
-    #Caution! This is actually not tyoe-stable, there might be a better solution to this
-    push!(unrollEx.args,:(axdict=OrderedDict{String,Tuple{Int,Any}}()))
-    push!(unrollEx.args,quote
-      for i in loopaxes
-        axdict[ESDL.axname(i)] = (1,first(i.values))
-      end
-    end)
-  end
   [push!(unrollEx.args,:($(inworksyms[i]) = inwork[$i])) for i=1:NIN]
   [push!(unrollEx.args,:($(outworksyms[i]) = outwork[$i])) for i=1:NOUT]
   subIn = map(1:NIN) do i
@@ -692,9 +680,8 @@ using Base.Cartesian
     push!(loopBody.args,ocex)
   end
   if LR
-    foreach(1:Nloopvars) do il
-      push!(loopBody.args,:(axdict.vals[$il]=($(Symbol("i_$il")),loopaxes[$il].values[$(Symbol("i_$il"))])))
-    end
+    exloopdict = Expr(:tuple,[:($(QuoteNode(loopnames[il])) => ($(Symbol("i_$il")),loopaxes[$il].values[$(Symbol("i_$il"))])) for il=1:Nloopvars]...)
+    push!(loopBody.args,:(axdict = $exloopdict))
     push!(callargs,:axdict)
   end
   push!(callargs,Expr(:...,:addargs))

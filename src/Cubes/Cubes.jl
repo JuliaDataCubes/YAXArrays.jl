@@ -13,8 +13,8 @@ export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesC
 
 Supertype of all cubes. `T` is the data type of the cube and `N` the number of
 dimensions. Beware that an `AbstractCubeData` does not implement the `AbstractArray`
-interface. However, the `ESDL` functions [mapCube](@ref), [reduceCube](@ref),
-[readCubeData](@ref), [plotMAP](@ref) and [plotXY](@ref) will work on any subtype
+interface. However, the `ESDL` functions [`mapCube`](@ref), [`reduceCube`](@ref),
+[`readCubeData`](@ref), [`plotMAP`](@ref) and [`plotXY`](@ref) will work on any subtype
 of `AbstractCubeData`
 """
 abstract type AbstractCubeData{T,N} end

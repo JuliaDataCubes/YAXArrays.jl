@@ -23,7 +23,7 @@ makedocs(
 deploydocs(
     #deps   = Deps.pip("mkdocs", "python-markdown-math"),
     repo   = "github.com/CAB-LAB/ESDL.jl.git",
-    julia  = "0.5",
+    julia  = "0.6",
     deps   = nothing,
     make   = nothing,
     target = "build"

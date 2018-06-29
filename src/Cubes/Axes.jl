@@ -89,6 +89,9 @@ Base.size(x::CubeAxis)=(length(x.values),)
 Base.size(x::CubeAxis,i)=i==1 ? length(x.values) : error("Axis has only a single dimension")
 Base.ndims(x::CubeAxis)=1
 
+immutable _CategoricalAxis{T,S,RT} <: CubeAxis{T,S}
+  values::RT
+end
 
 """
     CategoricalAxis{T,S}
@@ -100,9 +103,6 @@ The default constructor is:
     CategoricalAxis(axname::String,values::Vector{T})
 
 """
-immutable _CategoricalAxis{T,S,RT} <: CubeAxis{T,S}
-  values::RT
-end
 const CategoricalAxis = _CategoricalAxis{T,S,RT} where RT<:AbstractVector{T} where S where T
 
 
@@ -113,6 +113,10 @@ CategoricalAxis(s::AbstractString,v::AbstractVector)=CategoricalAxis(Symbol(s),v
 @defineCatAxis SpatialPoint Tuple{Number,Number}
 @defineCatAxis TimeScale String
 @defineCatAxis Quantile AbstractFloat
+
+immutable _RangeAxis{T,S,R} <: CubeAxis{T,S}
+  values::R
+end
 
 """
     RangeAxis{T,S,R}
@@ -125,9 +129,6 @@ The default constructor is:
     RangeAxis(axname::String,values::Range{T})
 
 """
-immutable _RangeAxis{T,S,R} <: CubeAxis{T,S}
-  values::R
-end
 const RangeAxis = _RangeAxis{T,S,R} where R<:AbstractVector{T} where S where T
 
 RangeAxis(s::Symbol,v::AbstractVector{T}) where T = RangeAxis{T,s,typeof(v)}(v)
@@ -148,6 +149,7 @@ axes(x::CubeAxis)=CubeAxis[x]
 
 axname{T,S}(::CategoricalAxis{T,S})=string(S)
 axname{T,S}(::RangeAxis{T,S})=string(S)
+axname(::Type{T}) where T<:CubeAxis{S,U} where {S,U} = U
 axunits(::CubeAxis)="unknown"
 axunits(::LonAxis)="degrees_east"
 axunits(::LatAxis)="degrees_north"

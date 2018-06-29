@@ -7,6 +7,7 @@
 Some info on the project...
 """
 module ESDL
+export ESDLdir, getAxis
 export Cube, getCubeData,readCubeData,CubeMem,CubeAxis, TimeAxis, TimeHAxis, VariableAxis, LonAxis, FitAxis, LatAxis, CountryAxis, SpatialPointAxis, saveCube, loadCube,
         RangeAxis, CategoricalAxis, MSCAxis, getSingVal, TimeScaleAxis, QuantileAxis, MethodAxis, RemoteCube, showVarInfo, @caxis_str,
         axVal2Index, mapCubeSimple, concatenateCubes, SliceCube, NetCDFCube #From Cube module

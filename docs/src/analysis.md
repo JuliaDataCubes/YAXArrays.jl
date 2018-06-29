@@ -13,17 +13,12 @@ datacubes directly. So `newCube = (abs(cube1-cube2))` would work as expected.
 
 The ESDL package comes with a list of predefined methods for statistical analysis.
 The functions are defined to work on specific axes, for example a function that removes the
-mean annual cycle will alway work an the time axis. It does not matter which other axes are defined
+mean annual cycle will always extract one time series after the other from a cube, process them, store the results and concatenate the resulting time series to a new output cube. It does not matter which other axes are defined
 in the input cube, the function will simply loop over these.
-All the functions are called using the `mapCube` function.
-
-```@docs
-mapCube
-```
 
 The function will then be applied to the whole cube
 in a memory-efficient way, which means that chunks of data are read, processed and then saved in
-the output cube. Whether the output cube is a `TempCube` or a `CubeMem` is decided by the system,
+the output cube. Whether the output cube is a `MmapCube` or a `CubeMem` is decided by the system,
 depending on if the calculation is parallel, and how large the output cube is.
 
 Here follows a list of analysis function included in this package. If you have implemented or wrapped a method
@@ -47,12 +42,16 @@ Private = false
 
 ## Simple Statistics
 
-Another typcial use case is the application of basic statistics like `sum`, `mean` and `std`.
-We provide a convenience function `reduceCube`  
+Another typical use case is the application of basic statistics like `sum`, `mean` and `std` applied on one or more cube axes.
+We overload the method `mapslices` for data cubes,   
 
-```@docs
-reduceCube
+The main difference to the function exported in Base is that the dimensions to be sliced over are given by name and not by dimension index. For example,
+
+```julia
+mapslices(mean, cube,("Lon","Lat"))
 ```
+
+will compute the mean over each spatial map contained in the data cube. Please that that the `mapslices` function will execute the function once with random number input to determine the shape of the returned values and then pre-allocate the output array. So keep this in mind when your function has some side-effects. Note also that although the `mapslices` function should *just work* in most cases, it is advised to know read about the [`mapCube`](@ref) function in [Applying custom functions](@ref) which gives you much more detailed control over the mapping operation.
 
 Applying these functions makes sense if the slices one wants to reduce fit in memory. However,
 if one wants to calculate some statistics on e.g. a time*lon*lat cube, one would preferably
@@ -83,7 +82,7 @@ Private = false
 It is possible to directly apply statistics included in the [OnlineStats.jl package](https://github.com/joshday/OnlineStats.jl)
 on the data cube. This makes it possible to calculate statistics on data too big to fit into memory. The general syntax is
 
-```
+```julia
 mapCube(f ,cube; by=CubeAxis[], cfun=identity, outAxis=nothing,kwargs...)
 ```
 
@@ -126,7 +125,7 @@ Documenter.Documents.RawHTML("<script>$(Patchwork.js_runtime())</script>")
 using ESDL
 import OnlineStats
 import Documenter
-ds    = RemoteCube()
+ds    = Cube()
 lons  = (30,31)
 lats  = (50,51)
 vars  = ["gross_primary_productivity","net_ecosystem_exchange","terrestrial_ecosystem_respiration"]
@@ -142,7 +141,7 @@ gr()
 p=plotXY(mT,xaxis="var",group="tempclass")
 b=IOBuffer()
 show(b,MIME"text/html"(),p)
-Documenter.Documents.RawHTML(takebuf_string(b))
+Documenter.Documents.RawHTML(String(take!(b)))
 ```
 
 A second example would be that we want to calculate averages of the fluxes according to
@@ -170,3 +169,24 @@ cubePCA
 ```
 
 For example, if one wants to calculate a PCA over the time dimension, you could use the following code:
+
+### Online Histograms and quantiles
+
+It is possible to estimate histograms and quantiles of larger-than-memory datasets using an adaptive-bin histogram algorithm. The `Base.quantile` method is overloaded for objects of type `AbstractCubeData`, so the following works:
+
+```julia
+c=Cube()
+d=getCubeData(c,variable=["gross_primary_productivity","net_ecosystem_exchange"], region="Europe")
+q = quantile(d,[0.1,0.9], by=[VariableAxis])
+q.data
+```
+
+```
+2×2 Array{Float32,2}:
+ 0.040161  -1.88354
+ 6.02323    0.552485
+```
+
+to estimate the 10% and 90% quantiles of all datapoints for each variable. Note that any additional keyword arguments to this call (like the `by` argument) are passed to the respective `mapCube` call.
+
+ 

@@ -22,7 +22,7 @@ This returns a `Cube` object that contains some basics information about the cub
 
 ```@setup 1
 using ESDL
-c=RemoteCube()
+c=Cube()
 ```
 
 ```@example 1
@@ -40,7 +40,13 @@ ESDL.CubeAPI.getCubeData
 ```
 
 
-No data is read yet. Here you can start to do some calculations on your sub-cube, see either
+No data is read yet. In case you want to load some data into memory and store it in a Julia array, just use square-bracket indexing. For example, to read the first time step  of the first variable as a Lon-Lat array, just do
+
+```@example 1
+cubedata[:,:,1,1]
+```
+
+Here you can start to do some calculations on your sub-cube, see either
 [Analysis](@ref) for a list of methods provided by this framework or
 [Applying custom functions](@ref) to apply your own functions on the cube. If you just
 want to visualize the cube see this section [Plotting](@ref).
@@ -67,7 +73,8 @@ cubenew  = extractLonLats(cubedata,ll)
 
 ## Cube Types
 
-In ESDL, you will
+While the `getCubeData` command returns an object of type `SubCube`, which represents a view into the ESDC, other cube operations will return different types of data cubes.
+The returned type will depend on the size of the returned cube. If it is small enough to fit into memory, it will be a `CubeMem`, otherwise a `MmapCube`. All these types of data cubes share the same interface defined by [`ESDL.AbstractCubeData`](@ref), which means you can index them, do calculation using `mapCube` or plot them using the commands described in [Plotting](@ref).
 
 ```@docs
 ESDL.Cubes.AbstractCubeData
@@ -88,13 +95,13 @@ ESDL.CubeAPI.SubCubeV
 
 
 ```@docs
-ESDL.Cubes.TempCubes.TempCube
+ESDL.Cubes.MmapCube
 ```
 
 
-## Cube Axes
+## Cube Dimensions
 
-Axes are an essential part of each Cube in ESDL. Every dimension that a cube has is associated
+Dimensions are an essential part of each Cube in ESDL. Every dimension that a cube has is associated
 with an axis that stores the values of the dimension. For example, a `LatitudeAxis` will contains a
 field `values` representing the chosen latitudes. Similarly, a `VariableAxis` will contain a list of
 Variable names. Axes types are divided in categorical axes and axes represented by ranges. All of them
@@ -126,7 +133,7 @@ ESDL masks are represented as `UInt8`-arrays, where each value can be one of the
 
 These names can be imported by `using ESDL.Mask`. The user can decide if he wants to use
 the masks in his analyses or rather wants to refer to a different representation with
-`DataArray`s or just representing missings with `NaN`s. See [registerDATFunction](@ref) for details.
+`DataArray`s or just representing missings with `NaN`s. See [`mapCube`](@ref) for details.
 
 ## Opening Remote Data Cubes
 

@@ -9,7 +9,7 @@ Documenter.Documents.RawHTML("<script>$(Patchwork.js_runtime())</script>")
 using ESDL # hide
 using ESDLPlots
 import Documenter
-ds=RemoteCube() # hide
+ds=Cube() # hide
 ```
 
 # Plotting
@@ -122,13 +122,13 @@ using ESDL # hide
 using ESDLPlots
 gr()
 import Documenter # hide
-ds=RemoteCube() # hide
+ds=Cube() # hide
 cdata=getCubeData(ds,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
 longitude=(30.0,30.0),latitude=(50.0,52.0))
 p=plotXY(cdata,xaxis="time",group="variable",lon=31,lat=51)
 b=IOBuffer()
 show(b,MIME"text/html"(),p)
-Documenter.Documents.RawHTML(takebuf_string(b))
+Documenter.Documents.RawHTML(String(take!(b)))
 ````
 
 This is a time series plot, grouped by variables for a specific longitude/latitude.
@@ -144,14 +144,14 @@ using ESDL # hide
 using ESDLPlots
 gr()
 import Documenter # hide
-ds=RemoteCube() # hide
+ds=Cube() # hide
 cdata=getCubeData(ds,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
 longitude=(30.0,30.0),latitude=(50.0,52.0))
 m=reduceCube(mean,cdata,TimeAxis, max_cache=1e8)
 p=plotXY(m,xaxis="variable",group="lat",lon=30)
 b=IOBuffer()
 show(b,MIME"text/html"(),p)
-Documenter.Documents.RawHTML(takebuf_string(b))
+Documenter.Documents.RawHTML(String(take!(b)))
 ````
 
 ### Scatter plots
@@ -188,11 +188,11 @@ using ESDL # hide
 using ESDLPlots
 gr()
 import Documenter # hide
-ds=RemoteCube() # hide
+ds=Cube() # hide
 cdata=getCubeData(ds,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
 longitude=(30.0,30.0),latitude=(50.0,52.0))
 p=plotScatter(cdata,alongaxis=TimeAxis,xaxis="net_ecosystem_exchange",yaxis="gross_primary_productivity",group="lat",lon=30.0)
 b=IOBuffer()
 show(b,MIME"text/html"(),p)
-Documenter.Documents.RawHTML(takebuf_string(b))
+Documenter.Documents.RawHTML(String(take!(b)))
 ````

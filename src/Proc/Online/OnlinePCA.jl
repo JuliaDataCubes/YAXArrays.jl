@@ -106,7 +106,7 @@ PCAxis(n)=CategoricalAxis("PC",["PC $i" for i=1:n])
     cubePCA(cube::AbstractCubeData)
 
 Performs a PCA based on a covariance matrix which is estimated through an online algorithm.
-Returns an OnlinePCA object from which [explained_variance](@ref) and the [rotation](@ref) can be extracted,
+Returns an OnlinePCA object from which [`explained_variance`](@ref) and the [`rotation`](@ref) can be extracted,
 or which can be used to perform the projection on a dataset.
 
 

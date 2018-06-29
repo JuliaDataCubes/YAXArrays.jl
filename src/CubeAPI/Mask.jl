@@ -1,6 +1,6 @@
 module Mask
 export VALID, OCEAN, OUTOFPERIOD, MISSING, FILLED, isvalid, isinvalid,
-  isvalid, isvalidorfilled
+  isvalid, isvalidorfilled, isfilled
 
 const VALID=0x00
 const MISSING=0x01
@@ -10,6 +10,7 @@ const FILLED=0x08
 
 isvalid(x::UInt8)=x==VALID
 isinvalid(x::UInt8)=x>zero(UInt8)
+isfilled(x::UInt8)=(x & FILLED)==FILLED
 
 isvalidorfilled(x::UInt8)=(x>UInt8(0)) || (x & FILLED)==FILLED
 function isvalidorfilled(x::AbstractArray{UInt8})
