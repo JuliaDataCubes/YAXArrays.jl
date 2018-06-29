@@ -2,15 +2,16 @@
 language: julia
 os:
   - linux
-  - osx
 julia:
   - 0.6
 notifications:
   email: false
+before_install:
+  - sudo apt-get install -y libnetcdf-dev libhdf5-dev
 # uncomment the following lines to override the default test script
 script:
   - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-  - julia -e 'Pkg.clone(pwd()); Pkg.build("ESDL")' 
+  - julia -e 'Pkg.clone(pwd()); Pkg.build("ESDL")'
   - julia -e 'using Conda; Conda.add("libnetcdf"); Pkg.build("NetCDF"); Pkg.test("ESDL"; coverage=true)'
 after_success:
   - julia -e 'Pkg.add("Documenter")'
