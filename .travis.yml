@@ -15,6 +15,6 @@ script:
   - julia -e 'Pkg.test("ESDL"; coverage=true)'
 after_success:
   - julia -e 'Pkg.add("Documenter")'
-  - julia -e 'Pkg.clone("https://github.com/CAB-LAB/ESDLPlots.jl");Pkg.add("GR")'
+  - julia -e 'Pkg.clone("https://github.com/esa-esdl/ESDLPlots.jl");Pkg.add("GR")'
   - julia -e 'using Compose'
   - julia -e 'cd(Pkg.dir("ESDL")); include(joinpath("docs", "make.jl"))'
