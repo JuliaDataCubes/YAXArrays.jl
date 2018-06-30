@@ -4,7 +4,7 @@
 
 | **Documentation**                                                                                                        | **Build Status**                                                                                |
 |:-------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------------------:|
-| [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://cab-lab.github.io/ESDL.jl/latest) | [![Build Status](https://travis-ci.org/CAB-LAB/ESDL.jl.svg?branch=master)](https://travis-ci.org/CAB-LAB/ESDL.jl)|
+| [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://esa-esdl.github.io/ESDL.jl/latest) | [![Build Status](https://travis-ci.org/esa-esdl/ESDL.jl.svg?branch=master)](https://travis-ci.org/CAB-LAB/ESDL.jl)|
 
 # Installation
 
