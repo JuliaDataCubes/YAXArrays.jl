@@ -1,14 +1,3 @@
-# Elementwise calculations
-
-Doing elementwise calculations on the cube is generally done using the `map` function. So, if you want to multiply each
-single element of a data cube with 2, you could call `newcube = map(x->2*x, oldcube)`. This will not execute the computation
-immediately but on the fly during the next computation or plotting. Functions with multiple arguments can also be applied like in:
-`sumcube = map((x,y)->x+y, incube1, incube2)`. Which would calculate the sum of two data cubes.
-
-We have also overloaded a list of commonly used operators (+,-,\*,/, max,min) and functions (sin,cos,exp,log, log10) to apply on
-datacubes directly. So `newCube = (abs(cube1-cube2))` would work as expected.
-
-
 # Analysis
 
 The ESDL package comes with a list of predefined methods for statistical analysis.
@@ -189,4 +178,12 @@ q.data
 
 to estimate the 10% and 90% quantiles of all datapoints for each variable. Note that any additional keyword arguments to this call (like the `by` argument) are passed to the respective `mapCube` call.
 
- 
+# Elementwise calculations
+
+Doing elementwise calculations on the cube is generally done using the `map` function. So, if you want to multiply each
+single element of a data cube with 2, you could call `newcube = map(x->2*x, oldcube)`. This will not execute the computation
+immediately but on the fly during the next computation or plotting. Functions with multiple arguments can also be applied like in:
+`sumcube = map((x,y)->x+y, incube1, incube2)`. Which would calculate the sum of two data cubes.
+
+We have also overloaded a list of commonly used operators (+,-,\*,/, max,min) and functions (sin,cos,exp,log, log10) to apply on
+datacubes directly. So `newCube = (abs(cube1-cube2))` would work as expected.
