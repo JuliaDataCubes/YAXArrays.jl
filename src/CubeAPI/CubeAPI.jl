@@ -122,7 +122,15 @@ end
 
 function Cube(;resolution="low")
   try
-    Cube(joinpath(ENV["ESDL_CUBEDIR"],"$(resolution)-res"))
+    if isdir("/home/jovyan/work/datacube/")
+      if resolution=="high"
+        Cube("/home/jovyan/work/datacube/esdc-8d-0.083deg-1x2160x4320-1.0.1_1")        
+      else
+        Cube("/home/jovyan/work/datacube/esdc-8d-0.25deg-1x720x1440-1.0.1_1")
+      end
+    else
+      Cube(joinpath(ENV["ESDL_CUBEDIR"],"$(resolution)-res"))
+    end
   catch
     RemoteCube(resolution=resolution)
   end
