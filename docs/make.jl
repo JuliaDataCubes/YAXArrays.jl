@@ -2,7 +2,7 @@ using Documenter, ESDL, ESDLPlots
 
 
 makedocs(
-    modules = [ESDL],
+    modules = [ESDL, ESDLPlots],
     clean   = false,
     format   = :html,
     sitename = "ESDL.jl",

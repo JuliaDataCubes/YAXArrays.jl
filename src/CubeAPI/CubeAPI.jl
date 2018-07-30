@@ -124,7 +124,7 @@ function Cube(;resolution="low")
   try
     if isdir("/home/jovyan/work/datacube/")
       if resolution=="high"
-        Cube("/home/jovyan/work/datacube/esdc-8d-0.083deg-1x2160x4320-1.0.1_1")        
+        Cube("/home/jovyan/work/datacube/esdc-8d-0.083deg-1x2160x4320-1.0.1_1")
       else
         Cube("/home/jovyan/work/datacube/esdc-8d-0.25deg-1x720x1440-1.0.1_1")
       end
@@ -837,6 +837,11 @@ end
 showVarInfo(cube::SubCube)=showVarInfo(cube,cube.variable)
 showVarInfo(cube::SubCubeStatic)=showVarInfo(cube,cube.variable)
 showVarInfo(cube::SubCubeV)=[showVarInfo(cube,v) for v in cube.variable]
+"""
+    showVarInfo(cube)
+
+Shows the metadata and citation information on variables contained in a cube. 
+"""
 function showVarInfo(cube, variable::String)
     filename=getremFileName(cube.cube,variable)
     v=NetCDF.open(filename,variable)

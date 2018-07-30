@@ -10,6 +10,7 @@ function removeMSC(aout::Tuple,ain::Tuple,NpY::Integer,tmsc,tnmsc)
   xout,maskout = aout
   xin, maskin  = ain
     #Start loop through all other variables
+    map!((m,v)->(m & 0x01)==0 ? v : oftype(v,NaN),xin,maskin,xin)
     getMSC(tmsc,xin,tnmsc,NpY=NpY)
     subtractMSC(tmsc,xin,xout,NpY)
     copy!(maskout,maskin)
@@ -52,6 +53,7 @@ end
 function gapFillMSC(aout::Tuple,ain::Tuple,NpY::Integer,tmsc,tnmsc)
   xin,maskin = ain
   xout,maskout = aout
+  map!((m,v)->(m & 0x01)==0 ? v : oftype(v,NaN),xin,maskin,xin)
   getMSC(tmsc,xin,tnmsc,NpY=NpY)
   replaceMisswithMSC(tmsc,xin,xout,maskin,maskout,NpY)
 end
@@ -68,14 +70,25 @@ Returns the mean annual cycle from each time series.
 
 """
 function getMSC(c::AbstractCubeData;kwargs...)
-  outdims = OutDims(MSCAxis(getNpY(c)),miss=NaNMissing())
-  indims = InDims(TimeAxis,miss=NaNMissing())
+  outdims = OutDims(MSCAxis(getNpY(c)),miss=MaskMissing())
+  indims = InDims(TimeAxis,miss=MaskMissing())
   mapCube(getMSC,c,zeros(Int,getNpY(c));indims=indims,outdims=outdims,kwargs...)
 end
-function getMSC(xout::AbstractVector,xin::AbstractVector,nmsc::Vector{Int}=zeros(Int,length(xout));imscstart::Int=1,NpY=length(xout))
+function getMSC(xout::AbstractVector{<:AbstractFloat},xin::AbstractVector{<:AbstractFloat},nmsc::Vector{Int}=zeros(Int,length(xout));imscstart::Int=1,NpY=length(xout))
     #Reshape the cube to squeeze unimportant variables
     NpY=length(xout)
     fillmsc(imscstart,xout,nmsc,xin,NpY)
+end
+function getMSC(aout::Tuple,ain::Tuple,nmsc::Vector{Int}=zeros(Int,length(xout));imscstart::Int=1,NpY=length(aout[1]))
+    #Reshape the cube to squeeze unimportant variables
+    xout,mout = aout
+    xin,min   = ain
+    NpY=length(xout)
+    map!((m,v)->(m & 0x01)==0 ? v : oftype(v,NaN),xin,min,xin)
+    fillmsc(imscstart,xout,nmsc,xin,NpY)
+    for i=1:length(xout)
+      mout[i] = isnan(xout[i]) ? (min[i] | 0x01) : 0x00
+    end
 end
 
 
