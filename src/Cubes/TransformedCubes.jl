@@ -1,5 +1,5 @@
 export ConcatCube, concatenateCubes
-export mapCubeSimple
+export mergeAxes
 import ..ESDLTools.getiperm
 import ..Cubes: _read, needshandle, gethandle, getcachehandle, handletype
 
@@ -29,6 +29,65 @@ function gethandle(c::PermCube,block_size,::ViewHandle)
   PermutedDimsArray(data,c.perm),PermutedDimsArray(mask,c.perm)
 end
 gethandle(c::PermCube,block_size,::CacheHandle) = getcachehandle(c,CartesianIndex(block_size))
+
+import Base.Iterators.product
+
+type MergedAxisCube{T,N,C} <: AbstractCubeData{T,N}
+  parent::C
+  imerge::Int
+  newAxes::Vector{CubeAxis}
+end
+getCubeDes(v::MergedAxisCube)=getCubeDes(v.parent)
+function axes(v::MergedAxisCube)
+  v.newAxes
+end
+cubeproperties(v::MergedAxisCube)=cubeproperties(v.parent)
+Base.size(x::MergedAxisCube)=ntuple(i->length(x.newAxes[i]),ndims(x))
+Base.size(x::MergedAxisCube,i)=length(x.newAxes[i])
+function _read{T,N}(x::MergedAxisCube{T,N},thedata::Tuple{Any,Any},r::CartesianRange{CartesianIndex{N}})
+
+  s1,s2 = size(x.parent)[x.imerge:x.imerge+1]
+  sr = r.start.I[x.imerge],r.stop.I[x.imerge]
+
+  sta = r.start.I
+  sto = r.stop.I
+  aout,mout = thedata
+  saout=size(aout)
+  if sr[2]-sr[1]==0
+        sr2 = ind2sub((s1,s2),sr[1])
+        aout2 = reshape(aout,saout[1:x.imerge-1]...,1,1,saout[x.imerge+1:end]...)
+        mout2 = reshape(mout,saout[1:x.imerge-1]...,1,1,saout[x.imerge+1:end]...)
+    r2    = CartesianRange(CartesianIndex((sta[1:x.imerge-1]...,sr2[1],sr2[2],sta[x.imerge+1:end]...)),CartesianIndex((sto[1:x.imerge-1]...,sr2[1],sr2[2],sto[x.imerge+1:end]...)))
+        _read(x.parent,(aout2,mout2),r2)
+  elseif sr[2]-sr[1]==size(x,x.imerge)-1
+        aout2 = reshape(aout,saout[1:x.imerge-1]...,s1,s2,saout[x.imerge+1:end]...)
+        mout2 = reshape(mout,saout[1:x.imerge-1]...,s1,s2,saout[x.imerge+1:end]...)
+    r2    = CartesianRange(CartesianIndex((sta[1:x.imerge-1]...,1,1,sta[x.imerge+1:end]...)),CartesianIndex((sto[1:x.imerge-1]...,s1,s2,sto[x.imerge+1:end]...)))
+    _read(x.parent,(aout2,mout2),r2)
+  else
+    error("Cropping into mergedaxiscubes not yet possible")
+  end
+end
+gethandle(c::MergedAxisCube,block_size)=gethandle(c,block_size,handletype(c.parent))
+function gethandle(c::MergedAxisCube,block_size,::ViewHandle)
+  data,mask = gethandle(c.parent)
+  s = size(data)
+  reshape(data,s[1:c.imerge-1]...,s[c.imerge]*s[c.imerge+1],s[c.imerge+2:end]...), reshape(mask,s[1:c.imerge-1]...,s[c.imerge]*s[c.imerge+1],s[c.imerge+2:end]...)
+end
+gethandle(c::MergedAxisCube,block_size,::CacheHandle) = getcachehandle(c,CartesianIndex(block_size))
+
+
+function mergeAxes(c::AbstractCubeData,a1,a2)
+    i1=findAxis(a1,c)
+    i2=findAxis(a2,c)
+    abs(i1-i2)==1 || error("Can only merge axes that are consecutive in cube")
+    ax = axes(c)
+    imerge=min(i1,i2)
+    a1 = ax[imerge]
+    a2 = ax[imerge+1]
+    newAx = CategoricalAxis(string(axname(a1),"_x_",axname(a2)),product(a1.values,a2.values))
+    MergedAxisCube{eltype(c),ndims(c)-1,typeof(c)}(c,min(i1,i2),[ax[1:imerge-1];newAx;ax[imerge+2:end]])
+end
 
 
 type TransformedCube{T,N,F} <: AbstractCubeData{T,N}

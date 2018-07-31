@@ -1,6 +1,5 @@
 using Documenter, ESDL, ESDLPlots
 
-
 makedocs(
     modules = [ESDL, ESDLPlots],
     clean   = false,

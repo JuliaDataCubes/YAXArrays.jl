@@ -210,7 +210,6 @@ include("NetCDFCubes.jl")
 importall .TempCubes
 handletype(::Union{AbstractTempCube,AbstractSubCube})=CacheHandle()
 
-
 getCubeDes(c::AbstractSubCube)="Data Cube view"
 getCubeDes(c::TempCube)="Temporary Data Cube"
 getCubeDes(c::CubeMem)="In-Memory data cube"
@@ -220,7 +219,7 @@ function Base.show(io::IO,c::AbstractCubeData)
     for a in axes(c)
         println(io,a)
     end
-    foreach(c.properties) do p
+    foreach(cubeproperties(c)) do p
       println(io,p[1],": ",p[2])
     end
     println(io,"Total size: ",formatbytes(cubesize(c)))
@@ -248,13 +247,23 @@ function saveCube{T}(c::CubeMem{T},name::AbstractString)
   ncclose(joinpath(newfolder,files[1]))
 end
 
-
+import Base.Iterators: take, drop
 Base.show(io::IO,a::RangeAxis)=print(io,rpad(Axes.axname(a),20," "),"Axis with ",length(a)," Elements from ",first(a.values)," to ",last(a.values))
 function Base.show(io::IO,a::CategoricalAxis)
-    print(io,rpad(Axes.axname(a),20," "), "Axis with elements: ")
+  print(io,rpad(Axes.axname(a),20," "), "Axis with elements: ")
+  if length(a.values)<10
     for v in a.values
-        print(io,v," ")
+      print(io,v," ")
     end
+  else
+    for v in take(a.values,2)
+      print(io,v," ")
+    end
+    print(io,".. ")
+    for v in drop(a.values,length(a.values)-2)
+      print(io,v," ")
+    end
+  end
 end
 Base.show(io::IO,a::SpatialPointAxis)=print(io,"Spatial points axis with ",length(a.values)," points")
 

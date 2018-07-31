@@ -45,7 +45,7 @@ end
 macro defineCatAxis(axname,eltype)
   newname=esc(Symbol(string(axname,"Axis")))
   quote
-    const $newname = _CategoricalAxis{T,$(QuoteNode(axname)),R} where R<:AbstractVector{T} where T<:$(eltype)
+    const $newname = CategoricalAxis{T,$(QuoteNode(axname)),R} where R<:AbstractVector{T} where T<:$(eltype)
     $(newname)(v::AbstractVector{T}) where T = CategoricalAxis{T,$(QuoteNode(axname)),typeof(v)}(v)
   end
 end
@@ -89,9 +89,7 @@ Base.size(x::CubeAxis)=(length(x.values),)
 Base.size(x::CubeAxis,i)=i==1 ? length(x.values) : error("Axis has only a single dimension")
 Base.ndims(x::CubeAxis)=1
 
-immutable _CategoricalAxis{T,S,RT} <: CubeAxis{T,S}
-  values::RT
-end
+
 
 """
     CategoricalAxis{T,S}
@@ -103,11 +101,12 @@ The default constructor is:
     CategoricalAxis(axname::String,values::Vector{T})
 
 """
-const CategoricalAxis = _CategoricalAxis{T,S,RT} where RT<:AbstractVector{T} where S where T
+immutable CategoricalAxis{T,S,RT} <: CubeAxis{T,S}
+  values::RT
+end
 
-
-CategoricalAxis{T}(s::Symbol,v::AbstractVector{T})=CategoricalAxis{T,s,typeof(v)}(v)
-CategoricalAxis(s::AbstractString,v::AbstractVector)=CategoricalAxis(Symbol(s),v)
+CategoricalAxis(s::Symbol,v)=CategoricalAxis{eltype(v),s,typeof(v)}(v)
+CategoricalAxis(s::AbstractString,v)=CategoricalAxis(Symbol(s),v)
 
 @defineCatAxis Variable String
 @defineCatAxis SpatialPoint Tuple{Number,Number}
