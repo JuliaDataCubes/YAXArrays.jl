@@ -98,6 +98,8 @@ function parseConfig(x)
   d
 end
 
+abstract type UCube end
+
 """
 Represents a data cube accessible though the file system. The default constructor is
 
@@ -113,7 +115,7 @@ where `base_dir` is the datacube's base directory.
 * `var_name_to_var_index` basically the inverse of `dataset_files`
 
 """
-type Cube
+type Cube <: UCube
   base_dir::String
   config::CubeConfig
   dataset_files::Vector{String}
@@ -169,7 +171,7 @@ ds=remoteCube()
 ```
 
 """
-type RemoteCube
+type RemoteCube <: UCube
   base_url::String
   var_name_to_var_index::OrderedDict{String,Int}
   dataset_files::Vector{String}
@@ -233,7 +235,7 @@ function Base.show(io::IO,c::RemoteCube)
   end
   println(io)
 end
-const UCube = Union{Cube,RemoteCube}
+
 
 """
     immutable SubCube{T,C} <: AbstractCubeData{T,4}
@@ -840,7 +842,7 @@ showVarInfo(cube::SubCubeV)=[showVarInfo(cube,v) for v in cube.variable]
 """
     showVarInfo(cube)
 
-Shows the metadata and citation information on variables contained in a cube. 
+Shows the metadata and citation information on variables contained in a cube.
 """
 function showVarInfo(cube, variable::String)
     filename=getremFileName(cube.cube,variable)
