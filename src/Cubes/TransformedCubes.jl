@@ -128,7 +128,7 @@ function _read{T,N}(x::TransformedCube{T,N},thedata::Tuple,r::CartesianRange{Car
     push!(minter,mouti)
   end
   map!(x.op,aout,ainter...)
-  copy!(mout,minter[1])
+  map!((x...)->reduce(|,x),mout,minter...)
   return aout,mout
 end
 
