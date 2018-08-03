@@ -123,21 +123,23 @@ export sampleLandPoints
 
 using NetCDF
 import IterTools: product
-function writefun(xout,xin,a,nd,cont_loop,filename)
+function writefun(xout,xin,a,nd,cont_loop,filename;kwargs...)
+
   x = map((m,v)->m==0x00 ? v : oftype(v,-9999.0),xin[2],xin[1])
 
   count_vec = fill(-1,nd)
   start_vec = fill(1,nd)
 
-  used_names = String[]
+  used_inds = Int[]
   for (k,v) in cont_loop
     count_vec[k] = 1
-    start_vec[k] = a[v][1]
-    push!(used_names,v)
+    ia = findfirst(i->i[1]==Symbol(v),a)
+    start_vec[k] = a[ia][2][1]
+    push!(used_inds,ia)
   end
 
-  splnames = Iterators.filter(i->!in(i,used_names),keys(a))
-  vn = join(string.([a[s][2] for s in splnames]),"_")
+  splinds = Iterators.filter(i->!in(i,used_inds),1:length(a))
+  vn = join(string.([a[s][2][2] for s in splinds]),"_")
   isempty(vn) && (vn="layer")
 
   ncwrite(x,filename,vn,start=start_vec,count=count_vec)
@@ -175,7 +177,7 @@ function exportcube(r::AbstractCubeData,filename::String;priorities = Dict("LON"
   incubes = InDims(ax_cont[1:(isplit-1)]...,miss=MaskMissing())
   cont_loop = Dict(ii=>axname.(ax_cont[ii]) for ii in isplit:length(ax_cont))
 
-  mapCube(writefun,r,length(ax_cont),cont_loop,filename,incubes=incubes,include_loopvars=true,ispar=false)
+  mapCube(writefun,r,length(ax_cont),cont_loop,filename,indims=incubes,include_loopvars=true,ispar=false)
   ncclose(filename)
   nothing
 end
