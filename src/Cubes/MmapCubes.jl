@@ -46,7 +46,7 @@ function MmapCube(axlist;folder=mktempdir(),T=Float32,persist::Bool=true,overwri
   finalizer(ntc,cleanMmapCube)
   ntc
 end
-
+cubeproperties(c::MmapCube)=c.properties
 getmmaphandles(y::MmapCube{T}) where T = getmmaphandles(y.folder,y.axes,T)
 function getmmaphandles(folder, axlist,T)
 
