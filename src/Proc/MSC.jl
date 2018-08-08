@@ -158,7 +158,7 @@ end
 
 
 "Calculates the mean seasonal cycle of a vector"
-function fillmsc{T1}(imscstart::Integer,msc::AbstractVector{T1},nmsc::AbstractVector{Int},xin::AbstractVector,NpY)
+function fillmsc(imscstart::Integer,msc::AbstractVector{T1},nmsc::AbstractVector{Int},xin::AbstractVector,NpY) where T1
     imsc=imscstart
     fill!(msc,zero(T1))
     fill!(nmsc,0)

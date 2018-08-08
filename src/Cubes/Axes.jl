@@ -6,9 +6,9 @@ getOutAxis, ByInference
 import NetCDF.NcDim
 importall ..Cubes
 import ...ESDLTools: totuple
-using Base.Dates
+using Dates
 
-immutable YearStepRange <: Range{Date}
+struct YearStepRange <: AbstractRange{Date}
     startyear::Int
     startst::Int
     stopyear::Int
@@ -101,7 +101,7 @@ The default constructor is:
     CategoricalAxis(axname::String,values::Vector{T})
 
 """
-immutable CategoricalAxis{T,S,RT} <: CubeAxis{T,S}
+struct CategoricalAxis{T,S,RT} <: CubeAxis{T,S}
   values::RT
 end
 
@@ -113,7 +113,7 @@ CategoricalAxis(s::AbstractString,v)=CategoricalAxis(Symbol(s),v)
 @defineCatAxis TimeScale String
 @defineCatAxis Quantile AbstractFloat
 
-immutable _RangeAxis{T,S,R} <: CubeAxis{T,S}
+struct _RangeAxis{T,S,R} <: CubeAxis{T,S}
   values::R
 end
 
@@ -146,39 +146,39 @@ MSCAxis(n::Int)=MSCAxis(YearStepRange(1900,1,1900,n,ceil(Int,366/n),n))
 
 axes(x::CubeAxis)=CubeAxis[x]
 
-axname{T,S}(::CategoricalAxis{T,S})=string(S)
-axname{T,S}(::RangeAxis{T,S})=string(S)
+axname(::CategoricalAxis{T,S}) where {T,S}=string(S)
+axname(::RangeAxis{T,S}) where {T,S}=string(S)
 axname(::Type{T}) where T<:CubeAxis{S,U} where {S,U} = U
 axunits(::CubeAxis)="unknown"
 axunits(::LonAxis)="degrees_east"
 axunits(::LatAxis)="degrees_north"
-function axVal2Index{T,S,F<:StepRange}(a::RangeAxis{T,S,F},v;fuzzy=false)
+function axVal2Index(a::RangeAxis{T,S,F},v;fuzzy=false) where {T,S,F<:StepRange}
   dt = v-first(a.values)
   r = round(Int,dt/step(a.values))+1
   return max(1,min(length(a.values),r))
 end
-function axVal2Index{T<:DateTime,S,F<:Range}(a::RangeAxis{T,S,F},v;fuzzy=false)
+function axVal2Index(a::RangeAxis{T,S,F},v;fuzzy=false) where {T<:DateTime,S,F<:AbstractRange}
   dt = v-first(a.values)
   r = round(Int,dt/Millisecond(step(a.values)))+1
   return max(1,min(length(a.values),r))
 end
-function axVal2Index{T<:Date,S,F<:YearStepRange}(a::RangeAxis{T,S,F},v::Date;fuzzy=false)
+function axVal2Index(a::RangeAxis{T,S,F},v::Date;fuzzy=false) where {T<:Date,S,F<:YearStepRange}
   y = year(v)
   d = dayofyear(v)
   r = (y-a.values.startyear)*a.values.NPY + d÷a.values.step + 1
   return max(1,min(length(a.values),r))
 end
-function axVal2Index{T<:Date,S,F<:StepRange}(a::_RangeAxis{T,S,F},v::Date;fuzzy=false)
+function axVal2Index(a::_RangeAxis{T,S,F},v::Date;fuzzy=false) where {T<:Date,S,F<:StepRange}
   dd = map(i->abs((i-v).value),a.values)
   mi,ind = findmin(dd)
   return ind
 end
-axVal2Index{T,S,F<:StepRangeLen}(axis::_RangeAxis{T,S,F},v;fuzzy::Bool=false)=min(max(round(Int,(v-first(axis.values))/step(axis.values))+1,1),length(axis))
+axVal2Index(axis::_RangeAxis{T,S,F},v;fuzzy::Bool=false) where {T,S,F<:StepRangeLen}=min(max(round(Int,(v-first(axis.values))/step(axis.values))+1,1),length(axis))
 function axVal2Index(axis::CategoricalAxis{String},v::String;fuzzy::Bool=false)
   r=findfirst(axis.values,v)
   if r==0
     if fuzzy
-      r=find(i->startswith(lowercase(i),lowercase(v)),axis.values)
+      r=findall(i->startswith(lowercase(i),lowercase(v)),axis.values)
       if length(r)==1
         return(r[1])
       else
@@ -194,23 +194,23 @@ axVal2Index(x,v;fuzzy::Bool=false)=min(max(v,1),length(x))
 
 abstract type AxisDescriptor end
 getAxis(d::Any,v::Any)=error("getAxis not defined for $d $v")
-immutable ByName <: AxisDescriptor
+struct ByName <: AxisDescriptor
   name::String
 end
-immutable ByInference <: AxisDescriptor end
-immutable ByType{T} <: AxisDescriptor
+struct ByInference <: AxisDescriptor end
+struct ByType{T} <: AxisDescriptor
   t::Type{T}
 end
-immutable ByValue <: AxisDescriptor
+struct ByValue <: AxisDescriptor
   v::CubeAxis
 end
-immutable ByFunction <: AxisDescriptor
+struct ByFunction <: AxisDescriptor
   f::Function
 end
 
 findAxis(a,c::AbstractCubeData)=findAxis(a,axes(c))
 get_descriptor(a::String)=ByName(a)
-get_descriptor{T<:CubeAxis}(a::Type{T})=ByType(a)
+get_descriptor(a::Type{T}) where {T<:CubeAxis}=ByType(a)
 get_descriptor(a::CubeAxis)=ByValue(a)
 get_descriptor(a::Function)=ByFunction(a)
 get_descriptor(a)=error("$a is not a valid axis description")
@@ -218,14 +218,14 @@ get_descriptor(a::AxisDescriptor)=a
 
 
 "Find a certain axis type in a vector of Cube axes and returns the index"
-function findAxis{S<:CubeAxis}(bt::ByType,v::Vector{S})
+function findAxis(bt::ByType,v::Vector{S}) where S<:CubeAxis
   a=bt.t
   for i=1:length(v)
     isa(v[i],a) && return i
   end
   return 0
 end
-function findAxis{T<:CubeAxis}(bs::ByName,axlist::Vector{T})
+function findAxis(bs::ByName,axlist::Vector{T}) where T<:CubeAxis
   matchstr=bs.name
   ism=map(i->startswith(lowercase(axname(i)),lowercase(matchstr)),axlist)
   sism=sum(ism)
@@ -233,11 +233,11 @@ function findAxis{T<:CubeAxis}(bs::ByName,axlist::Vector{T})
   sism>1 && error("Multiple axes found matching string $matchstr")
   i=findfirst(ism)
 end
-function findAxis{T<:CubeAxis}(bv::ByValue,axlist::Vector{T})
+function findAxis(bv::ByValue,axlist::Vector{T}) where T<:CubeAxis
   v=bv.v
   return findfirst(i->i==v,axlist)
 end
-function getAxis{T<:CubeAxis}(desc,axlist::Vector{T})
+function getAxis(desc,axlist::Vector{T}) where T<:CubeAxis
   i = findAxis(desc,axlist)
   if i==0
     error("Axis $desc not found in $axlist")
@@ -264,7 +264,7 @@ function getOutAxis(desc::Tuple{ByInference},axlist,incubes,pargs,f)
   outsizes = size(resu)
   outaxes = map(outsizes,1:length(outsizes)) do s,il
     if s>2
-      i = find(i->i==s,length.(axlist))
+      i = findall(i->i==s,length.(axlist))
       if length(i)==1
         return axlist[i[1]]
       else
@@ -280,7 +280,7 @@ function getOutAxis(desc::Tuple{ByInference},axlist,incubes,pargs,f)
   return totuple(outaxes)
 end
 getAxis(desc,c::AbstractCubeData)=getAxis(desc,axes(c))
-getAxis{T<:CubeAxis}(desc::ByValue,axlist::Vector{T})=desc.v
+getAxis(desc::ByValue,axlist::Vector{T}) where {T<:CubeAxis}=desc.v
 
 "Fallback method"
 findAxis(a,axlist)=findAxis(get_descriptor(a),axlist)
@@ -307,7 +307,7 @@ function NcDim(a::CubeAxis{Date},start::Integer,count::Integer)
   NcDim(axname(a),length(d),values=d,atts=atts)
 end
 #Default constructor
-NcDim{T<:Real}(a::CubeAxis{T},start::Integer,count::Integer)=NcDim(axname(a),count,values=collect(a.values[start:(start+count-1)]),atts=Dict{Any,Any}("units"=>axunits(a)))
+NcDim(a::CubeAxis{T},start::Integer,count::Integer) where {T<:Real}=NcDim(axname(a),count,values=collect(a.values[start:(start+count-1)]),atts=Dict{Any,Any}("units"=>axunits(a)))
 NcDim(a::CubeAxis,start::Integer,count::Integer)=NcDim(axname(a),count,values=Float64[start:(start+count-1);],atts=Dict{Any,Any}("units"=>axunits(a)))
 NcDim(a::CubeAxis)=NcDim(a,1,length(a))
 

@@ -17,7 +17,7 @@ function getiperm(perm)
 end
 
 using Base.Cartesian
-@generated function mypermutedims!{Q,T,S,N}(dest::AbstractArray{T,N},src::AbstractArray{S,N},perm::Type{Q})
+@generated function mypermutedims!(dest::AbstractArray{T,N},src::AbstractArray{S,N},perm::Type{Q}) where {Q,T,S,N}
     ind1=ntuple(i->Symbol("i_",i),N)
     ind2=ntuple(i->Symbol("i_",perm.parameters[1].parameters[1][i]),N)
     ex1=Expr(:ref,:src,ind1...)
@@ -29,12 +29,12 @@ using Base.Cartesian
     end
 end
 
-@generated function CIdiv{N}(index1::CartesianIndex{N}, index2::CartesianIndex{N})
+@generated function CIdiv(index1::CartesianIndex{N}, index2::CartesianIndex{N}) where N
     I = index1
     args = [:(Base.div(index1[$d],index2[$d])) for d = 1:N]
     :($I($(args...)))
 end
-@generated function CItimes{N}(index1::CartesianIndex{N}, index2::CartesianIndex{N})
+@generated function CItimes(index1::CartesianIndex{N}, index2::CartesianIndex{N}) where N
     I = index1
     args = [:(.*(index1[$d],index2[$d])) for d = 1:N]
     :($I($(args...)))
@@ -43,11 +43,11 @@ end
 totuple(x::AbstractArray)=ntuple(i->x[i],length(x))
 totuple(x::Tuple)=x
 
-@generated function Base.getindex{N}(t::NTuple{N},p::NTuple{N,Int})
+@generated function Base.getindex(t::NTuple{N},p::NTuple{N,Int}) where N
     :(@ntuple $N d->t[p[d]])
 end
 
-toRange(r::CartesianRange)=map(colon,r.start.I,r.stop.I)
+toRange(r::CartesianIndices)=map(colon,r.start.I,r.stop.I)
 toRange(c1::CartesianIndex,c2::CartesianIndex)=map(colon,c1.I,c2.I)
 
 function passobj(src::Int, target::Vector{Int}, nm::Symbol;

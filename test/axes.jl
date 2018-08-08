@@ -1,5 +1,5 @@
 using ESDL
-using Base.Test
+using Test
 
 @testset "Axis generation" begin
 @test LonAxis(1.0:10.0)==RangeAxis{Float64,:Lon,StepRangeLen{Float64}}(1.0:10.0)

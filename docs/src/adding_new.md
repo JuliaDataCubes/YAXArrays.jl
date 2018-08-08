@@ -150,7 +150,7 @@ are important to determine grid cell weights. To do this, one can pass a cube ax
 
 ```julia
 using ESDL # hide
-function spatialAggregation{T}(xout::Array{T,0}, xin::Matrix, latitudes::AbstractVector)
+function spatialAggregation(xout::Array{T,0}, xin::Matrix, latitudes::AbstractVector) where T
   #code goes here
 end
 

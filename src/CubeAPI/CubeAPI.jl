@@ -2,7 +2,7 @@ module CubeAPI
 importall ..Cubes
 importall ..Cubes.Axes
 importall ..ESDLTools
-import Base.Markdown.@md_str
+import Markdown.@md_str
 export Cube, getCubeData,getTimeRanges,readCubeData, getMemHandle, RemoteCube, known_regions
 export isvalid, isinvalid, isvalid, isvalidorfilled, Mask
 export showVarInfo
@@ -11,12 +11,12 @@ include("Mask.jl")
 include("countrydict.jl")
 importall .Mask
 using DataStructures
-using Base.Dates
+using Dates
 import Requests.get
 import DataStructures.OrderedDict
 using LightXML
 
-type ConfigEntry{LHS}
+mutable struct ConfigEntry{LHS}
   lhs
   rhs
 end
@@ -49,7 +49,7 @@ A data cube's static configuration information.
 or 'NETCDF3_64BIT'.
 * `compression`: Whether the data should be compressed.
 "
-type CubeConfig
+mutable struct CubeConfig
   end_time::Date
   ref_time::Date
   start_time::Date
@@ -71,7 +71,7 @@ end
 t0=Date(0)
 CubeConfig()=CubeConfig(t0,t0,t0,0,0,0,0,false,"","",0.0,"",0,false,0,0,(0,0,0))
 
-parseEntry(d,e::ConfigEntry)=setfield!(d,Symbol(e.lhs),parse(e.rhs))
+parseEntry(d,e::ConfigEntry)=setfield!(d,Symbol(e.lhs),Meta.parse(e.rhs))
 parseEntry(d,e::Union{ConfigEntry{:compression},ConfigEntry{:static_data}})=setfield!(d,Symbol(e.lhs),e.rhs=="False" ? false : true)
 parseEntry(d,e::Union{ConfigEntry{:model_version},ConfigEntry{:file_format},ConfigEntry{:calendar}})=setfield!(d,Symbol(e.lhs),String(strip(e.rhs,'\'')))
 function parseEntry(d,e::Union{ConfigEntry{:ref_time},ConfigEntry{:start_time},ConfigEntry{:end_time}})
@@ -82,7 +82,7 @@ function parseEntry(d,e::ConfigEntry{:chunk_sizes})
   if e.rhs=="None"
     d.chunk_sizes=(-1,-1,-1)
   else
-    p=parse(e.rhs).args
+    p=Meta.parse(e.rhs).args
     d.chunk_sizes=(p[1],p[2],p[3])
   end
 end
@@ -115,7 +115,7 @@ where `base_dir` is the datacube's base directory.
 * `var_name_to_var_index` basically the inverse of `dataset_files`
 
 """
-type Cube <: UCube
+mutable struct Cube <: UCube
   base_dir::String
   config::CubeConfig
   dataset_files::Vector{String}
@@ -171,7 +171,7 @@ ds=remoteCube()
 ```
 
 """
-type RemoteCube <: UCube
+mutable struct RemoteCube <: UCube
   base_url::String
   var_name_to_var_index::OrderedDict{String,Int}
   dataset_files::Vector{String}
@@ -182,8 +182,8 @@ end
 function testDAP()
   conda_nc_config=joinpath(Pkg.dir("Conda"),"deps","usr","bin","nc-config")
   nc_config = isfile(conda_nc_config) ? conda_nc_config : "nc-config"
-  if !success(pipeline(`which nc-config`, DevNull))
-    warn("Could not test for DAP support. Data access might fail.")
+  if !success(pipeline(`which nc-config`, devnull))
+    @warn("Could not test for DAP support. Data access might fail.")
     return true
   else
     return `$(nc_config) --has-dap` |> readstring |> chomp =="yes"
@@ -193,10 +193,10 @@ end
 function RemoteCube(;resolution="low",url="http://www.brockmann-consult.de/cablab-thredds/")
   testDAP() || error("NetCDF built without DAP support. Accessing remote cubes is not possible.")
   resExt=resolution == "low" ? "fileServer/datacube-low-res/cube.config" : "fileServer/datacube-high-res/cube.config"
-  xconfig=split(readstring(get(string(url,resExt))),"\n")
+  xconfig=split(read(get(string(url,resExt)), String),"\n")
   config=parseConfig(xconfig)
   res=get(string(url,"catalog.xml"))
-  xmldoc=parse_string(readstring(res));
+  xmldoc=parse_string(read(res, String));
   xroot=root(xmldoc)
   datasets=get_elements_by_tagname(xroot,"dataset")
   ds=datasets[findfirst(map(x->startswith(lowercase(attribute(x,"name")),resolution),datasets))]
@@ -254,7 +254,7 @@ function.
 * `timeAxis`
 
 """
-immutable SubCube{T,C} <: AbstractSubCube{T,3}
+struct SubCube{T,C} <: AbstractSubCube{T,3}
   cube::C #Parent cube
   variable::String #Variable
   sub_grid::Tuple{Int,Int,Int,Int} #grid_y1,grid_y2,grid_x1,grid_x2
@@ -278,7 +278,7 @@ Representation of a `SubCube` with perumted dimensions
 * `perm` the permutation
 * `iperm` the inverse permutation
 """
-immutable SubCubePerm{T} <: AbstractSubCube{T,3}
+struct SubCubePerm{T} <: AbstractSubCube{T,3}
   parent::SubCube{T}
   perm::Tuple{Int,Int,Int}
   iperm::Tuple{Int,Int,Int}
@@ -286,7 +286,7 @@ end
 SubCubePerm(p::SubCube,perm::Tuple{Int,Int,Int})=SubCubePerm(p,perm,getiperm(perm))
 axes(s::SubCubePerm)=CubeAxis[s.parent.lonAxis,s.parent.latAxis,s.parent.timeAxis][collect(s.perm)]
 
-Base.eltype{T}(s::AbstractCubeData{T})=T
+Base.eltype(s::AbstractCubeData{T}) where {T}=T
 Base.ndims(s::Union{SubCube,SubCubePerm})=3
 Base.size(s::SubCube)=(length(s.lonAxis),length(s.latAxis),length(s.timeAxis))
 Base.size(s::SubCube,i)=(length(s.lonAxis),length(s.latAxis),length(s.timeAxis))[i]
@@ -317,7 +317,7 @@ function.
 * `varAxis`
 
 """
-immutable SubCubeV{T,C} <: AbstractSubCube{T,4}
+struct SubCubeV{T,C} <: AbstractSubCube{T,4}
   cube::C #Parent cube
   variable::Vector{String} #Variable
   sub_grid::Tuple{Int,Int,Int,Int} #grid_y1,grid_y2,grid_x1,grid_x2
@@ -334,12 +334,12 @@ end
 
 Representation of a `SubCubeV` with permuted dimensions.
 """
-immutable SubCubeVPerm{T} <: AbstractSubCube{T,4}
+struct SubCubeVPerm{T} <: AbstractSubCube{T,4}
   parent::SubCubeV{T}
   perm::NTuple{4,Int}
   iperm::NTuple{4,Int}
 end
-SubCubeVPerm{T}(p::SubCubeV{T},perm::Tuple{Int,Int,Int,Int})=SubCubeVPerm{T}(p,perm,getiperm(perm))
+SubCubeVPerm(p::SubCubeV{T},perm::Tuple{Int,Int,Int,Int}) where {T}=SubCubeVPerm{T}(p,perm,getiperm(perm))
 axes(s::SubCubeV)=CubeAxis[s.lonAxis,s.latAxis,s.timeAxis,s.varAxis]
 axes(s::SubCubeVPerm)=CubeAxis[s.parent.lonAxis,s.parent.latAxis,s.parent.timeAxis,s.parent.varAxis][collect(s.perm)]
 Base.ndims(s::SubCubeV)=4
@@ -355,8 +355,8 @@ s.perm[2]==1 ? length(s.parent.lonAxis) : s.perm[2]==2 ? length(s.parent.latAxis
 s.perm[3]==1 ? length(s.parent.lonAxis) : s.perm[3]==2 ? length(s.parent.latAxis) : s.perm[3]==3 ? length(s.parent.timeAxis) : length(s.parent.varAxis),
 s.perm[4]==1 ? length(s.parent.lonAxis) : s.perm[4]==2 ? length(s.parent.latAxis) : s.perm[4]==3 ? length(s.parent.timeAxis) : length(s.parent.varAxis))[i]
 
-Base.permutedims{T}(c::SubCube{T},perm::NTuple{3,Int})=SubCubePerm(c,perm)
-Base.permutedims{T}(c::SubCubeV{T},perm::NTuple{4,Int})=SubCubeVPerm(c,perm)
+Base.permutedims(c::SubCube{T},perm::NTuple{3,Int}) where {T}=SubCubePerm(c,perm)
+Base.permutedims(c::SubCubeV{T},perm::NTuple{4,Int}) where {T}=SubCubeVPerm(c,perm)
 
 """
     immutable SubCubeStatic{T, C} <: AbstractCubeData{T,2}
@@ -374,7 +374,7 @@ function.
 * `latAxis`
 
 """
-immutable SubCubeStatic{T,C} <: AbstractSubCube{T,2}
+struct SubCubeStatic{T,C} <: AbstractSubCube{T,2}
   cube::C #Parent cube
   variable::String #Variable
   sub_grid::Tuple{Int,Int,Int,Int} #grid_y1,grid_y2,grid_x1,grid_x2
@@ -389,10 +389,10 @@ end
 
 Representation of a `SubCubeStatic` with permuted dimensions.
 """
-immutable SubCubeStaticPerm{T} <: AbstractSubCube{T,2}
+struct SubCubeStaticPerm{T} <: AbstractSubCube{T,2}
   parent::SubCubeV{T}
 end
-SubCubeStaticPerm{T}(p::SubCubeStatic{T})=SubCubeVPerm{T}(p)
+SubCubeStaticPerm(p::SubCubeStatic{T}) where {T}=SubCubeVPerm{T}(p)
 axes(s::SubCubeStatic)=CubeAxis[s.lonAxis,s.latAxis]
 axes(s::SubCubeStaticPerm)=CubeAxis[s.parent.latAxis,s.parent.lonAxis]
 Base.ndims(s::SubCubeStatic)=2
@@ -406,7 +406,7 @@ sgetperm(s::Union{SubCubePerm,SubCubeVPerm})=s.perm
 sgetiperm(s::Union{SubCubePerm,SubCubeVPerm})=s.iperm
 getperm(s::SubCubeStaticPerm)=(2,1)
 getiperm(s::SubCubeStaticPerm)=(2,1)
-Base.permutedims{T}(c::SubCubeStatic{T},perm::NTuple{2,Int})=perm==(2,1) ? SubCubeStaticPerm(c) : error("There is only one permutation of a lon-lat cube, so perm must be (2,1)")
+Base.permutedims(c::SubCubeStatic{T},perm::NTuple{2,Int}) where {T}=perm==(2,1) ? SubCubeStaticPerm(c) : error("There is only one permutation of a lon-lat cube, so perm must be (2,1)")
 
 
 """
@@ -449,7 +449,7 @@ all_mask(x::String)=x ∈ static_vars
 all_mask(x::Vector{String})=all(all_mask,x)
 
 using NetCDF
-vartype{T,N}(v::NcVar{T,N})=T
+vartype(v::NcVar{T,N}) where {T,N}=T
 "Function to get the years and times to read from user input."
 function getTimesToRead(time1,time2,config)
   NpY    = ceil(Int,365/config.temporal_res)
@@ -559,7 +559,7 @@ function getvartype(cube::RemoteCube,variable)
   eltype(NetCDF.open(datafile,variable))
 end
 
-function expandknownvars{T}(v::Array{T})
+function expandknownvars(v::Array{T}) where T
   vnew = T[]
   for iv in v
     if haskey(known_vargroups,iv)
@@ -577,11 +577,11 @@ expandknownvars(v::String)=expandknownvars([v])
 ismiss(k::Integer)=(k==typemax(k))
 ismiss(k::AbstractFloat)=isnan(k)
 
-function getCubeData{T<:AbstractString}(cube::UCube,
+function getCubeData(cube::UCube,
   variable::Vector{T},
   time::Tuple{TimeType,TimeType},
   longitude::Tuple{Real,Real},
-  latitude::Tuple{Real,Real})
+  latitude::Tuple{Real,Real}) where T<:AbstractString
 
   variable = expandknownvars(variable)
 
@@ -646,37 +646,37 @@ function getCubeData{T<:AbstractString}(cube::UCube,
   end
 end
 
-function readCubeData{T}(s::SubCube{T})
+function readCubeData(s::SubCube{T}) where T
   grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid
   y1,i1,y2,i2,ntime,NpY           = s.sub_times
   outar=Array{T}(grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)
   mask=zeros(UInt8,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)
-  _read(s,(outar,mask),CartesianRange((grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)))
+  _read(s,(outar,mask),CartesianIndices((grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)))
   return CubeMem(CubeAxis[s.lonAxis,s.latAxis,s.timeAxis],outar,mask)
 end
 
-function readCubeData{T}(s::SubCubeV{T})
+function readCubeData(s::SubCubeV{T}) where T
   grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid
   y1,i1,y2,i2,ntime,NpY           = s.sub_times
   outar=Array{T}(grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime,length(s.varAxis))
   mask=zeros(UInt8,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime,length(s.varAxis))
-  _read(s,(outar,mask),CartesianRange((grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime,length(s.varAxis))))
+  _read(s,(outar,mask),CartesianIndices((grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime,length(s.varAxis))))
   return CubeMem(CubeAxis[s.lonAxis,s.latAxis,s.timeAxis,s.varAxis],outar,mask)
 end
 
-function readCubeData{T}(s::SubCubeStatic{T})
+function readCubeData(s::SubCubeStatic{T}) where T
   grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid
   y1,i1,y2,i2,ntime,NpY           = s.sub_times
   outar=Array{T}(grid_x2-grid_x1+1,grid_y2-grid_y1+1)
   mask=zeros(UInt8,grid_x2-grid_x1+1,grid_y2-grid_y1+1)
-  _read(s,(reshape(outar,(size(outar,1),size(outar,2),1)),reshape(mask,(size(mask,1),size(mask,2),1))),CartesianRange((grid_x2-grid_x1+1,grid_y2-grid_y1+1,1)))
+  _read(s,(reshape(outar,(size(outar,1),size(outar,2),1)),reshape(mask,(size(mask,1),size(mask,2),1))),CartesianIndices((grid_x2-grid_x1+1,grid_y2-grid_y1+1,1)))
   return CubeMem(CubeAxis[s.lonAxis,s.latAxis],outar,mask)
 end
 
 """
 Add a function to read some CubeData in a permuted way, we will make a copy here for simplicity, however, this might change in the future
 """
-function _read{T,N}(s::Union{SubCubeVPerm{T},SubCubePerm{T},SubCubeStaticPerm{T}},t::Tuple,r::CartesianRange{CartesianIndex{N}})  #;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,findin(s.perm,1)[1]),ny::Int=size(outar,findin(s.perm,2)[1]),nt::Int=size(outar,findin(s.perm,3)[1]),nv::Int=size(outar,findin(s.perm,4)[1]))
+function _read(s::Union{SubCubeVPerm{T},SubCubePerm{T},SubCubeStaticPerm{T}},t::Tuple,r::CartesianIndices{CartesianIndex{N}}) where {T,N}  #;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,findin(s.perm,1)[1]),ny::Int=size(outar,findin(s.perm,2)[1]),nt::Int=size(outar,findin(s.perm,3)[1]),nv::Int=size(outar,findin(s.perm,4)[1]))
   iperm=sgetiperm(s)
   perm=sgetperm(s)
   outar,mask=t
@@ -684,26 +684,26 @@ function _read{T,N}(s::Union{SubCubeVPerm{T},SubCubePerm{T},SubCubeStaticPerm{T}
   #println("xoffs=$xoffs yoffs=$yoffs toffs=$toffs voffs=$voffs nx=$nx ny=$ny nt=$nt nv=$nv")
   outartemp=Array{T}(sout...)
   masktemp=zeros(UInt8,sout...)
-  _read(s.parent,(outartemp,masktemp),CartesianRange(CartesianIndex(r.start.I[iperm]),CartesianIndex(r.stop.I[iperm])))
+  _read(s.parent,(outartemp,masktemp),CartesianIndices(CartesianIndex(r.start.I[iperm]),CartesianIndex(r.stop.I[iperm])))
   mypermutedims!(outar,outartemp,Val{perm})
   mypermutedims!(mask,masktemp,Val{perm})
 end
 
-getNv(r::CartesianRange{CartesianIndex{2}})=(0,1)
-getNv(r::CartesianRange{CartesianIndex{3}})=(0,1)
-getNv(r::CartesianRange{CartesianIndex{4}})=(r.start.I[4]-1,r.stop.I[4]-r.start.I[4]+1)
+getNv(r::CartesianIndices{CartesianIndex{2}})=(0,1)
+getNv(r::CartesianIndices{CartesianIndex{3}})=(0,1)
+getNv(r::CartesianIndices{CartesianIndex{4}})=(r.start.I[4]-1,r.stop.I[4]-r.start.I[4]+1)
 
-function readAllyears{T}(s::SubCube{T,RemoteCube},outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
+function readAllyears(s::SubCube{T,RemoteCube},outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY) where T
   tstart  = (y1 - year(s.cube.config.start_time))*NpY + i1
   readRemote(s.cube,outar,mask,s.variable,grid_x1,nx,grid_y1,ny,tstart,nt)
 end
 
-function readAllyears{T}(s::SubCubeStatic{T,RemoteCube},outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
+function readAllyears(s::SubCubeStatic{T,RemoteCube},outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY) where T
   tstart  = (y1 - year(s.cube.config.start_time))*NpY + i1
   readRemote(s.cube,reshape(outar,(size(outar,1),size(outar,2),1)),reshape(mask,(size(mask,1),size(mask,2),1)),s.variable,grid_x1,nx,grid_y1,ny,tstart,1)
 end
 
-function readAllyears{T}(s::SubCubeV{T,RemoteCube},outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
+function readAllyears(s::SubCubeV{T,RemoteCube},outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY) where T
   tstart  = (y1 - year(s.cube.config.start_time))*NpY + i1
   for iv in (voffs+1):(nv+voffs)
     outar2=view(outar,:,:,:,iv-voffs)
@@ -713,7 +713,7 @@ function readAllyears{T}(s::SubCubeV{T,RemoteCube},outar,mask,y1,i1,grid_x1,nx,g
 end
 
 
-function readRemote{T}(cube::RemoteCube,outar::AbstractArray{T,3},mask::AbstractArray{UInt8,3},variable,grid_x1,nx,grid_y1,ny,tstart,nt)
+function readRemote(cube::RemoteCube,outar::AbstractArray{T,3},mask::AbstractArray{UInt8,3},variable,grid_x1,nx,grid_y1,ny,tstart,nt) where T
   @assert size(outar)==(nx,ny,nt)
   filename=cube.dataset_paths[cube.var_name_to_var_index[variable]]
   #xr = grid_x1:(grid_x1+nx-1)
@@ -749,10 +749,10 @@ function readRemote{T}(cube::RemoteCube,outar::AbstractArray{T,3},mask::Abstract
   return true
 end
 
-gettoffsnt(::AbstractSubCube,r::CartesianRange)=(r.start.I[3] - 1,r.stop.I[3]  - r.start.I[3]+1)
-gettoffsnt(::SubCubeStatic,r::CartesianRange{CartesianIndex{2}})=(0,1)
+gettoffsnt(::AbstractSubCube,r::CartesianIndices)=(r.start.I[3] - 1,r.stop.I[3]  - r.start.I[3]+1)
+gettoffsnt(::SubCubeStatic,r::CartesianIndices{CartesianIndex{2}})=(0,1)
 
-  function _read(s::AbstractSubCube,t::Tuple,r::CartesianRange) #;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,1),ny::Int=size(outar,2),nt::Int=size(outar,3),nv::Int=length(s.variable))
+  function _read(s::AbstractSubCube,t::Tuple,r::CartesianIndices) #;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,1),ny::Int=size(outar,2),nt::Int=size(outar,3),nv::Int=length(s.variable))
 
     outar,mask=t
     grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid
@@ -820,7 +820,7 @@ gettoffsnt(::SubCubeStatic,r::CartesianRange{CartesianIndex{2}})=(0,1)
   end
 
 
-immutable ESDLVarInfo
+struct ESDLVarInfo
   longname::String
   units::String
   url::String
@@ -879,10 +879,10 @@ end
 show(io::IO,::MIME"text/markdown",v::Vector{ESDLVarInfo})=foreach(x->show(io,MIME"text/markdown"(),x),v)
 
 
-getNanVal{T<:AbstractFloat}(::Type{T}) = convert(T,NaN)
-getNanVal{T<:Integer}(::Type{T})       = typemax(T)
+getNanVal(::Type{T}) where {T<:AbstractFloat} = convert(T,NaN)
+getNanVal(::Type{T}) where {T<:Integer}       = typemax(T)
 
-function readFromDataYear{T}(cube::Cube,outar::AbstractArray{T,3},mask::AbstractArray{UInt8,3},variable,y,grid_x1,nx,grid_y1,ny,itcur,i1cur,ntime,NpY)
+function readFromDataYear(cube::Cube,outar::AbstractArray{T,3},mask::AbstractArray{UInt8,3},variable,y,grid_x1,nx,grid_y1,ny,itcur,i1cur,ntime,NpY) where T
   filename=joinpath(cube.base_dir,"data",variable,string(y,"_",variable,".nc"))
   ntleft = ntime - itcur + 1
   nt = min(NpY-i1cur+1,ntleft)
@@ -926,7 +926,7 @@ function readFromDataYear{T}(cube::Cube,outar::AbstractArray{T,3},mask::Abstract
   include("CachedArrays.jl")
   importall .CachedArrays
 
-  function getMemHandle{T}(cube::AbstractCubeData{T},nblock,block_size;startInd::Int=1)
+  function getMemHandle(cube::AbstractCubeData{T},nblock,block_size;startInd::Int=1) where T
     CachedArray(cube,nblock,block_size,CachedArrays.MaskedCacheBlock{T,length(block_size)},startInd=startInd)
   end
   getMemHandle(cube::AbstractCubeMem,nblock,block_size;startInd::Int=1)=cube

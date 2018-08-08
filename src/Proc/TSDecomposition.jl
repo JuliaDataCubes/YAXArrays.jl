@@ -5,7 +5,7 @@ importall ..DAT
 importall ..CubeAPI
 importall ..Proc
 
-function detrendTS!{T}(outar::Matrix,xin::Vector{T})
+function detrendTS!(outar::Matrix,xin::Vector{T}) where T
     x=T[i for i in 1:length(xin)]
     a,b=linreg(x,xin)
     for i in eachindex(xin)
@@ -36,7 +36,7 @@ function filterTSFFT(c::AbstractCubeData;kwargs...)
   mapCube(filterTSFFT,c,getNpY(c);indims=indims,outdims=outdims,kwargs...)
 end
 
-function filterTSFFT{T<:Real}(outar::Matrix{T},y::Vector{T}, annfreq::Number;nharm::Int=3)
+function filterTSFFT(outar::Matrix{T},y::Vector{T}, annfreq::Number;nharm::Int=3) where T<:Real
 
     size(outar) == (length(y),4) || error("Wrong size of output array")
 

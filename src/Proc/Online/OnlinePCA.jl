@@ -88,7 +88,7 @@ end
 
 Represents the result of an Online PCA calculated on a DataCube.
 """
-type OnlinePCA
+mutable struct OnlinePCA
   PCA::CubeMem
   noutdims::Int
   varAx
@@ -146,7 +146,7 @@ function transformPCA(pca::OnlinePCA,c::AbstractCubeData;max_cache=1e7,kwargs...
       idict=cubeproperties(pca.bycube[1])["labels"]
       axname=get(cubeproperties(pca.bycube[1]),"name","Label")
       outAxis=CategoricalAxis(axname,collect(String,values(idict)))
-      const convertdict=Dict(k=>i for (i,k) in enumerate(keys(idict)))
+      convertdict=Dict(k=>i for (i,k) in enumerate(keys(idict)))
       cfun=x->convertdict[x]
       indata=(c,pca.PCA,pca.bycube[1])
       indimspca = [outAxis,]
