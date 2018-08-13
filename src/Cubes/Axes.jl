@@ -1,7 +1,7 @@
 module Axes
 export CubeAxis, QuantileAxis, TimeAxis, TimeHAxis, VariableAxis, LonAxis, LatAxis, CountryAxis,
 SpatialPointAxis,Axes,YearStepRange,CategoricalAxis,RangeAxis,axVal2Index,MSCAxis,
-TimeScaleAxis, axname, @caxis_str, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
+ScaleAxis, axname, @caxis_str, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
 getOutAxis, ByInference
 import NetCDF.NcDim
 importall ..Cubes
@@ -72,7 +72,7 @@ of the aliases:
 * `VariableAxis` represents different variables
 * `SpatialPointAxis` represents a list of coordinates
 * `CountryAxis` countries
-* `TimeScaleAxis` time scales after time series decomposition
+* `ScaleAxis` time scales after time series decomposition
 * `QuantileAxis` represents different quantiles
 
 ### Cotinuous Axes
@@ -110,7 +110,7 @@ CategoricalAxis(s::AbstractString,v)=CategoricalAxis(Symbol(s),v)
 
 @defineCatAxis Variable String
 @defineCatAxis SpatialPoint Tuple{Number,Number}
-@defineCatAxis TimeScale String
+@defineCatAxis Scale String
 @defineCatAxis Quantile AbstractFloat
 
 immutable _RangeAxis{T,S,R} <: CubeAxis{T,S}
