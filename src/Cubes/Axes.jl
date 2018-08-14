@@ -173,6 +173,11 @@ function axVal2Index{T<:Date,S,F<:StepRange}(a::_RangeAxis{T,S,F},v::Date;fuzzy=
   mi,ind = findmin(dd)
   return ind
 end
+function axVal2Index{T<:Date,S,F}(a::_RangeAxis{T,S,F},v::Date;fuzzy=false)
+  dd = map(i->abs((i-v).value),a.values)
+  mi,ind = findmin(dd)
+  return ind
+end
 axVal2Index{T,S,F<:StepRangeLen}(axis::_RangeAxis{T,S,F},v;fuzzy::Bool=false)=min(max(round(Int,(v-first(axis.values))/step(axis.values))+1,1),length(axis))
 function axVal2Index(axis::CategoricalAxis{String},v::String;fuzzy::Bool=false)
   r=findfirst(axis.values,v)
