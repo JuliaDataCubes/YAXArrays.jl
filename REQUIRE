@@ -1,4 +1,4 @@
-julia
+julia 0.7
 DataStructures
 NetCDF
 StatsBase

@@ -3,3 +3,4 @@
 *.jl.mem
 tmp
 docs/build
+deps/build.jl
