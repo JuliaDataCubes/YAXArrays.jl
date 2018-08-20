@@ -1,7 +1,7 @@
 module Axes
 export CubeAxis, QuantileAxis, TimeAxis, TimeHAxis, VariableAxis, LonAxis, LatAxis, CountryAxis,
 SpatialPointAxis,Axes,YearStepRange,CategoricalAxis,RangeAxis,axVal2Index,MSCAxis,
-TimeScaleAxis, axname, @caxis_str, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
+ScaleAxis, axname, @caxis_str, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
 getOutAxis, ByInference
 import NetCDF.NcDim
 importall ..Cubes
@@ -72,7 +72,7 @@ of the aliases:
 * `VariableAxis` represents different variables
 * `SpatialPointAxis` represents a list of coordinates
 * `CountryAxis` countries
-* `TimeScaleAxis` time scales after time series decomposition
+* `ScaleAxis` time scales after time series decomposition
 * `QuantileAxis` represents different quantiles
 
 ### Cotinuous Axes
@@ -110,7 +110,7 @@ CategoricalAxis(s::AbstractString,v)=CategoricalAxis(Symbol(s),v)
 
 @defineCatAxis Variable String
 @defineCatAxis SpatialPoint Tuple{Number,Number}
-@defineCatAxis TimeScale String
+@defineCatAxis Scale String
 @defineCatAxis Quantile AbstractFloat
 
 struct _RangeAxis{T,S,R} <: CubeAxis{T,S}
@@ -173,7 +173,13 @@ function axVal2Index(a::_RangeAxis{T,S,F},v::Date;fuzzy=false) where {T<:Date,S,
   mi,ind = findmin(dd)
   return ind
 end
-axVal2Index(axis::_RangeAxis{T,S,F},v;fuzzy::Bool=false) where {T,S,F<:StepRangeLen}=min(max(round(Int,(v-first(axis.values))/step(axis.values))+1,1),length(axis))
+
+function axVal2Index{T<:Date,S,F}(a::_RangeAxis{T,S,F},v::Date;fuzzy=false)
+  dd = map(i->abs((i-v).value),a.values)
+  mi,ind = findmin(dd)
+  return ind
+end
+axVal2Index{T,S,F<:StepRangeLen}(axis::_RangeAxis{T,S,F},v;fuzzy::Bool=false)=min(max(round(Int,(v-first(axis.values))/step(axis.values))+1,1),length(axis))
 function axVal2Index(axis::CategoricalAxis{String},v::String;fuzzy::Bool=false)
   r=findfirst(axis.values,v)
   if r==0

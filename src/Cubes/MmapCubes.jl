@@ -1,6 +1,5 @@
 export MmapCube,getmmaphandles
 import ..ESDLTools.totuple
-using JLD
 abstract type AbstractMmapCube{T,N}<:AbstractCubeData{T,N} end
 
 
@@ -8,7 +7,7 @@ abstract type AbstractMmapCube{T,N}<:AbstractCubeData{T,N} end
     MmapCube{T,N}
 
 Defines a Memory-Mapped data cube which is stored on disk. Is generally returned
-by mapCube applications. 
+by mapCube applications.
 """
 mutable struct MmapCube{T,N} <: AbstractMmapCube{T,N}
   axes::Vector{CubeAxis}
@@ -31,14 +30,18 @@ function MmapCube(axlist;folder=mktempdir(),T=Float32,persist::Bool=true,overwri
   isdir(folder) || mkpath(folder)
   if !isempty(readdir(folder))
     if overwrite
-      isfile(joinpath(folder,"axinfo.jld")) && rm(joinpath(folder,"axinfo.jld"))
+      isfile(joinpath(folder,"axinfo.bin")) && rm(joinpath(folder,"axinfo.bin"))
       isfile(joinpath(folder,"data.bin")) && rm(joinpath(folder,"data.bin"))
       isfile(joinpath(folder,"mask.bin")) && rm(joinpath(folder,"mask.bin"))
     else
       error("Folder $folder is not empty, set overwrite=true to overwrite.")
     end
   end
-  save(joinpath(folder,"axinfo.jld"),"axlist",axlist,"properties",properties,"eltype",T)
+  open(joinpath(folder,"axinfo.bin"),"w") do f
+    serialize(f,axlist)
+    serialize(f,properties)
+    serialize(f,T)
+  end
   s=map(length,axlist)
   open(f->write(f,zeros(T,s...)),joinpath(folder,"data.bin"),"w")
   open(f->write(f,zeros(UInt8,s...)),joinpath(folder,"mask.bin"),"w")
@@ -101,13 +104,10 @@ function saveCube(c::MmapCube,name::String)
 end
 export openmmapcube
 function openmmapcube(folder;persist=true,axlist=nothing)
-  axlist == nothing && (axlist=load(joinpath(folder,"axinfo.jld"),"axlist"))
-  properties=try
-      load(joinpath(folder,"axinfo.jld"),"properties")
-    catch
-      Dict{String,Any}()
-    end
-    T = load(joinpath(folder,"axinfo.jld"),"eltype")
+  axlist2,properties,T = open(joinpath(folder,"axinfo.bin")) do f
+    (deserialize(f),deserialize(f),deserialize(f))
+  end
+  axlist == nothing && (axlist=axlist2)
   N=length(axlist)
   return MmapCube{T,length(axlist)}(axlist,folder,persist,properties)
 end
