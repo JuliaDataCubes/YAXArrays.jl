@@ -1,9 +1,9 @@
 module Stats
 export normalizeTS, timeVariance, timeMean, spatialMean
-importall ..DAT
-importall ..CubeAPI
-importall ..Proc
-importall ..Cubes
+using ..DAT
+using ..CubeAPI
+using ..Proc
+using ..Cubes
 using StatsBase
 
 """

@@ -2,7 +2,7 @@ module Proc
 export cubeAnomalies, removeMSC, gapFillMSC, normalizeTS, simpleAnomalies,
   sampleLandPoints, getMSC, filterTSFFT, getNpY, getMedSC, DATfitOnline,
   spatialinterp, extractLonLats, cubePCA, rotation_matrix, transformPCA, explained_variance,exportcube
-importall ..DAT, ..CubeAPI, ..Cubes
+using ..DAT, ..CubeAPI, ..Cubes
 macro no_ocean(maskin,maskout)
     esc(quote
         if ($(maskin)[1] & OCEAN) == OCEAN
@@ -30,7 +30,7 @@ include("Stats.jl")
 include("CubeIO.jl")
 include("TSDecomposition.jl")
 include("remap.jl")
-importall .ReSample, .MSC, .Outlier, .Stats, .CubeIO,
+using .ReSample, .MSC, .Outlier, .Stats, .CubeIO,
   .TSDecomposition, .DATOnlineStats
 
 

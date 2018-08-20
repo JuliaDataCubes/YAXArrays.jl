@@ -1,9 +1,9 @@
 module TSDecomposition
 export filterTSFFT
-importall ..Cubes
-importall ..DAT
-importall ..CubeAPI
-importall ..Proc
+using ..Cubes
+using ..DAT
+using ..CubeAPI
+using ..Proc
 
 function detrendTS!(outar::Matrix,xin::Vector{T}) where T
     x=T[i for i in 1:length(xin)]

@@ -1,17 +1,17 @@
 module DAT
 export mapCube, getInAxes, getOutAxes, findAxis, reduceCube, getAxis,
       NaNMissing, ValueMissing, MaskMissing, NoMissing, InputCube, OutputCube
-importall ..Cubes
-importall ..CubeAPI
-importall ..CubeAPI.CachedArrays
-importall ..ESDLTools
+using ..Cubes
+using ..CubeAPI
+using ..CubeAPI.CachedArrays
+using ..ESDLTools
 import ...ESDL
 import ...ESDL.workdir
 import DataFrames
 import ..CubeAPI.CachedArrays.synccube
 using Dates
 import StatsBase.Weights
-importall ESDL.CubeAPI.Mask
+using ESDL.CubeAPI.Mask
 global const debugDAT=false
 macro debug_print(e)
   debugDAT && return(:(println($e)))

@@ -1,9 +1,10 @@
 module CachedArrays
-importall ..Cubes
+using ...Cubes
+import ...Cubes: gethandle, getSubRange
 export CachedArray, MaskedCacheBlock, getSubRange, getSubRange2
-importall ..CubeAPI
-importall ..ESDLTools
-importall ..Mask
+using ..CubeAPI
+using ..ESDLTools
+using ..Mask
 using Base.Cartesian
 
 abstract type CacheBlock{T,N} end
@@ -64,7 +65,7 @@ function CachedArray(x,max_blocks::Int,block_size::CartesianIndex,blocktype::Typ
     N=ndims(x)
     s=size(x)
     ssmall=[div(s[i],block_size[i]) for i=1:N]
-    blocks=Array{blocktype}(ssmall...)
+    blocks=Array{blocktype}(undef,ssmall...)
     currentblocks=blocktype[]
     scores=zeros(Int64,ssmall...)
     i=1
@@ -83,7 +84,7 @@ function CachedArray(x,max_blocks::Int,block_size::CartesianIndex,blocktype::Typ
     CachedArray{T,N,blocktype,vtype}(x,max_blocks,block_size,blocks,currentblocks,nullblock)
 end
 getcachehandle(tc::AbstractCubeData,block_size) = CachedArray(tc,1,block_size,MaskedCacheBlock{eltype(tc),length(block_size.I)})
-#gethandle(tc::Union{AbstractTempCube,AbstractSubCube},block_size) = getcachehandle(tc,CartesianIndex(block_size))
+gethandle(tc::AbstractSubCube,block_size) = getcachehandle(tc,CartesianIndex(block_size))
 Base.IndexStyle(::CachedArray)=Base.IndexCartesian()
 #Base.setindex!{T,N}(c::CachedArray{T,N},v,i::CartesianIndex{N})=0.0
 Base.size(c::CachedArray)=size(c.x)

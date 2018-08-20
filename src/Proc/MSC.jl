@@ -1,10 +1,10 @@
 module MSC
 export removeMSC, gapFillMSC, getMSC, getMedSC
-importall ..Cubes
-importall ..DAT
-importall ..CubeAPI
-importall ..Proc
-importall ..CubeAPI.Mask
+using ..Cubes
+using ..DAT
+using ..CubeAPI
+using ..Proc
+using ..CubeAPI.Mask
 
 function removeMSC(aout::Tuple,ain::Tuple,NpY::Integer,tmsc,tnmsc)
   xout,maskout = aout

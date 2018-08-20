@@ -4,7 +4,7 @@ SpatialPointAxis,Axes,YearStepRange,CategoricalAxis,RangeAxis,axVal2Index,MSCAxi
 ScaleAxis, axname, @caxis_str, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
 getOutAxis, ByInference
 import NetCDF.NcDim
-importall ..Cubes
+using ..Cubes
 import ...ESDLTools: totuple
 using Dates
 
@@ -31,9 +31,13 @@ function Base.length(x::YearStepRange)
     (-x.startst+1+x.stopst+(x.stopyear-x.startyear)*x.NPY)
 end
 Base.size(x::YearStepRange)=(length(x),)
-Base.start(x::YearStepRange)=(x.startyear,x.startst)
-Base.next(x::YearStepRange,st)=(Date(st[1])+Day((st[2]-1)*x.step),st[2]==x.NPY ? (st[1]+1,1) : (st[1],st[2]+1))
-Base.done(x::YearStepRange,st)=(st[1]==x.stopyear && st[2]==x.stopst+1) || (st[1]==x.stopyear+1 && st[2]==1)
+function Base.iterate(x::YearStepRange,st=x.startst)
+  if (st[1]==x.stopyear && st[2]==x.stopst+1) || (st[1]==x.stopyear+1 && st[2]==1)
+    return nothing
+  else
+    return (Date(st[1])+Day((st[2]-1)*x.step),st[2]==x.NPY ? (st[1]+1,1) : (st[1],st[2]+1))
+  end
+end
 Base.step(x::YearStepRange)=Day(x.step)
 Base.first(x::YearStepRange)=Date(x.startyear)+Day((x.startst-1)*x.step)
 Base.last(x::YearStepRange)=Date(x.stopyear)+Day((x.stopst-1)*x.step)

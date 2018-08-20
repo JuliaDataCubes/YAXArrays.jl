@@ -1,7 +1,8 @@
 module CubeAPI
-importall ..Cubes
-importall ..Cubes.Axes
-importall ..ESDLTools
+import ..Cubes: axes, AbstractSubCube, AbstractCubeData, AbstractCubeMem, gethandle
+using ..Cubes.Axes
+using ..ESDLTools
+using Pkg
 import Markdown.@md_str
 export Cube, getCubeData,getTimeRanges,readCubeData, getMemHandle, RemoteCube, known_regions
 export isvalid, isinvalid, isvalid, isvalidorfilled, Mask
@@ -9,7 +10,7 @@ export showVarInfo
 
 include("Mask.jl")
 include("countrydict.jl")
-importall .Mask
+using .Mask
 using DataStructures
 using Dates
 import HTTP
@@ -606,7 +607,7 @@ function getCubeData(cube::UCube,
       warn("Skipping variable $(variable[i]), not found in Datacube")
     end
   end
-  t=reduce(promote_type,varTypes[1],varTypes)
+  t=reduce(promote_type,varTypes,init=varTypes[1])
   properties=Dict{String,Any}()
   if length(variableNew)==1
     if time[1]==time[2]
@@ -682,17 +683,18 @@ function _read(s::Union{SubCubeVPerm{T},SubCubePerm{T},SubCubeStaticPerm{T}},t::
   perm=sgetperm(s)
   outar,mask=t
   sout=map(-,r.stop.I,(r.start-CartesianIndex{N}()).I)[iperm]
+  newinds=map((x,y)->x:y,r.start.I,r.stop.I)
   #println("xoffs=$xoffs yoffs=$yoffs toffs=$toffs voffs=$voffs nx=$nx ny=$ny nt=$nt nv=$nv")
   outartemp=Array{T}(sout...)
   masktemp=zeros(UInt8,sout...)
-  _read(s.parent,(outartemp,masktemp),CartesianIndices(CartesianIndex(r.start.I[iperm]),CartesianIndex(r.stop.I[iperm])))
+  _read(s.parent,(outartemp,masktemp),CartesianIndices(newinds))
   mypermutedims!(outar,outartemp,Val{perm})
   mypermutedims!(mask,masktemp,Val{perm})
 end
 
 getNv(r::CartesianIndices{2})=(0,1)
 getNv(r::CartesianIndices{3})=(0,1)
-getNv(r::CartesianIndices{4})=(r.start.I[4]-1,r.stop.I[4]-r.start.I[4]+1)
+getNv(r::CartesianIndices{4})=(first(r.indices[4])-1,length(r.indices[4]))
 
 function readAllyears(s::SubCube{T,RemoteCube},outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY) where T
   tstart  = (y1 - year(s.cube.config.start_time))*NpY + i1
@@ -750,75 +752,75 @@ function readRemote(cube::RemoteCube,outar::AbstractArray{T,3},mask::AbstractArr
   return true
 end
 
-gettoffsnt(::AbstractSubCube,r::CartesianIndices)=(r.start.I[3] - 1,r.stop.I[3]  - r.start.I[3]+1)
+gettoffsnt(::AbstractSubCube,r::CartesianIndices)=(first(r.indices[3]) - 1,length(r.indices[3]))
 gettoffsnt(::SubCubeStatic,r::CartesianIndices{2})=(0,1)
 
-  function _read(s::AbstractSubCube,t::Tuple,r::CartesianIndices) #;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,1),ny::Int=size(outar,2),nt::Int=size(outar,3),nv::Int=length(s.variable))
+function _read(s::AbstractSubCube,t::Tuple,r::CartesianIndices) #;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,1),ny::Int=size(outar,2),nt::Int=size(outar,3),nv::Int=length(s.variable))
 
-    outar,mask=t
-    grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid
-    y1,i1,y2,i2,ntime,NpY           = s.sub_times
+  outar,mask=t
+  grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid
+  y1,i1,y2,i2,ntime,NpY           = s.sub_times
 
-    grid_x1 = grid_x1 + r.start.I[1] - 1
-    nx      = r.stop.I[1] - r.start.I[1] + 1
-    grid_y1 = grid_y1 + r.start.I[2] - 1
-    ny      = r.stop.I[2] - r.start.I[2] +1
-    toffs,nt= gettoffsnt(s,r)
-    if toffs > 0
-      i1 = i1 + toffs
-      if i1 > NpY
-        y1 = y1 + div(i1-1,NpY)
-        i1 = mod(i1-1,NpY)+1
-      end
+  grid_x1 = grid_x1 + first(r.indices[1]) - 1
+  nx      = length(r.indices[1])
+  grid_y1 = grid_y1 + first(r.indices[2]) - 1
+  ny      = length(r.indices[2])
+  toffs,nt= gettoffsnt(s,r)
+  if toffs > 0
+    i1 = i1 + toffs
+    if i1 > NpY
+      y1 = y1 + div(i1-1,NpY)
+      i1 = mod(i1-1,NpY)+1
     end
-
-    #println("Year 1=",y1)
-    #println("i1    =",i1)
-    #println("grid_x=",grid_x1:(grid_x1+nx-1))
-    #println("grid_y=",grid_y1:(grid_y1+ny-1))
-    #println("arsize=",size(mask))
-
-    voffs,nv = getNv(r)
-
-    fill!(mask,zero(UInt8))
-    getLandSeaMask!(mask,s.cube,grid_x1,nx,grid_y1,ny)
-
-    readAllyears(s,outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
   end
 
-  function readAllyears(s::SubCube,outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
+  #println("Year 1=",y1)
+  #println("i1    =",i1)
+  #println("grid_x=",grid_x1:(grid_x1+nx-1))
+  #println("grid_y=",grid_y1:(grid_y1+ny-1))
+  #println("arsize=",size(mask))
+
+  voffs,nv = getNv(r)
+
+  fill!(mask,zero(UInt8))
+  getLandSeaMask!(mask,s.cube,grid_x1,nx,grid_y1,ny)
+
+  readAllyears(s,outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
+end
+
+function readAllyears(s::SubCube,outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
+  ycur=y1   #Current year to read
+  i1cur=i1  #Current time step in year
+  itcur=1   #Current time step in output file
+  fin = false
+  while !fin
+    fin,ycur,i1cur,itcur = readFromDataYear(s.cube,outar,mask,s.variable,ycur,grid_x1,nx,grid_y1,ny,itcur,i1cur,nt,NpY)
+  end
+end
+
+function readAllyears(s::SubCubeStatic,outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
+  ycur=y1   #Current year to read
+  i1cur=i1  #Current time step in year
+  itcur=1   #Current time step in output file
+  fin = false
+  while !fin
+    fin,ycur,i1cur,itcur = readFromDataYear(s.cube,reshape(outar,(size(outar,1),size(outar,2),1)),reshape(mask,(size(mask,1),size(mask,2),1)),s.variable,ycur,grid_x1,nx,grid_y1,ny,itcur,i1cur,nt,NpY)
+  end
+end
+
+function readAllyears(s::SubCubeV,outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
+  for iv in (voffs+1):(nv+voffs)
+    outar2=view(outar,:,:,:,iv-voffs)
+    mask2=view(mask,:,:,:,iv-voffs)
     ycur=y1   #Current year to read
     i1cur=i1  #Current time step in year
     itcur=1   #Current time step in output file
     fin = false
     while !fin
-      fin,ycur,i1cur,itcur = readFromDataYear(s.cube,outar,mask,s.variable,ycur,grid_x1,nx,grid_y1,ny,itcur,i1cur,nt,NpY)
+      fin,ycur,i1cur,itcur = readFromDataYear(s.cube,outar2,mask2,s.variable[iv],ycur,grid_x1,nx,grid_y1,ny,itcur,i1cur,nt,NpY)
     end
   end
-
-  function readAllyears(s::SubCubeStatic,outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
-    ycur=y1   #Current year to read
-    i1cur=i1  #Current time step in year
-    itcur=1   #Current time step in output file
-    fin = false
-    while !fin
-      fin,ycur,i1cur,itcur = readFromDataYear(s.cube,reshape(outar,(size(outar,1),size(outar,2),1)),reshape(mask,(size(mask,1),size(mask,2),1)),s.variable,ycur,grid_x1,nx,grid_y1,ny,itcur,i1cur,nt,NpY)
-    end
-  end
-
-  function readAllyears(s::SubCubeV,outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
-    for iv in (voffs+1):(nv+voffs)
-      outar2=view(outar,:,:,:,iv-voffs)
-      mask2=view(mask,:,:,:,iv-voffs)
-      ycur=y1   #Current year to read
-      i1cur=i1  #Current time step in year
-      itcur=1   #Current time step in output file
-      fin = false
-      while !fin
-        fin,ycur,i1cur,itcur = readFromDataYear(s.cube,outar2,mask2,s.variable[iv],ycur,grid_x1,nx,grid_y1,ny,itcur,i1cur,nt,NpY)
-      end
-    end
-  end
+end
 
 
 struct ESDLVarInfo
@@ -831,10 +833,10 @@ end
 
 getremFileName(cube::RemoteCube,variable::String)=cube.dataset_paths[cube.var_name_to_var_index[variable]][1]
 function getremFileName(cube::Cube,variable::String)
-    filepath=joinpath(cube.base_dir,"data",variable)
-    filelist=readdir(filepath)
-    isempty(filelist) && error("Could not retrieve METADATA for variable $variable")
-    return joinpath(filepath,filelist[1])
+  filepath=joinpath(cube.base_dir,"data",variable)
+  filelist=readdir(filepath)
+  isempty(filelist) && error("Could not retrieve METADATA for variable $variable")
+  return joinpath(filepath,filelist[1])
 end
 
 showVarInfo(cube::SubCube)=showVarInfo(cube,cube.variable)
@@ -911,26 +913,26 @@ function readFromDataYear(cube::Cube,outar::AbstractArray{T,3},mask::AbstractArr
       end
     end
     ncclose(filename)
-    else
-      @inbounds for k=itcur:(itcur+nt-1),j=1:ny,i=1:nx
-        mask[i,j,k]=(mask[i,j,k] | OUTOFPERIOD)
-        outar[i,j,k]=nanval
-      end
+  else
+    @inbounds for k=itcur:(itcur+nt-1),j=1:ny,i=1:nx
+      mask[i,j,k]=(mask[i,j,k] | OUTOFPERIOD)
+      outar[i,j,k]=nanval
     end
-    itcur+=nt
-    y+=1
-    i1cur=1
-    fin=nt==ntleft
-    return fin,y,i1cur,itcur
   end
+  itcur+=nt
+  y+=1
+  i1cur=1
+  fin=nt==ntleft
+  return fin,y,i1cur,itcur
+end
 
-  include("CachedArrays.jl")
-  importall .CachedArrays
+include("CachedArrays.jl")
+using .CachedArrays
 
-  function getMemHandle(cube::AbstractCubeData{T},nblock,block_size;startInd::Int=1) where T
-    CachedArray(cube,nblock,block_size,CachedArrays.MaskedCacheBlock{T,length(block_size)},startInd=startInd)
-  end
-  getMemHandle(cube::AbstractCubeMem,nblock,block_size;startInd::Int=1)=cube
+function getMemHandle(cube::AbstractCubeData{T},nblock,block_size;startInd::Int=1) where T
+  CachedArray(cube,nblock,block_size,CachedArrays.MaskedCacheBlock{T,length(block_size)},startInd=startInd)
+end
+getMemHandle(cube::AbstractCubeMem,nblock,block_size;startInd::Int=1)=cube
 
 
 end

@@ -1,10 +1,10 @@
 module CubeIO
-importall ..Cubes
-importall ..DAT
-importall ..CubeAPI
-importall ..CubeAPI.CachedArrays
-importall ..Proc
-importall ..Mask
+using ..Cubes
+using ..DAT
+using ..CubeAPI
+using ..CubeAPI.CachedArrays
+using ..Proc
+using ..Mask
 exportmissval(x::AbstractFloat)=oftype(x,NaN)
 exportmissval(x::Integer)=typemax(x)
 

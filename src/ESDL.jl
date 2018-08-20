@@ -32,6 +32,6 @@ include("CubeAPI/CubeAPI.jl")
 include("DAT/DAT.jl")
 include("Proc/Proc.jl")
 
-importall .Cubes, .CubeAPI, .DAT, .Proc, .ESDLTools
+using .Cubes, .CubeAPI, .DAT, .Proc, .ESDLTools
 
 end # module

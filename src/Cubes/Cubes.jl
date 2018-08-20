@@ -62,7 +62,7 @@ abstract type AbstractSubCube{T,N} <: AbstractCubeData{T,N} end
 abstract type AbstractCubeMem{T,N} <: AbstractCubeData{T,N} end
 
 include("Axes.jl")
-importall .Axes
+using .Axes
 
 struct EmptyCube{T}<:AbstractCubeData{T,0} end
 axes(c::EmptyCube)=CubeAxis[]
@@ -178,9 +178,7 @@ end
 function Base.getindex(c::AbstractCubeData,i::IndR...)
   length(i)==ndims(c) || error("You must provide $(ndims(c)) indices")
   ax = totuple(axes(c))
-  starts = CartesianIndex(map(getfirst,i,ax))
-  lasts = CartesianIndex(map(getlast,i,ax))
-  r = CartesianIndices(starts,lasts)
+  r = CartesianIndices(map((ii,iax)->getfirst(ii,iax):getlast(ii,iax),i,ax))
   aout = zeros(eltype(c),size(r))
   mout = fill(0xff,size(r))
   _read(c,(aout,mout),r)
@@ -207,7 +205,7 @@ cubesize(c::AbstractCubeData{T,0}) where {T}=sizeof(T)+1
 include("MmapCubes.jl")
 #include("TempCubes.jl")
 include("NetCDFCubes.jl")
-#importall .TempCubes
+#using .TempCubes
 #handletype(::Union{AbstractTempCube,AbstractSubCube})=CacheHandle()
 
 getCubeDes(c::AbstractSubCube)="Data Cube view"

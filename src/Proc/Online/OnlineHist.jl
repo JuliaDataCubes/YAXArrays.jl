@@ -39,7 +39,7 @@ function quantile(d::HistogramCube,q::Number)
   CubeMem(CubeAxis[c.axes...],cout,maskout)
 end
 
-function Base.quantile(d::HistogramCube,q)
+function quantile(d::HistogramCube,q)
   c=d.c
   cout=zeros(Float32,length(q),size(c.data)...)
   maskout=zeros(UInt8,length(q),size(c.data)...)
@@ -56,7 +56,7 @@ function Base.quantile(d::HistogramCube,q)
   quantileax=CategoricalAxis("Quantile",collect(q))
   CubeMem(CubeAxis[quantileax,c.axes...],cout,maskout)
 end
-Base.quantile(d::AbstractCubeData,q;nbins=100,kwargs...) = quantile(mapCube(Hist,d,nbins;kwargs...),q)
+quantile(d::AbstractCubeData,q;nbins=100,kwargs...) = quantile(mapCube(Hist,d,nbins;kwargs...),q)
 
 using OnlineStats
 getGenFun(f::Type{T},nbins) where {T<:OnlineStats.Hist}=i->f(nbins)

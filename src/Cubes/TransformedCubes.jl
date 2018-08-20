@@ -1,7 +1,7 @@
 export ConcatCube, concatenateCubes
 export mergeAxes
 import ..ESDLTools.getiperm
-import ..Cubes: _read, needshandle, gethandle, getcachehandle, handletype
+import ..Cubes: _read, gethandle, getcachehandle, handletype
 
 mutable struct PermCube{T,N,C} <: AbstractCubeData{T,N}
   parent::C

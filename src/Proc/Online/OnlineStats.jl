@@ -1,9 +1,9 @@
 module DATOnlineStats
 using OnlineStats
 using Combinatorics
-importall ..DAT
-importall ..Cubes
-importall ..Mask
+using ..DAT
+using ..Cubes
+using ..Mask
 import ...ESDLTools.totuple
 import OnlineStats: VectorOb
 export DATfitOnline
