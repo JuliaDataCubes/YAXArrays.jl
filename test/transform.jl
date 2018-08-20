@@ -1,5 +1,5 @@
 using ESDL
-using Base.Test
+using Test
 
 @testset "Transformed cubes" begin
 c=Cube()

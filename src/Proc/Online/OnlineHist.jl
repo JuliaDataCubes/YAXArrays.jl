@@ -7,7 +7,7 @@ function tohist(d::HistogramCube)
   nbins=length(OnlineStats.value(c.data[1])[1])
   cout=zeros(Float32,nbins,2,size(c.data)...)
   maskout=zeros(UInt8,nbins,2,size(c.data)...)
-  for ii in CartesianRange(size(c.data))
+  for ii in CartesianIndices(size(c.data))
     if OnlineStats.nobs(c.data[ii])>0
       midp,v = OnlineStats.value(c.data[ii])
       cout[:,1,ii]=v
@@ -29,7 +29,7 @@ function Base.quantile(d::HistogramCube,q::Number)
   c=d.c
   cout=zeros(Float32,size(c.data)...)
   maskout=zeros(UInt8,size(c.data)...)
-  for ii in CartesianRange(size(c.data))
+  for ii in CartesianIndices(size(c.data))
     qu = OnlineStats.quantile(c.data[ii],q)
     cout[ii]=qu
     maskout[ii]=c.mask[ii]
@@ -41,7 +41,7 @@ function Base.quantile(d::HistogramCube,q)
   c=d.c
   cout=zeros(Float32,length(q),size(c.data)...)
   maskout=zeros(UInt8,length(q),size(c.data)...)
-  for ii in CartesianRange(size(c.data))
+  for ii in CartesianIndices(size(c.data))
     if OnlineStats.nobs(c.data[ii])>0
       qu = OnlineStats.quantile(c.data[ii],q)
       cout[:,ii]=qu
@@ -57,5 +57,5 @@ end
 Base.quantile(d::AbstractCubeData,q;nbins=100,kwargs...) = quantile(mapCube(Hist,d,nbins;kwargs...),q)
 
 using OnlineStats
-getGenFun{T<:OnlineStats.Hist}(f::Type{T},nbins)=i->f(nbins)
-getFinalFun{T<:OnlineStats.Hist}(f::Type{T},funargs...)=c->HistogramCube(c)
+getGenFun(f::Type{T},nbins) where {T<:OnlineStats.Hist}=i->f(nbins)
+getFinalFun(f::Type{T},funargs...) where {T<:OnlineStats.Hist}=c->HistogramCube(c)

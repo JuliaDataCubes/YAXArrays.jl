@@ -1,5 +1,5 @@
 export NetCDFCube
-type NetCDFCube{T,N} <: AbstractCubeData{T,N}
+mutable struct NetCDFCube{T,N} <: AbstractCubeData{T,N}
   file::String
   varname::String
   axes::Vector{CubeAxis}
@@ -16,10 +16,10 @@ for dim in v.dim
   dimname=dim.name
   if startswith(uppercase(dimname),"LON")
     haskey(nc.vars,dimname) || error("Longitude variable does not exist")
-    push!(cubeaxes,LonAxis(linspace(nc.vars[dimname][1],nc.vars[dimname][end],dim.dimlen)))
+    push!(cubeaxes,LonAxis(range(nc.vars[dimname][1], stop=nc.vars[dimname][end], length=dim.dimlen)))
   elseif startswith(uppercase(dimname),"LAT")
     haskey(nc.vars,dimname) || error("Latitude variable does not exist")
-    push!(cubeaxes,LatAxis(linspace(nc.vars[dimname][1],nc.vars[dimname][end],dim.dimlen)))
+    push!(cubeaxes,LatAxis(range(nc.vars[dimname][1], stop=nc.vars[dimname][end], length=dim.dimlen)))
   elseif startswith(uppercase(dimname),"TIME")
     #haskey(nc.vars,dimname) || error("Time variable does not exist")
     #instead of parsing the time steps we use the user input for now
@@ -37,7 +37,7 @@ Base.size(x::NetCDFCube)=ntuple(i->length(x.axes[i]),length(x.axes))
 Base.size(x::NetCDFCube,i)=length(x.axes[i])
 axes(v::NetCDFCube)=deepcopy(v.axes)
 getCubeDes(v::NetCDFCube)="NetCDF data cube"
-function _read{T,N}(x::NetCDFCube{T,N},thedata::Tuple{Any,Any},r::CartesianRange{CartesianIndex{N}})
+function _read(x::NetCDFCube{T,N},thedata::Tuple{Any,Any},r::CartesianIndices{CartesianIndex{N}}) where {T,N}
   sta = collect(r.start.I)
   cou = [r.stop.I[i]-r.start.I[i]+1 for i=1:N]
   ncread!(x.file,x.varname,thedata[1],start = sta,count=cou)

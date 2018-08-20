@@ -64,7 +64,7 @@ function finalizeOnlineCube(c::CubeMem,varAx::CubeAxis, statType::Type{T}) where
   maskout=zeros(UInt8,nV,nV,size(c.data)...)
   cout2 = zeros(Float32,nV,size(c.data)...)
   maskout2=zeros(UInt8,nV,size(c.data)...)
-  for ii in CartesianRange(size(c.data))
+  for ii in CartesianIndices(size(c.data))
     cout[:,:,ii]=OnlineStats.value(c.data[ii])
     maskout[:,:,ii]=c.mask[ii]
     cout2[:,ii]=OnlineStats.mean(c.data[ii].b)
@@ -79,7 +79,7 @@ function finalizeOnlineCube(c::CubeMem,varAx::CubeAxis,statType::Type{T}) where 
   nV,nC=size(OnlineStats.value(c.data[1]))
   cout=zeros(Float32,nV,nC,size(c.data)...)
   maskout=zeros(UInt8,nV,nC,size(c.data)...)
-  for ii in CartesianRange(size(c.data))
+  for ii in CartesianIndices(size(c.data))
     cout[:,:,ii]=OnlineStats.value(c.data[ii])
     maskout[:,:,ii]=c.mask[ii]
   end
@@ -87,28 +87,28 @@ function finalizeOnlineCube(c::CubeMem,varAx::CubeAxis,statType::Type{T}) where 
   CubeMem(CubeAxis[varAx,classAx,c.axes...],cout,maskout)
 end
 
-getGenFun{T<:OnlineStat}(f::Type{T},pargs...)=i->f()
-function getGenFun{T<:OnlineStats.KMeans}(f::Type{T},nclass,d)
-  return i->begin srand(190283);f(d,nclass) end
+getGenFun(f::Type{T},pargs...) where {T<:OnlineStat}=i->f()
+function getGenFun(f::Type{T},nclass,d) where T<:OnlineStats.KMeans
+  return i->begin Random.seed!(190283);f(d,nclass) end
 end
-function getGenFun{T<:OnlineStats.KMeans}(f::Type{T},nclass,startVal,d)
+function getGenFun(f::Type{T},nclass,startVal,d) where T<:OnlineStats.KMeans
   return i->begin a=f(d,nclass);a.value[:]=startVal;a end
 end
-function getGenFun{T<:OnlineStats.CovMatrix}(f::Type{T},pargs...)
+function getGenFun(f::Type{T},pargs...) where T<:OnlineStats.CovMatrix
   return i->f(pargs[1])
 end
 
-getFinalFun{T<:OnlineStat}(f::Type{T},funargs...)=finalizeOnlineCube
-getFinalFun{T<:OnlineStats.KMeans}(f::Type{T},funargs...)=c->finalizeOnlineCube(c,funargs[1],T)
-getFinalFun{T<:OnlineStats.CovMatrix}(f::Type{T},funargs...)=c->finalizeOnlineCube(c,funargs[1],T)
+getFinalFun(f::Type{T},funargs...) where {T<:OnlineStat}=finalizeOnlineCube
+getFinalFun(f::Type{T},funargs...) where {T<:OnlineStats.KMeans}=c->finalizeOnlineCube(c,funargs[1],T)
+getFinalFun(f::Type{T},funargs...) where {T<:OnlineStats.CovMatrix}=c->finalizeOnlineCube(c,funargs[1],T)
 
-function mapCube{T<:OnlineStat}(f::Type{T},cdata::AbstractCubeData,pargs...;by=CubeAxis[],max_cache=1e7,cfun=identity,outAxis=nothing,MDAxis=Void,kwargs...)
+function mapCube(f::Type{T},cdata::AbstractCubeData,pargs...;by=CubeAxis[],max_cache=1e7,cfun=identity,outAxis=nothing,MDAxis=Nothing,kwargs...) where T<:OnlineStat
   inAxes=axes(cdata)
   #Now analyse additional by axes
   inaxtypes=map(typeof,inAxes)
-  if issubtype(T,OnlineStat{VectorOb})
-    MDAxis<:Void && error("$T Requires a Vector Input, you have to specify the MDAxis keyword argument.")
-    issubtype(MDAxis,CubeAxis) || error("MDAxis must be an Axis type")
+  if T <:OnlineStat{VectorOb}
+    MDAxis<:Nothing && error("$T Requires a Vector Input, you have to specify the MDAxis keyword argument.")
+    MDAxis <:CubeAxis || error("MDAxis must be an Axis type")
     mdAx = getAxis(MDAxis,inAxes)
     ia1 = [MDAxis]
     lout=length(mdAx)
@@ -135,7 +135,7 @@ function mapCube{T<:OnlineStat}(f::Type{T},cdata::AbstractCubeData,pargs...;by=C
         idict=bycubes[1].properties["labels"]
         axname=get(bycubes[1].properties,"name","Label")
         outAxis=CategoricalAxis(axname,collect(String,values(idict)))
-        const convertdict=Dict(k=>i for (i,k) in enumerate(keys(idict)))
+        convertdict=Dict(k=>i for (i,k) in enumerate(keys(idict)))
         cfun=x->convertdict[x]
       else
         error("You have to specify an output axis")

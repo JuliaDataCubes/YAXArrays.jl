@@ -9,13 +9,13 @@ abstract type AbstractMmapCube{T,N}<:AbstractCubeData{T,N} end
 Defines a Memory-Mapped data cube which is stored on disk. Is generally returned
 by mapCube applications.
 """
-type MmapCube{T,N} <: AbstractMmapCube{T,N}
+mutable struct MmapCube{T,N} <: AbstractMmapCube{T,N}
   axes::Vector{CubeAxis}
   folder::String
   persist::Bool
   properties::Dict{Any,Any}
 end
-type MmapCubePerm{T,N} <: AbstractMmapCube{T,N}
+mutable struct MmapCubePerm{T,N} <: AbstractMmapCube{T,N}
   axes::Vector{CubeAxis}
   folder::String
   perm::NTuple{N,Int}
@@ -71,7 +71,7 @@ function gethandle(y::MmapCubePerm{T}) where T
 end
 handletype(::AbstractMmapCube)=ViewHandle()
 
-function _read{N}(y::MmapCube,thedata::Tuple,r::CartesianRange{CartesianIndex{N}})
+function _read(y::MmapCube,thedata::Tuple,r::CartesianIndices{CartesianIndex{N}}) where N
     dout,mout = thedata
     din,min   = getmmaphandles(y)
     for (i,ic) in enumerate(r)
@@ -79,16 +79,16 @@ function _read{N}(y::MmapCube,thedata::Tuple,r::CartesianRange{CartesianIndex{N}
         mout[i]=min[ic]
     end
 end
-@generated function Base.size{T,N}(x::MmapCube{T,N})
+@generated function Base.size(x::MmapCube{T,N}) where {T,N}
   :(@ntuple $N i->length(x.axes[i]))
 end
-@generated function Base.size{T,N}(x::MmapCubePerm{T,N})
+@generated function Base.size(x::MmapCubePerm{T,N}) where {T,N}
   :(@ntuple $N i->length(x.axes[x.perm[i]]))
 end
 axes(y::MmapCube)=y.axes
 axes(t::MmapCubePerm)=[t.axes[t.perm[i]] for i=1:length(t.axes)]
 getCubeDes(v::MmapCube)="Memory mapped cube"
-Base.permutedims{T,N}(c::MmapCube{T,N},perm)=MmapCubePerm{T,N}(c.axes,c.folder,perm,c.properties)
+Base.permutedims(c::MmapCube{T,N},perm) where {T,N}=MmapCubePerm{T,N}(c.axes,c.folder,perm,c.properties)
 """
     saveCube(c::AbstractCubeData, name::String)
 

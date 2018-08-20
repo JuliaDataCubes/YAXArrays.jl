@@ -1,5 +1,5 @@
 using ESDL
-using Base.Test
+using Test
 
 include("access.jl")
 include("axes.jl")

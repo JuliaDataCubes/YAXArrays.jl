@@ -1,7 +1,7 @@
 using ESDL
-using Base.Test
+using Test
 import DataFrames: DataFrame,aggregate,skipmissing
-import Base.Dates: year
+import Dates: year
 c=Cube()
 
 d = getCubeData(c,variable=["air_temperature_2m","gross_primary_productivity"],longitude=(30,31),latitude=(50,51),

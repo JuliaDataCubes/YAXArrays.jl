@@ -2,9 +2,9 @@ export InDims, OutDims,AsArray,AsDataFrame,AsAxisArray
 const AxisDescriptorAll = Union{AxisDescriptor,String,Type{T},CubeAxis,Function} where T<:CubeAxis
 
 abstract type ArTypeRepr end
-immutable AsArray <: ArTypeRepr end
-immutable AsAxisArray <: ArTypeRepr end
-immutable AsDataFrame <: ArTypeRepr
+struct AsArray <: ArTypeRepr end
+struct AsAxisArray <: ArTypeRepr end
+struct AsDataFrame <: ArTypeRepr
   dimcol::Bool
 end
 AsDataFrame()=AsDataFrame(false)
@@ -36,7 +36,7 @@ Creates a description of an Input Data Cube for cube operations. Takes a single
 - miss: Representation of missing values for this input cube, must be a subtype of [MissingRepr](@ref)
 - include_axes: If set to `true` the array will be represented as an AxisArray inside the inner function, so that axes values can be accessed
 """
-type InDims
+mutable struct InDims
   axisdesc::Tuple
   miss::MissingRepr
   artype::ArTypeRepr
@@ -63,7 +63,7 @@ Creates a description of an Output Data Cube for cube operations. Takes a single
 - retCubeType: sepcifies the type of the return cube, can be `CubeMem` to force in-memory, `TempCube` to force disk storage, or `"auto"` to let the system decide.
 - outtype: force the output type to a specific type, defaults to `Any` which means that the element type of the first input cube is used
 """
-immutable OutDims
+struct OutDims
   axisdesc::Tuple
   bcaxisdesc::Tuple
   miss::MissingRepr
@@ -90,4 +90,4 @@ function OutDims(axisdesc...;
   OutDims(descs,bcdescs,miss,genOut,finalizeOut,retCubeType,update,artype,outtype)
 end
 
-registerDATFunction(a...;kwargs...)=warn("Registration does not exist anymore, ignoring....")
+registerDATFunction(a...;kwargs...)=@warn("Registration does not exist anymore, ignoring....")

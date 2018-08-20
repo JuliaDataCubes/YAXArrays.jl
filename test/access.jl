@@ -1,5 +1,5 @@
 using ESDL
-using Base.Test
+using Test
 #Open a remote cube
 @testset "Cube Access" begin
 

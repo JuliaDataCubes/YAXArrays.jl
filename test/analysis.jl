@@ -1,5 +1,5 @@
 using ESDL
-using Base.Test
+using Test
 import Base.Iterators
 addprocs(2)
 @everywhere using ESDL, DataArrays

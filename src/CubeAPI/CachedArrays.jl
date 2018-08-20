@@ -9,27 +9,27 @@ importall ..Mask
 using Base.Cartesian
 
 abstract type CacheBlock{T,N} end
-type SimpleCacheBlock{T,N} <: CacheBlock{T,N}
+mutable struct SimpleCacheBlock{T,N} <: CacheBlock{T,N}
     data::Array{T,N}
     score::Float64
     position::CartesianIndex{N}
     iswritten::Bool
 end
-emptyblock{T,N}(b::Type{SimpleCacheBlock{T,N}})=SimpleCacheBlock{T,N}(Array(T,ntuple(i->0,N)),0.0,CartesianIndex{N}()-CartesianIndex{N}(),false)
-zeroblock{T,N}(b::Type{SimpleCacheBlock{T,N}},block_size,position)=SimpleCacheBlock{T,N}(zeros(T,block_size.I),0.0,position,false)
+emptyblock(b::Type{SimpleCacheBlock{T,N}}) where {T,N}=SimpleCacheBlock{T,N}(Array(T,ntuple(i->0,N)),0.0,CartesianIndex{N}()-CartesianIndex{N}(),false)
+zeroblock(b::Type{SimpleCacheBlock{T,N}},block_size,position) where {T,N}=SimpleCacheBlock{T,N}(zeros(T,block_size.I),0.0,position,false)
 getValues(b::SimpleCacheBlock,I...)=view(b.data,I...)
 import Base.<
 <(c1::CacheBlock,c2::CacheBlock)=c1.score<c2.score
 
-type MaskedCacheBlock{T,N} <: CacheBlock{T,N}
+mutable struct MaskedCacheBlock{T,N} <: CacheBlock{T,N}
     data::Array{T,N}
     mask::Array{UInt8,N}
     score::Float64
     position::CartesianIndex{N}
     iswritten::Bool
 end
-emptyblock{T,N}(b::Type{MaskedCacheBlock{T,N}})=MaskedCacheBlock{T,N}(Array{T}(ntuple(i->0,N)),Array{UInt8}(ntuple(i->0,N)),0.0,CartesianIndex{N}()-CartesianIndex{N}(),false)
-zeroblock{T,N}(b::Type{MaskedCacheBlock{T,N}},block_size,position)=MaskedCacheBlock{T,N}(zeros(T,block_size.I),zeros(UInt8,block_size.I),0.0,position,false)
+emptyblock(b::Type{MaskedCacheBlock{T,N}}) where {T,N}=MaskedCacheBlock{T,N}(Array{T}(ntuple(i->0,N)),Array{UInt8}(ntuple(i->0,N)),0.0,CartesianIndex{N}()-CartesianIndex{N}(),false)
+zeroblock(b::Type{MaskedCacheBlock{T,N}},block_size,position) where {T,N}=MaskedCacheBlock{T,N}(zeros(T,block_size.I),zeros(UInt8,block_size.I),0.0,position,false)
 getValues(b::MaskedCacheBlock,I::Union{Integer,UnitRange,Colon}...)=(view(b.data,I...),view(b.mask,I...))
 #getValues(b::MaskedCacheBlock,I::Integer...)=(b.data[I...],b.mask[I...])
 function setValues(b::MaskedCacheBlock,vals,mask,I::Union{Integer,UnitRange,Colon}...)
@@ -41,7 +41,7 @@ function setValues(b::MaskedCacheBlock,vals,mask,I::Integer...)
     b.mask[I...]=mask[1]
 end
 
-type CachedArray{T,N,B,S}<:AbstractArray{T,N}
+mutable struct CachedArray{T,N,B,S}<:AbstractArray{T,N}
     x::S
     max_blocks::Int
     block_size::CartesianIndex{N}
@@ -55,7 +55,7 @@ function show(io::IO,s::MIME"text/plain",x::CachedArray)
   println(io,"Cached Array with cache size $(x.block_size.I) around the following Array:")
   show(io,s,x.x)
 end
-@generated function asRanges{N}(start::CartesianIndex{N},count::CartesianIndex{N})
+@generated function asRanges(start::CartesianIndex{N},count::CartesianIndex{N}) where N
     args=[Expr(:(:),:(start.I[$i]),:(start.I[$i]+count.I[$i]-1)) for i=1:N]
     Expr(:tuple,args...)
 end
@@ -71,7 +71,7 @@ function CachedArray(x,max_blocks::Int,block_size::CartesianIndex,blocktype::Typ
     scores=zeros(Int64,ssmall...)
     i=1
     nullblock=emptyblock(blocktype)
-    for II in CartesianRange(size(blocks))
+    for II in CartesianIndices(size(blocks))
         if length(currentblocks)<max_blocks && i>=startInd
             newblock=zeroblock(blocktype,block_size,II)
             blocks[II]=newblock
@@ -178,7 +178,7 @@ function findminscore(c::CachedArray)
     todel,i=findmin(c.currentblocks)
 end
 
-@generated function getSingVal{N}(c::CachedArray,bI::NTuple{N,Integer},iI::NTuple{N,Integer})
+@generated function getSingVal(c::CachedArray,bI::NTuple{N,Integer},iI::NTuple{N,Integer}) where N
     sEx1=Expr(:ref,:(@nref($N,blocks,d->bI[d]).data),[:(iI[$i]) for i=1:N]...)
     sEx2=Expr(:ref,:(@nref($N,blocks,d->bI[d]).mask),[:(iI[$i]) for i=1:N]...)
     quote
@@ -197,9 +197,9 @@ end
 
 missval(::Float64)::Float64=NaN64
 missval(::Float32)::Float32=NaN32
-missval{T<:Integer}(::T)::T=typemax(T)-1
+missval(::T)::T where {T<:Integer}=typemax(T)-1
 
-function Base.setindex!{T}(c::CachedArray{T},v::Number,i::Integer...)
+function Base.setindex!(c::CachedArray{T},v::Number,i::Integer...) where T
   vout,m = getSubRange(c,i...,write=true)
   mv=missval(zero(T))
   if v==mv
@@ -228,7 +228,7 @@ end
   end
   return nmiss==length(x) ? true : false
 end
-function Base.getindex(c::CachedArray,i::Union{Integer,Range,Colon}...)
+function Base.getindex(c::CachedArray,i::Union{Integer,AbstractRange,Colon}...)
   v,m = getSubRange2(c,i...)
   v2=copy(v)
   mv=missval(v[1])
@@ -289,20 +289,20 @@ end
 using NetCDF
 
 
-function read_subblock!{T,N}(x::CacheBlock{T,N},y::Array{T,N},block_size::CartesianIndex{N})
+function read_subblock!(x::CacheBlock{T,N},y::Array{T,N},block_size::CartesianIndex{N}) where {T,N}
     istart = CItimes((x.position-CartesianIndex{N}()),block_size)
     ysmall = view(y,asRanges(istart+CartesianIndex{N}(),block_size))
     copy!(x.data,ysmall)
 end
 
-function write_subblock!{T,N}(x::CacheBlock{T,N},y::Array{T,N},block_size::CartesianIndex{N})
+function write_subblock!(x::CacheBlock{T,N},y::Array{T,N},block_size::CartesianIndex{N}) where {T,N}
     istart = CItimes((x.position-CartesianIndex{N}()),block_size)
     ysmall = view(y,asRanges(istart+CartesianIndex{N}(),block_size))
     copy!(ysmall,x.data)
     x.iswritten=false
 end
 
-function read_subblock!{T,N}(x::SimpleCacheBlock{T,N},y::NcVar{T,N},block_size::CartesianIndex{N})
+function read_subblock!(x::SimpleCacheBlock{T,N},y::NcVar{T,N},block_size::CartesianIndex{N}) where {T,N}
     istart = CItimes((x.position-CartesianIndex{N}()),block_size)
     NetCDF.readvar!(y,x.data,asRanges(istart+CartesianIndex{N}(),block_size)...)
 end
@@ -313,33 +313,33 @@ import ESDL.CubeAPI.SubCubeV, ESDL.CubeAPI.SubCubeVPerm
 
 toSymbol(d::DataType)=Symbol(split(replace(string(d),r"\{\S*\}",""),".")[end])
 
-function read_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::AbstractCubeData{T},block_size::CartesianIndex{N})
-    r = CartesianRange(CItimes((x.position-CartesianIndex{N}()),block_size)+CartesianIndex{N}(),CItimes((x.position),block_size))
+function read_subblock!(x::MaskedCacheBlock{T,N},y::AbstractCubeData{T},block_size::CartesianIndex{N}) where {T,N}
+    r = CartesianIndices(CItimes((x.position-CartesianIndex{N}()),block_size)+CartesianIndex{N}(),CItimes((x.position),block_size))
     _read(y,(x.data,x.mask),r)
 end
 
-function read_subblock!{T,N}(x::SimpleCacheBlock{T,N},y::AbstractCubeData{T},block_size::CartesianIndex{N})
-    r = CartesianRange(CItimes((x.position-CartesianIndex{N}()),block_size)+CartesianIndex{N}(),CItimes((x.position),block_size))
+function read_subblock!(x::SimpleCacheBlock{T,N},y::AbstractCubeData{T},block_size::CartesianIndex{N}) where {T,N}
+    r = CartesianIndices(CItimes((x.position-CartesianIndex{N}()),block_size)+CartesianIndex{N}(),CItimes((x.position),block_size))
     _read(y,x.data,r)
 end
 
-write_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::Any,block_size::CartesianIndex{N},i::CartesianIndex{N})=error("$(typeof(y)) is not writeable. Please add a write_subblock method.")
+write_subblock!(x::MaskedCacheBlock{T,N},y::Any,block_size::CartesianIndex{N},i::CartesianIndex{N}) where {T,N}=error("$(typeof(y)) is not writeable. Please add a write_subblock method.")
 
-function write_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::TempCube{T,N},block_size::CartesianIndex{N})
+function write_subblock!(x::MaskedCacheBlock{T,N},y::TempCube{T,N},block_size::CartesianIndex{N}) where {T,N}
     filename=joinpath(y.folder,tofilename(x.position))
     ncwrite(x.data,filename,"cube")
     ncwrite(x.mask,filename,"mask")
     ncclose(filename)
     x.iswritten=false
 end
-function write_subblock!{T}(x::MaskedCacheBlock{T,0},y::TempCube{T,0},block_size::CartesianIndex{0})
+function write_subblock!(x::MaskedCacheBlock{T,0},y::TempCube{T,0},block_size::CartesianIndex{0}) where T
     filename=joinpath(y.folder,tofilename(x.position))
     ncwrite([x.data[1]],filename,"cube")
     ncwrite([x.mask[1]],filename,"mask")
     ncclose(filename)
     x.iswritten=false
 end
-function read_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::TempCube{T,N},block_size::CartesianIndex{N})
+function read_subblock!(x::MaskedCacheBlock{T,N},y::TempCube{T,N},block_size::CartesianIndex{N}) where {T,N}
     if block_size==y.block_size
         filename=joinpath(y.folder,tofilename(x.position))
         #println("Reading from file $filename")
@@ -347,12 +347,12 @@ function read_subblock!{T,N}(x::MaskedCacheBlock{T,N},y::TempCube{T,N},block_siz
         ncread!(filename,"mask",x.mask)
         ncclose(filename)
     else
-        r = CartesianRange(CItimes((x.position-CartesianIndex{N}()),block_size)+CartesianIndex{N}(),CItimes((x.position),block_size))
+        r = CartesianIndices(CItimes((x.position-CartesianIndex{N}()),block_size)+CartesianIndex{N}(),CItimes((x.position),block_size))
         _read(y,(x.data,x.mask),r)
     end
 end
 
-function read_subblock!{T}(x::MaskedCacheBlock{T,0},y::TempCube{T,0},block_size::CartesianIndex{0})
+function read_subblock!(x::MaskedCacheBlock{T,0},y::TempCube{T,0},block_size::CartesianIndex{0}) where T
   filename=joinpath(y.folder,tofilename(x.position))
   vc=NetCDF.open(filename,"cube")
   vm=NetCDF.open(filename,"mask")
@@ -360,7 +360,7 @@ function read_subblock!{T}(x::MaskedCacheBlock{T,0},y::TempCube{T,0},block_size:
   x.mask[1]=vm[1]
   ncclose(filename)
 end
-function getSubRange{T,S<:MaskedCacheBlock}(c::CachedArray{T,0,S};write=false)
+function getSubRange(c::CachedArray{T,0,S};write=false) where {T,S<:MaskedCacheBlock}
   c.currentblocks[1].iswritten=write
   (c.currentblocks[1].data,c.currentblocks[1].mask)
 end

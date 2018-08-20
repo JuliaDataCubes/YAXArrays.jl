@@ -28,10 +28,10 @@ getSingVal(c::AbstractCubeData,a...)=error("getSingVal called in the wrong way w
 """
     readCubeData(cube::AbstractCubeData)
 """
-function readCubeData{T,N}(x::AbstractCubeData{T,N})
+function readCubeData(x::AbstractCubeData{T,N}) where {T,N}
   s=size(x)
   aout,mout=zeros(T,s...),zeros(UInt8,s...)
-  r=CartesianRange(CartesianIndex{N}(),CartesianIndex(s...))
+  r=CartesianIndices(CartesianIndex{N}(),CartesianIndex(s...))
   _read(x,(aout,mout),r)
   CubeMem(collect(CubeAxis,axes(x)),aout,mout)
 end
@@ -50,7 +50,7 @@ function subsetCubeData end
 axes(c::AbstractCubeData)=error("Axes function not implemented for $(typeof(c))")
 
 "Number of dimensions"
-Base.ndims{T,N}(::AbstractCubeData{T,N})=N
+Base.ndims(::AbstractCubeData{T,N}) where {T,N}=N
 
 cubeproperties(::AbstractCubeData)=Dict{String,Any}()
 
@@ -64,7 +64,7 @@ abstract type AbstractCubeMem{T,N} <: AbstractCubeData{T,N} end
 include("Axes.jl")
 importall .Axes
 
-immutable EmptyCube{T}<:AbstractCubeData{T,0} end
+struct EmptyCube{T}<:AbstractCubeData{T,0} end
 axes(c::EmptyCube)=CubeAxis[]
 
 """
@@ -81,7 +81,7 @@ the output cube is small enough to fit in memory or by explicitly calling
 * `mask` N-D array containgin the mask
 
 """
-type CubeMem{T,N} <: AbstractCubeMem{T,N}
+mutable struct CubeMem{T,N} <: AbstractCubeMem{T,N}
   axes::Vector{CubeAxis}
   data::Array{T,N}
   mask::Array{UInt8,N}
@@ -99,19 +99,19 @@ Base.setindex!(c::CubeMem,i::Integer,v)=setindex!(c.data,i,v)
 Base.size(c::CubeMem)=size(c.data)
 Base.size(c::CubeMem,i)=size(c.data,i)
 Base.similar(c::CubeMem)=cubeMem(c.axes,similar(c.data),copy(c.mask))
-Base.ndims{T,N}(c::CubeMem{T,N})=N
+Base.ndims(c::CubeMem{T,N}) where {T,N}=N
 
-getSingVal{T,N}(c::CubeMem{T,N},i...;write::Bool=true)=(c.data[i...],c.mask[i...])
-getSingVal{T}(c::CubeMem{T,0};write::Bool=true)=(c.data[1],c.mask[1])
-getSingVal{T}(c::CubeAxis{T},i;write::Bool=true)=(c.values[i],nothing)
+getSingVal(c::CubeMem{T,N},i...;write::Bool=true) where {T,N}=(c.data[i...],c.mask[i...])
+getSingVal(c::CubeMem{T,0};write::Bool=true) where {T}=(c.data[1],c.mask[1])
+getSingVal(c::CubeAxis{T},i;write::Bool=true) where {T}=(c.values[i],nothing)
 
 readCubeData(c::CubeMem)=c
 
-function getSubRange{T,N}(c::Tuple{AbstractArray{T,N},AbstractArray{UInt8,N}},i...;write::Bool=true)
+function getSubRange(c::Tuple{AbstractArray{T,N},AbstractArray{UInt8,N}},i...;write::Bool=true) where {T,N}
   length(i)==N || error("Wrong number of view arguments to getSubRange. Cube is: $c \n indices are $i")
   return (view(c[1],i...),view(c[2],i...))
 end
-getSubRange{T}(c::Tuple{AbstractArray{T,0},AbstractArray{UInt8,0}};write::Bool=true)=c
+getSubRange(c::Tuple{AbstractArray{T,0},AbstractArray{UInt8,0}};write::Bool=true) where {T}=c
 
 """
     gethandle(c::AbstractCubeData, [block_size])
@@ -123,14 +123,14 @@ gethandle(c::CubeAxis) = collect(c.values)
 gethandle(c,block_size)=gethandle(c)
 function getcachehandle end
 
-immutable ViewHandle end
-immutable CacheHandle end
+struct ViewHandle end
+struct CacheHandle end
 handletype(::AbstractCubeMem)=ViewHandle()
 
 
 import ..ESDLTools.toRange
 #Generic fallback method for _read
-function _read(c::AbstractCubeData,thedata::Tuple,r::CartesianRange)
+function _read(c::AbstractCubeData,thedata::Tuple,r::CartesianIndices)
   N=ndims(r)
   outar,outmask=thedata
   rr = convert(NTuple{N,UnitRange},r)
@@ -168,7 +168,7 @@ getlast(i::Colon,a::CubeAxis)=length(a)
 
 function Base.getindex(c::AbstractCubeData,i::Integer...)
   length(i)==ndims(c) || error("You must provide $(ndims(c)) indices")
-  r = CartesianRange(CartesianIndex(i),CartesianIndex(i))
+  r = CartesianIndices(CartesianIndex(i),CartesianIndex(i))
   aout = zeros(eltype(c),size(r))
   mout = fill(0xff,size(r))
   _read(c,(aout,mout),r)
@@ -180,14 +180,14 @@ function Base.getindex(c::AbstractCubeData,i::IndR...)
   ax = totuple(axes(c))
   starts = CartesianIndex(map(getfirst,i,ax))
   lasts = CartesianIndex(map(getlast,i,ax))
-  r = CartesianRange(starts,lasts)
+  r = CartesianIndices(starts,lasts)
   aout = zeros(eltype(c),size(r))
   mout = fill(0xff,size(r))
   _read(c,(aout,mout),r)
   if eltype(c)<:AbstractFloat
     map!((m,v)->(m & 0x01)!=0x00 ? convert(eltype(c),NaN) : v,aout,mout,aout)
   end
-  squeezedims = totuple(find(i->size(aout,i)==1,1:ndims(aout)))
+  squeezedims = totuple(findall(i->size(aout,i)==1,1:ndims(aout)))
   squeeze(aout,squeezedims)
 end
 Base.read(d::AbstractCubeData)=getindex(d,fill(Colon(),ndims(d))...)
@@ -199,10 +199,10 @@ function formatbytes(x)
     i=i+1
     x=x/1024
   end
-  return string(round(x,2)," ",exts[i])
+  return string(round(x, digits=2)," ",exts[i])
 end
-cubesize{T}(c::AbstractCubeData{T})=(sizeof(T)+1)*prod(map(length,axes(c)))
-cubesize{T}(c::AbstractCubeData{T,0})=sizeof(T)+1
+cubesize(c::AbstractCubeData{T}) where {T}=(sizeof(T)+1)*prod(map(length,axes(c)))
+cubesize(c::AbstractCubeData{T,0}) where {T}=sizeof(T)+1
 
 include("MmapCubes.jl")
 include("TempCubes.jl")
@@ -234,7 +234,7 @@ Save a `TempCube` or `CubeMem` to the folder `name` in the ESDL working director
 
 See also loadCube, ESDLdir
 """
-function saveCube{T}(c::CubeMem{T},name::AbstractString)
+function saveCube(c::CubeMem{T},name::AbstractString) where T
   newfolder=joinpath(workdir[1],name)
   isdir(newfolder) && error("$(name) alreaday exists, please pick another name")
   mkpath(newfolder)

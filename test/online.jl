@@ -1,5 +1,5 @@
 using ESDL
-using Base.Test
+using Test
 
 using OnlineStats
 @testset "OnlineStats" begin
@@ -52,7 +52,7 @@ randmask=CubeMem(dm.axes[1:2],rand(1:2,size(dm)[1:2]),zeros(UInt8,size(dm)[1:2])
 m1=randmask.data.==1
 m2=randmask.data.==2
 using MultivariateStats
-ii2=ind2sub((4,4),find(m2))
+ii2=ind2sub((4,4),findall(m2))
 for i=1:length(ii2[1])
   dm.data[ii2[1][i],ii2[2][i],:,:]=rand(322,2)
 end
@@ -65,7 +65,7 @@ p=cubePCA(dm,by=[randmask],noutdims=2)
 rotation_matrix(p)
 transformPCA(p,dm).data
 
-srand(1)
+Random.seed!(1)
 d2=readCubeData(d)
 mask=CubeMem(d2.axes,rand(1:10,size(d2.data)),zeros(UInt8,size(d2.data)),Dict("labels"=>Dict(i=>string(i) for i=1:10)))
 mask2=CubeMem(d2.axes[1:2],rand(1:10,4,4),zeros(UInt8,4,4),Dict("labels"=>Dict(i=>string(i) for i=1:10)))
@@ -79,7 +79,7 @@ for k=1:10
   know = findfirst(j->j==string(k),oogrouped2.axes[1].values)
   @test oogrouped.data[know] ≈ mean(d2.data[mask.data.==k])
 
-  i=find(mask2.data.==k)
+  i=findall(mask2.data.==k)
 
   if length(i) > 0
     i1,i2=ind2sub((4,4),i)

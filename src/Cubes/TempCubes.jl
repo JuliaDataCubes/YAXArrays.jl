@@ -25,7 +25,7 @@ determines the size and shape of each sub-file. This data structure is quite con
 for parrallel access, because different processes can write their results at the same
 time.
 """
-type TempCube{T,N} <: AbstractTempCube{T,N}
+mutable struct TempCube{T,N} <: AbstractTempCube{T,N}
   axes::Vector{CubeAxis}
   folder::String
   block_size::CartesianIndex{N}
@@ -33,7 +33,7 @@ type TempCube{T,N} <: AbstractTempCube{T,N}
   properties::Dict{String}
 end
 "This defines a perumtation of a temporary datacube, as a result from perumtedims on a TempCube"
-type TempCubePerm{T,N} <: AbstractTempCube{T,N}
+mutable struct TempCubePerm{T,N} <: AbstractTempCube{T,N}
   axes::Vector{CubeAxis}
   folder::String
   block_size::CartesianIndex{N}
@@ -50,12 +50,12 @@ using Base.Cartesian
 using NetCDF
 totuple(x::Vector)=ntuple(i->x[i],length(x))
 tofilename(ii::CartesianIndex)=string("file",join(map(string,ii.I),"_"),".nc")
-Base.ndims{T,N}(x::AbstractTempCube{T,N})=N
-Base.eltype{T}(x::AbstractTempCube{T})=T
-@generated function Base.size{T,N}(x::TempCube{T,N})
+Base.ndims(x::AbstractTempCube{T,N}) where {T,N}=N
+Base.eltype(x::AbstractTempCube{T}) where {T}=T
+@generated function Base.size(x::TempCube{T,N}) where {T,N}
   :(@ntuple $N i->length(x.axes[i]))
 end
-@generated function Base.size{T,N}(x::TempCubePerm{T,N})
+@generated function Base.size(x::TempCubePerm{T,N}) where {T,N}
   :(@ntuple $N i->length(x.axes[x.perm[i]]))
 end
 
@@ -74,7 +74,7 @@ containing the dimensions of each sub-file the cube is split into.
 - `persist=true` shall the cubes disk representation be kept or deleted when the cube gets out of scope
 - `overwrite=false` shall the data in an existing folder be overwritten
 """
-function TempCube{N}(axlist,block_size::CartesianIndex{N};folder=mktempdir(),T=Float32,persist::Bool=true,overwrite::Bool=false,properties=Dict{String,Any}())
+function TempCube(axlist,block_size::CartesianIndex{N};folder=mktempdir(),T=Float32,persist::Bool=true,overwrite::Bool=false,properties=Dict{String,Any}()) where N
   isdir(folder) || mkpath(folder)
   if !isempty(readdir(folder))
     if overwrite
@@ -89,7 +89,7 @@ function TempCube{N}(axlist,block_size::CartesianIndex{N};folder=mktempdir(),T=F
   end
   s=map(length,axlist)
   ssmall=map(div,s,block_size.I)
-  for ii in CartesianRange(totuple(ssmall))
+  for ii in CartesianIndices(totuple(ssmall))
     istart = (CItimes((ii-CartesianIndex{N}()),block_size))+CartesianIndex{N}()
     ncdims = N>0 ? NcDim[NcDim(axlist[i],istart[i],block_size[i]) for i=1:N] : [NcDim("DummyDim",1)]
     vars   = NcVar[NcVar("cube",ncdims,t=T),NcVar("mask",ncdims,t=UInt8)]
@@ -122,11 +122,11 @@ function openTempCube(folder;persist=true,axlist=nothing)
   return TempCube{T,N}(axlist,folder,block_size,persist,properties)
 end
 
-function readCubeData{T}(y::AbstractTempCube{T})
+function readCubeData(y::AbstractTempCube{T}) where T
   s=map(length,y.axes)
   data=zeros(T,s...)
   mask=zeros(UInt8,s...)
-  _read(y,(data,mask),CartesianRange(totuple(s)))
+  _read(y,(data,mask),CartesianIndices(totuple(s)))
   CubeMem(y.axes,data,mask)
 end
 
@@ -153,14 +153,14 @@ function rmCube(f::String)
   end
 end
 
-function _read{N}(y::TempCube,thedata::Tuple,r::CartesianRange{CartesianIndex{N}})
+function _read(y::TempCube,thedata::Tuple,r::CartesianIndices{CartesianIndex{N}}) where N
   data,mask=thedata
   unit=CartesianIndex{N}()
-  rsmall=CartesianRange(CIdiv(r.start-unit,y.block_size)+unit,CIdiv(r.stop-unit,y.block_size)+unit)
+  rsmall=CartesianIndices(CIdiv(r.start-unit,y.block_size)+unit,CIdiv(r.stop-unit,y.block_size)+unit)
   for Ismall in rsmall
       bBig1=max(CItimes((Ismall-unit),y.block_size)+unit,r.start)
       bBig2=min(CItimes(Ismall,y.block_size),r.stop)
-      iToread=CartesianRange(bBig1-CItimes((Ismall-unit),y.block_size),bBig2-CItimes((Ismall-unit),y.block_size))
+      iToread=CartesianIndices(bBig1-CItimes((Ismall-unit),y.block_size),bBig2-CItimes((Ismall-unit),y.block_size))
       filename=joinpath(y.folder,tofilename(Ismall))
       v=NetCDF.open(filename,"cube")
       vmask=NetCDF.open(filename,"mask")
@@ -171,20 +171,20 @@ function _read{N}(y::TempCube,thedata::Tuple,r::CartesianRange{CartesianIndex{N}
   return nothing
 end
 
-Base.permutedims{T,N}(c::TempCube{T,N},perm)=TempCubePerm{T,N}(c.axes,c.folder,c.block_size,perm,c.properties)
+Base.permutedims(c::TempCube{T,N},perm) where {T,N}=TempCubePerm{T,N}(c.axes,c.folder,c.block_size,perm,c.properties)
 #Method for reading cubes that get transposed
 #Per means fileOrder -> MemoryOrder
-function _read{N}(y::TempCubePerm,thedata::Tuple,r::CartesianRange{CartesianIndex{N}})
+function _read(y::TempCubePerm,thedata::Tuple,r::CartesianIndices{CartesianIndex{N}}) where N
   data,mask=thedata
   perm=y.perm
   blocksize_trans = CartesianIndex(ntuple(i->y.block_size.I[perm[i]],N))
   iperm=getiperm(perm)
   unit=CartesianIndex{N}()
-  rsmall=CartesianRange(CIdiv(r.start-unit,blocksize_trans)+unit,CIdiv(r.stop-unit,blocksize_trans)+unit)
+  rsmall=CartesianIndices(CIdiv(r.start-unit,blocksize_trans)+unit,CIdiv(r.stop-unit,blocksize_trans)+unit)
   for Ismall in rsmall
       bBig1=max(CItimes((Ismall-unit),blocksize_trans)+unit,r.start)
       bBig2=min(CItimes(Ismall,blocksize_trans),r.stop)
-      iToread=CartesianRange(bBig1-CItimes((Ismall-unit),blocksize_trans),bBig2-CItimes((Ismall-unit),blocksize_trans))
+      iToread=CartesianIndices(bBig1-CItimes((Ismall-unit),blocksize_trans),bBig2-CItimes((Ismall-unit),blocksize_trans))
       filename=joinpath(y.folder,tofilename(CartesianIndex(ntuple(i->Ismall.I[iperm[i]],N))))
       v0=NetCDF.open(filename,"cube")
       vmask0=NetCDF.open(filename,"mask")
