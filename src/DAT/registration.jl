@@ -41,11 +41,10 @@ mutable struct InDims
   miss::MissingRepr
   artype::ArTypeRepr
 end
-function InDims(axisdesc::AxisDescriptorAll...; miss::MissingRepr=DataArrayMissing(),artype::ArTypeRepr=AsArray())
+function InDims(axisdesc::AxisDescriptorAll...; miss::MissingRepr=MaskMissing(),artype::ArTypeRepr=AsArray())
   descs = map(get_descriptor,axisdesc)
   any(i->isa(i,ByFunction),descs) && error("Input cubes can not be specified through a function")
   isa(artype,AsDataFrame) && length(descs)!=2 && error("DataFrame representation only possible if for 2D inner arrays")
-  isa(artype,AsDataFrame) && !isa(miss,DataArrayMissing) && error("When using DataFrames, only DataArrayMissing is supported as missing type")
   InDims(descs,miss,artype)
 end
 
@@ -57,7 +56,7 @@ Creates a description of an Output Data Cube for cube operations. Takes a single
   name (String), through an Axis type, or by passing a concrete axis.
 
 - axisdesc: List of input axis names
-- miss: Representation of missing values for this input cube, must be a subtype of [MissingRepr](@ref), defaults to `DataArrayMissing`
+- miss: Representation of missing values for this input cube, must be a subtype of [MissingRepr](@ref), defaults to `MaskMissing`
 - genOut: function to initialize the values of the output cube given its element type. Defaults to `zero`
 - finalizeOut: function to finalize the values of an output cube, defaults to identity.
 - retCubeType: sepcifies the type of the return cube, can be `CubeMem` to force in-memory, `TempCube` to force disk storage, or `"auto"` to let the system decide.
@@ -76,7 +75,7 @@ struct OutDims
 end
 function OutDims(axisdesc...;
            bcaxisdesc=(),
-           miss::MissingRepr=DataArrayMissing(),
+           miss::MissingRepr=MaskMissing(),
            genOut=zero,
            finalizeOut=identity,
            retCubeType=:auto,

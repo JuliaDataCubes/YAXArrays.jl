@@ -84,7 +84,7 @@ outdims = OutDims("time")
 mapCube(mynorm_nonfilled, d, indims = indims, outdims = outdims, no_ocean=1)
 ```
 
-Let's see what we changed. First when constructing the `InDims` object we used the `miss` keyword argument to specify that we want missing values represented by an extra mask. This tells the `mapCube` function to pass the first input cube as a tuple instead of as a DataArray. Inside the function, we first destructure the tuple into the mask and the data, determine the missing and filled values from the mask and then do the computation on the filtered data. See [`InDims`](@ref) for more options on representation of missing data.
+Let's see what we changed. First when constructing the `InDims` object we used the `miss` keyword argument to specify that we want missing values represented by an extra mask. This tells the `mapCube` function to pass the first input cube as a tuple. Inside the function, we first destructure the tuple into the mask and the data, determine the missing and filled values from the mask and then do the computation on the filtered data. See [`InDims`](@ref) for more options on representation of missing data.
 
 ### Calculations on multiple cubes
 

@@ -1,4 +1,5 @@
 module ESDLTools
+using Distributed
 import ..ESDL: ESDLdir
 export mypermutedims!, totuple, freshworkermodule, passobj, @everywhereelsem, toRange, getiperm, CItimes, CIdiv, @loadOrGenerate,
         expandTuple

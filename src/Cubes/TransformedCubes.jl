@@ -12,7 +12,7 @@ Base.size(x::PermCube,i)=size(x.parent,x.perm[i])
 axes(v::PermCube)=axes(v.parent)[collect(v.perm)]
 getCubeDes(v::PermCube)=getCubeDes(v.parent)
 permtuple(t,perm)=ntuple(i->t[perm[i]],length(t))
-function _read(x::PermCube{T,N},thedata::Tuple{Any,Any},r::CartesianIndices{CartesianIndex{N}}) where {T,N}
+function _read(x::PermCube{T,N},thedata::Tuple{Any,Any},r::CartesianIndices{N}) where {T,N}
   perm=x.perm
   iperm=getiperm(perm)
   r2=CartesianIndices(CartesianIndex(permtuple(r.start.I,iperm)),CartesianIndex(permtuple(r.stop.I,iperm)))
@@ -44,7 +44,7 @@ end
 cubeproperties(v::MergedAxisCube)=cubeproperties(v.parent)
 Base.size(x::MergedAxisCube)=ntuple(i->length(x.newAxes[i]),ndims(x))
 Base.size(x::MergedAxisCube,i)=length(x.newAxes[i])
-function _read(x::MergedAxisCube{T,N},thedata::Tuple{Any,Any},r::CartesianIndices{CartesianIndex{N}}) where {T,N}
+function _read(x::MergedAxisCube{T,N},thedata::Tuple{Any,Any},r::CartesianIndices{N}) where {T,N}
 
   s1,s2 = size(x.parent)[x.imerge:x.imerge+1]
   sr = r.start.I[x.imerge],r.stop.I[x.imerge]
@@ -115,7 +115,7 @@ Base.size(x::TransformedCube{T,N},i) where {T,N}=size(x.parents[1],i)
 axes(v::TransformedCube)=v.cubeAxes
 getCubeDes(v::TransformedCube)="Transformed cube $(getCubeDes(v.parents[1]))"
 using Base.Cartesian
-function _read(x::TransformedCube{T,N},thedata::Tuple,r::CartesianIndices{CartesianIndex{N}}) where {T,N}
+function _read(x::TransformedCube{T,N},thedata::Tuple,r::CartesianIndices{N}) where {T,N}
   aout,mout=thedata
   ainter=[]
   minter=[]
@@ -183,7 +183,7 @@ Base.size(x::ConcatCube{T,N},i) where {T,N}=i==N ? length(x.catAxis) : size(x.cu
 axes(v::ConcatCube)=[v.cubeAxes;v.catAxis]
 getCubeDes(v::ConcatCube)="Collection of $(getCubeDes(v.cubelist[1]))"
 using Base.Cartesian
-@generated function _read(x::ConcatCube{T,N},thedata::Tuple,r::CartesianRange{CartesianIndex{N}}) where {T,N}
+@generated function _read(x::ConcatCube{T,N},thedata::Tuple,r::CartesianIndices{N}) where {T,N}
   viewEx1=Expr(:call,:view,:aout,fill(Colon(),N-1)...,:j)
   viewEx2=Expr(:call,:view,:mout,fill(Colon(),N-1)...,:j)
   quote
@@ -240,7 +240,7 @@ Base.size(x::SliceCube,i)=x.size[i]
 axes(v::SliceCube)=v.cubeAxes
 getCubeDes(v::SliceCube)=getCubeDes(v.parent)
 using Base.Cartesian
-@generated function _read(x::SliceCube{T,N,F},thedata::Tuple,r::CartesianRange{CartesianIndex{N}}) where {T,N,F}
+@generated function _read(x::SliceCube{T,N,F},thedata::Tuple,r::CartesianIndices{N}) where {T,N,F}
   iax = F
   startinds = Expr(:tuple,insert!(Any[:(rstart[$i]) for i=1:N],iax,:(x.ival))...)
   stopinds  = Expr(:tuple,insert!(Any[:(rstop[$i]) for i=1:N],iax,:(x.ival))...)

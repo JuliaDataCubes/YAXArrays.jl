@@ -1,7 +1,5 @@
 module CachedArrays
 importall ..Cubes
-importall ..Cubes.TempCubes
-import ..Cubes.TempCubes.tofilename
 export CachedArray, MaskedCacheBlock, getSubRange, getSubRange2
 importall ..CubeAPI
 importall ..ESDLTools
@@ -85,7 +83,7 @@ function CachedArray(x,max_blocks::Int,block_size::CartesianIndex,blocktype::Typ
     CachedArray{T,N,blocktype,vtype}(x,max_blocks,block_size,blocks,currentblocks,nullblock)
 end
 getcachehandle(tc::AbstractCubeData,block_size) = CachedArray(tc,1,block_size,MaskedCacheBlock{eltype(tc),length(block_size.I)})
-gethandle(tc::Union{AbstractTempCube,AbstractSubCube},block_size) = getcachehandle(tc,CartesianIndex(block_size))
+#gethandle(tc::Union{AbstractTempCube,AbstractSubCube},block_size) = getcachehandle(tc,CartesianIndex(block_size))
 Base.IndexStyle(::CachedArray)=Base.IndexCartesian()
 #Base.setindex!{T,N}(c::CachedArray{T,N},v,i::CartesianIndex{N})=0.0
 Base.size(c::CachedArray)=size(c.x)
@@ -197,7 +195,7 @@ end
 
 missval(::Float64)::Float64=NaN64
 missval(::Float32)::Float32=NaN32
-missval(::T)::T where {T<:Integer}=typemax(T)-1
+missval(::T) where {T<:Integer}=typemax(T)-1
 
 function Base.setindex!(c::CachedArray{T},v::Number,i::Integer...) where T
   vout,m = getSubRange(c,i...,write=true)
@@ -325,41 +323,41 @@ end
 
 write_subblock!(x::MaskedCacheBlock{T,N},y::Any,block_size::CartesianIndex{N},i::CartesianIndex{N}) where {T,N}=error("$(typeof(y)) is not writeable. Please add a write_subblock method.")
 
-function write_subblock!(x::MaskedCacheBlock{T,N},y::TempCube{T,N},block_size::CartesianIndex{N}) where {T,N}
-    filename=joinpath(y.folder,tofilename(x.position))
-    ncwrite(x.data,filename,"cube")
-    ncwrite(x.mask,filename,"mask")
-    ncclose(filename)
-    x.iswritten=false
-end
-function write_subblock!(x::MaskedCacheBlock{T,0},y::TempCube{T,0},block_size::CartesianIndex{0}) where T
-    filename=joinpath(y.folder,tofilename(x.position))
-    ncwrite([x.data[1]],filename,"cube")
-    ncwrite([x.mask[1]],filename,"mask")
-    ncclose(filename)
-    x.iswritten=false
-end
-function read_subblock!(x::MaskedCacheBlock{T,N},y::TempCube{T,N},block_size::CartesianIndex{N}) where {T,N}
-    if block_size==y.block_size
-        filename=joinpath(y.folder,tofilename(x.position))
-        #println("Reading from file $filename")
-        ncread!(filename,"cube",x.data)
-        ncread!(filename,"mask",x.mask)
-        ncclose(filename)
-    else
-        r = CartesianIndices(CItimes((x.position-CartesianIndex{N}()),block_size)+CartesianIndex{N}(),CItimes((x.position),block_size))
-        _read(y,(x.data,x.mask),r)
-    end
-end
-
-function read_subblock!(x::MaskedCacheBlock{T,0},y::TempCube{T,0},block_size::CartesianIndex{0}) where T
-  filename=joinpath(y.folder,tofilename(x.position))
-  vc=NetCDF.open(filename,"cube")
-  vm=NetCDF.open(filename,"mask")
-  x.data[1]=vc[1]
-  x.mask[1]=vm[1]
-  ncclose(filename)
-end
+# function write_subblock!(x::MaskedCacheBlock{T,N},y::TempCube{T,N},block_size::CartesianIndex{N}) where {T,N}
+#     filename=joinpath(y.folder,tofilename(x.position))
+#     ncwrite(x.data,filename,"cube")
+#     ncwrite(x.mask,filename,"mask")
+#     ncclose(filename)
+#     x.iswritten=false
+# end
+# function write_subblock!(x::MaskedCacheBlock{T,0},y::TempCube{T,0},block_size::CartesianIndex{0}) where T
+#     filename=joinpath(y.folder,tofilename(x.position))
+#     ncwrite([x.data[1]],filename,"cube")
+#     ncwrite([x.mask[1]],filename,"mask")
+#     ncclose(filename)
+#     x.iswritten=false
+# end
+# function read_subblock!(x::MaskedCacheBlock{T,N},y::TempCube{T,N},block_size::CartesianIndex{N}) where {T,N}
+#     if block_size==y.block_size
+#         filename=joinpath(y.folder,tofilename(x.position))
+#         #println("Reading from file $filename")
+#         ncread!(filename,"cube",x.data)
+#         ncread!(filename,"mask",x.mask)
+#         ncclose(filename)
+#     else
+#         r = CartesianIndices(CItimes((x.position-CartesianIndex{N}()),block_size)+CartesianIndex{N}(),CItimes((x.position),block_size))
+#         _read(y,(x.data,x.mask),r)
+#     end
+# end
+#
+# function read_subblock!(x::MaskedCacheBlock{T,0},y::TempCube{T,0},block_size::CartesianIndex{0}) where T
+#   filename=joinpath(y.folder,tofilename(x.position))
+#   vc=NetCDF.open(filename,"cube")
+#   vm=NetCDF.open(filename,"mask")
+#   x.data[1]=vc[1]
+#   x.mask[1]=vm[1]
+#   ncclose(filename)
+# end
 function getSubRange(c::CachedArray{T,0,S};write=false) where {T,S<:MaskedCacheBlock}
   c.currentblocks[1].iswritten=write
   (c.currentblocks[1].data,c.currentblocks[1].mask)

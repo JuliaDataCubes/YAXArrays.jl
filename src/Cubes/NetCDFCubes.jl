@@ -37,7 +37,7 @@ Base.size(x::NetCDFCube)=ntuple(i->length(x.axes[i]),length(x.axes))
 Base.size(x::NetCDFCube,i)=length(x.axes[i])
 axes(v::NetCDFCube)=deepcopy(v.axes)
 getCubeDes(v::NetCDFCube)="NetCDF data cube"
-function _read(x::NetCDFCube{T,N},thedata::Tuple{Any,Any},r::CartesianIndices{CartesianIndex{N}}) where {T,N}
+function _read(x::NetCDFCube{T,N},thedata::Tuple{Any,Any},r::CartesianIndices{N}) where {T,N}
   sta = collect(r.start.I)
   cou = [r.stop.I[i]-r.start.I[i]+1 for i=1:N]
   ncread!(x.file,x.varname,thedata[1],start = sta,count=cou)

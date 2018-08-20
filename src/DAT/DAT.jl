@@ -1,18 +1,15 @@
 module DAT
 export mapCube, getInAxes, getOutAxes, findAxis, reduceCube, getAxis,
-      NaNMissing, ValueMissing, DataArrayMissing, MaskMissing, NoMissing, InputCube, OutputCube
+      NaNMissing, ValueMissing, MaskMissing, NoMissing, InputCube, OutputCube
 importall ..Cubes
 importall ..CubeAPI
 importall ..CubeAPI.CachedArrays
 importall ..ESDLTools
-importall ..Cubes.TempCubes
 import ...ESDL
 import ...ESDL.workdir
 import DataFrames
 import ..CubeAPI.CachedArrays.synccube
 using Dates
-import DataArrays: DataArray, ismissing
-import Missings: Missing, missing
 import StatsBase.Weights
 importall ESDL.CubeAPI.Mask
 global const debugDAT=false
@@ -27,13 +24,11 @@ struct NaNMissing <: MissingRepr end
 struct ValueMissing{T} <:MissingRepr
   v::T
 end
-struct DataArrayMissing <: MissingRepr end
 struct MaskMissing <: MissingRepr end
 struct NoMissing <: MissingRepr end
 
 toMissRepr(s::Symbol)=  s == :nan  ? NaNMissing() :
                         s == :mask ? MaskMissing() :
-                        s == :data ? DataArrayMissing() :
                         s == :none ? NoMissing() :
                         error("Unknown missing value specifier: $s")
 toMissRepr(n::Number) = ValueMissing(n)
@@ -42,18 +37,6 @@ function mask2miss(::NaNMissing, a, workAr)
   map!((m,v)->(m & 0x01)==0x01 ? convert(eltype(workAr),NaN) : v,workAr,a[2],a[1])
 
 end
-function mask2miss(::DataArrayMissing, a, workAr)
-  map!(m->(m & 0x01)==0x01,workAr.na,a[2])
-  copy!(workAr.data,a[1])
-end
-function mask2miss(::DataArrayMissing, a, workAr::DataFrames.DataFrame)
-  for icol = 1:size(a[1],2)
-    xnow,mnow = view(a[1],:,icol),view(a[2],:,icol)
-    map!(m->(m & 0x01)==0x01,workAr[icol].na,mnow)
-    copy!(workAr[icol].data,xnow)
-  end
-end
-#mask2miss(::DataArrayMissing, a::Tuple{Number,UInt8}, workAr) = workAr[1]=(a[2] & 0x01)>0 ? missing : a[1]
 mask2miss(::NoMissing,a::Tuple,workAr) = copy!(workAr,a[1])
 mask2miss(::NoMissing,a,workAr) = copy!(workAr,a)
 mask2miss(::NoMissing,a::Nothing,workAr)=nothing
@@ -66,25 +49,6 @@ function mask2miss(o::ValueMissing,a,workAr)
   a[1]
 end
 
-function miss2mask!(::DataArrayMissing, target, source::DataArray)
-  map!(j->j ? 0x01 : 0x00,target[2],source.na)
-  copy!(target[1],source.data)
-end
-function miss2mask!(::DataArrayMissing, target, source::DataFrames.DataFrame)
-  for icol = 1:size(target[1],2)
-    xnow,mnow = view(target[1],:,icol),view(target[2],:,icol)
-    map!(j->j ? 0x01 : 0x00,mnow,source[icol].na)
-    copy!(xnow,source[icol].data)
-  end
-end
-function miss2mask!(::DataArrayMissing, target, source::Union{Missing,Number})
-  if ismissing(source)
-    target[2][1] = 0x01
-  else
-    target[2][1] = 0x00
-    target[1][1] = source
-  end
-end
 function miss2mask!(::NaNMissing, target, source::Array)
   map!(j->isnan(j) ? 0x01 : 0x00,target[2],source)
   copy!(target[1],source)
@@ -128,7 +92,6 @@ function setworkarray(c::InputCube)
 end
 createworkarray(m::NaNMissing,T,s)=Array{T}(s...)
 createworkarray(m::ValueMissing,T,s)=Array{T}(s...)
-createworkarray(m::DataArrayMissing,T,s)=DataArray(Array{T}(s...))
 createworkarray(m::NoMissing,T,s)=Array{T}(s...)
 createworkarray(m::MaskMissing,T,s)=(Array{T}(s...),Array{UInt8}(s...))
 
@@ -139,7 +102,7 @@ createworkarray(m::MaskMissing,T,s)=(Array{T}(s...),Array{UInt8}(s...))
 Internal representation of an output cube for DAT operations
 """
 mutable struct OutputCube
-  cube::Nullable{AbstractCubeData} #The actual outcube cube, once it is generated
+  cube::Union{AbstractCubeData,Nothing} #The actual outcube cube, once it is generated
   desc::OutDims                 #The description of the output axes as given by users or registration
   axesSmall::Array{CubeAxis}       #The list of output axes determined through the description
   allAxes::Vector{CubeAxis}        #List of all the axes of the cube
@@ -166,7 +129,7 @@ function OutputCube(outfolder,desc::OutDims,inAxes::Vector{CubeAxis},incubes,par
   axesSmall     = getOutAxis(desc.axisdesc,inAxes,incubes,pargs,f)
   broadcastAxes = getOutAxis(desc.bcaxisdesc,inAxes,incubes,pargs,f)
   outtype       = getOuttype(desc.outtype,incubes)
-  OutputCube(Nullable{AbstractCubeData}(),desc,collect(CubeAxis,axesSmall),CubeAxis[],collect(CubeAxis,broadcastAxes),Int[],false,nothing,nothing,outfolder,outtype)
+  OutputCube(nothing,desc,collect(CubeAxis,axesSmall),CubeAxis[],collect(CubeAxis,broadcastAxes),Int[],false,nothing,nothing,outfolder,outtype)
 end
 
 """
@@ -267,31 +230,6 @@ function mapslices(f,d::AbstractCubeData,dims,addargs...;inmiss=NaNMissing(),out
     mapCube(f,d,addargs...;indims = InDims(dims...,miss=inmiss),outdims = OutDims(ByInference(),miss=outmiss),inplace=false,kwargs...)
 end
 
-"""
-    reduceCube(f::Function, cube, dim::Type{T<:CubeAxis};kwargs...)
-
-Apply a reduction function `f` on slices of the cube `cube`. The dimension(s) are specified through `dim`, which is
-either an Axis type or a tuple of axis types. Keyword arguments are passed to `mapCube` or, if unknown passed again to `f`.
-It is assumed that `f` takes an array input and returns a single value.
-"""
-reduceCube(f::Function,c::ESDL.Cubes.AbstractCubeData,dim::Type{T},addargs...;kwargs...) where {T<:CubeAxis}=reduceCube(f,c,(dim,),addargs...;kwargs...)
-function reduceCube(f::Function,c::ESDL.Cubes.AbstractCubeData,dim::Tuple,addargs...;kwargs...)
-  isa(dim[1],Tuple) || (dim=(dim,))
-  if in(LatAxis,dim)
-    axlist=axes(c)
-    inAxes=map(i->getAxis(i,axlist),dim)
-    latAxis=getAxis(LatAxis,axlist)
-    sfull=map(length,inAxes)
-    ssmall=map(i->isa(i,LatAxis) ? length(i) : 1,inAxes)
-    wone=reshape(cosd.(latAxis.values),ssmall)
-    ww=zeros(sfull).+wone
-    wv=Weights(reshape(ww,length(ww)))
-    g = length(dim)>1 ? (x,w;kwargs...)->f(DataArray(reshape(x.data,length(x)),reshape(x.na,length(x))),w;kwargs...) : f
-    return mapCube(g,c,wv,addargs...;indims=map(i->InDims((get_descriptor.(i))...),dim),outdims=(OutDims(),),inplace=false,kwargs...)
-  else
-    return mapCube(f,c,addargs...;indims=map(i->InDims((get_descriptor.(i))...),dim),outdims=(OutDims(),),inplace=false,kwargs...)
-  end
-end
 
 
 """
@@ -442,9 +380,6 @@ function getRetCubeType(oc,ispar,max_cache)
   eltype,cubetype
 end
 
-function generateOutCube(::Type{T},eltype,oc::OutputCube,loopCacheSize) where T<:TempCube
-  oc.cube=TempCube(oc.allAxes,CartesianIndex(totuple([map(length,oc.axesSmall);loopCacheSize])),folder=oc.folder,T=eltype,persist=false)
-end
 function generateOutCube(::Type{T},eltype,oc::OutputCube,loopCacheSize) where T<:MmapCube
   oc.cube=MmapCube(oc.allAxes,folder=oc.folder,T=eltype,persist=false)
 end
@@ -606,7 +541,6 @@ end
 
 using DataStructures: OrderedDict
 using Base.Cartesian
-import NamedTuples: @NT
 @generated function innerLoop(f,xin::NTuple{NIN,Any},xout::NTuple{NOUT,Any},::InnerObj{T1,T2,T4,OC,R,UPDOUT,LR},loopRanges::T3,
   inwork,outwork,inmissing,outmissing,loopaxes::LAX,::Type{Val{PROG}},addargs,kwargs) where {T1,T2,T3,T4,OC,R,NIN,NOUT,UPDOUT,LR,PROG,LAX}
 

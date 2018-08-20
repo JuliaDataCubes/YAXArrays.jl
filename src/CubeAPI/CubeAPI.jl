@@ -12,7 +12,7 @@ include("countrydict.jl")
 importall .Mask
 using DataStructures
 using Dates
-import Requests.get
+import HTTP
 import DataStructures.OrderedDict
 using LightXML
 
@@ -193,9 +193,10 @@ end
 function RemoteCube(;resolution="low",url="http://www.brockmann-consult.de/cablab-thredds/")
   testDAP() || error("NetCDF built without DAP support. Accessing remote cubes is not possible.")
   resExt=resolution == "low" ? "fileServer/datacube-low-res/cube.config" : "fileServer/datacube-high-res/cube.config"
-  xconfig=split(read(get(string(url,resExt)), String),"\n")
+  r = HTTP.request("GET",string(url,resExt))
+  xconfig=split(String(r.body),"\n")
   config=parseConfig(xconfig)
-  res=get(string(url,"catalog.xml"))
+  res=HTTP.request("GET",string(url,"catalog.xml"))
   xmldoc=parse_string(read(res, String));
   xroot=root(xmldoc)
   datasets=get_elements_by_tagname(xroot,"dataset")
@@ -676,7 +677,7 @@ end
 """
 Add a function to read some CubeData in a permuted way, we will make a copy here for simplicity, however, this might change in the future
 """
-function _read(s::Union{SubCubeVPerm{T},SubCubePerm{T},SubCubeStaticPerm{T}},t::Tuple,r::CartesianIndices{CartesianIndex{N}}) where {T,N}  #;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,findin(s.perm,1)[1]),ny::Int=size(outar,findin(s.perm,2)[1]),nt::Int=size(outar,findin(s.perm,3)[1]),nv::Int=size(outar,findin(s.perm,4)[1]))
+function _read(s::Union{SubCubeVPerm{T},SubCubePerm{T},SubCubeStaticPerm{T}},t::Tuple,r::CartesianIndices{N}) where {T,N}  #;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,findin(s.perm,1)[1]),ny::Int=size(outar,findin(s.perm,2)[1]),nt::Int=size(outar,findin(s.perm,3)[1]),nv::Int=size(outar,findin(s.perm,4)[1]))
   iperm=sgetiperm(s)
   perm=sgetperm(s)
   outar,mask=t
@@ -689,9 +690,9 @@ function _read(s::Union{SubCubeVPerm{T},SubCubePerm{T},SubCubeStaticPerm{T}},t::
   mypermutedims!(mask,masktemp,Val{perm})
 end
 
-getNv(r::CartesianIndices{CartesianIndex{2}})=(0,1)
-getNv(r::CartesianIndices{CartesianIndex{3}})=(0,1)
-getNv(r::CartesianIndices{CartesianIndex{4}})=(r.start.I[4]-1,r.stop.I[4]-r.start.I[4]+1)
+getNv(r::CartesianIndices{2})=(0,1)
+getNv(r::CartesianIndices{3})=(0,1)
+getNv(r::CartesianIndices{4})=(r.start.I[4]-1,r.stop.I[4]-r.start.I[4]+1)
 
 function readAllyears(s::SubCube{T,RemoteCube},outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY) where T
   tstart  = (y1 - year(s.cube.config.start_time))*NpY + i1
@@ -750,7 +751,7 @@ function readRemote(cube::RemoteCube,outar::AbstractArray{T,3},mask::AbstractArr
 end
 
 gettoffsnt(::AbstractSubCube,r::CartesianIndices)=(r.start.I[3] - 1,r.stop.I[3]  - r.start.I[3]+1)
-gettoffsnt(::SubCubeStatic,r::CartesianIndices{CartesianIndex{2}})=(0,1)
+gettoffsnt(::SubCubeStatic,r::CartesianIndices{2})=(0,1)
 
   function _read(s::AbstractSubCube,t::Tuple,r::CartesianIndices) #;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,1),ny::Int=size(outar,2),nt::Int=size(outar,3),nv::Int=length(s.variable))
 

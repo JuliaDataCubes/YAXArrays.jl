@@ -1,8 +1,6 @@
 # Loading and saving results
 
-```@meta
-CurrentModule = ESDL.Cubes.TempCubes
-```
+
 ```@docs
 saveCube
 ```

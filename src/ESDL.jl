@@ -14,7 +14,7 @@ export cubeAnomalies, removeMSC, gapFillMSC, normalizeTS,DATfitOnline,
   sampleLandPoints, toPointAxis, getMSC, filterTSFFT, getNpY,
   getMedSC, extractLonLats,simpleAnomalies,spatialinterp,
   cubePCA, rotation_matrix, transformPCA, explained_variance, exportcube #From Proc module
-export TempCube, openTempCube, rmCube # From CachedArrays
+export rmCube # From CachedArrays
 export @loadOrGenerate # from ESDL Tools
 
 global const workdir=String["./"]

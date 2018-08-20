@@ -133,7 +133,7 @@ ESDL masks are represented as `UInt8`-arrays, where each value can be one of the
 
 These names can be imported by `using ESDL.Mask`. The user can decide if he wants to use
 the masks in his analyses or rather wants to refer to a different representation with
-`DataArray`s or just representing missings with `NaN`s. See [`mapCube`](@ref) for details.
+ missings with `NaN`s. See [`mapCube`](@ref) for details.
 
 ## Opening Remote Data Cubes
 

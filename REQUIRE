@@ -2,10 +2,8 @@ julia 0.7
 DataStructures
 NetCDF
 StatsBase
-JLD
-Requests
+HTTP
 LightXML
-DataArrays
 OnlineStats
 Combinatorics
 MultivariateAnomalies
@@ -13,3 +11,7 @@ MultivariateStats
 DataFrames
 AxisArrays
 RecursiveArrayTools
+Dates
+Requires
+IterTools
+Interpolations

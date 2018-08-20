@@ -4,7 +4,6 @@ importall ..DAT
 importall ..CubeAPI
 importall ..Proc
 importall ..Cubes
-using DataArrays
 using StatsBase
 
 """

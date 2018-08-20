@@ -4,9 +4,9 @@ Data types that
 """
 module Cubes
 export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, TimeHAxis, QuantileAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, axes,
-       AbstractSubCube, CubeMem, openTempCube, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis, axVal2Index, MSCAxis,
+       AbstractSubCube, CubeMem, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis, axVal2Index, MSCAxis,
        getSingVal, ScaleAxis, axname, @caxis_str, rmCube, cubeproperties, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
-       getOutAxis, needshandle, AbstractTempCube, gethandle, handletype, getcachehandle, ByInference
+       getOutAxis, needshandle, gethandle, handletype, getcachehandle, ByInference
 
 """
     AbstractCubeData{T,N}
@@ -205,13 +205,13 @@ cubesize(c::AbstractCubeData{T}) where {T}=(sizeof(T)+1)*prod(map(length,axes(c)
 cubesize(c::AbstractCubeData{T,0}) where {T}=sizeof(T)+1
 
 include("MmapCubes.jl")
-include("TempCubes.jl")
+#include("TempCubes.jl")
 include("NetCDFCubes.jl")
-importall .TempCubes
-handletype(::Union{AbstractTempCube,AbstractSubCube})=CacheHandle()
+#importall .TempCubes
+#handletype(::Union{AbstractTempCube,AbstractSubCube})=CacheHandle()
 
 getCubeDes(c::AbstractSubCube)="Data Cube view"
-getCubeDes(c::TempCube)="Temporary Data Cube"
+#getCubeDes(c::TempCube)="Temporary Data Cube"
 getCubeDes(c::CubeMem)="In-Memory data cube"
 getCubeDes(c::EmptyCube)="Empty Data Cube (placeholder)"
 function Base.show(io::IO,c::AbstractCubeData)
@@ -230,7 +230,7 @@ using NetCDF
 """
     saveCube(cube,name::String)
 
-Save a `TempCube` or `CubeMem` to the folder `name` in the ESDL working directory.
+Save a `MmapCube` or `CubeMem` to the folder `name` in the ESDL working directory.
 
 See also loadCube, ESDLdir
 """
@@ -238,7 +238,7 @@ function saveCube(c::CubeMem{T},name::AbstractString) where T
   newfolder=joinpath(workdir[1],name)
   isdir(newfolder) && error("$(name) alreaday exists, please pick another name")
   mkpath(newfolder)
-  tc=Cubes.TempCube(c.axes,CartesianIndex(size(c)),folder=newfolder,T=T)
+  tc=Cubes.MmapCube(c.axes,CartesianIndex(size(c)),folder=newfolder,T=T)
   files=readdir(newfolder)
   filter!(i->startswith(i,"file"),files)
   @assert length(files)==1

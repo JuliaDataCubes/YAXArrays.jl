@@ -15,9 +15,9 @@ function fremap(xout,xin,oldlons,oldlats,newlons,newlats;order=Linear(),bc = Fla
 end
 
 """
-  spatialinterp(c::AbstractCubeData,newlons::Range,newlats::Range;order=Linear(),bc = Flat())
+  spatialinterp(c::AbstractCubeData,newlons::AbstractRange,newlats::AbstractRange;order=Linear(),bc = Flat())
 """
-function spatialinterp(c::AbstractCubeData,newlons::Range,newlats::Range;order=Linear(),bc = Flat())
+function spatialinterp(c::AbstractCubeData,newlons::AbstractRange,newlats::AbstractRange;order=Linear(),bc = Flat())
   oldlons = getAxis("Lon",c).values
   oldlats = getAxis("Lat",c).values
   indims=InDims("Lon","Lat",miss=NaNMissing())

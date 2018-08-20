@@ -1,3 +1,5 @@
+import Statistics: quantile
+
 struct HistogramCube{T<:AbstractCubeData}
   c::T
 end
@@ -25,7 +27,7 @@ function tohist(d::HistogramCube)
   CubeMem(CubeAxis[classAx,histAx,c.axes...],cout,maskout)
 end
 
-function Base.quantile(d::HistogramCube,q::Number)
+function quantile(d::HistogramCube,q::Number)
   c=d.c
   cout=zeros(Float32,size(c.data)...)
   maskout=zeros(UInt8,size(c.data)...)

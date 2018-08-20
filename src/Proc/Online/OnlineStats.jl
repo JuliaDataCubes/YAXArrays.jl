@@ -5,7 +5,6 @@ importall ..DAT
 importall ..Cubes
 importall ..Mask
 import ...ESDLTools.totuple
-import NamedTuples
 import OnlineStats: VectorOb
 export DATfitOnline
 

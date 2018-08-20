@@ -71,7 +71,7 @@ function gethandle(y::MmapCubePerm{T}) where T
 end
 handletype(::AbstractMmapCube)=ViewHandle()
 
-function _read(y::MmapCube,thedata::Tuple,r::CartesianIndices{CartesianIndex{N}}) where N
+function _read(y::MmapCube,thedata::Tuple,r::CartesianIndices{N}) where N
     dout,mout = thedata
     din,min   = getmmaphandles(y)
     for (i,ic) in enumerate(r)

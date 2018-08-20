@@ -5,8 +5,6 @@ importall ..CubeAPI
 importall ..CubeAPI.CachedArrays
 importall ..Proc
 importall ..Mask
-import DataArrays: isna
-import DataArrays
 exportmissval(x::AbstractFloat)=oftype(x,NaN)
 exportmissval(x::Integer)=typemax(x)
 
@@ -154,7 +152,7 @@ When saving, every RangeAxis will be converted to an axis in the NetCDF cube,
 while every categorical axis will be represented by a different variable
 inside the resulting file. Dimensions will be ordered according to the
 `priorities` keyword argument, which defaults to `Dict("LON"=>1,"LAT"=>2,"TIME"=>3)`,
-which means that the file will be stored with longitudes varuing fastest. 
+which means that the file will be stored with longitudes varuing fastest.
 """
 function exportcube(r::AbstractCubeData,filename::String;priorities = Dict("LON"=>1,"LAT"=>2,"TIME"=>3))
 
