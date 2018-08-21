@@ -1,7 +1,7 @@
 export ConcatCube, concatenateCubes
 export mergeAxes
 import ..ESDLTools.getiperm
-import ..Cubes: _read, gethandle, getcachehandle, handletype
+import ..Cubes: _read, gethandle, getcachehandle, handletype, caxes
 
 mutable struct PermCube{T,N,C} <: AbstractCubeData{T,N}
   parent::C
@@ -9,7 +9,7 @@ mutable struct PermCube{T,N,C} <: AbstractCubeData{T,N}
 end
 Base.size(x::PermCube)=ntuple(i->size(x.parent,x.perm[i]),ndims(x))
 Base.size(x::PermCube,i)=size(x.parent,x.perm[i])
-axes(v::PermCube)=axes(v.parent)[collect(v.perm)]
+caxes(v::PermCube)=caxes(v.parent)[collect(v.perm)]
 getCubeDes(v::PermCube)=getCubeDes(v.parent)
 permtuple(t,perm)=ntuple(i->t[perm[i]],length(t))
 function _read(x::PermCube{T,N},thedata::Tuple{Any,Any},r::CartesianIndices{N}) where {T,N}
@@ -38,7 +38,7 @@ mutable struct MergedAxisCube{T,N,C} <: AbstractCubeData{T,N}
   newAxes::Vector{CubeAxis}
 end
 getCubeDes(v::MergedAxisCube)=getCubeDes(v.parent)
-function axes(v::MergedAxisCube)
+function caxes(v::MergedAxisCube)
   v.newAxes
 end
 cubeproperties(v::MergedAxisCube)=cubeproperties(v.parent)
@@ -81,7 +81,7 @@ function mergeAxes(c::AbstractCubeData,a1,a2)
     i1=findAxis(a1,c)
     i2=findAxis(a2,c)
     abs(i1-i2)==1 || error("Can only merge axes that are consecutive in cube")
-    ax = axes(c)
+    ax = caxes(c)
     imerge=min(i1,i2)
     a1 = ax[imerge]
     a2 = ax[imerge+1]
@@ -98,10 +98,10 @@ mutable struct TransformedCube{T,N,F} <: AbstractCubeData{T,N}
 end
 
 function Base.map(op, incubes::AbstractCubeData...; T::Type=eltype(incubes[1]))
-  axlist=copy(axes(incubes[1]))
+  axlist=copy(caxes(incubes[1]))
   N=ndims(incubes[1])
   for i=2:length(incubes)
-    all(axes(incubes[i]).==axlist) || error("All cubes must have the same axes, cube number $i does not match")
+    all(caxes(incubes[i]).==axlist) || error("All cubes must have the same axes, cube number $i does not match")
     ndims(incubes[i])==N || error("All cubes must have the same dimension")
   end
   props=merge(cubeproperties.(incubes)...)
@@ -112,7 +112,7 @@ gethandle(c::TransformedCube,block_size)=getcachehandle(c,CartesianIndex(block_s
 
 Base.size(x::TransformedCube)=size(x.parents[1])
 Base.size(x::TransformedCube{T,N},i) where {T,N}=size(x.parents[1],i)
-axes(v::TransformedCube)=v.cubeAxes
+caxes(v::TransformedCube)=v.cubeAxes
 getCubeDes(v::TransformedCube)="Transformed cube $(getCubeDes(v.parents[1]))"
 using Base.Cartesian
 function _read(x::TransformedCube{T,N},thedata::Tuple,r::CartesianIndices{N}) where {T,N}
@@ -167,11 +167,11 @@ axis `catAxis`
 """
 function concatenateCubes(cl,catAxis::CubeAxis)
   length(catAxis.values)==length(cl) || error("catAxis must have same length as cube list")
-  axlist=copy(axes(cl[1]))
+  axlist=copy(caxes(cl[1]))
   T=eltype(cl[1])
   N=ndims(cl[1])
   for i=2:length(cl)
-    all(axes(cl[i]).==axlist) || error("All cubes must have the same axes, cube number $i does not match")
+    all(caxes(cl[i]).==axlist) || error("All cubes must have the same axes, cube number $i does not match")
     eltype(cl[i])==T || error("All cubes must have the same element type, cube number $i does not match")
     ndims(cl[i])==N || error("All cubes must have the same dimension")
   end
@@ -180,7 +180,7 @@ function concatenateCubes(cl,catAxis::CubeAxis)
 end
 Base.size(x::ConcatCube)=(size(x.cubelist[1])...,length(x.catAxis))
 Base.size(x::ConcatCube{T,N},i) where {T,N}=i==N ? length(x.catAxis) : size(x.cubelist[1],i)
-axes(v::ConcatCube)=[v.cubeAxes;v.catAxis]
+caxes(v::ConcatCube)=[v.cubeAxes;v.catAxis]
 getCubeDes(v::ConcatCube)="Collection of $(getCubeDes(v.cubelist[1]))"
 using Base.Cartesian
 @generated function _read(x::ConcatCube{T,N},thedata::Tuple,r::CartesianIndices{N}) where {T,N}
@@ -224,7 +224,7 @@ mutable struct SliceCube{T,N,iax} <: AbstractCubeData{T,N}
 end
 
 function SliceCube(c::AbstractCubeData{T,N},ax,i) where {T,N}
-  axlist = axes(c)
+  axlist = caxes(c)
   iax = findAxis(ax,c)
   iax<1 && error("Axis $ax not found in input cube")
   i = axVal2Index(axlist[iax],i,fuzzy=true)
@@ -237,7 +237,7 @@ end
 
 Base.size(x::SliceCube)=x.size
 Base.size(x::SliceCube,i)=x.size[i]
-axes(v::SliceCube)=v.cubeAxes
+caxes(v::SliceCube)=v.cubeAxes
 getCubeDes(v::SliceCube)=getCubeDes(v.parent)
 using Base.Cartesian
 @generated function _read(x::SliceCube{T,N,F},thedata::Tuple,r::CartesianIndices{N}) where {T,N,F}

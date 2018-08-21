@@ -102,7 +102,7 @@ getFinalFun(f::Type{T},funargs...) where {T<:OnlineStats.KMeans}=c->finalizeOnli
 getFinalFun(f::Type{T},funargs...) where {T<:OnlineStats.CovMatrix}=c->finalizeOnlineCube(c,funargs[1],T)
 
 function mapCube(f::Type{T},cdata::AbstractCubeData,pargs...;by=CubeAxis[],max_cache=1e7,cfun=identity,outAxis=nothing,MDAxis=Nothing,kwargs...) where T<:OnlineStat
-  inAxes=axes(cdata)
+  inAxes=caxes(cdata)
   #Now analyse additional by axes
   inaxtypes=map(typeof,inAxes)
   if T <:OnlineStat{VectorOb}
@@ -119,8 +119,8 @@ function mapCube(f::Type{T},cdata::AbstractCubeData,pargs...;by=CubeAxis[],max_c
     funargs = ()
   end
   function interpretBycubes(x::Union{String,Type},c)
-    i=findAxis(x,axes(c))
-    axes(c)[i]
+    i=findAxis(x,caxes(c))
+    caxes(c)[i]
   end
   function interpretBycubes(x::AbstractCubeData,c)
     x
@@ -144,7 +144,7 @@ function mapCube(f::Type{T},cdata::AbstractCubeData,pargs...;by=CubeAxis[],max_c
     isa(outAxis,DataType) && (outAxis=outAxis())
     outdims=[get_descriptor(outAxis)]
     lout=lout * length(outAxis)
-    inAxes2=filter(i->!in(i,by2) && in(i,axes(bycubes[1])) && !isa(i,MDAxis),inAxes)
+    inAxes2=filter(i->!in(i,by2) && in(i,caxes(bycubes[1])) && !isa(i,MDAxis),inAxes)
   elseif length(bycubes)>1
     error("more than one filter cube not yet supported")
   else

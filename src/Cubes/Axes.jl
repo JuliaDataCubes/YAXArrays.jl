@@ -5,6 +5,7 @@ ScaleAxis, axname, @caxis_str, findAxis, AxisDescriptor, get_descriptor, ByName,
 getOutAxis, ByInference
 import NetCDF.NcDim
 using ..Cubes
+import ..Cubes: caxes
 import ...ESDLTools: totuple
 using Dates
 
@@ -148,7 +149,7 @@ Base.length(a::CubeAxis)=length(a.values)
 
 MSCAxis(n::Int)=MSCAxis(YearStepRange(1900,1,1900,n,ceil(Int,366/n),n))
 
-axes(x::CubeAxis)=CubeAxis[x]
+caxes(x::CubeAxis)=CubeAxis[x]
 
 axname(::CategoricalAxis{T,S}) where {T,S}=string(S)
 axname(::RangeAxis{T,S}) where {T,S}=string(S)
@@ -218,7 +219,7 @@ struct ByFunction <: AxisDescriptor
   f::Function
 end
 
-findAxis(a,c::AbstractCubeData)=findAxis(a,axes(c))
+findAxis(a,c::AbstractCubeData)=findAxis(a,caxes(c))
 get_descriptor(a::String)=ByName(a)
 get_descriptor(a::Type{T}) where {T<:CubeAxis}=ByType(a)
 get_descriptor(a::CubeAxis)=ByValue(a)
@@ -263,7 +264,7 @@ function getOutAxis(desc::ByFunction,axlist,incubes,pargs,f)
 end
 import DataStructures: counter
 function getOutAxis(desc::Tuple{ByInference},axlist,incubes,pargs,f)
-  inAxes = map(axes,incubes)
+  inAxes = map(caxes,incubes)
   inAxSmall = map(i->filter(j->in(j,axlist),i) |>collect,inAxes)
   inSizes = map(i->totuple(map(length,i)),inAxSmall)
   testars = map(randn,inSizes)
@@ -289,7 +290,7 @@ function getOutAxis(desc::Tuple{ByInference},axlist,incubes,pargs,f)
   end
   return totuple(outaxes)
 end
-getAxis(desc,c::AbstractCubeData)=getAxis(desc,axes(c))
+getAxis(desc,c::AbstractCubeData)=getAxis(desc,caxes(c))
 getAxis(desc::ByValue,axlist::Vector{T}) where {T<:CubeAxis}=desc.v
 
 "Fallback method"

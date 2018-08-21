@@ -5,17 +5,31 @@ using ..Cubes
 using ..CubeAPI
 using ..CubeAPI.CachedArrays
 using ..ESDLTools
+using Distributed
+import ..Cubes: getAxis, getOutAxis, getAxis, gethandle, getSubRange
 import ...ESDL
 import ...ESDL.workdir
 import DataFrames
 import ..CubeAPI.CachedArrays.synccube
+import Distributed: nprocs
 using Dates
 import StatsBase.Weights
 using ESDL.CubeAPI.Mask
-global const debugDAT=false
+global const debugDAT=true
 macro debug_print(e)
   debugDAT && return(:(println($e)))
   :()
+end
+
+using Requires
+
+const hasparprogress=[false]
+const progresscolor=[:cyan]
+function __init__()
+  @require IJulia = "7073ff75-c697-5162-941a-fcdaad2a7d2a" begin progresscolor[1] = :blue end
+  @require ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca" begin
+    import ProgressMeter: Progress, next!
+  end
 end
 
 "Supertype of missing value representations"
@@ -40,9 +54,9 @@ end
 mask2miss(::NoMissing,a::Tuple,workAr) = copy!(workAr,a[1])
 mask2miss(::NoMissing,a,workAr) = copy!(workAr,a)
 mask2miss(::NoMissing,a::Nothing,workAr)=nothing
-function mask2miss(::MaskMissing,a::Tuple,workAr::Tuple)
-  copy!(workAr[1],a[1])
-  copy!(workAr[2],a[2])
+function mask2miss(::MaskMissing,a::Tuple,workAr::MaskArray)
+  copyto!(workAr.data,a[1])
+  copyto!(workAr.mask,a[2])
 end
 function mask2miss(o::ValueMissing,a,workAr)
   map!((m,v)->(m & 0x01)==0x01 ? oftype(v,o.v) : v,workAr,a[2],a[1])
@@ -51,15 +65,15 @@ end
 
 function miss2mask!(::NaNMissing, target, source::Array)
   map!(j->isnan(j) ? 0x01 : 0x00,target[2],source)
-  copy!(target[1],source)
+  copyto!(target[1],source)
 end
-function miss2mask!(::MaskMissing,target,source::Tuple{Array,Array})
-  copy!(target[1],source[1])
-  copy!(target[2],source[2])
+function miss2mask!(::MaskMissing,target,source::MaskArray)
+  copyto!(target[1],source.data)
+  copyto!(target[2],source.mask)
 end
 function miss2mask!(::NoMissing,target,source)
   target[2][:] = 0x00
-  copy!(target[1],source[1])
+  copyto!(target[1],source[1])
 end
 
 include("registration.jl")
@@ -79,7 +93,7 @@ mutable struct InputCube
 end
 
 function InputCube(c::AbstractCubeData, desc::InDims)
-  axesSmall = getAxis.(desc.axisdesc,c)
+  axesSmall = getAxis.(desc.axisdesc,Ref(c))
   isMem = isa(c,AbstractCubeMem)
   InputCube(c,desc,collect(axesSmall),CubeAxis[],Int[],isMem,nothing,nothing)
 end
@@ -90,10 +104,10 @@ function setworkarray(c::InputCube)
   wa = createworkarray(c.desc.miss,eltype(c.cube),ntuple(i->length(c.axesSmall[i]),length(c.axesSmall)))
   c.workarray = wrapWorkArray(c.desc.artype,wa,c.axesSmall)
 end
-createworkarray(m::NaNMissing,T,s)=Array{T}(s...)
-createworkarray(m::ValueMissing,T,s)=Array{T}(s...)
-createworkarray(m::NoMissing,T,s)=Array{T}(s...)
-createworkarray(m::MaskMissing,T,s)=(Array{T}(s...),Array{UInt8}(s...))
+createworkarray(m::NaNMissing,T,s)=Array{T}(undef,s...)
+createworkarray(m::ValueMissing,T,s)=Array{T}(undef,s...)
+createworkarray(m::NoMissing,T,s)=Array{T}(undef,s...)
+createworkarray(m::MaskMissing,T,s)=MaskArray(Array{T}(undef,s...),Array{UInt8}(undef,s...))
 
 
 
@@ -115,12 +129,12 @@ mutable struct OutputCube
   outtype::DataType
 end
 gethandle(c::OutputCube)    = c.handle
-getcube(c::OutputCube)      = get(c.cube)
+getcube(c::OutputCube)      = c.cube
 getsmallax(c::Union{InputCube,OutputCube})=c.axesSmall
-getAxis(desc,c::OutputCube) = getAxis(desc,get(c.cube))
+getAxis(desc,c::OutputCube) = getAxis(desc,c.cube)
 getAxis(desc,c::InputCube)  = getAxis(desc,c.cube)
 function setworkarray(c::OutputCube)
-  wa = createworkarray(c.desc.miss,eltype(get(c.cube)),ntuple(i->length(c.axesSmall[i]),length(c.axesSmall)))
+  wa = createworkarray(c.desc.miss,eltype(c.cube),ntuple(i->length(c.axesSmall[i]),length(c.axesSmall)))
   c.workarray = wrapWorkArray(c.desc.artype,wa,c.axesSmall)
 end
 
@@ -225,7 +239,7 @@ end
 mapCube(fu::Function,cdata::AbstractCubeData,addargs...;kwargs...)=mapCube(fu,(cdata,),addargs...;kwargs...)
 
 import Base.mapslices
-function mapslices(f,d::AbstractCubeData,dims,addargs...;inmiss=NaNMissing(),outmiss=NaNMissing(),kwargs...)
+function mapslices(f,d::AbstractCubeData,dims,addargs...;inmiss=MaskMissing(),outmiss=MaskMissing(),kwargs...)
     isa(dims,String) && (dims=(dims,))
     mapCube(f,d,addargs...;indims = InDims(dims...,miss=inmiss),outdims = OutDims(ByInference(),miss=outmiss),inplace=false,kwargs...)
 end
@@ -287,14 +301,14 @@ function mapCube(fu::Function,
   @debug_print "Finalizing Output Cube"
 
   if length(dc.outcubes)==1
-    return dc.outcubes[1].desc.finalizeOut(get(dc.outcubes[1].cube))
+    return dc.outcubes[1].desc.finalizeOut(dc.outcubes[1].cube)
   else
-    return totuple(map(i->i.desc.finalizeOut(get(i.cube)),dc.outcubes))
+    return totuple(map(i->i.desc.finalizeOut(i.cube),dc.outcubes))
   end
 
 end
 
-mustReorder(cdata,inAxes)=!all(axes(cdata)[1:length(inAxes)].==inAxes)
+mustReorder(cdata,inAxes)=!all(caxes(cdata)[1:length(inAxes)].==inAxes)
 
 function reOrderInCubes(dc::DATConfig)
   ics = dc.incubes
@@ -312,14 +326,7 @@ function synccube(x::Tuple{Array,Array})
   Mmap.sync!(x[2])
 end
 
-using Requires
 
-const hasparprogress=[false]
-const progresscolor=[:cyan]
-@require IJulia begin progresscolor[1] = :blue end
-@require ProgressMeter begin
-  import ProgressMeter: Progress, next!
-end
 
 
 function runLoop(dc::DATConfig)
@@ -385,7 +392,7 @@ function generateOutCube(::Type{T},eltype,oc::OutputCube,loopCacheSize) where T<
 end
 function generateOutCube(::Type{T},eltype,oc::OutputCube,loopCacheSize) where T<:CubeMem
   newsize=map(length,oc.allAxes)
-  outar=Array{eltype}(newsize...)
+  outar=Array{eltype}(undef,newsize...)
   genFun=oc.desc.genOut
   map!(_->genFun(eltype),outar,outar)
   oc.cube = Cubes.CubeMem(oc.allAxes,outar,zeros(UInt8,newsize...))
@@ -398,7 +405,7 @@ function generateOutCube(oc::OutputCube,ispar::Bool,max_cache,loopCacheSize)
 end
 
 sethandle(c::InputCube) = (c.handle = gethandle(c.cube,totuple(c.cachesize)))
-sethandle(c::OutputCube) = (c.handle = (gethandle(get(c.cube))))
+sethandle(c::OutputCube) = (c.handle = (gethandle(c.cube)))
 
 
 dcg=nothing
@@ -425,13 +432,13 @@ end
 function analyzeAxes(dc::DATConfig{NIN,NOUT}) where {NIN,NOUT}
 
   for cube in dc.incubes
-    for a in axes(cube.cube)
+    for a in caxes(cube.cube)
       in(a,cube.axesSmall) || in(a,dc.LoopAxes) || push!(dc.LoopAxes,a)
     end
   end
   length(dc.LoopAxes)==length(unique(map(typeof,dc.LoopAxes))) || error("Make sure that cube axes of different cubes match")
   for cube=dc.incubes
-    myAxes = axes(cube.cube)
+    myAxes = caxes(cube.cube)
     for (il,loopax) in enumerate(dc.LoopAxes)
       !in(typeof(loopax),map(typeof,myAxes)) && push!(cube.bcinds,il)
     end
@@ -470,7 +477,7 @@ function getCacheSizes(dc::DATConfig)
     if !cube.isMem
       cube.cachesize = map(length,cube.axesSmall)
       for (cs,loopAx) in zip(loopCacheSize,dc.LoopAxes)
-        in(typeof(loopAx),map(typeof,axes(cube.cube))) && push!(cube.cachesize,cs)
+        in(typeof(loopAx),map(typeof,caxes(cube.cube))) && push!(cube.cachesize,cs)
       end
     end
   end
@@ -584,9 +591,9 @@ using Base.Cartesian
   for i=1:Nloopvars
     isym=Symbol("i_$(i)")
     if T3.parameters[i]==UnitRange{Int}
-      unshift!(loopRangesE.args,:($isym=loopRanges[$i]))
+      pushfirst!(loopRangesE.args,:($isym=loopRanges[$i]))
     elseif T3.parameters[i]==Int
-      unshift!(loopRangesE.args,:($isym=1:loopRanges[$i]))
+      pushfirst!(loopRangesE.args,:($isym=1:loopRanges[$i]))
     else
       error("Wrong Range argument")
     end
@@ -624,7 +631,7 @@ using Base.Cartesian
   else
     lhs = NOUT>1 ? Expr(:tuple,[:($(outworksyms[j])[:]) for j=1:NOUT]...) : :($(outworksyms[1])[:])
     rhs = Expr(:call,callargs...)
-    push!(loopBody.args,:($lhs=$rhs))
+    push!(loopBody.args,:($lhs.=$rhs))
   end
   append!(loopBody.args,subOut)
   loopEx = length(loopRangesE.args)==0 ? loopBody : Expr(:for,loopRangesE,loopBody)
@@ -674,7 +681,7 @@ getSubRange(x::Array,cols...;write=false)=(view(x,cols...),nothing)
 
 "Calculate an axis permutation that brings the wanted dimensions to the front"
 function getFrontPerm(dc::AbstractCubeData{T},dims) where T
-  ax=axes(dc)
+  ax=caxes(dc)
   N=length(ax)
   perm=Int[i for i=1:length(ax)];
   iold=Int[]

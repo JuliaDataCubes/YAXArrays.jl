@@ -35,7 +35,7 @@ import StatsBase.sample
 
 function getSpatiaPointAxis(mask::CubeMem)
     a=Tuple{Float64,Float64}[]
-    ax=axes(mask)
+    ax=caxes(mask)
     ocval=OCEAN
     for (ilat,lat) in enumerate(ax[2].values)
         for (ilon,lon) in enumerate(ax[1].values)
@@ -68,7 +68,7 @@ of extracted coordinates. Returns a data cube without `LonAxis` and `LatAxis` bu
 """
 function extractLonLats(c::AbstractCubeData,pl::Matrix;kwargs...)
   size(pl,2)==2 || error("Coordinate list must have exactly 2 columns")
-  axlist=axes(c)
+  axlist=caxes(c)
   ilon=findAxis(LonAxis,axlist)
   ilat=findAxis(LatAxis,axlist)
   ilon>0 || error("Input cube must contain a LonAxis")
@@ -94,7 +94,7 @@ This makes sense for gap-filled cubes to make sure that grid cells with systemat
 in the sample.
 """
 function sampleLandPoints(cdata::CubeAPI.AbstractCubeData,nsample::Integer,nomissing=false)
-  axlist=axes(cdata)
+  axlist=caxes(cdata)
   ilon=findAxis(LonAxis,axlist)
   ilat=findAxis(LatAxis,axlist)
   if nomissing
@@ -156,7 +156,7 @@ which means that the file will be stored with longitudes varuing fastest.
 """
 function exportcube(r::AbstractCubeData,filename::String;priorities = Dict("LON"=>1,"LAT"=>2,"TIME"=>3))
 
-  ax = axes(r)
+  ax = caxes(r)
   ax_cont = collect(filter(i->isa(i,RangeAxis),ax))
   ax_cat  = filter(i->!isa(i,RangeAxis),ax)
   prir = map(i->get(priorities,uppercase(axname(i)),10),ax_cont)

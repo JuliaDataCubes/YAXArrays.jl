@@ -1,7 +1,7 @@
 export MmapCube,getmmaphandles
 import ..ESDLTools.totuple
 abstract type AbstractMmapCube{T,N}<:AbstractCubeData{T,N} end
-
+using Serialization
 
 """
     MmapCube{T,N}
@@ -85,8 +85,8 @@ end
 @generated function Base.size(x::MmapCubePerm{T,N}) where {T,N}
   :(@ntuple $N i->length(x.axes[x.perm[i]]))
 end
-axes(y::MmapCube)=y.axes
-axes(t::MmapCubePerm)=[t.axes[t.perm[i]] for i=1:length(t.axes)]
+caxes(y::MmapCube)=y.axes
+caxes(t::MmapCubePerm)=[t.axes[t.perm[i]] for i=1:length(t.axes)]
 getCubeDes(v::MmapCube)="Memory mapped cube"
 Base.permutedims(c::MmapCube{T,N},perm) where {T,N}=MmapCubePerm{T,N}(c.axes,c.folder,perm,c.properties)
 """

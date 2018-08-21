@@ -14,7 +14,7 @@ end
 
 import Dates.year
 function getNpY(cube::AbstractCubeData)
-    axlist=axes(cube)
+    axlist=caxes(cube)
     isTime=[isa(a,TimeAxis) for a in axlist]
     timax = axlist[isTime][1]
     years = year.(timax.values)

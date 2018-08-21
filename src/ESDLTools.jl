@@ -10,7 +10,7 @@ expandTuple(x::Tuple,nin)=x
 
 
 function getiperm(perm)
-    iperm = Array{Int}(length(perm))
+    iperm = Array{Int}(undef,length(perm))
     for i = 1:length(perm)
         iperm[perm[i]] = i
     end

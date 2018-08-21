@@ -138,7 +138,7 @@ used as a `by argument`. Returns a transformed datacube.
 function transformPCA(pca::OnlinePCA,c::AbstractCubeData;max_cache=1e7,kwargs...)
     #Now determine how to brodcast for projection
     forbiddenAxes = CubeAxis[pca.varAx]
-    axl=filter(i->in(i,axes(pca.PCA)),axes(c))
+    axl=filter(i->in(i,caxes(pca.PCA)),caxes(c))
     isempty(axl) || push!(forbiddenAxes,axl...)
     if length(pca.bycube)==1
       # We have to decide if the pca is already split along the bycube or not
@@ -151,7 +151,7 @@ function transformPCA(pca::OnlinePCA,c::AbstractCubeData;max_cache=1e7,kwargs...
       indata=(c,pca.PCA,pca.bycube[1])
       indimspca = [outAxis,]
       lout = length(outAxis)
-      push!(forbiddenAxes,filter(i->!in(i,axes(pca.bycube[1])),axes(c))...)
+      push!(forbiddenAxes,filter(i->!in(i,caxes(pca.bycube[1])),caxes(c))...)
       push!(forbiddenAxes,outAxis)
     else
       cfun = identity
@@ -159,7 +159,7 @@ function transformPCA(pca::OnlinePCA,c::AbstractCubeData;max_cache=1e7,kwargs...
       indimspca = []
       lout = 1
     end
-    inAxes2 = filter(a->!in(a,forbiddenAxes),axes(c))
+    inAxes2 = filter(a->!in(a,forbiddenAxes),caxes(c))
     axcombs=combinations(inAxes2)
     totlengths=map(a->prod(map(length,a)),axcombs)*sizeof(Float32)*length(pca.varAx)
     smallenough=totlengths.<max_cache

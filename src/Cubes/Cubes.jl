@@ -3,7 +3,7 @@ The functions provided by ESDL are supposed to work on different types of cubes.
 Data types that
 """
 module Cubes
-export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, TimeHAxis, QuantileAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, axes,
+export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, TimeHAxis, QuantileAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, caxes,
        AbstractSubCube, CubeMem, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis, axVal2Index, MSCAxis,
        getSingVal, ScaleAxis, axname, @caxis_str, rmCube, cubeproperties, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
        getOutAxis, needshandle, gethandle, handletype, getcachehandle, ByInference
@@ -33,7 +33,7 @@ function readCubeData(x::AbstractCubeData{T,N}) where {T,N}
   aout,mout=zeros(T,s...),zeros(UInt8,s...)
   r=CartesianIndices(CartesianIndex{N}(),CartesianIndex(s...))
   _read(x,(aout,mout),r)
-  CubeMem(collect(CubeAxis,axes(x)),aout,mout)
+  CubeMem(collect(CubeAxis,caxes(x)),aout,mout)
 end
 
 """
@@ -47,7 +47,7 @@ function subsetCubeData end
 #_read(c::AbstractCubeData,d,r::CartesianRange)=error("_read not implemented for $(typeof(c))")
 
 "Returns the axes of a Cube"
-axes(c::AbstractCubeData)=error("Axes function not implemented for $(typeof(c))")
+caxes(c::AbstractCubeData)=error("Axes function not implemented for $(typeof(c))")
 
 "Number of dimensions"
 Base.ndims(::AbstractCubeData{T,N}) where {T,N}=N
@@ -63,9 +63,9 @@ abstract type AbstractCubeMem{T,N} <: AbstractCubeData{T,N} end
 
 include("Axes.jl")
 using .Axes
-
+import .Axes: getOutAxis, getAxis
 struct EmptyCube{T}<:AbstractCubeData{T,0} end
-axes(c::EmptyCube)=CubeAxis[]
+caxes(c::EmptyCube)=CubeAxis[]
 
 """
     CubeMem{T,N} <: AbstractCubeMem{T,N}
@@ -90,7 +90,7 @@ end
 
 CubeMem(axes::Vector{CubeAxis},data,mask) = CubeMem(axes,data,mask,Dict{String,Any}())
 Base.permutedims(c::CubeMem,p)=CubeMem(c.axes[collect(p)],permutedims(c.data,p),permutedims(c.mask,p))
-axes(c::CubeMem)=c.axes
+caxes(c::CubeMem)=c.axes
 cubeproperties(c::CubeMem)=c.properties
 
 Base.IndexStyle(::CubeMem)=Base.LinearFast()
@@ -136,8 +136,8 @@ function _read(c::AbstractCubeData,thedata::Tuple,r::CartesianIndices)
   rr = convert(NTuple{N,UnitRange},r)
   h = gethandle(c,size(r))
   data,mask = getSubRange(h,rr...)
-  copy!(outar,data)
-  copy!(outmask,mask)
+  copyto!(outar,data)
+  copyto!(outmask,mask)
 end
 
 "This function creates a new view of the cube, joining longitude and latitude axes to a single spatial axis"
@@ -177,7 +177,7 @@ end
 
 function Base.getindex(c::AbstractCubeData,i::IndR...)
   length(i)==ndims(c) || error("You must provide $(ndims(c)) indices")
-  ax = totuple(axes(c))
+  ax = totuple(caxes(c))
   r = CartesianIndices(map((ii,iax)->getfirst(ii,iax):getlast(ii,iax),i,ax))
   aout = zeros(eltype(c),size(r))
   mout = fill(0xff,size(r))
@@ -186,7 +186,7 @@ function Base.getindex(c::AbstractCubeData,i::IndR...)
     map!((m,v)->(m & 0x01)!=0x00 ? convert(eltype(c),NaN) : v,aout,mout,aout)
   end
   squeezedims = totuple(findall(i->size(aout,i)==1,1:ndims(aout)))
-  squeeze(aout,squeezedims)
+  dropdims(aout,dims=squeezedims)
 end
 Base.read(d::AbstractCubeData)=getindex(d,fill(Colon(),ndims(d))...)
 
@@ -199,7 +199,7 @@ function formatbytes(x)
   end
   return string(round(x, digits=2)," ",exts[i])
 end
-cubesize(c::AbstractCubeData{T}) where {T}=(sizeof(T)+1)*prod(map(length,axes(c)))
+cubesize(c::AbstractCubeData{T}) where {T}=(sizeof(T)+1)*prod(map(length,caxes(c)))
 cubesize(c::AbstractCubeData{T,0}) where {T}=sizeof(T)+1
 
 include("MmapCubes.jl")
@@ -214,7 +214,7 @@ getCubeDes(c::CubeMem)="In-Memory data cube"
 getCubeDes(c::EmptyCube)="Empty Data Cube (placeholder)"
 function Base.show(io::IO,c::AbstractCubeData)
     println(io,getCubeDes(c), " with the following dimensions")
-    for a in axes(c)
+    for a in caxes(c)
         println(io,a)
     end
     foreach(cubeproperties(c)) do p

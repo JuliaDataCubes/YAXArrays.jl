@@ -1,7 +1,8 @@
 module CubeAPI
-import ..Cubes: axes, AbstractSubCube, AbstractCubeData, AbstractCubeMem, gethandle
+import ..Cubes: caxes, AbstractSubCube, AbstractCubeData, AbstractCubeMem, gethandle
 using ..Cubes.Axes
 using ..ESDLTools
+import ..ESDLTools: getiperm
 using Pkg
 import Markdown.@md_str
 export Cube, getCubeData,getTimeRanges,readCubeData, getMemHandle, RemoteCube, known_regions
@@ -266,7 +267,7 @@ struct SubCube{T,C} <: AbstractSubCube{T,3}
   timeAxis::TimeAxis
   properties::Dict{String}
 end
-axes(s::SubCube)=CubeAxis[s.lonAxis,s.latAxis,s.timeAxis]
+caxes(s::SubCube)=CubeAxis[s.lonAxis,s.latAxis,s.timeAxis]
 
 
 """
@@ -286,7 +287,7 @@ struct SubCubePerm{T} <: AbstractSubCube{T,3}
   iperm::Tuple{Int,Int,Int}
 end
 SubCubePerm(p::SubCube,perm::Tuple{Int,Int,Int})=SubCubePerm(p,perm,getiperm(perm))
-axes(s::SubCubePerm)=CubeAxis[s.parent.lonAxis,s.parent.latAxis,s.parent.timeAxis][collect(s.perm)]
+caxes(s::SubCubePerm)=CubeAxis[s.parent.lonAxis,s.parent.latAxis,s.parent.timeAxis][collect(s.perm)]
 
 Base.eltype(s::AbstractCubeData{T}) where {T}=T
 Base.ndims(s::Union{SubCube,SubCubePerm})=3
@@ -342,8 +343,8 @@ struct SubCubeVPerm{T} <: AbstractSubCube{T,4}
   iperm::NTuple{4,Int}
 end
 SubCubeVPerm(p::SubCubeV{T},perm::Tuple{Int,Int,Int,Int}) where {T}=SubCubeVPerm{T}(p,perm,getiperm(perm))
-axes(s::SubCubeV)=CubeAxis[s.lonAxis,s.latAxis,s.timeAxis,s.varAxis]
-axes(s::SubCubeVPerm)=CubeAxis[s.parent.lonAxis,s.parent.latAxis,s.parent.timeAxis,s.parent.varAxis][collect(s.perm)]
+caxes(s::SubCubeV)=CubeAxis[s.lonAxis,s.latAxis,s.timeAxis,s.varAxis]
+caxes(s::SubCubeVPerm)=CubeAxis[s.parent.lonAxis,s.parent.latAxis,s.parent.timeAxis,s.parent.varAxis][collect(s.perm)]
 Base.ndims(s::SubCubeV)=4
 Base.ndims(s::SubCubeVPerm)=4
 Base.size(s::SubCubeV)=(length(s.lonAxis),length(s.latAxis),length(s.timeAxis),length(s.varAxis))
@@ -395,8 +396,8 @@ struct SubCubeStaticPerm{T} <: AbstractSubCube{T,2}
   parent::SubCubeV{T}
 end
 SubCubeStaticPerm(p::SubCubeStatic{T}) where {T}=SubCubeVPerm{T}(p)
-axes(s::SubCubeStatic)=CubeAxis[s.lonAxis,s.latAxis]
-axes(s::SubCubeStaticPerm)=CubeAxis[s.parent.latAxis,s.parent.lonAxis]
+caxes(s::SubCubeStatic)=CubeAxis[s.lonAxis,s.latAxis]
+caxes(s::SubCubeStaticPerm)=CubeAxis[s.parent.latAxis,s.parent.lonAxis]
 Base.ndims(s::SubCubeStatic)=2
 Base.ndims(s::SubCubeStaticPerm)=2
 Base.size(s::SubCubeStatic)=(length(s.lonAxis),length(s.latAxis))
@@ -682,10 +683,10 @@ function _read(s::Union{SubCubeVPerm{T},SubCubePerm{T},SubCubeStaticPerm{T}},t::
   iperm=sgetiperm(s)
   perm=sgetperm(s)
   outar,mask=t
-  sout=map(-,r.stop.I,(r.start-CartesianIndex{N}()).I)[iperm]
-  newinds=map((x,y)->x:y,r.start.I,r.stop.I)
+  sout=size(r)[iperm]
+  newinds=r.indices[iperm]
   #println("xoffs=$xoffs yoffs=$yoffs toffs=$toffs voffs=$voffs nx=$nx ny=$ny nt=$nt nv=$nv")
-  outartemp=Array{T}(sout...)
+  outartemp=Array{T}(undef,sout...)
   masktemp=zeros(UInt8,sout...)
   _read(s.parent,(outartemp,masktemp),CartesianIndices(newinds))
   mypermutedims!(outar,outartemp,Val{perm})

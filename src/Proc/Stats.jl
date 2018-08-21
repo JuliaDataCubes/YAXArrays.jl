@@ -5,6 +5,7 @@ using ..CubeAPI
 using ..Proc
 using ..Cubes
 using StatsBase
+using Statistics
 
 """
     normalizeTS(c::AbstractCubeData)

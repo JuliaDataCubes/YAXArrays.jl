@@ -4,3 +4,4 @@
 tmp
 docs/build
 deps/build.jl
+Manifest.toml

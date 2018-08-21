@@ -27,7 +27,7 @@ mutable struct MaskedCacheBlock{T,N} <: CacheBlock{T,N}
     position::CartesianIndex{N}
     iswritten::Bool
 end
-emptyblock(b::Type{MaskedCacheBlock{T,N}}) where {T,N}=MaskedCacheBlock{T,N}(Array{T}(ntuple(i->0,N)),Array{UInt8}(ntuple(i->0,N)),0.0,CartesianIndex{N}()-CartesianIndex{N}(),false)
+emptyblock(b::Type{MaskedCacheBlock{T,N}}) where {T,N}=MaskedCacheBlock{T,N}(Array{T}(undef,ntuple(i->0,N)),Array{UInt8}(undef,ntuple(i->0,N)),0.0,CartesianIndex{N}()-CartesianIndex{N}(),false)
 zeroblock(b::Type{MaskedCacheBlock{T,N}},block_size,position) where {T,N}=MaskedCacheBlock{T,N}(zeros(T,block_size.I),zeros(UInt8,block_size.I),0.0,position,false)
 getValues(b::MaskedCacheBlock,I::Union{Integer,UnitRange,Colon}...)=(view(b.data,I...),view(b.mask,I...))
 #getValues(b::MaskedCacheBlock,I::Integer...)=(b.data[I...],b.mask[I...])
@@ -142,7 +142,7 @@ setWriteEx(e::Expr)=e.args[1]==:setSubRange ? :(blockx.iswritten=true) : :()
 @inline firstval(x::Colon)=1
 @inline llength(x,s)=length(x)
 @inline llength(x::Colon,s)=s
-@inline subOffs(x,o)=x-o
+@inline subOffs(x,o)=x.-o
 @inline subOffs(x::Colon,o)=x
 
 
@@ -236,10 +236,10 @@ function Base.getindex(c::CachedArray,i::Union{Integer,AbstractRange,Colon}...)
 end
 
 
-hi2=Expr(:call,:(getSingVal{T}),:(c::CachedArray{T,N}))
-hiRange=Expr(:call,:(getSubRange{T,S<:CacheBlock}),Expr(:parameters,Expr(:kw,:write,false)),:(c::CachedArray{T,N,S}))
-hisetRange=Expr(:call,:(setSubRange{T,S<:MaskedCacheBlock}),Expr(:parameters,Expr(:kw,:write,false)),:(c::CachedArray{T,N,S}),:vals,:mask)
-hisetRange=Expr(:call,:(setSubRange{T,S<:SimpleCacheBlock}),Expr(:parameters,Expr(:kw,:write,false)),:(c::CachedArray{T,N,S}),:vals)
+hi2=:(getSingVal(c::CachedArray{T,N}) where T)
+hiRange=:(getSubRange(c::CachedArray{T, N, S}; write=false) where {T, S <: CacheBlock})
+hisetRange=:(setSubRange(c::CachedArray{T, N, S}, vals, mask; write=false) where {T, S <: MaskedCacheBlock})
+#hisetRange=Expr(:call,:(setSubRange{T,S<:SimpleCacheBlock}),Expr(:parameters,Expr(:kw,:write,false)),:(c::CachedArray{T,N,S}),:vals)
 higetVal=Expr(:call,:getValues,:blockx)
 hisetVal=Expr(:call,:setValues,:blockx,:vals,:mask)
 higetSub=Expr(:call,:getSubRange,:c)
@@ -270,12 +270,12 @@ for N=1:6
   funcbodyRange=funcbodyRangeEx(N,higetVal,higetSub)
   funcbodyRangeSet=funcbodyRangeEx(N,hisetVal,hisetSub)
   #Here is the function body if getindex is called on ranges.
-  hi2.args[2].args[2].args[3]=N
-  hiRange.args[3].args[2].args[3]=N
-  hisetRange.args[3].args[2].args[3]=N
-  push!(hi2.args,:($(Symbol(string("i_",N)))::Integer))
-  push!(hiRange.args,:($(Symbol(string("i_",N)))::Union{UnitRange,Integer,Colon}))
-  push!(hisetRange.args,:($(Symbol(string("i_",N)))::Union{UnitRange,Integer,Colon}))
+  hi2.args[1].args[2].args[2].args[3]=N
+  hiRange.args[1].args[3].args[2].args[3]=N
+  hisetRange.args[1].args[3].args[2].args[3]=N
+  push!(hi2.args[1].args,:($(Symbol(string("i_",N)))::Integer))
+  push!(hiRange.args[1].args,:($(Symbol(string("i_",N)))::Union{UnitRange,Integer,Colon}))
+  push!(hisetRange.args[1].args,:($(Symbol(string("i_",N)))::Union{UnitRange,Integer,Colon}))
   ex2=Expr(:function,hi2,funcbody2)
   exRange=Expr(:function,hiRange,funcbodyRange)
   exsetRange=Expr(:function,hisetRange,funcbodyRangeSet)
