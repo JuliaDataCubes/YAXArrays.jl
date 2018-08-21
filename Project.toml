@@ -1,5 +1,6 @@
 name = "ESDL"
 authors = ["Fabian Gans <fgans@bgc-jena.mpg.de>"]
+uuid = "359177bc-a543-11e8-11b7-bb015dba3358"
 version = "0.1.0"
 
 [deps]

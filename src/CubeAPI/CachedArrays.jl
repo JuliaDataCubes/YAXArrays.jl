@@ -313,13 +313,16 @@ import ESDL.CubeAPI.SubCubeV, ESDL.CubeAPI.SubCubeVPerm
 toSymbol(d::DataType)=Symbol(split(replace(string(d),r"\{\S*\}",""),".")[end])
 
 function read_subblock!(x::MaskedCacheBlock{T,N},y::AbstractCubeData{T},block_size::CartesianIndex{N}) where {T,N}
-    r = CartesianIndices(CItimes((x.position-CartesianIndex{N}()),block_size)+CartesianIndex{N}(),CItimes((x.position),block_size))
+    #r = CartesianIndices(CItimes((x.position-CartesianIndex{N}()),block_size)+CartesianIndex{N}(),CItimes((x.position),block_size))
+    rnew = map((p,s)->((p-1)*s+1):(p*s),x.position.I,block_size.I)
+    r = CartesianIndices(rnew)
     _read(y,(x.data,x.mask),r)
 end
 
 function read_subblock!(x::SimpleCacheBlock{T,N},y::AbstractCubeData{T},block_size::CartesianIndex{N}) where {T,N}
-    r = CartesianIndices(CItimes((x.position-CartesianIndex{N}()),block_size)+CartesianIndex{N}(),CItimes((x.position),block_size))
-    _read(y,x.data,r)
+  rnew = map((p,s)->((p-1)*s+1):(p*s),x.position.I,block_size.I)
+  r = CartesianIndices(rnew)
+  _read(y,x.data,r)
 end
 
 write_subblock!(x::MaskedCacheBlock{T,N},y::Any,block_size::CartesianIndex{N},i::CartesianIndex{N}) where {T,N}=error("$(typeof(y)) is not writeable. Please add a write_subblock method.")

@@ -182,8 +182,8 @@ mutable struct RemoteCube <: UCube
 end
 
 function testDAP()
-  conda_nc_config=joinpath(Pkg.dir("Conda"),"deps","usr","bin","nc-config")
-  nc_config = isfile(conda_nc_config) ? conda_nc_config : "nc-config"
+  #conda_nc_config=joinpath(Pkg.dir("Conda"),"deps","usr","bin","nc-config")
+  #nc_config = isfile(conda_nc_config) ? conda_nc_config : "nc-config"
   if !success(pipeline(`which nc-config`, devnull))
     @warn("Could not test for DAP support. Data access might fail.")
     return true
