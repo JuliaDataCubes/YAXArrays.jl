@@ -2,6 +2,7 @@ export MmapCube,getmmaphandles
 import ..ESDLTools.totuple
 abstract type AbstractMmapCube{T,N}<:AbstractCubeData{T,N} end
 using Serialization
+using Mmap
 
 """
     MmapCube{T,N}
@@ -46,7 +47,7 @@ function MmapCube(axlist;folder=mktempdir(),T=Float32,persist::Bool=true,overwri
   open(f->write(f,zeros(T,s...)),joinpath(folder,"data.bin"),"w")
   open(f->write(f,zeros(UInt8,s...)),joinpath(folder,"mask.bin"),"w")
   ntc=MmapCube{T,length(axlist)}(axlist,folder,persist,properties)
-  finalizer(ntc,cleanMmapCube)
+  finalizer(cleanMmapCube,ntc)
   ntc
 end
 cubeproperties(c::MmapCube)=c.properties

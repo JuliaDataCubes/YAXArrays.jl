@@ -1,5 +1,5 @@
 module CubeAPI
-import ..Cubes: caxes, AbstractSubCube, AbstractCubeData, AbstractCubeMem, gethandle
+import ..Cubes: caxes, AbstractSubCube, AbstractCubeData, AbstractCubeMem, gethandle, readCubeData, CubeMem
 using ..Cubes.Axes
 using ..ESDLTools
 import ..ESDLTools: getiperm
@@ -652,7 +652,7 @@ end
 function readCubeData(s::SubCube{T}) where T
   grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid
   y1,i1,y2,i2,ntime,NpY           = s.sub_times
-  outar=Array{T}(grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)
+  outar=Array{T}(undef,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)
   mask=zeros(UInt8,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)
   _read(s,(outar,mask),CartesianIndices((grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)))
   return CubeMem(CubeAxis[s.lonAxis,s.latAxis,s.timeAxis],outar,mask)
@@ -661,7 +661,7 @@ end
 function readCubeData(s::SubCubeV{T}) where T
   grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid
   y1,i1,y2,i2,ntime,NpY           = s.sub_times
-  outar=Array{T}(grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime,length(s.varAxis))
+  outar=Array{T}(undef,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime,length(s.varAxis))
   mask=zeros(UInt8,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime,length(s.varAxis))
   _read(s,(outar,mask),CartesianIndices((grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime,length(s.varAxis))))
   return CubeMem(CubeAxis[s.lonAxis,s.latAxis,s.timeAxis,s.varAxis],outar,mask)
@@ -670,7 +670,7 @@ end
 function readCubeData(s::SubCubeStatic{T}) where T
   grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid
   y1,i1,y2,i2,ntime,NpY           = s.sub_times
-  outar=Array{T}(grid_x2-grid_x1+1,grid_y2-grid_y1+1)
+  outar=Array{T}(undef,grid_x2-grid_x1+1,grid_y2-grid_y1+1)
   mask=zeros(UInt8,grid_x2-grid_x1+1,grid_y2-grid_y1+1)
   _read(s,(reshape(outar,(size(outar,1),size(outar,2),1)),reshape(mask,(size(mask,1),size(mask,2),1))),CartesianIndices((grid_x2-grid_x1+1,grid_y2-grid_y1+1,1)))
   return CubeMem(CubeAxis[s.lonAxis,s.latAxis],outar,mask)

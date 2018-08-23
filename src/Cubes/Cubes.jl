@@ -236,7 +236,7 @@ function saveCube(c::CubeMem{T},name::AbstractString) where T
   newfolder=joinpath(workdir[1],name)
   isdir(newfolder) && error("$(name) alreaday exists, please pick another name")
   mkpath(newfolder)
-  tc=Cubes.MmapCube(c.axes,CartesianIndex(size(c)),folder=newfolder,T=T)
+  tc=Cubes.MmapCube(c.axes,folder=newfolder,T=T)
   files=readdir(newfolder)
   filter!(i->startswith(i,"file"),files)
   @assert length(files)==1

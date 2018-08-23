@@ -15,7 +15,7 @@ import Distributed: nprocs
 using Dates
 import StatsBase.Weights
 using ESDL.CubeAPI.Mask
-global const debugDAT=true
+global const debugDAT=false
 macro debug_print(e)
   debugDAT && return(:(println($e)))
   :()
@@ -320,14 +320,11 @@ function reOrderInCubes(dc::DATConfig)
     end
   end
 end
-
+using Mmap
 function synccube(x::Tuple{Array,Array})
   Mmap.sync!(x[1])
   Mmap.sync!(x[2])
 end
-
-
-
 
 function runLoop(dc::DATConfig)
   if dc.ispar
@@ -335,7 +332,7 @@ function runLoop(dc::DATConfig)
     #I thnk this should work, but not 100% sure yet
     allRanges=distributeLoopRanges(totuple(dc.loopCacheSize),map(length,dc.LoopAxes))
     if isdefined(Main,:PmapProgressMeter)
-      @everywhereelsem using PmapProgressMeter
+      #@everywhereelsem using PmapProgressMeter
       allRanges = (Progress(length(allRanges),1),allRanges)
     else
       allRanges = (allRanges,)
@@ -516,9 +513,9 @@ using Base.Cartesian
         @assert length(loopR)==N
         nsplit=helpComprehension_nsplit(block_size, loopR)
         baseR=helpComprehension_baseR(block_size)
-        a=Array{NTuple{$N,UnitRange{Int}}}(nsplit...)
+        a=Array{NTuple{$N,UnitRange{Int}}}(undef,nsplit...)
         @nloops $N i a begin
-            rr=@ntuple $N d->baseR[d]+(i_d-1)*block_size[d]
+            rr=@ntuple $N d->baseR[d].+(i_d-1)*block_size[d]
             @nref($N,a,i)=rr
         end
         a=reshape(a,length(a))

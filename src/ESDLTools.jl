@@ -1,8 +1,8 @@
 module ESDLTools
 using Distributed
 import ..ESDL: ESDLdir
-export mypermutedims!, totuple, freshworkermodule, passobj, @everywhereelsem, toRange, getiperm, CItimes, CIdiv, @loadOrGenerate,
-        expandTuple
+export mypermutedims!, totuple, freshworkermodule, passobj, @everywhereelsem,
+toRange, getiperm, CItimes, CIdiv, @loadOrGenerate, expandTuple
 # SOme global function definitions
 expandTuple(x,nin)=ntuple(i->x,nin)
 expandTuple(x::Tuple,nin)=x
@@ -56,7 +56,7 @@ function passobj(src::Int, target::Vector{Int}, nm::Symbol;
     r = RemoteChannel(src)
     @spawnat(src, put!(r, getfield(from_mod, nm)))
     @sync for to in target
-        @spawnat(to, eval(to_mod, Expr(:(=), nm, fetch(r))))
+        @spawnat(to, Core.eval(to_mod, Expr(:(=), nm, fetch(r))))
     end
     nothing
 end
@@ -76,7 +76,7 @@ end
 
 function sendto(p::Int; args...)
     for (nm, val) in args
-        @spawnat(p, eval(Main, Expr(:(=), nm, val)))
+        @spawnat(p, Core.eval(Main, Expr(:(=), nm, val)))
     end
 end
 
@@ -91,19 +91,17 @@ getfrom(p::Int, nm::Symbol; mod=Main) = fetch(@spawnat(p, getfield(mod, nm)))
 
 
 function freshworkermodule()
-    in(:PMDATMODULE,names(Main)) || eval(Main,:(module PMDATMODULE
+    in(:PMDATMODULE,names(Main)) || Core.eval(Main,:(module PMDATMODULE
         using ESDL
     end))
-    eval(Main,quote
+    Core.eval(Main,quote
       rs=Future[]
       for pid in workers()
         n=remotecall_fetch(()->in(:PMDATMODULE,names(Main)),pid)
         if !n
-          r1=remotecall(()->(eval(Main,:(using ESDL));nothing),pid)
-          r2=remotecall(()->(eval(Main,:(module PMDATMODULE
+          r1=remotecall(()->(Core.eval(Main,:(using ESDL));nothing),pid)
+          r2=remotecall(()->(Core.eval(Main,:(module PMDATMODULE
           using ESDL
-          import ESDL.Cubes.TempCubes.openTempCube
-          import ESDL.Cubes.TempCubes.TempCube
           import ESDL.CubeAPI.CachedArrays.CachedArray
           import ESDL.CubeAPI.CachedArrays.MaskedCacheBlock
           import ESDL.CubeAPI.CachedArrays
@@ -119,19 +117,20 @@ function freshworkermodule()
   nothing
 end
 
-
+import Distributed: extract_imports, remotecall_eval
 macro everywhereelsem(ex)
-    quote
-        if nprocs()>1
-        Base.sync_begin()
-        thunk = ()->(eval(Main.PMDATMODULE,$(Expr(:quote,ex))); nothing)
-        for pid in workers()
-            Base.async_run_thunk(()->remotecall_fetch(thunk,pid))
-            yield() # ensure that the remotecall_fetch has been started
-        end
-        Base.sync_end()
-        end
+  modu=:(Main.PMDATMODULE)
+  procs = :(workers())
+  imps = [Expr(:import, m) for m in extract_imports(ex)]
+  return quote
+    p = $(esc(procs))
+    if p!=[1]
+      $(isempty(imps) ? nothing : Expr(:toplevel, imps...)) # run imports locally first
+      let ex = $(Expr(:quote, ex)), procs = p, mo=$(esc(modu))
+        remotecall_eval(mo, procs, ex)
+      end
     end
+  end
 end
 
 """
