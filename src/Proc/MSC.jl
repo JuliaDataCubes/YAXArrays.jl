@@ -6,9 +6,9 @@ using ..CubeAPI
 using ..Proc
 using ..CubeAPI.Mask
 
-function removeMSC(aout::Tuple,ain::Tuple,NpY::Integer,tmsc,tnmsc)
-  xout,maskout = aout.data, aout.mask
-  xin, maskin  = ain.data, ain.mask
+function removeMSC(aout,ain,NpY::Integer,tmsc,tnmsc)
+    xout, maskout = aout.data, aout.mask
+    xin,  maskin  = ain.data,  ain.mask
     #Start loop through all other variables
     map!((m,v)->(m & 0x01)==0 ? v : oftype(v,NaN),xin,maskin,xin)
     getMSC(tmsc,xin,tnmsc,NpY=NpY)
@@ -32,8 +32,17 @@ Removes the mean annual cycle from each time series of a data cube.
 **Output Axes** `Time`axis
 """
 function removeMSC(c::AbstractCubeData;kwargs...)
-  NpY=getNpY(c)
-  mapCube(removeMSC,c,NpY,zeros(NpY),zeros(Int,NpY);indims=InDims("Time",miss=MaskMissing()),outdims=OutDims("Time",miss=MaskMissing()),kwargs...)
+    NpY = getNpY(c)
+    mapCube(
+        removeMSC,
+        c,
+        NpY,
+        zeros(NpY),
+        zeros(Int,NpY);
+        indims  = InDims( "Time", miss = MaskMissing()),
+        outdims = OutDims("Time", miss = MaskMissing()),
+        kwargs...
+    )
 end
 
 """
