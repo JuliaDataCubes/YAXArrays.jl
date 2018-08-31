@@ -2,6 +2,7 @@ export MmapCube,getmmaphandles
 import ..ESDLTools.totuple
 abstract type AbstractMmapCube{T,N}<:AbstractCubeData{T,N} end
 using Serialization
+using Distributed
 using Mmap
 
 """

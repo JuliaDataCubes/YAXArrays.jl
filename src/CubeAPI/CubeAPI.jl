@@ -1,5 +1,5 @@
 module CubeAPI
-import ..Cubes: caxes, AbstractSubCube, AbstractCubeData, AbstractCubeMem, gethandle, readCubeData, CubeMem
+import ..Cubes: caxes, AbstractSubCube, AbstractCubeData, AbstractCubeMem, gethandle, readCubeData, CubeMem, _read
 using ..Cubes.Axes
 using ..ESDLTools
 import ..ESDLTools: getiperm

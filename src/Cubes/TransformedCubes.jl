@@ -15,8 +15,8 @@ permtuple(t,perm)=ntuple(i->t[perm[i]],length(t))
 function _read(x::PermCube{T,N},thedata::Tuple{Any,Any},r::CartesianIndices{N}) where {T,N}
   perm=x.perm
   iperm=getiperm(perm)
-  r2=CartesianIndices(CartesianIndex(permtuple(r.start.I,iperm)),CartesianIndex(permtuple(r.stop.I,iperm)))
-  sr = ntuple(i->r.stop.I[iperm[i]]-r.start.I[iperm[i]]+1,N)
+  r2=CartesianIndices((permtuple(r.indices,iperm)))
+  sr = size(r2)
   aout,mout=zeros(T,sr...),zeros(UInt8,sr...)
   _read(x.parent,(aout,mout),r2)
   permutedims!(thedata[1],aout,perm)
@@ -188,8 +188,8 @@ using Base.Cartesian
   viewEx2=Expr(:call,:view,:mout,fill(Colon(),N-1)...,:j)
   quote
     aout,mout=thedata
-    rnew = CartesianRange(CartesianIndex(r.start.I[1:end-1]),CartesianIndex(r.stop.I[1:end-1]))
-    for (j,i)=enumerate(r.start.I[end]:r.stop.I[end])
+    rnew = CartesianIndices(r.indices[1:end-1])
+    for (j,i)=enumerate(r.indices[end])
       a=$viewEx1
       m=$viewEx2
       _read(x.cubelist[i],(a,m),rnew)
