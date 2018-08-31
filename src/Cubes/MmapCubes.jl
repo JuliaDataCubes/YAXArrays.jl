@@ -113,3 +113,14 @@ function openmmapcube(folder;persist=true,axlist=nothing)
   N=length(axlist)
   return MmapCube{T,length(axlist)}(axlist,folder,persist,properties)
 end
+
+"""
+    loadCube(name::String)
+Loads a cube that was previously saved with [`saveCube`](@ref). Returns a
+`TempCube` object.
+"""
+function loadCube(name::String)
+  newfolder=joinpath(workdir[1],name)
+  isdir(newfolder) || error("$(name) does not exist")
+  openmmapcube(newfolder)
+end

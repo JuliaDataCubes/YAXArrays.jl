@@ -237,12 +237,9 @@ function saveCube(c::CubeMem{T},name::AbstractString) where T
   isdir(newfolder) && error("$(name) alreaday exists, please pick another name")
   mkpath(newfolder)
   tc=Cubes.MmapCube(c.axes,folder=newfolder,T=T)
-  files=readdir(newfolder)
-  filter!(i->startswith(i,"file"),files)
-  @assert length(files)==1
-  ncwrite(c.data,joinpath(newfolder,files[1]),"cube")
-  ncwrite(c.mask,joinpath(newfolder,files[1]),"mask")
-  ncclose(joinpath(newfolder,files[1]))
+  dh,mh = Cubes.getmmaphandles(tc)
+  copyto!(dh,c.data)
+  copyto!(mh,c.mask)
 end
 
 import Base.Iterators: take, drop

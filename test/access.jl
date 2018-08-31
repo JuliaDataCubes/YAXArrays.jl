@@ -1,5 +1,6 @@
 using ESDL
 using Test
+using Dates
 #Open a remote cube
 @testset "Cube Access" begin
 
@@ -46,9 +47,9 @@ data2=readCubeData(d2)
 @test isapprox(data2.data[1,1,1:10,1],Float32[265.345,270.253,270.838,276.829,278.678,
   277.004,274.693,276.203,280.781,278.062])
 
-@test ESDL.axes(data1)==CubeAxis[LonAxis(30.125:0.25:30.875),LatAxis(50.875:-0.25:50.125),TimeAxis(ESDL.Cubes.Axes.YearStepRange(2002,1,2008,46,8,46))]
+@test caxes(data1)==CubeAxis[LonAxis(30.125:0.25:30.875),LatAxis(50.875:-0.25:50.125),TimeAxis(ESDL.Cubes.Axes.YearStepRange(2002,1,2008,46,8,46))]
 
-@test ESDL.axes(data2)==CubeAxis[LonAxis(30.125:0.25:30.875),LatAxis(50.875:-0.25:50.125),TimeAxis(ESDL.Cubes.Axes.YearStepRange(2002,1,2008,46,8,46)),VariableAxis(["air_temperature_2m","gross_primary_productivity"])]
+@test caxes(data2)==CubeAxis[LonAxis(30.125:0.25:30.875),LatAxis(50.875:-0.25:50.125),TimeAxis(ESDL.Cubes.Axes.YearStepRange(2002,1,2008,46,8,46)),VariableAxis(["air_temperature_2m","gross_primary_productivity"])]
 
 @test_throws ArgumentError getCubeData(c,longitude=(10,-10))
 end

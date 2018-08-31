@@ -542,7 +542,7 @@ function getLandSeaMask!(mask::AbstractArray{UInt8,4},cube::UCube,grid_x1,nx,gri
     mask2 = ncread(filename,"water_mask",start=[grid_x1,grid_y1,1],count=[nx,ny,1])
     mask[:,:,1,1]=mask2
     for ilat=1:size(mask,2),ilon=1:size(mask,1)
-      mask[ilon,ilat,1]=(mask[ilon,ilat,1]-0x01)*0x05
+      mask[ilon,ilat,1,1]=(mask[ilon,ilat,1,1]-0x01)*0x05
     end
     nT=size(mask,3)
     for ivar=1:size(mask,4),itime=1:nT,ilat=1:size(mask,2),ilon=1:size(mask,1)

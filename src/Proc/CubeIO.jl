@@ -48,8 +48,8 @@ function getSpatiaPointAxis(mask::CubeMem)
 end
 
 function toPointAxis(aout,ain,loninds,latinds)
-  xout, maskout = aout
-  xin , maskin  = ain
+  xout, maskout = aout.data, aout.mask
+  xin , maskin  = ain.data, ain.mask
   iout = 1
   for (ilon,ilat) in zip(loninds,latinds)
     xout[iout]=xin[ilon,ilat]

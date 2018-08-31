@@ -1,7 +1,8 @@
 using ESDL
 using Test
 import Base.Iterators
-addprocs(2)
+using Distributed
+#addprocs(2)
 @everywhere using ESDL, DataArrays
 
 @everywhere function sub_and_return_mean(xout1,xout2,xin)
