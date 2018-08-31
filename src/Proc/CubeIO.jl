@@ -5,32 +5,10 @@ using ..CubeAPI
 using ..CubeAPI.CachedArrays
 using ..Proc
 using ..Mask
-exportmissval(x::AbstractFloat)=oftype(x,NaN)
-exportmissval(x::Integer)=typemax(x)
-
-function copyMAP(xout::AbstractArray,maskout::AbstractArray{UInt8},xin::AbstractArray,maskin::AbstractArray{UInt8})
-    #Start loop through all other variables
-    for (iout,vin,min) in zip(eachindex(xout),xin,maskin)
-      if (x>UInt8(0)) || (x & FILLED)==FILLED
-        xout[iout]=vin
-      else
-        xout[iout]=exportmissval(vin)
-      end
-      maskout[iout]=min
-    end
-end
 
 import NetCDF.ncread, NetCDF.ncclose
 import StatsBase.Weights
 import StatsBase.sample
-#function readLandSea(c::Cube)
-#    m=ncread(joinpath(c.base_dir,"mask","mask.nc"),"mask")
-#    scale!(m,OCEAN)
-#    a1=LonAxis((c.config.grid_x0:(c.config.grid_width-1))*c.config.spatial_res+c.config.spatial_res/2-180.0)
-#    a2=LatAxis(90.0-(c.config.grid_y0:(c.config.grid_height-1))*c.config.spatial_res-c.config.spatial_res/2)
-#    ncclose(joinpath(c.base_dir,"mask","mask.nc"))
-#    CubeMem(CubeAxis[a1,a2],m,m);
-#end
 
 
 function getSpatiaPointAxis(mask::CubeMem)
@@ -123,7 +101,7 @@ using NetCDF
 import IterTools: product
 function writefun(xout,xin,a,nd,cont_loop,filename;kwargs...)
 
-  x = map((m,v)->m==0x00 ? v : oftype(v,-9999.0),xin[2],xin[1])
+  x = map((m,v)->m==0x00 ? v : oftype(v,-9999.0),xin.mask,xin.data)
 
   count_vec = fill(-1,nd)
   start_vec = fill(1,nd)

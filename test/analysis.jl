@@ -3,7 +3,7 @@ using Test
 import Base.Iterators
 using Distributed
 #addprocs(2)
-@everywhere using ESDL, DataArrays
+@everywhere using ESDL
 
 @everywhere function sub_and_return_mean(xout1,xout2,xin)
     m=mean(Iterators.filter(isfinite,xin))

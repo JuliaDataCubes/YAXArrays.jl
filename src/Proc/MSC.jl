@@ -7,8 +7,8 @@ using ..Proc
 using ..CubeAPI.Mask
 
 function removeMSC(aout::Tuple,ain::Tuple,NpY::Integer,tmsc,tnmsc)
-  xout,maskout = aout
-  xin, maskin  = ain
+  xout,maskout = aout.data, aout.mask
+  xin, maskin  = ain.data, ain.mask
     #Start loop through all other variables
     map!((m,v)->(m & 0x01)==0 ? v : oftype(v,NaN),xin,maskin,xin)
     getMSC(tmsc,xin,tnmsc,NpY=NpY)
@@ -51,8 +51,8 @@ function gapFillMSC(c::AbstractCubeData;kwargs...)
 end
 
 function gapFillMSC(aout::Tuple,ain::Tuple,NpY::Integer,tmsc,tnmsc)
-  xin,maskin = ain
-  xout,maskout = aout
+  xin,maskin = ain.data, ain.mask
+  xout,maskout = aout.data, aout.mask
   map!((m,v)->(m & 0x01)==0 ? v : oftype(v,NaN),xin,maskin,xin)
   getMSC(tmsc,xin,tnmsc,NpY=NpY)
   replaceMisswithMSC(tmsc,xin,xout,maskin,maskout,NpY)
@@ -81,8 +81,8 @@ function getMSC(xout::AbstractVector{<:AbstractFloat},xin::AbstractVector{<:Abst
 end
 function getMSC(aout::Tuple,ain::Tuple,nmsc::Vector{Int}=zeros(Int,length(xout));imscstart::Int=1,NpY=length(aout[1]))
     #Reshape the cube to squeeze unimportant variables
-    xout,mout = aout
-    xin,min   = ain
+    xout,mout = aout.data, aout.mask
+    xin,min   = ain.data, ain.mask
     NpY=length(xout)
     map!((m,v)->(m & 0x01)==0 ? v : oftype(v,NaN),xin,min,xin)
     fillmsc(imscstart,xout,nmsc,xin,NpY)
@@ -134,8 +134,8 @@ function getMedSC(c::AbstractCubeData;kwargs...)
 end
 
 function getMedSC(aout::Tuple,ain::Tuple)
-  xout,maskout = aout
-  xin,maskin   = ain
+  xout,maskout = aout.data, aout.mask
+  xin,maskin   = ain.data, ain.mask
     #Reshape the cube to squeeze unimportant variables
     NpY=length(xout)
     yvec=eltype(xout)[]
