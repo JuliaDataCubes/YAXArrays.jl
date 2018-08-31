@@ -13,7 +13,7 @@ function removeMSC(aout,ain,NpY::Integer,tmsc,tnmsc)
     map!((m,v)->(m & 0x01)==0 ? v : oftype(v,NaN),xin,maskin,xin)
     getMSC(tmsc,xin,tnmsc,NpY=NpY)
     subtractMSC(tmsc,xin,xout,NpY)
-    copy!(maskout,maskin)
+    copyto!(maskout,maskin)
     xout
 end
 
