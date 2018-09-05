@@ -6,18 +6,19 @@ using ..Cubes
 using ..Mask
 import ...ESDLTools.totuple
 import OnlineStats: VectorOb
+import ..DAT: mapCube
 export DATfitOnline
 
 
 function DATfitOnline(xout::AbstractArray{T},ain,cfun) where T<:OnlineStat{Number}
-  xin,maskin = ain
+  xin,maskin = ain.data, ain.mask
   for (mi,xi) in zip(maskin,xin)
     (mi & MISSING)==VALID && fit!(xout[1],xi)
   end
 end
 
 function DATfitOnline(xout::AbstractArray{T},ain,spl,cfun) where T<:OnlineStat{Number}
-  xin,maskin = ain
+  xin,maskin = ain.data, ain.mask
   splitmask,msplitmask = spl
   for (mi,xi,si,m2) in zip(maskin,xin,splitmask,msplitmask)
       ((mi | m2) & MISSING)==VALID && fit!(xout[cfun(si)],Float64(xi))
@@ -25,7 +26,7 @@ function DATfitOnline(xout::AbstractArray{T},ain,spl,cfun) where T<:OnlineStat{N
 end
 
 function DATfitOnline(xout::AbstractArray{S},ain,cfun) where S<:OnlineStat{VectorOb}
-  xin,maskin = ain
+  xin,maskin = ain.data, ain.mask
     offs=1
     offsinc=size(xin,1)
     xtest=zeros(Float64,offsinc)
@@ -40,15 +41,15 @@ function DATfitOnline(xout::AbstractArray{S},ain,cfun) where S<:OnlineStat{Vecto
 end
 
 function DATfitOnline(xout::AbstractArray{S},ain,spl,cfun) where S<:OnlineStat{VectorOb}
-  xin,maskin = ain
+  xin,maskin = ain.data, ain.mask
   splitmask,msplitmask = spl
   offs=1
   offsinc=size(xin,1)
   xtest=zeros(eltype(xin),offsinc)
   mtest=zeros(UInt8,offsinc)
   for (offsin,si) in zip(1:offsinc:length(xin),1:length(splitmask))
-    copy!(xtest,1,xin,offsin,offsinc)
-    copy!(mtest,1,maskin,offsin,offsinc)
+    copyto!(xtest,1,xin,offsin,offsinc)
+    copyto!(mtest,1,maskin,offsin,offsinc)
     ((msplitmask[si] & MISSING)==VALID) && all(m->(m & MISSING)==VALID,mtest) && fit!(xout[cfun(splitmask[si])],xtest)
   end
 end
@@ -64,10 +65,10 @@ function finalizeOnlineCube(c::CubeMem,varAx::CubeAxis, statType::Type{T}) where
   cout2 = zeros(Float32,nV,size(c.data)...)
   maskout2=zeros(UInt8,nV,size(c.data)...)
   for ii in CartesianIndices(size(c.data))
-    cout[:,:,ii]=OnlineStats.value(c.data[ii])
-    maskout[:,:,ii]=c.mask[ii]
-    cout2[:,ii]=OnlineStats.mean(c.data[ii].b)
-    maskout2[:,ii]=c.mask[ii]
+    cout[:,:,ii].=OnlineStats.value(c.data[ii])
+    maskout[:,:,ii].=c.mask[ii]
+    cout2[:,ii].=OnlineStats.mean(c.data[ii].b)
+    maskout2[:,ii].=c.mask[ii]
   end
   varAx1 = isa(varAx,CategoricalAxis) ? CategoricalAxis(string(axname(varAx)," 1"),varAx.values) : RangeAxis(string(axname(varAx)," 1"),varAx.values)
   varAx2 = isa(varAx,CategoricalAxis) ? CategoricalAxis(string(axname(varAx)," 2"),varAx.values) : RangeAxis(string(axname(varAx)," 2"),varAx.values)
@@ -79,8 +80,8 @@ function finalizeOnlineCube(c::CubeMem,varAx::CubeAxis,statType::Type{T}) where 
   cout=zeros(Float32,nV,nC,size(c.data)...)
   maskout=zeros(UInt8,nV,nC,size(c.data)...)
   for ii in CartesianIndices(size(c.data))
-    cout[:,:,ii]=OnlineStats.value(c.data[ii])
-    maskout[:,:,ii]=c.mask[ii]
+    cout[:,:,ii].=OnlineStats.value(c.data[ii])
+    maskout[:,:,ii].=c.mask[ii]
   end
   classAx=CategoricalAxis("Class",["Class $i" for i=1:nC])
   CubeMem(CubeAxis[varAx,classAx,c.axes...],cout,maskout)
@@ -91,7 +92,7 @@ function getGenFun(f::Type{T},nclass,d) where T<:OnlineStats.KMeans
   return i->begin Random.seed!(190283);f(d,nclass) end
 end
 function getGenFun(f::Type{T},nclass,startVal,d) where T<:OnlineStats.KMeans
-  return i->begin a=f(d,nclass);a.value[:]=startVal;a end
+  return i->begin a=f(d,nclass);a.value[:].=startVal;a end
 end
 function getGenFun(f::Type{T},pargs...) where T<:OnlineStats.CovMatrix
   return i->f(pargs[1])

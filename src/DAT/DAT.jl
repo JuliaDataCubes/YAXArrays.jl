@@ -391,7 +391,7 @@ function generateOutCube(::Type{T},eltype,oc::OutputCube,loopCacheSize) where T<
   newsize=map(length,oc.allAxes)
   outar=Array{eltype}(undef,newsize...)
   genFun=oc.desc.genOut
-  map!(_->genFun(eltype),outar,outar)
+  map!(_->genFun(eltype),outar,1:length(outar))
   oc.cube = Cubes.CubeMem(oc.allAxes,outar,zeros(UInt8,newsize...))
 end
 
