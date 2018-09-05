@@ -31,12 +31,12 @@ getNpY(cube::InputCube)=getNpY(cube.cube)
 
 include("Online/OnlineStats.jl")
 include("MSC.jl")
-include("Outlier.jl")
+#include("Outlier.jl")
 include("Stats.jl")
 include("CubeIO.jl")
 include("TSDecomposition.jl")
 include("remap.jl")
-using .ReSample, .MSC, .Outlier, .Stats, .CubeIO,
+using .ReSample, .MSC, .Stats, .CubeIO,
   .TSDecomposition, .DATOnlineStats
 
 

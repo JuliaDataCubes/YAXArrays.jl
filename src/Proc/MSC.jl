@@ -88,7 +88,7 @@ function getMSC(xout::AbstractVector{<:AbstractFloat},xin::AbstractVector{<:Abst
     NpY=length(xout)
     fillmsc(imscstart,xout,nmsc,xin,NpY)
 end
-function getMSC(aout::Tuple,ain::Tuple,nmsc::Vector{Int}=zeros(Int,length(xout));imscstart::Int=1,NpY=length(aout[1]))
+function getMSC(aout::AbstractVector,ain::AbstractVector,nmsc::Vector{Int}=zeros(Int,length(xout));imscstart::Int=1,NpY=length(aout[1]))
     #Reshape the cube to squeeze unimportant variables
     xout,mout = aout.data, aout.mask
     xin,min   = ain.data, ain.mask
@@ -142,7 +142,7 @@ function getMedSC(c::AbstractCubeData;kwargs...)
   mapCube(getMedSC,c;indims=indims,outdims=outdims,kwargs...)
 end
 
-function getMedSC(aout::Tuple,ain::Tuple)
+function getMedSC(aout::AbstractVector,ain::AbstractVector)
   xout,maskout = aout.data, aout.mask
   xin,maskin   = ain.data, ain.mask
     #Reshape the cube to squeeze unimportant variables

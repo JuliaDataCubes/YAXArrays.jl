@@ -2,6 +2,7 @@ using ESDL
 using Test
 import Base.Iterators
 using Distributed
+using Statistics
 #addprocs(2)
 @everywhere using ESDL
 
@@ -29,7 +30,7 @@ function doTests()
 
   @testset "Simple statistics using reduceCube" begin
   # Basic statistics
-  m=reduceCube(mean,d,TimeAxis,skipmissing=true)
+  m=mapslices(mean∘skipmissing,d,"Time")
 
   @test isapprox(readCubeData(m).data,[281.922  282.038  282.168  282.288;
                 281.936  282.062  282.202  282.331;
@@ -40,10 +41,10 @@ function doTests()
   d1=getCubeData(c,variable="gross_primary_productivity",time=(Date("2002-01-01"),Date("2002-01-01")),longitude=(30,30))
 
   dmem=readCubeData(d1)
-  mtime=reduceCube(mean,dmem,("lon","lat"),skipmissing=true)
+  mtime=mapslices(mean∘skipmissing,dmem,("lon","lat"))
 
-  wv=cosd.(dmem.axes[2].values)
-  goodinds=dmem.mask.==0x00
+  #wv=cosd.(dmem.axes[2].values)
+  #goodinds=dmem.mask.==0x00
   end
   # the element-wise operations are right now a problem with the julia 0.6
   #@test Float32(sum(dmem.data[goodinds].*wv[goodinds])/sum(wv[goodinds]))==readCubeData(mtime).data[1]
@@ -79,12 +80,12 @@ function doTests()
   @test 1.0-1e-6 <= std(anom_normalized.data) <= 1.0+1e-6
   end
 
-  @testset "Anomaly detection" begin
-  d3=getCubeData(c,variable=["gross_primary_productivity","air_temperature_2m"],longitude=(30,30),latitude=(50.75,50.75))
-  anom_new=removeMSC(d3)
-  anom_norm=readCubeData(normalizeTS(anom_new))
-  anoms_detected = cubeAnomalies(anom_norm,["KDE","T2","REC"],reshape(Float64.(anom_norm.data),(506,2)))
-  end
+  # @testset "Anomaly detection" begin
+  # d3=getCubeData(c,variable=["gross_primary_productivity","air_temperature_2m"],longitude=(30,30),latitude=(50.75,50.75))
+  # anom_new=removeMSC(d3)
+  # anom_norm=readCubeData(normalizeTS(anom_new))
+  # anoms_detected = cubeAnomalies(anom_norm,["KDE","T2","REC"],reshape(Float64.(anom_norm.data),(506,2)))
+  # end
 # Test generation of new axes
 
 
@@ -110,8 +111,8 @@ function doTests()
 
   cube_wo_mean,cube_means=sub_and_return_mean(c2)
 
-  @test isapprox(permutedims(c2.data.-mean(c2.data,3),(3,1,2)),readCubeData(cube_wo_mean).data)
-  @test isapprox(mean(c2.data,3)[:,:,1],readCubeData(cube_means).data)
+  @test isapprox(permutedims(c2.data.-mean(c2.data,dims=3),(3,1,2)),readCubeData(cube_wo_mean).data)
+  @test isapprox(mean(c2.data,dims=3)[:,:,1],readCubeData(cube_means).data)
   end
 end
 
