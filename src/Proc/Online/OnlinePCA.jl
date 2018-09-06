@@ -4,7 +4,7 @@ export cubePCA, rotation_matrix, transformPCA, explained_variance
 function pcafromcov(aout,covsin,meanin;pratio=0.9,maxoutdim=3)
   xout,maskout = aout.data, aout.mask
   covs,covmask = covsin.data, covsin.mask
-  means,meanmask = meanin
+  means,meanmask = meanin.data, meanin.mask
     if (covmask[1] & MISSING)==0x00
         xout[1] = pcacov(covs,copy(means),pratio=pratio,maxoutdim=maxoutdim)
         maskout[1] = VALID
@@ -53,7 +53,7 @@ function pcapredict(xout,xin::Array,pca,byc,cfun::Function)
   if (pcamask[1] & MISSING)==0x00
     for i=1:size(xin2,2)
       if ((bymask[i] & MISSING)==0x00)
-        copy!(xhelp,view(xin2,:,i))
+        copyto!(xhelp,view(xin2,:,i))
         ttransformed = MultivariateStats.transform(pcain[cfun(by[i])],xhelp)
         xout2[1:size(ttransformed,1),i] = ttransformed
       else
@@ -70,7 +70,7 @@ function explained_variance(xout,ain)
   if size(pv)==size(xout)
     xout[:] = pv/sum(pv)
   else
-    xout[:] = NaN
+    xout[:] .= NaN
   end
 end
 function rotation(xout,ain)
@@ -79,7 +79,7 @@ function rotation(xout,ain)
   if size(p)==size(xout)
     xout[:]=p
   else
-    xout[:]=NaN
+    xout[:].=NaN
   end
 end
 

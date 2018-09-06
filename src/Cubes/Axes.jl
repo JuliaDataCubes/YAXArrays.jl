@@ -32,11 +32,12 @@ function Base.length(x::YearStepRange)
     (-x.startst+1+x.stopst+(x.stopyear-x.startyear)*x.NPY)
 end
 Base.size(x::YearStepRange)=(length(x),)
-function Base.iterate(x::YearStepRange,st=x.startst)
-  if (st[1]==x.stopyear && st[2]==x.stopst+1) || (st[1]==x.stopyear+1 && st[2]==1)
+function Base.iterate(x::YearStepRange,st=(x.startyear,x.startst))
+  lastyear,laststep = st
+  if (lastyear==x.stopyear && laststep==x.stopst+1) || (lastyear==x.stopyear+1 && laststep==1)
     return nothing
   else
-    return (Date(st[1])+Day((st[2]-1)*x.step),st[2]==x.NPY ? (st[1]+1,1) : (st[1],st[2]+1))
+    return (Date(lastyear)+Day((laststep-1)*x.step),laststep==x.NPY ? (lastyear+1,1) : (lastyear,laststep+1))
   end
 end
 Base.step(x::YearStepRange)=Day(x.step)
@@ -186,8 +187,8 @@ function axVal2Index(a::_RangeAxis{T,S,F},v::Date;fuzzy=false) where {T<:Date,S,
 end
 axVal2Index(axis::_RangeAxis{T,S,F},v;fuzzy::Bool=false) where {T,S,F<:StepRangeLen}=min(max(round(Int,(v-first(axis.values))/step(axis.values))+1,1),length(axis))
 function axVal2Index(axis::CategoricalAxis{String},v::String;fuzzy::Bool=false)
-  r=findfirst(axis.values,v)
-  if r==0
+  r=findfirst(isequal(v),axis.values)
+  if r==nothing
     if fuzzy
       r=findall(i->startswith(lowercase(i),lowercase(v)),axis.values)
       if length(r)==1

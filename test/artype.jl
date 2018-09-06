@@ -2,24 +2,26 @@ using ESDL
 using Test
 import DataFrames: DataFrame,aggregate,skipmissing
 import Dates: year
+
+@testset "Dataframe representation" begin
 c=Cube()
 
 d = getCubeData(c,variable=["air_temperature_2m","gross_primary_productivity"],longitude=(30,31),latitude=(50,51),
                 time=(Date("2002-01-01"),Date("2008-12-31")))
 
 dmem=readCubeData(d)
-
-@testset "Dataframe representation" begin
+    
 function docor(xout,xin)
     #Inside this function, xin is now a data frame
     @test isa(xin,DataFrame)
+    @show xin
     xout[1]=cor(xin[:air_temperature_2m],xin[:gross_primary_productivity])
 end
 indims = InDims(TimeAxis,VariableAxis,artype = AsDataFrame())
 outdims = OutDims()
 o = mapCube(docor,dmem,indims=indims,outdims=outdims)
 
-@test o.data == [cor(dmem.data[i,j,:,1],dmem.data[i,j,:,2]) for i=1:4, j=1:4]
+@test all(isapprox.(o.data,[cor(dmem.data[i,j,:,1],dmem.data[i,j,:,2]) for i=1:4, j=1:4]))
 
 function annMean(xout,xin)
     #xin is now a DataFrame where time is added as the third column
@@ -36,5 +38,5 @@ outdims = OutDims(RangeAxis("Year",2002:2008),"var")
 
 o = mapCube(annMean,dmem,indims=indims,outdims=outdims)
 
-@test all(isapprox.(o.data[1,1,:,:],mean(dmem.data[:,:,1:46,1],3)))
+@test all(isapprox.(o.data[1,1,:,:],mean(dmem.data[:,:,1:46,1],dims=3)))
 end

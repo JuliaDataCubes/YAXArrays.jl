@@ -61,6 +61,8 @@ end
 
 p=cubePCA(dm,by=[randmask],noutdims=2)
 
+println((explained_variance(p)).data[1, 1])
+  
 @test all([0.984 0.45; 0.09 0.45] .< explained_variance(p).data[1,1])
 rotation_matrix(p)
 transformPCA(p,dm).data
@@ -73,6 +75,8 @@ mask2=CubeMem(d2.axes[1:2],rand(1:10,4,4),zeros(UInt8,4,4),Dict("labels"=>Dict(i
 oogrouped = mapCube(Mean,d2,by=(mask,))
 @test isa(oogrouped.axes[1],CategoricalAxis{String,:Label})
 
+@show oogrouped.data, oogrouped.mask
+  
 oogrouped2 = mapCube(Mean,d2,by=(mask2,))
 
 for k=1:10
@@ -82,10 +86,9 @@ for k=1:10
   i=findall(mask2.data.==k)
 
   if length(i) > 0
-    i1,i2=ind2sub((4,4),i)
     dhelp=Float32[]
-    for (j1,j2) in zip(i1,i2)
-      append!(dhelp,d2.data[j1,j2,:])
+    for jj in i
+      append!(dhelp,d2.data[jj,:])
     end
     @test mean(dhelp) ≈ oogrouped2.data[know]
   end

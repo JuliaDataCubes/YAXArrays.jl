@@ -269,7 +269,6 @@ struct SubCube{T,C} <: AbstractSubCube{T,3}
 end
 caxes(s::SubCube)=CubeAxis[s.lonAxis,s.latAxis,s.timeAxis]
 
-
 """
     immutable SubCubePerm{T} <: AbstractCubeData{T,3}
 
