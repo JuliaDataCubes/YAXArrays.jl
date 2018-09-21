@@ -3,8 +3,8 @@ using Test
 import Base.Iterators
 using Distributed
 using Statistics
-#addprocs(2)
-@everywhere using ESDL
+addprocs(2)
+@everywhere using ESDL, Statistics
 
 @everywhere function sub_and_return_mean(xout1,xout2,xin)
     m=mean(Iterators.filter(isfinite,xin))
@@ -62,9 +62,9 @@ function doTests()
 
   # Test gap filling
   cube_filled=readCubeData(gapFillMSC(d))
-  imiss=findfirst(d.mask)
+  imiss=findfirst(i->i==0x01,d.mask)
   @test cube_filled.mask[imiss]==ESDL.Mask.FILLED
-  its=mod(imiss-1,46)+1
+  its=mod(imiss.I[3]-1,46)+1
   @test cube_filled.data[imiss]≈readCubeData(x2).data[its]
   @test !any(cube_filled.mask.==ESDL.Mask.MISSING)
 

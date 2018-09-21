@@ -2,9 +2,9 @@ using OnlineStats
 using MultivariateStats
 export cubePCA, rotation_matrix, transformPCA, explained_variance
 function pcafromcov(aout,covsin,meanin;pratio=0.9,maxoutdim=3)
-  xout,maskout = aout
-  covs,covmask = covsin
-  means,meanmask = meanin
+  xout,maskout = aout.data, aout.mask
+  covs,covmask = covsin.data, covsin.mask
+  means,meanmask = meanin.data, meanin.mask
     if (covmask[1] & MISSING)==0x00
         xout[1] = pcacov(covs,copy(means),pratio=pratio,maxoutdim=maxoutdim)
         maskout[1] = VALID
@@ -14,7 +14,7 @@ function pcafromcov(aout,covsin,meanin;pratio=0.9,maxoutdim=3)
 end
 
 function pcapredict(xout,xin::Union{Vector,Matrix},pca,cfun)
-  pcain,pcamask = pca
+  pcain,pcamask = pca.data, pca.mask
   if (pcamask[1] & MISSING)==0x00
     ttransformed = MultivariateStats.transform(pcain,xin)
     xout[1:length(ttransformed)] = ttransformed
@@ -23,7 +23,7 @@ function pcapredict(xout,xin::Union{Vector,Matrix},pca,cfun)
   end
 end
 function pcapredict(xout,xin::Array,pca,cfun)
-  pcain,pcamask = pca
+  pcain,pcamask = pca.data, pca.mask
   xout2 = reshape(xout,(size(xout,1),length(xout)÷size(xout,1)))
   xin2 = reshape(xin,(size(xin,1),length(xin)÷size(xin,1)))
   if (pcamask[1] & MISSING)==0x00
@@ -34,8 +34,8 @@ function pcapredict(xout,xin::Array,pca,cfun)
   end
 end
 function pcapredict(xout,xin::Union{Vector,Matrix},pca,byc,cfun::Function)
-  pcain,pcamask = pca
-  by,bymask     = byc
+  pcain,pcamask = pca.data, pca.mask
+  by,bymask     = byc.data, byc.mask
   if ((pcamask[1] | bymask) & MISSING)==0x00
     ttransformed = MultivariateStats.transform(pcain[cfun(by)],xin)
     xout[1:length(ttransformed)] = ttransformed
@@ -44,8 +44,8 @@ function pcapredict(xout,xin::Union{Vector,Matrix},pca,byc,cfun::Function)
   end
 end
 function pcapredict(xout,xin::Array,pca,byc,cfun::Function)
-  pcain,pcamask = pca
-  by,bymask = byc
+  pcain,pcamask = pca.data, pca.mask
+  by,bymask = byc.data, byc.mask
   xout2 = reshape(xout,(size(xout,1),length(xout)÷size(xout,1)))
   xin2 = reshape(xin,(size(xin,1),length(xin)÷size(xin,1)))
   @assert size(xout2,2)==size(xin2,2)
@@ -53,7 +53,7 @@ function pcapredict(xout,xin::Array,pca,byc,cfun::Function)
   if (pcamask[1] & MISSING)==0x00
     for i=1:size(xin2,2)
       if ((bymask[i] & MISSING)==0x00)
-        copy!(xhelp,view(xin2,:,i))
+        copyto!(xhelp,view(xin2,:,i))
         ttransformed = MultivariateStats.transform(pcain[cfun(by[i])],xhelp)
         xout2[1:size(ttransformed,1),i] = ttransformed
       else
@@ -65,21 +65,21 @@ function pcapredict(xout,xin::Array,pca,byc,cfun::Function)
   end
 end
 function explained_variance(xout,ain)
-  xin,inmask = ain
+  xin,inmask = ain.data, ain.mask
   pv = principalvars(xin[1])
   if size(pv)==size(xout)
     xout[:] = pv/sum(pv)
   else
-    xout[:] = NaN
+    xout[:] .= NaN
   end
 end
 function rotation(xout,ain)
-  xin,inmask = ain
+  xin,inmask = ain.data, ain.mask
   p=projection(xin[1])
   if size(p)==size(xout)
     xout[:]=p
   else
-    xout[:]=NaN
+    xout[:].=NaN
   end
 end
 

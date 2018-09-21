@@ -25,7 +25,7 @@ function isvalidorfilled(x::AbstractArray{UInt8})
   a
 end
 
-struct MaskArray{T,N,P<:AbstractArray{T}}<: AbstractArray{Union{T,Missing},N}
+struct MaskArray{T,N,P<:AbstractArray{T,N}}<: AbstractArray{Union{T,Missing},N}
     data::P
     mask::Array{UInt8,N}
 end
@@ -42,8 +42,10 @@ function Base.setindex!(m::MaskArray, v, i::Int)
 end
 Base.IndexStyle(::Type{<:MaskArray})=IndexLinear()
 Base.length(m::MaskArray)=length(m.data)
-isocean(m::MaskArray, i::Integer) = (m.mask[i] & OCEAN_VALID)==OCEAN_VALID
-isfilled(m::MaskArray, i::Integer) = (m.mask[i] & FILLED)==FILLED
-isoutofperiod(m::MaskArray, i::Integer) = (m.mask[i] & 0x02)==0x02
+Base.ismissing(m::MaskArray, i::Integer...) = !iszero(m.mask[i...] & MISSING)
+isvalid(m::MaskArray, i::Integer...) = iszero(m.mask[i...] & MISSING)
+isocean(m::MaskArray, i::Integer...) = (m.mask[i...] & OCEAN_VALID)==OCEAN_VALID
+isfilled(m::MaskArray, i::Integer...) = (m.mask[i...] & FILLED)==FILLED
+isoutofperiod(m::MaskArray, i::Integer...) = (m.mask[i...] & 0x02)==0x02
 
 end

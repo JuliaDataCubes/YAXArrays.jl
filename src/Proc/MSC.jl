@@ -5,6 +5,7 @@ using ..DAT
 using ..CubeAPI
 using ..Proc
 using ..CubeAPI.Mask
+import Statistics: quantile!
 
 function removeMSC(aout,ain,NpY::Integer,tmsc,tnmsc)
     xout, maskout = aout.data, aout.mask
@@ -59,7 +60,7 @@ function gapFillMSC(c::AbstractCubeData;kwargs...)
   mapCube(gapFillMSC,c,NpY,zeros(NpY),zeros(Int,NpY);indims=InDims("Time",miss=MaskMissing()),outdims=OutDims("Time",miss=MaskMissing()),kwargs...)
 end
 
-function gapFillMSC(aout::Tuple,ain::Tuple,NpY::Integer,tmsc,tnmsc)
+function gapFillMSC(aout::AbstractVector,ain::AbstractVector,NpY::Integer,tmsc,tnmsc)
   xin,maskin = ain.data, ain.mask
   xout,maskout = aout.data, aout.mask
   map!((m,v)->(m & 0x01)==0 ? v : oftype(v,NaN),xin,maskin,xin)
@@ -88,7 +89,7 @@ function getMSC(xout::AbstractVector{<:AbstractFloat},xin::AbstractVector{<:Abst
     NpY=length(xout)
     fillmsc(imscstart,xout,nmsc,xin,NpY)
 end
-function getMSC(aout::AbstractVector,ain::AbstractVector,nmsc::Vector{Int}=zeros(Int,length(xout));imscstart::Int=1,NpY=length(aout[1]))
+function getMSC(aout::AbstractVector,ain::AbstractVector,nmsc::Vector{Int}=zeros(Int,length(aout.data));imscstart::Int=1,NpY=length(aout.data))
     #Reshape the cube to squeeze unimportant variables
     xout,mout = aout.data, aout.mask
     xin,min   = ain.data, ain.mask

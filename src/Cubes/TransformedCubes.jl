@@ -47,22 +47,20 @@ Base.size(x::MergedAxisCube,i)=length(x.newAxes[i])
 function _read(x::MergedAxisCube{T,N},thedata::Tuple{Any,Any},r::CartesianIndices{N}) where {T,N}
 
   s1,s2 = size(x.parent)[x.imerge:x.imerge+1]
-  sr = r.start.I[x.imerge],r.stop.I[x.imerge]
+  sr = r.indices[x.imerge]
 
-  sta = r.start.I
-  sto = r.stop.I
   aout,mout = thedata
   saout=size(aout)
-  if sr[2]-sr[1]==0
-        sr2 = ind2sub((s1,s2),sr[1])
+  if length(sr)==1
+        sr2 = ind2sub((s1,s2),first(sr))
         aout2 = reshape(aout,saout[1:x.imerge-1]...,1,1,saout[x.imerge+1:end]...)
         mout2 = reshape(mout,saout[1:x.imerge-1]...,1,1,saout[x.imerge+1:end]...)
-    r2    = CartesianIndices(CartesianIndex((sta[1:x.imerge-1]...,sr2[1],sr2[2],sta[x.imerge+1:end]...)),CartesianIndex((sto[1:x.imerge-1]...,sr2[1],sr2[2],sto[x.imerge+1:end]...)))
+        r2 = CartesianIndices(r.indices[1:x.imerg-1]...,sr2[1],sr2[2],r.indices[x.imerge+1:end]...)
         _read(x.parent,(aout2,mout2),r2)
   elseif sr[2]-sr[1]==size(x,x.imerge)-1
         aout2 = reshape(aout,saout[1:x.imerge-1]...,s1,s2,saout[x.imerge+1:end]...)
         mout2 = reshape(mout,saout[1:x.imerge-1]...,s1,s2,saout[x.imerge+1:end]...)
-    r2    = CartesianIndices(CartesianIndex((sta[1:x.imerge-1]...,1,1,sta[x.imerge+1:end]...)),CartesianIndex((sto[1:x.imerge-1]...,s1,s2,sto[x.imerge+1:end]...)))
+        r2 = CartesianIndices(r.indices[1:x.imerge-1]...,1:s1,1:s2,r.indices[x.imerge+1:end]...)
     _read(x.parent,(aout2,mout2),r2)
   else
     error("Cropping into mergedaxiscubes not yet possible")
@@ -242,17 +240,14 @@ getCubeDes(v::SliceCube)=getCubeDes(v.parent)
 using Base.Cartesian
 @generated function _read(x::SliceCube{T,N,F},thedata::Tuple,r::CartesianIndices{N}) where {T,N,F}
   iax = F
-  startinds = Expr(:tuple,insert!(Any[:(rstart[$i]) for i=1:N],iax,:(x.ival))...)
-  stopinds  = Expr(:tuple,insert!(Any[:(rstop[$i]) for i=1:N],iax,:(x.ival))...)
+  newinds = Expr(:tuple,insert!(Any[:(r.indices[$i]) for i=1:N],iax,:(x.ival:x.ival))...)
   newsize   = Expr(:tuple,insert!(Any[:(sout[$i]) for i=1:N],iax,1)...)
   quote
     aout,mout=thedata
     sout = size(aout)
     newsize = $newsize
     aout2,mout2 = reshape(aout,newsize), reshape(mout,newsize)
-    rstart = r.start
-    rstop  = r.stop
-    rnew   = CartesianRange(CartesianIndex($startinds),CartesianIndex($stopinds))
+    rnew   = CartesianIndices($newinds)
     _read(x.parent, (aout2,mout2), rnew)
     return aout,mout
   end

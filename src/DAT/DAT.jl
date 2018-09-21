@@ -12,6 +12,7 @@ import ...ESDL.workdir
 import DataFrames
 import ..CubeAPI.CachedArrays.synccube
 import Distributed: nprocs
+import DataFrames: DataFrame
 using Dates
 import StatsBase.Weights
 using ESDL.CubeAPI.Mask
@@ -51,12 +52,22 @@ function mask2miss(::NaNMissing, a, workAr)
   map!((m,v)->(m & 0x01)==0x01 ? convert(eltype(workAr),NaN) : v,workAr,a[2],a[1])
 
 end
-mask2miss(::NoMissing,a::Tuple,workAr) = copy!(workAr,a[1])
-mask2miss(::NoMissing,a,workAr) = copy!(workAr,a)
+mask2miss(::NoMissing,a::Tuple,workAr) = copyto!(workAr,a[1])
+mask2miss(::NoMissing,a,workAr) = copyto!(workAr,a)
 mask2miss(::NoMissing,a::Nothing,workAr)=nothing
 function mask2miss(::MaskMissing,a::Tuple,workAr::MaskArray)
   copyto!(workAr.data,a[1])
   copyto!(workAr.mask,a[2])
+end
+function mask2miss(::MaskMissing,a::Tuple,workAr::DataFrame)
+  data,mask = a
+  for ivar in 1:size(data,2), iobs in 1:size(data,1)
+    if iszero(mask[iobs,ivar] & 0x01)
+      workAr[iobs,ivar]=data[iobs,ivar]
+    else
+      workAr[iobs,ivar]=missing
+    end
+  end
 end
 function mask2miss(o::ValueMissing,a,workAr)
   map!((m,v)->(m & 0x01)==0x01 ? oftype(v,o.v) : v,workAr,a[2],a[1])
@@ -70,6 +81,10 @@ end
 function miss2mask!(::MaskMissing,target,source::MaskArray)
   copyto!(target[1],source.data)
   copyto!(target[2],source.mask)
+end
+function miss2mask!(::MaskMissing,target,source::DataFrame)
+  copyto!(target[1],source)
+  map!(i->ismissing(i) ? 0x01 : 0x00, target[2],source)
 end
 function miss2mask!(::NoMissing,target,source)
   target[2][:] = 0x00
@@ -391,7 +406,7 @@ function generateOutCube(::Type{T},eltype,oc::OutputCube,loopCacheSize) where T<
   newsize=map(length,oc.allAxes)
   outar=Array{eltype}(undef,newsize...)
   genFun=oc.desc.genOut
-  map!(_->genFun(eltype),outar,outar)
+  map!(_->genFun(eltype),outar,1:length(outar))
   oc.cube = Cubes.CubeMem(oc.allAxes,outar,zeros(UInt8,newsize...))
 end
 

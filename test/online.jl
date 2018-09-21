@@ -1,6 +1,7 @@
 using ESDL
 using Test
-
+using Random
+using Statistics
 using OnlineStats
 @testset "OnlineStats" begin
 c=Cube()
@@ -14,7 +15,7 @@ oo2=mapCube(Mean,d,by=(LatAxis,))
 d2=readCubeData(d)
 
 @test mean(d2.data) ≈ oo.data[1]
-@test mean(d2.data,(1,3))[:] ≈ oo2.data
+@test mean(d2.data,dims=(1,3))[:] ≈ oo2.data
 
 #Test KMeans
 d2 = getCubeData(c,variable=["air_temperature_2m","gross_primary_productivity"],longitude=(30,31),latitude=(50,51),
@@ -23,7 +24,7 @@ d2 = getCubeData(c,variable=["air_temperature_2m","gross_primary_productivity"],
 dm=readCubeData(d2)
 xin=permutedims(dm.data,[4,1,2,3])
 xin=reshape(xin,(2,length(xin) ÷ 2))
-startVal=mean(xin,2)[:].+rand(Float32,2,5)
+startVal=mean(xin,dims=2)[:].+rand(Float32,2,5)
 
 x=mapCube(KMeans,d2,5,2,MDAxis=VariableAxis)
 
@@ -51,16 +52,17 @@ randmask=CubeMem(dm.axes[1:2],rand(1:2,size(dm)[1:2]),zeros(UInt8,size(dm)[1:2])
 #Test PCA
 m1=randmask.data.==1
 m2=randmask.data.==2
-using MultivariateStats
-ii2=ind2sub((4,4),findall(m2))
-for i=1:length(ii2[1])
-  dm.data[ii2[1][i],ii2[2][i],:,:]=rand(322,2)
+ii2=findall(m2)
+for i=1:length(ii2)
+  dm.data[ii2[i],:,:]=rand(322,2)
 end
 
 
 
 p=cubePCA(dm,by=[randmask],noutdims=2)
 
+println((explained_variance(p)).data[1, 1])
+  
 @test all([0.984 0.45; 0.09 0.45] .< explained_variance(p).data[1,1])
 rotation_matrix(p)
 transformPCA(p,dm).data
@@ -73,6 +75,8 @@ mask2=CubeMem(d2.axes[1:2],rand(1:10,4,4),zeros(UInt8,4,4),Dict("labels"=>Dict(i
 oogrouped = mapCube(Mean,d2,by=(mask,))
 @test isa(oogrouped.axes[1],CategoricalAxis{String,:Label})
 
+@show oogrouped.data, oogrouped.mask
+  
 oogrouped2 = mapCube(Mean,d2,by=(mask2,))
 
 for k=1:10
@@ -82,10 +86,9 @@ for k=1:10
   i=findall(mask2.data.==k)
 
   if length(i) > 0
-    i1,i2=ind2sub((4,4),i)
     dhelp=Float32[]
-    for (j1,j2) in zip(i1,i2)
-      append!(dhelp,d2.data[j1,j2,:])
+    for jj in i
+      append!(dhelp,d2.data[jj,:])
     end
     @test mean(dhelp) ≈ oogrouped2.data[know]
   end

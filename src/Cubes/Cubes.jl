@@ -34,7 +34,7 @@ getSingVal(c::AbstractCubeData,a...)=error("getSingVal called in the wrong way w
 function readCubeData(x::AbstractCubeData{T,N}) where {T,N}
   s=size(x)
   aout,mout=zeros(T,s...),zeros(UInt8,s...)
-  r=CartesianIndices(CartesianIndex{N}(),CartesianIndex(s...))
+  r=CartesianIndices(s)
   _read(x,(aout,mout),r)
   CubeMem(collect(CubeAxis,caxes(x)),aout,mout)
 end
@@ -136,6 +136,7 @@ function getcachehandle end
 struct ViewHandle end
 struct CacheHandle end
 handletype(::AbstractCubeMem)=ViewHandle()
+handletype(::AbstractSubCube)=CacheHandle()
 
 
 import ..ESDLTools.toRange

@@ -60,7 +60,7 @@ d = getCubeData(c,variable="air_temperature_2m",longitude=(30,31),latitude=(51,5
 data1=readCubeData(d)
 # Test reading of coordinate list
 ll=[30.1 50.2;30.5 51.1;30.8 51.1]
-llcube = extractLonLats(data1,ll)
+llcube = readCubeData(extractLonLats(data1,ll))
 @test llcube.data[1,:]==data1.data[1,4,:]
 @test llcube.data[2,:]==data1.data[3,1,:]
 @test llcube.data[3,:]==data1.data[4,1,:]
