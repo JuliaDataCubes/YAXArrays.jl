@@ -32,7 +32,7 @@ function Base.length(x::YearStepRange)
     (-x.startst+1+x.stopst+(x.stopyear-x.startyear)*x.NPY)
 end
 Base.size(x::YearStepRange)=(length(x),)
-function Base.iterate(x::YearStepRange,st=x.startst)
+function Base.iterate(x::YearStepRange,st=(x.startyear,x.startst))
   if (st[1]==x.stopyear && st[2]==x.stopst+1) || (st[1]==x.stopyear+1 && st[2]==1)
     return nothing
   else

@@ -6,6 +6,7 @@ using ..Cubes
 using ..Mask
 import ...ESDLTools.totuple
 import OnlineStats: VectorOb
+import ..DAT: mapCube
 export DATfitOnline
 
 

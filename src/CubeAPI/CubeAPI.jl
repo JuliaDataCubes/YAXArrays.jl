@@ -1,5 +1,5 @@
 module CubeAPI
-import ..Cubes: caxes, AbstractSubCube, AbstractCubeData, AbstractCubeMem, gethandle, readCubeData, CubeMem, _read
+import ..Cubes: caxes, AbstractSubCube, AbstractCubeData, AbstractCubeMem, gethandle, readCubeData, CubeMem, _read, cubeproperties
 using ..Cubes.Axes
 using ..ESDLTools
 import ..ESDLTools: getiperm
@@ -9,9 +9,8 @@ export Cube, getCubeData,getTimeRanges,readCubeData, getMemHandle, RemoteCube, k
 export isvalid, isinvalid, isvalid, isvalidorfilled, Mask
 export showVarInfo
 
-include("Mask.jl")
 include("countrydict.jl")
-using .Mask
+using ..Cubes.Mask
 using DataStructures
 using Dates
 import HTTP

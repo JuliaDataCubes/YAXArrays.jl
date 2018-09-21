@@ -8,6 +8,9 @@ export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesC
        getSingVal, ScaleAxis, axname, @caxis_str, rmCube, cubeproperties, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
        getOutAxis, needshandle, gethandle, handletype, getcachehandle, ByInference
 
+include("Mask.jl")
+import .Mask: MaskArray
+
 """
     AbstractCubeData{T,N}
 
@@ -94,8 +97,15 @@ caxes(c::CubeMem)=c.axes
 cubeproperties(c::CubeMem)=c.properties
 
 Base.IndexStyle(::CubeMem)=Base.LinearFast()
-Base.getindex(c::CubeMem,i::Integer)=getindex(c.data,i)
-Base.setindex!(c::CubeMem,i::Integer,v)=setindex!(c.data,i,v)
+Base.getindex(c::CubeMem,i::Integer)=iszero(c.mask[i] & 0x01) ? getindex(c.data,i) : missing
+function Base.setindex!(c::CubeMem,i::Integer,v)
+  if isa(v,Missing)
+    setindex!(c.mask,i,c.mask[i] | 0x01)
+  else
+    setindex!(c.mask,i,c.mask[i] & 0xfe)
+    setindex!(c.data,i,v)
+  end
+end
 Base.size(c::CubeMem)=size(c.data)
 Base.size(c::CubeMem,i)=size(c.data,i)
 Base.similar(c::CubeMem)=cubeMem(c.axes,similar(c.data),copy(c.mask))
@@ -172,21 +182,21 @@ function Base.getindex(c::AbstractCubeData,i::Integer...)
   aout = zeros(eltype(c),size(r))
   mout = fill(0xff,size(r))
   _read(c,(aout,mout),r)
-  return (eltype(c)<:AbstractFloat && (mout[1] & 0x01)!=0x00) ? oftype(aout[1],NaN) : aout[1]
+  return ((mout[1] & 0x01)!=0x00) ? missing : aout[1]
 end
 
 function Base.getindex(c::AbstractCubeData,i::IndR...)
   length(i)==ndims(c) || error("You must provide $(ndims(c)) indices")
   ax = totuple(caxes(c))
   r = CartesianIndices(map((ii,iax)->getfirst(ii,iax):getlast(ii,iax),i,ax))
-  aout = zeros(eltype(c),size(r))
+  aout = zeros(Union{eltype(c),Missing},size(r))
   mout = fill(0xff,size(r))
   _read(c,(aout,mout),r)
-  if eltype(c)<:AbstractFloat
-    map!((m,v)->(m & 0x01)!=0x00 ? convert(eltype(c),NaN) : v,aout,mout,aout)
-  end
-  squeezedims = totuple(findall(i->size(aout,i)==1,1:ndims(aout)))
+  squeezedims = totuple(findall(j->isa(j,Integer),i))
   dropdims(aout,dims=squeezedims)
+  dropdims(mout,dims=squeezedims)
+  #map!((m,v)->(m & 0x01)!=0x00 ? missing : v,aout,mout,aout)
+  MaskArray(aout,mout)
 end
 Base.read(d::AbstractCubeData)=getindex(d,fill(Colon(),ndims(d))...)
 
