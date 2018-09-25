@@ -883,6 +883,9 @@ show(io::IO,::MIME"text/markdown",v::Vector{ESDLVarInfo})=foreach(x->show(io,MIM
 
 getNanVal(::Type{T}) where {T<:AbstractFloat} = convert(T,NaN)
 getNanVal(::Type{T}) where {T<:Integer}       = typemax(T)
+getNanVal(::Type{T}) where {T<:Union{<:Number,Missing}} = missing
+getCopy(x::Array{Union{T,Missing}}) where T = zeros(T,size(x)),T
+getCopy(x::Array) = x,eltype(x)
 
 function readFromDataYear(cube::Cube,outar::AbstractArray{T,3},mask::AbstractArray{UInt8,3},variable,y,grid_x1,nx,grid_y1,ny,itcur,i1cur,ntime,NpY) where T
   filename=joinpath(cube.base_dir,"data",variable,string(y,"_",variable,".nc"))
@@ -897,18 +900,19 @@ function readFromDataYear(cube::Cube,outar::AbstractArray{T,3},mask::AbstractArr
   @assert ny==size(outar,2)
   @assert nx==size(outar,1)
   @assert size(outar)==size(mask)
+  outar2,T2 = getCopy(outar)
   if isfile(filename)
-    v=convert(NcVar{T},NetCDF.open(filename,variable))
+    v=convert(NcVar{T2},NetCDF.open(filename,variable))
     scalefac::T = convert(T,get(v.atts,"scale_factor",one(T)))
     offset::T   = convert(T,get(v.atts,"add_offset",zero(T)))
-    NetCDF.readvar!(v,view(outar,:,:,itcur:(itcur+nt-1)),start=[grid_x1,grid_y1,i1cur],count=[nx,ny,nt])
+    NetCDF.readvar!(v,view(outar2,:,:,itcur:(itcur+nt-1)),start=[grid_x1,grid_y1,i1cur],count=[nx,ny,nt])
     missval::T=convert(T,ncgetatt(filename,variable,"_FillValue"))
     @inbounds for k=itcur:(itcur+nt-1),j=1:ny,i=1:nx
-      if (outar[i,j,k] == missval) || isnan(outar[i,j,k])
+      if (outar2[i,j,k] == missval) || isnan(outar2[i,j,k])
         mask[i,j,k]=mask[i,j,k] | MISSING
         outar[i,j,k]=nanval
       else
-        outar[i,j,k]=outar[i,j,k]*scalefac+offset
+        outar[i,j,k]=outar2[i,j,k]*scalefac+offset
       end
     end
     ncclose(filename)
