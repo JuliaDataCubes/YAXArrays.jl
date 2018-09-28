@@ -273,7 +273,7 @@ cubechunks(s::SubCube) = cubechunks(s.cube)
 iscompressed(s::AbstractSubCube) = iscompressed(s.cube)
 function chunkoffset(s::SubCube)
   clon,clat,ctime = cubechunks(s)
-  (mod(s.sub_grid[1]-1,clon),mod(s.sub_grid[3]-1,clat),mod(s.sub_times[2]-1,ctime))
+  (mod(s.sub_grid[3]-1,clon),mod(s.sub_grid[1]-1,clat),mod(s.sub_times[2]-1,ctime))
 end
 
 
@@ -358,7 +358,7 @@ cubechunks(s::SubCubeV) = (cubechunks(s.cube)...,1)
 cubechunks(s::SubCubeVPerm) = cubechunks(s.parent)[collect(s.perm)]
 function chunkoffset(s::SubCubeV)
   clon,clat,ctime,_ = cubechunks(s)
-  (mod(s.sub_grid[1]-1,clon),mod(s.sub_grid[3]-1,clat),mod(s.sub_times[2]-1,ctime),0)
+  (mod(s.sub_grid[3]-1,clon),mod(s.sub_grid[1]-1,clat),mod(s.sub_times[2]-1,ctime),0)
 end
 chunkoffset(s::SubCubeVPerm)=chunkoffset(s.parent)[collect(s.perm)]
 
@@ -420,9 +420,9 @@ caxes(s::SubCubeStatic)=CubeAxis[s.lonAxis,s.latAxis]
 caxes(s::SubCubeStaticPerm)=CubeAxis[s.parent.latAxis,s.parent.lonAxis]
 cubechunks(s::SubCubeStatic) = (cubechunks(s.parent)[1],cubechunks(s.parent)[2])
 cubechunks(s::SubCubeStaticPerm) = (cubechunks(s.parent)[2],cubechunks(s.parent)[1])
-function chunkoffset(s::SubCubeV)
+function chunkoffset(s::SubCubeStatic)
   clon,clat = cubechunks(s)
-  (mod(s.sub_grid[1]-1,clon),mod(s.sub_grid[3]-1,clat))
+  (mod(s.sub_grid[3]-1,clon),mod(s.sub_grid[1]-1,clat))
 end
 chunkoffset(s::SubCubeStaticPerm) = reverse(chunkoffset(s.parent))
 
@@ -960,8 +960,8 @@ function readFromDataYear(cube::Cube,outar::AbstractArray{T,3},mask::AbstractArr
   return fin,y,i1cur,itcur
 end
 
-include("CachedArrays.jl")
-using .CachedArrays
+#include("CachedArrays.jl")
+#using .CachedArrays
 
 function getMemHandle(cube::AbstractCubeData{T},nblock,block_size;startInd::Int=1) where T
   CachedArray(cube,nblock,block_size,CachedArrays.MaskedCacheBlock{T,length(block_size)},startInd=startInd)

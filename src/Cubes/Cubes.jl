@@ -61,7 +61,7 @@ cubeproperties(::AbstractCubeData)=Dict{String,Any}()
 cubechunks(c::AbstractCubeData) = (size(c,1),map(i->1,2:ndims(c)))
 
 "Offset of the first chunk"
-chunksoffset(c::AbstractCubeData) = ntuple(i->0,ndims(c))
+chunkoffset(c::AbstractCubeData) = ntuple(i->0,ndims(c))
 
 function iscompressed end
 

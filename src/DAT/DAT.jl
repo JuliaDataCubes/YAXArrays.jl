@@ -6,7 +6,7 @@ using ..CubeAPI
 using ..CubeAPI.CachedArrays
 using ..ESDLTools
 using Distributed
-import ..Cubes: getAxis, getOutAxis, getAxis, gethandle, getSubRange, cubechunks, iscompressed
+import ..Cubes: getAxis, getOutAxis, getAxis, gethandle, getSubRange, cubechunks, iscompressed, chunkoffset
 import ...ESDL
 import ...ESDL.workdir
 import DataFrames
@@ -342,21 +342,23 @@ function synccube(x::Tuple{Array,Array})
 end
 
 function getchunkoffsets(dc::DATConfig)
-  co = zeros(length(dc.LoopAxes))
+  co = zeros(Int,length(dc.LoopAxes))
   for ic in dc.incubes
-    for ax,cocur in zip(caxes(dc.cube),chunkoffset(dc.cube))
+    @show chunkoffset
+    for (ax,cocur) in zip(caxes(ic.cube),chunkoffset(ic.cube))
       ii = findAxis(ax,dc.LoopAxes)
-      if ii>0 && iszero(co[ii]) && cocur>0
+      if !isa(ii,Nothing) && iszero(co[ii]) && cocur>0
         co[ii]=cocur
       end
     end
   end
-  co
+  totuple(co)
 end
 
 
 function runLoop(dc::DATConfig)
   allRanges=distributeLoopRanges(totuple(dc.loopCacheSize),totuple(map(length,dc.LoopAxes)),getchunkoffsets(dc))
+  @show collect(allRanges)
   if dc.ispar
     #TODO Check this for multiple output cubes, how to parallelize
     #I thnk this should work, but not 100% sure yet
@@ -391,6 +393,7 @@ function runLoop(dc::DATConfig)
     loopax = totuple(dc.LoopAxes)
     adda = dc.addargs
     kwa = dc.kwargs
+    @show first(allRanges)
     foreach(allRanges) do r
       innerLoop(dc.fu,inhandles, outhandles,inob,r,
         inworkar,outworkar,inmiss,outmiss,loopax,adda,kwa)
@@ -551,9 +554,9 @@ function getLoopCacheSize(preblocksize,loopaxlengths,max_cache,cmisses)
   imiss = 1
   while imiss<=length(cmisses)
     il = cmisses[imiss].iloopax
-    s = min(cmisses[imiss].cs,loopCacheSize[ii])/loopCacheSize[il]
+    s = min(cmisses[imiss].cs,loopaxlengths[il])/loopCacheSize[il]
     if s<incfac
-      loopCacheSize[il]=min(cmisses[imiss].cs,loopCacheSize[ii])
+      loopCacheSize[il]=min(cmisses[imiss].cs,loopaxlengths[il])
       incfac=totcachesize/preblocksize/prod(loopCacheSize)
     else
       ii=floor(Int,incfac)
@@ -576,7 +579,7 @@ end
 
 function distributeLoopRanges(block_size::NTuple{N,Int},loopR::NTuple{N,Int},co) where N
     allranges = map(block_size,loopR,co) do bs,lr,cocur
-      collect(filter(!isempty,[max(1,i):min(i+bs-1,lr) for i in (cocur-bs+1):bs:lr]))
+      collect(filter(!isempty,[max(1,i):min(i+bs-1,lr) for i in (1-cocur):bs:lr]))
     end
     Iterators.product(allranges...)
 end
