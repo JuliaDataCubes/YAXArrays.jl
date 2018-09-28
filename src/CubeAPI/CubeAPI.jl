@@ -1,6 +1,6 @@
 module CubeAPI
 import ..Cubes: caxes, AbstractSubCube, AbstractCubeData, AbstractCubeMem, gethandle, readCubeData, CubeMem,
-  _read, cubeproperties, cubechunks, iscompressed
+  _read, cubeproperties, cubechunks, iscompressed, chunkoffset
 using ..Cubes.Axes
 using ..ESDLTools
 import ..ESDLTools: getiperm
@@ -271,6 +271,11 @@ end
 caxes(s::SubCube)=CubeAxis[s.lonAxis,s.latAxis,s.timeAxis]
 cubechunks(s::SubCube) = cubechunks(s.cube)
 iscompressed(s::AbstractSubCube) = iscompressed(s.cube)
+function chunkoffset(s::SubCube)
+  clon,clat,ctime = cubechunks(s)
+  (mod(s.sub_grid[1]-1,clon),mod(s.sub_grid[3]-1,clat),mod(s.sub_times[2]-1,ctime))
+end
+
 
 """
     immutable SubCubePerm{T} <: AbstractCubeData{T,3}
@@ -291,6 +296,7 @@ end
 SubCubePerm(p::SubCube,perm::Tuple{Int,Int,Int})=SubCubePerm(p,perm,getiperm(perm))
 caxes(s::SubCubePerm)=CubeAxis[s.parent.lonAxis,s.parent.latAxis,s.parent.timeAxis][collect(s.perm)]
 cubechunks(s::SubCubePerm) = cubechunks(s.parent.cube)[collect(s.perm)]
+chunkoffset(s::SubCubePerm) = chunkoffset(s.parent)[collect(s.perm)]
 
 Base.eltype(s::AbstractCubeData{T}) where {T}=T
 Base.ndims(s::Union{SubCube,SubCubePerm})=3
@@ -350,6 +356,12 @@ caxes(s::SubCubeV)=CubeAxis[s.lonAxis,s.latAxis,s.timeAxis,s.varAxis]
 caxes(s::SubCubeVPerm)=CubeAxis[s.parent.lonAxis,s.parent.latAxis,s.parent.timeAxis,s.parent.varAxis][collect(s.perm)]
 cubechunks(s::SubCubeV) = (cubechunks(s.cube)...,1)
 cubechunks(s::SubCubeVPerm) = cubechunks(s.parent)[collect(s.perm)]
+function chunkoffset(s::SubCubeV)
+  clon,clat,ctime,_ = cubechunks(s)
+  (mod(s.sub_grid[1]-1,clon),mod(s.sub_grid[3]-1,clat),mod(s.sub_times[2]-1,ctime),0)
+end
+chunkoffset(s::SubCubeVPerm)=chunkoffset(s.parent)[collect(s.perm)]
+
 Base.ndims(s::SubCubeV)=4
 Base.ndims(s::SubCubeVPerm)=4
 Base.size(s::SubCubeV)=(length(s.lonAxis),length(s.latAxis),length(s.timeAxis),length(s.varAxis))
@@ -408,6 +420,12 @@ caxes(s::SubCubeStatic)=CubeAxis[s.lonAxis,s.latAxis]
 caxes(s::SubCubeStaticPerm)=CubeAxis[s.parent.latAxis,s.parent.lonAxis]
 cubechunks(s::SubCubeStatic) = (cubechunks(s.parent)[1],cubechunks(s.parent)[2])
 cubechunks(s::SubCubeStaticPerm) = (cubechunks(s.parent)[2],cubechunks(s.parent)[1])
+function chunkoffset(s::SubCubeV)
+  clon,clat = cubechunks(s)
+  (mod(s.sub_grid[1]-1,clon),mod(s.sub_grid[3]-1,clat))
+end
+chunkoffset(s::SubCubeStaticPerm) = reverse(chunkoffset(s.parent))
+
 Base.ndims(s::SubCubeStatic)=2
 Base.ndims(s::SubCubeStaticPerm)=2
 Base.size(s::SubCubeStatic)=(length(s.lonAxis),length(s.latAxis))

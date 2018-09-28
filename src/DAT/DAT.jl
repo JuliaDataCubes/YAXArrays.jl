@@ -341,8 +341,22 @@ function synccube(x::Tuple{Array,Array})
   Mmap.sync!(x[2])
 end
 
+function getchunkoffsets(dc::DATConfig)
+  co = zeros(length(dc.LoopAxes))
+  for ic in dc.incubes
+    for ax,cocur in zip(caxes(dc.cube),chunkoffset(dc.cube))
+      ii = findAxis(ax,dc.LoopAxes)
+      if ii>0 && iszero(co[ii]) && cocur>0
+        co[ii]=cocur
+      end
+    end
+  end
+  co
+end
+
+
 function runLoop(dc::DATConfig)
-  allRanges=distributeLoopRanges(totuple(dc.loopCacheSize),totuple(map(length,dc.LoopAxes)))
+  allRanges=distributeLoopRanges(totuple(dc.loopCacheSize),totuple(map(length,dc.LoopAxes)),getchunkoffsets(dc))
   if dc.ispar
     #TODO Check this for multiple output cubes, how to parallelize
     #I thnk this should work, but not 100% sure yet
@@ -537,9 +551,9 @@ function getLoopCacheSize(preblocksize,loopaxlengths,max_cache,cmisses)
   imiss = 1
   while imiss<=length(cmisses)
     il = cmisses[imiss].iloopax
-    s = cmisses[imiss].cs/loopCacheSize[il]
+    s = min(cmisses[imiss].cs,loopCacheSize[ii])/loopCacheSize[il]
     if s<incfac
-      loopCacheSize[il]=cmisses[imiss].cs
+      loopCacheSize[il]=min(cmisses[imiss].cs,loopCacheSize[ii])
       incfac=totcachesize/preblocksize/prod(loopCacheSize)
     else
       ii=floor(Int,incfac)
@@ -560,8 +574,10 @@ function getLoopCacheSize(preblocksize,loopaxlengths,max_cache,cmisses)
   return loopCacheSize
 end
 
-function distributeLoopRanges(block_size::NTuple{N,Int},loopR::NTuple{N,Int}) where N
-    allranges = map((bs,lr)->[((i-1)*bs+1):min(i*bs,lr) for i in 1:ceil(Int,lr/bs)],block_size,loopR)
+function distributeLoopRanges(block_size::NTuple{N,Int},loopR::NTuple{N,Int},co) where N
+    allranges = map(block_size,loopR,co) do bs,lr,cocur
+      collect(filter(!isempty,[max(1,i):min(i+bs-1,lr) for i in (cocur-bs+1):bs:lr]))
+    end
     Iterators.product(allranges...)
 end
 
