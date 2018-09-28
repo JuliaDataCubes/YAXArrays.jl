@@ -6,7 +6,7 @@ using ..CubeAPI
 using ..CubeAPI.CachedArrays
 using ..ESDLTools
 using Distributed
-import ..Cubes: getAxis, getOutAxis, getAxis, gethandle, getSubRange
+import ..Cubes: getAxis, getOutAxis, getAxis, gethandle, getSubRange, cubechunks, iscompressed
 import ...ESDL
 import ...ESDL.workdir
 import DataFrames
@@ -342,10 +342,10 @@ function synccube(x::Tuple{Array,Array})
 end
 
 function runLoop(dc::DATConfig)
+  allRanges=distributeLoopRanges(totuple(dc.loopCacheSize),totuple(map(length,dc.LoopAxes)))
   if dc.ispar
-    #TODO CHeck this for multiple output cubes, how to parallelize
+    #TODO Check this for multiple output cubes, how to parallelize
     #I thnk this should work, but not 100% sure yet
-    allRanges=distributeLoopRanges(totuple(dc.loopCacheSize),map(length,dc.LoopAxes))
     if isdefined(Main,:PmapProgressMeter)
       #@everywhereelsem using PmapProgressMeter
       allRanges = (Progress(length(allRanges),1),allRanges)
@@ -362,24 +362,25 @@ function runLoop(dc::DATConfig)
                                   totuple(map(i->i.desc.miss,Main.PMDATMODULE.dc.incubes)),
                                   totuple(map(i->i.desc.miss,Main.PMDATMODULE.dc.outcubes)),
                                   totuple(Main.PMDATMODULE.dc.LoopAxes),
-                                  Val{false},
                                   Main.PMDATMODULE.dc.addargs,
                                   Main.PMDATMODULE.dc.kwargs)
           ,allRanges...)
   else
-    innerLoop(dc.fu,
-              totuple(gethandle.(dc.incubes)),
-              totuple(gethandle.(dc.outcubes)),
-              InnerObj(dc),
-              totuple(length.(dc.LoopAxes)),
-              totuple(map(i->i.workarray,dc.incubes)),
-              totuple(map(i->i.workarray,dc.outcubes)),
-              totuple(map(i->i.desc.miss,dc.incubes)),
-              totuple(map(i->i.desc.miss,dc.outcubes)),
-              totuple(dc.LoopAxes),
-              Val{isdefined(Main,:Progress)},
-              dc.addargs,
-              dc.kwargs)
+    inhandles = totuple(gethandle.(dc.incubes))
+    outhandles = totuple(gethandle.(dc.outcubes))
+    inob = InnerObj(dc)
+    laxlengths = totuple(length.(dc.LoopAxes))
+    inworkar = totuple(map(i->i.workarray,dc.incubes))
+    outworkar = totuple(map(i->i.workarray,dc.outcubes))
+    inmiss = totuple(map(i->i.desc.miss,dc.incubes))
+    outmiss = totuple(map(i->i.desc.miss,dc.outcubes))
+    loopax = totuple(dc.LoopAxes)
+    adda = dc.addargs
+    kwa = dc.kwargs
+    foreach(allRanges) do r
+      innerLoop(dc.fu,inhandles, outhandles,inob,r,
+        inworkar,outworkar,inmiss,outmiss,loopax,adda,kwa)
+    end
   end
   dc.outcubes
 end
@@ -473,6 +474,19 @@ end
 mysizeof(x)=sizeof(x)
 mysizeof(x::Type{String})=1
 
+"""
+Function that compares two cache miss specifiers by their importance
+"""
+function cmpcachmisses(x1,x2)
+  #First give preference to compressed misses
+  if xor(x1.iscompressed,x2.iscompressed)
+    return x1.iscompressed
+  #Now compare the size of the miss multiplied with the inner size
+  else
+    return x1.cs * x1.innerleap > x2.cs * x2.innerleap
+  end
+end
+
 function getCacheSizes(dc::DATConfig)
 
   if all(i->i.isMem,dc.incubes)
@@ -484,7 +498,19 @@ function getCacheSizes(dc::DATConfig)
   inblocksize,imax = findmax(inblocksizes)
   outblocksizes    = map(C->length(C.axesSmall)>0 ? sizeof(C.outtype)*prod(map(length,C.axesSmall)) : 1,dc.outcubes)
   outblocksize     = length(outblocksizes) > 0 ? findmax(outblocksizes)[1] : 1
-  loopCacheSize    = getLoopCacheSize(max(inblocksize,outblocksize),dc.LoopAxes,dc.max_cache)
+  #Now add cache miss information for each input cube to every loop axis
+  cmisses= NamedTuple{(:iloopax,:cs, :iscompressed, :innerleap),Tuple{Int64,Int64,Bool,Int64}}[]
+  foreach(dc.LoopAxes,1:length(dc.LoopAxes)) do lax,ilax
+    for ic in dc.incubes
+      ii = findAxis(lax,ic.cube)
+      if ii>0
+        inax = prod(map(length,ic.axesSmall))
+        push!(cmisses,(iloopax = ilax,cs = cubechunks(ic.cube)[ii],iscompressed = iscompressed(ic.cube), innerleap=inax))
+      end
+    end
+  end
+  sort!(cmisses,lt=cmpcachmisses)
+  loopCacheSize    = getLoopCacheSize(max(inblocksize,outblocksize),map(length,dc.LoopAxes),dc.max_cache, cmisses)
   for cube in dc.incubes
     if !cube.isMem
       cube.cachesize = map(length,cube.axesSmall)
@@ -498,43 +524,45 @@ function getCacheSizes(dc::DATConfig)
 end
 
 "Calculate optimal Cache size to DAT operation"
-function getLoopCacheSize(preblocksize,LoopAxes,max_cache)
+function getLoopCacheSize(preblocksize,loopaxlengths,max_cache,cmisses)
+  @show preblocksize
+  @show cmisses
   totcachesize=max_cache
 
   incfac=totcachesize/preblocksize
   incfac<1 && error("The requested slices do not fit into the specified cache. Please consider increasing max_cache")
-  loopCacheSize = ones(Int,length(LoopAxes))
-  for iLoopAx=1:length(LoopAxes)
-    s=length(LoopAxes[iLoopAx])
+  loopCacheSize = ones(Int,length(loopaxlengths))
+
+  # Go through list of cache misses first and decide
+  imiss = 1
+  while imiss<=length(cmisses)
+    il = cmisses[imiss].iloopax
+    s = cmisses[imiss].cs/loopCacheSize[il]
     if s<incfac
-      loopCacheSize[iLoopAx]=s
-      incfac=incfac/s
-      continue
+      loopCacheSize[il]=cmisses[imiss].cs
+      incfac=totcachesize/preblocksize/prod(loopCacheSize)
     else
       ii=floor(Int,incfac)
       while ii>1 && rem(s,ii)!=0
         ii=ii-1
       end
-      loopCacheSize[iLoopAx]=ii
+      loopCacheSize[il]=ii
       break
     end
+    imiss+=1
+  end
+  if imiss<length(cmisses)+1
+    @warn "There are still cache misses"
+    cmisses[imiss].iscompressed && @warn "There are compressed caches misses, you may want to use a different cube chunking"
+  else
+    #continue increasing cache sizes on by one...
   end
   return loopCacheSize
 end
 
-using Base.Cartesian
-@generated function distributeLoopRanges(block_size::NTuple{N,Int},loopR::Vector) where N
-    quote
-        @assert length(loopR)==N
-        nsplit=helpComprehension_nsplit(block_size, loopR)
-        baseR=helpComprehension_baseR(block_size)
-        a=Array{NTuple{$N,UnitRange{Int}}}(undef,nsplit...)
-        @nloops $N i a begin
-            rr=@ntuple $N d->baseR[d].+(i_d-1)*block_size[d]
-            @nref($N,a,i)=rr
-        end
-        a=reshape(a,length(a))
-    end
+function distributeLoopRanges(block_size::NTuple{N,Int},loopR::NTuple{N,Int}) where N
+    allranges = map((bs,lr)->[((i-1)*bs+1):min(i*bs,lr) for i in 1:ceil(Int,lr/bs)],block_size,loopR)
+    Iterators.product(allranges...)
 end
 
 function generateworkarrays(dc::DATConfig)
@@ -547,21 +575,10 @@ function generateworkarrays(dc::DATConfig)
   end
 end
 
-#Comprehensions are not allowed in generated functions so they have to moved to normal function
-# see https://github.com/JuliaLang/julia/issues/21094
-function helpComprehension_nsplit(block_size::NTuple{N,Int},loopR::Vector) where N
-    nsplit=Int[div(l,b) for (l,b) in zip(loopR,block_size)]
-    return nsplit
-end
-function helpComprehension_baseR(block_size::NTuple{N,Int}) where N
-    baseR=UnitRange{Int}[1:b for b in block_size]
-    return baseR
-end
-
 using DataStructures: OrderedDict
 using Base.Cartesian
 @generated function innerLoop(f,xin::NTuple{NIN,Any},xout::NTuple{NOUT,Any},::InnerObj{T1,T2,T4,OC,R,UPDOUT,LR},loopRanges::T3,
-  inwork,outwork,inmissing,outmissing,loopaxes::LAX,::Type{Val{PROG}},addargs,kwargs) where {T1,T2,T3,T4,OC,R,NIN,NOUT,UPDOUT,LR,PROG,LAX}
+  inwork,outwork,inmissing,outmissing,loopaxes::LAX,addargs,kwargs) where {T1,T2,T3,T4,OC,R,NIN,NOUT,UPDOUT,LR,LAX}
 
 
   NinCol      = T1
@@ -573,10 +590,7 @@ using Base.Cartesian
   inworksyms = map(i->Symbol(string("inwork_",i)),1:NIN)
   outworksyms= map(i->Symbol(string("outwork_",i)),1:NOUT)
 
-  #Add Progressmeter
   unrollEx = quote end
-  PROG && push!(unrollEx.args,:(progm=Progress(prod(loopRanges))))
-
   [push!(unrollEx.args,:($(inworksyms[i]) = inwork[$i])) for i=1:NIN]
   [push!(unrollEx.args,:($(outworksyms[i]) = outwork[$i])) for i=1:NOUT]
   subIn = map(1:NIN) do i
@@ -611,7 +625,6 @@ using Base.Cartesian
     end
   end
   loopBody=quote end
-  PROG && push!(loopBody.args,:(next!(progm)))
 
   callargs=Any[:f,Expr(:parameters,Expr(:...,:kwargs))]
   R && foreach(j->push!(callargs,outworksyms[j]),1:NOUT)

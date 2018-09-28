@@ -57,6 +57,11 @@ Base.ndims(::AbstractCubeData{T,N}) where {T,N}=N
 
 cubeproperties(::AbstractCubeData)=Dict{String,Any}()
 
+"Chunks, if given"
+cubechunks(c::AbstractCubeData) = (size(c,1),map(i->1,2:ndims(c)))
+
+function iscompressed end
+
 "Supertype of all subtypes of the original data cube"
 abstract type AbstractSubCube{T,N} <: AbstractCubeData{T,N} end
 
