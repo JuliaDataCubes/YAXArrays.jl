@@ -52,27 +52,27 @@ function MmapCube(axlist;folder=mktempdir(),T=Float32,persist::Bool=true,overwri
   ntc
 end
 cubeproperties(c::MmapCube)=c.properties
-getmmaphandles(y::MmapCube{T}) where T = getmmaphandles(y.folder,y.axes,T)
-function getmmaphandles(folder, axlist,T)
+getmmaphandles(y::MmapCube{T};mode="r") where T = getmmaphandles(y.folder,y.axes,T,mode=mode)
+function getmmaphandles(folder, axlist,T;mode="r")
 
   s=map(length,axlist)
-  ar = open(joinpath(folder,"data.bin"),"r+") do fd
+  ar = open(joinpath(folder,"data.bin"),mode) do fd
     Mmap.mmap(fd,Array{T,length(axlist)},totuple(s))
   end
-  ma = open(joinpath(folder,"mask.bin"),"r+") do fm
+  ma = open(joinpath(folder,"mask.bin"),mode) do fm
     Mmap.mmap(fm,Array{UInt8,length(axlist)},totuple(s))
   end
   ar,ma
 end
-gethandle(y::MmapCube)=getmmaphandles(y)
-handletype(::MmapCube)=ViewHandle()
 
-function gethandle(y::MmapCubePerm{T}) where T
-    data,mask = getmmaphandles(y.folder,y.axes,T)
-    PermutedDimsArray(data,y.perm),PermutedDimsArray(mask,y.perm)
+function _write(y::MmapCube,thedata::Tuple,r::CartesianIndices{N}) where N
+    din,min = thedata
+    dout,mout   = getmmaphandles(y,mode="r+")
+    for (i,ic) in enumerate(r)
+        dout[ic]=din[i]
+        mout[ic]=min[i]
+    end
 end
-handletype(::AbstractMmapCube)=ViewHandle()
-
 function _read(y::MmapCube,thedata::Tuple,r::CartesianIndices{N}) where N
     dout,mout = thedata
     din,min   = getmmaphandles(y)

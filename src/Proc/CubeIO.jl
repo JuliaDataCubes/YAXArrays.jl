@@ -2,7 +2,6 @@ module CubeIO
 using ..Cubes
 using ..DAT
 using ..CubeAPI
-using ..CubeAPI.CachedArrays
 using ..Proc
 using ..Mask
 

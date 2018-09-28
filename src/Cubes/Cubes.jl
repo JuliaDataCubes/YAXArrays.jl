@@ -6,7 +6,7 @@ module Cubes
 export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, TimeHAxis, QuantileAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, caxes,
        AbstractSubCube, CubeMem, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis, axVal2Index, MSCAxis,
        getSingVal, ScaleAxis, axname, @caxis_str, rmCube, cubeproperties, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
-       getOutAxis, needshandle, gethandle, handletype, getcachehandle, ByInference
+       getOutAxis, ByInference
 
 include("Mask.jl")
 import .Mask: MaskArray
@@ -139,12 +139,6 @@ Returns an indexable handle to the data.
 gethandle(c::AbstractCubeMem) = (c.data,c.mask)
 gethandle(c::CubeAxis) = collect(c.values)
 gethandle(c,block_size)=gethandle(c)
-function getcachehandle end
-
-struct ViewHandle end
-struct CacheHandle end
-handletype(::AbstractCubeMem)=ViewHandle()
-handletype(::AbstractSubCube)=CacheHandle()
 
 
 import ..ESDLTools.toRange
@@ -159,6 +153,15 @@ function _read(c::AbstractCubeData,thedata::Tuple,r::CartesianIndices)
   copyto!(outmask,mask)
 end
 
+function _write(c::AbstractCubeData,thedata::Tuple,r::CartesianIndices)
+  N=ndims(r)
+  outar,outmask=thedata
+  rr = convert(NTuple{N,UnitRange},r)
+  h = gethandle(c,size(r))
+  data,mask = getSubRange(h,rr...)
+  copyto!(data,outar)
+  copyto!(mask,outmask)
+end
 "This function creates a new view of the cube, joining longitude and latitude axes to a single spatial axis"
 function mergeLonLat!(c::CubeMem)
 ilon=findAxis(LonAxis,c.axes)
