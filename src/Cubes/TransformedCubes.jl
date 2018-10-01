@@ -1,7 +1,7 @@
 export ConcatCube, concatenateCubes
 export mergeAxes
 import ..ESDLTools.getiperm
-import ..Cubes: _read, gethandle, getcachehandle, handletype, caxes
+import ..Cubes: _read, gethandle, caxes
 
 mutable struct PermCube{T,N,C} <: AbstractCubeData{T,N}
   parent::C
@@ -23,12 +23,10 @@ function _read(x::PermCube{T,N},thedata::Tuple{Any,Any},r::CartesianIndices{N}) 
   permutedims!(thedata[2],mout,perm)
 end
 Base.permutedims(x::AbstractCubeData{T,N},perm) where {T,N}=PermCube{T,N,typeof(x)}(x,perm)
-gethandle(c::PermCube,block_size)=gethandle(c,block_size,handletype(c.parent))
-function gethandle(c::PermCube,block_size,::ViewHandle)
+function gethandle(c::PermCube,block_size)
   data,mask = gethandle(c.parent)
   PermutedDimsArray(data,c.perm),PermutedDimsArray(mask,c.perm)
 end
-gethandle(c::PermCube,block_size,::CacheHandle) = getcachehandle(c,CartesianIndex(block_size))
 
 import Base.Iterators.product
 
@@ -66,14 +64,12 @@ function _read(x::MergedAxisCube{T,N},thedata::Tuple{Any,Any},r::CartesianIndice
     error("Cropping into mergedaxiscubes not yet possible")
   end
 end
-gethandle(c::MergedAxisCube,block_size)=gethandle(c,block_size,handletype(c.parent))
-function gethandle(c::MergedAxisCube,block_size,::ViewHandle)
+
+function gethandle(c::MergedAxisCube,block_size)
   data,mask = gethandle(c.parent)
   s = size(data)
   reshape(data,s[1:c.imerge-1]...,s[c.imerge]*s[c.imerge+1],s[c.imerge+2:end]...), reshape(mask,s[1:c.imerge-1]...,s[c.imerge]*s[c.imerge+1],s[c.imerge+2:end]...)
 end
-gethandle(c::MergedAxisCube,block_size,::CacheHandle) = getcachehandle(c,CartesianIndex(block_size))
-
 
 function mergeAxes(c::AbstractCubeData,a1,a2)
     i1=findAxis(a1,c)
@@ -105,8 +101,6 @@ function Base.map(op, incubes::AbstractCubeData...; T::Type=eltype(incubes[1]))
   props=merge(cubeproperties.(incubes)...)
   TransformedCube{T,N,typeof(op)}(incubes,op,axlist,props)
 end
-
-gethandle(c::TransformedCube,block_size)=getcachehandle(c,CartesianIndex(block_size))
 
 Base.size(x::TransformedCube)=size(x.parents[1])
 Base.size(x::TransformedCube{T,N},i) where {T,N}=size(x.parents[1],i)
@@ -197,8 +191,7 @@ using Base.Cartesian
 end
 
 using RecursiveArrayTools
-gethandle(c::ConcatCube,block_size)=gethandle(c,block_size,handletype(c))
-function gethandle(c::ConcatCube,block_size,::ViewHandle)
+function gethandle(c::ConcatCube,block_size)
   data,mask = gethandle(c.cubelist[1])
   d = [data]
   m = [mask]
@@ -209,8 +202,6 @@ function gethandle(c::ConcatCube,block_size,::ViewHandle)
   end
   VectorOfArray(d),VectorOfArray(m)
 end
-gethandle(c::ConcatCube,block_size,::CacheHandle) = getcachehandle(c,CartesianIndex(block_size))
-handletype(c::ConcatCube)=any(i->handletype(i)==CacheHandle(),c.cubelist) ? CacheHandle() : ViewHandle()
 
 export SliceCube
 mutable struct SliceCube{T,N,iax} <: AbstractCubeData{T,N}
@@ -254,8 +245,7 @@ using Base.Cartesian
 end
 
 
-gethandle(c::SliceCube,block_size)=gethandle(c,block_size,handletype(c.parent))
-@generated function gethandle(c::SliceCube{T,N,F},block_size,::ViewHandle) where {T,N,F}
+@generated function gethandle(c::SliceCube{T,N,F},block_size) where {T,N,F}
   iax = F
   v1 = Expr(:call,:view,:data,insert!(Any[:(:) for i=1:N],iax,:(c.ival))...)
   v2 = Expr(:call,:view,:mask,insert!(Any[:(:) for i=1:N],iax,:(c.ival))...)
@@ -264,4 +254,3 @@ gethandle(c::SliceCube,block_size)=gethandle(c,block_size,handletype(c.parent))
     ($v1,$v2)
   end
 end
-gethandle(c::SliceCube,block_size,::CacheHandle) = getcachehandle(c,CartesianIndex(block_size))

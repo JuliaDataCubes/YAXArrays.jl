@@ -259,7 +259,7 @@ function saveCube(c::CubeMem{T},name::AbstractString) where T
   isdir(newfolder) && error("$(name) alreaday exists, please pick another name")
   mkpath(newfolder)
   tc=Cubes.MmapCube(c.axes,folder=newfolder,T=T)
-  dh,mh = Cubes.getmmaphandles(tc)
+  dh,mh = Cubes.getmmaphandles(tc,mode="r+")
   copyto!(dh,c.data)
   copyto!(mh,c.mask)
 end

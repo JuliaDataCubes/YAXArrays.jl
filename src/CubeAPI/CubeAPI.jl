@@ -239,7 +239,13 @@ function Base.show(io::IO,c::RemoteCube)
   println(io)
 end
 
-cubechunks(c::Union{Cube,RemoteCube})=reverse(c.config.chunk_sizes)
+function cubechunks(c::Union{Cube,RemoteCube})
+  cs = reverse(c.config.chunk_sizes)
+  if cs == (0,0,0)
+    cs = (c.config.grid_width,1,1)
+  end
+  cs
+end
 iscompressed(c::Union{Cube,RemoteCube})=c.config.comp_level>0
 """
     immutable SubCube{T,C} <: AbstractCubeData{T,4}
@@ -915,8 +921,8 @@ show(io::IO,::MIME"text/markdown",v::Vector{ESDLVarInfo})=foreach(x->show(io,MIM
 getNanVal(::Type{T}) where {T<:AbstractFloat} = convert(T,NaN)
 getNanVal(::Type{T}) where {T<:Integer}       = typemax(T)
 getNanVal(::Type{T}) where {T<:Union{<:Number,Missing}} = missing
-getCopy(x::Array{Union{T,Missing}}) where T = zeros(T,size(x)),T
-getCopy(x::Array) = x,eltype(x)
+getCopy(x::AbstractArray{Union{T,Missing}}) where T = zeros(T,size(x)),T
+getCopy(x::AbstractArray) = x,eltype(x)
 
 function readFromDataYear(cube::Cube,outar::AbstractArray{T,3},mask::AbstractArray{UInt8,3},variable,y,grid_x1,nx,grid_y1,ny,itcur,i1cur,ntime,NpY) where T
   filename=joinpath(cube.base_dir,"data",variable,string(y,"_",variable,".nc"))

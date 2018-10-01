@@ -1,6 +1,5 @@
 module DAT
-export mapCube, getInAxes, getOutAxes, findAxis, reduceCube, getAxis,
-      NaNMissing, ValueMissing, MaskMissing, NoMissing, InputCube, OutputCube
+export mapCube, getInAxes, getOutAxes, findAxis, reduceCube, getAxis, InputCube, OutputCube
 using ..Cubes
 using ..CubeAPI
 using ..ESDLTools
@@ -14,7 +13,7 @@ import DataFrames: DataFrame
 using Dates
 import StatsBase.Weights
 using ESDL.CubeAPI.Mask
-global const debugDAT=true
+global const debugDAT=false
 macro debug_print(e)
   debugDAT && return(:(println($e)))
   :()
@@ -31,24 +30,6 @@ function __init__()
   end
 end
 
-"Supertype of missing value representations"
-abstract type MissingRepr end
-struct NaNMissing <: MissingRepr end
-struct ValueMissing{T} <:MissingRepr
-  v::T
-end
-struct MaskMissing <: MissingRepr end
-struct NoMissing <: MissingRepr end
-
-toMissRepr(s::Symbol)=  s == :nan  ? NaNMissing() :
-                        s == :mask ? MaskMissing() :
-                        s == :none ? NoMissing() :
-                        error("Unknown missing value specifier: $s")
-toMissRepr(n::Number) = ValueMissing(n)
-
-mask2miss(::NoMissing,a::Tuple,workAr) = copyto!(workAr,a[1])
-mask2miss(::NoMissing,a,workAr) = copyto!(workAr,a)
-mask2miss(::NoMissing,a::Nothing,workAr)=nothing
 function mask2miss(a::Tuple,workAr::MaskArray)
   copyto!(workAr.data,a[1])
   copyto!(workAr.mask,a[2])
@@ -70,10 +51,6 @@ end
 function miss2mask!(target,source::DataFrame)
   copyto!(target[1],source)
   map!(i->ismissing(i) ? 0x01 : 0x00, target[2],source)
-end
-function miss2mask!(::NoMissing,target,source)
-  target[2][:] = 0x00
-  copyto!(target[1],source[1])
 end
 
 include("registration.jl")
@@ -100,13 +77,10 @@ end
 getcube(c::InputCube)=c.cube
 import AxisArrays
 function setworkarray(c::InputCube)
-  wa = createworkarray(c.desc.miss,eltype(c.cube),ntuple(i->length(c.axesSmall[i]),length(c.axesSmall)))
+  wa = createworkarray(eltype(c.cube),ntuple(i->length(c.axesSmall[i]),length(c.axesSmall)))
   c.workarray = wrapWorkArray(c.desc.artype,wa,c.axesSmall)
 end
-createworkarray(m::NaNMissing,T,s)=Array{T}(undef,s...)
-createworkarray(m::ValueMissing,T,s)=Array{T}(undef,s...)
-createworkarray(m::NoMissing,T,s)=Array{T}(undef,s...)
-createworkarray(m::MaskMissing,T,s)=MaskArray(Array{T}(undef,s...),Array{UInt8}(undef,s...))
+createworkarray(T,s)=MaskArray(Array{T}(undef,s...),Array{UInt8}(undef,s...))
 
 
 
@@ -132,7 +106,7 @@ getsmallax(c::Union{InputCube,OutputCube})=c.axesSmall
 getAxis(desc,c::OutputCube) = getAxis(desc,c.cube)
 getAxis(desc,c::InputCube)  = getAxis(desc,c.cube)
 function setworkarray(c::OutputCube)
-  wa = createworkarray(c.desc.miss,eltype(c.cube),ntuple(i->length(c.axesSmall[i]),length(c.axesSmall)))
+  wa = createworkarray(eltype(c.cube),ntuple(i->length(c.axesSmall[i]),length(c.axesSmall)))
   c.workarray = wrapWorkArray(c.desc.artype,wa,c.axesSmall)
 end
 
@@ -234,9 +208,9 @@ end
 mapCube(fu::Function,cdata::AbstractCubeData,addargs...;kwargs...)=mapCube(fu,(cdata,),addargs...;kwargs...)
 
 import Base.mapslices
-function mapslices(f,d::AbstractCubeData,dims,addargs...;inmiss=MaskMissing(),outmiss=MaskMissing(),kwargs...)
+function mapslices(f,d::AbstractCubeData,dims,addargs...;kwargs...)
     isa(dims,String) && (dims=(dims,))
-    mapCube(f,d,addargs...;indims = InDims(dims...,miss=inmiss),outdims = OutDims(ByInference(),miss=outmiss),inplace=false,kwargs...)
+    mapCube(f,d,addargs...;indims = InDims(dims...),outdims = OutDims(ByInference()),inplace=false,kwargs...)
 end
 
 
@@ -360,40 +334,36 @@ function runLoop(dc::DATConfig)
     else
       allRanges = (allRanges,)
     end
-    pmap(r->ESDL.DAT.innerLoop( Main.PMDATMODULE.dc.fu,
-                                  ESDL.ESDLTools.totuple(ESDL.DAT.gethandle.(Main.PMDATMODULE.dc.incubes)),
-                                  ESDL.ESDLTools.totuple(ESDL.DAT.gethandle.(Main.PMDATMODULE.dc.outcubes)),
-                                  ESDL.DAT.InnerObj(Main.PMDATMODULE.dc),
-                                  r,
-                                  totuple(map(i->i.workarray,Main.PMDATMODULE.dc.incubes)),
-                                  totuple(map(i->i.workarray,Main.PMDATMODULE.dc.outcubes)),
-                                  totuple(map(i->i.desc.miss,Main.PMDATMODULE.dc.incubes)),
-                                  totuple(map(i->i.desc.miss,Main.PMDATMODULE.dc.outcubes)),
-                                  totuple(Main.PMDATMODULE.dc.LoopAxes),
-                                  Main.PMDATMODULE.dc.addargs,
-                                  Main.PMDATMODULE.dc.kwargs)
-          ,allRanges...)
+    pmap(runLoop,allRanges...)
   else
-    inars = map(ic->ic.handle,dc.incubes)
-    outars = map(ic->ic.handle,dc.outcubes)
-    inob = InnerObj(dc)
-    laxlengths = totuple(length.(dc.LoopAxes))
-    inworkar = totuple(map(i->i.workarray,dc.incubes))
-    outworkar = totuple(map(i->i.workarray,dc.outcubes))
-    loopax = totuple(dc.LoopAxes)
-    adda = dc.addargs
-    kwa = dc.kwargs
-    #@show first(allRanges)
-    foreach(allRanges) do r
-      updateinars(dc,r)
-      innerLoop(dc.fu,inars,outars,inob,r,
-        inworkar,outworkar,loopax,adda,kwa)
-      writeoutars(dc,r)
-    end
+    runLoop(dc,allRanges)
   end
   dc.outcubes
 end
 
+function runLoop(allRanges::Array)
+  dc = Main.PMDATMODULE.dc
+  runLoop(dc,allRanges)
+end
+
+function runLoop(dc::DATConfig, allRanges)
+  inars = map(ic->ic.handle,dc.incubes)
+  outars = map(ic->ic.handle,dc.outcubes)
+  inob = InnerObj(dc)
+  laxlengths = totuple(length.(dc.LoopAxes))
+  inworkar = totuple(map(i->i.workarray,dc.incubes))
+  outworkar = totuple(map(i->i.workarray,dc.outcubes))
+  loopax = totuple(dc.LoopAxes)
+  adda = dc.addargs
+  kwa = dc.kwargs
+  #@show first(allRanges)
+  foreach(allRanges) do r
+    updateinars(dc,r)
+    innerLoop(dc.fu,inars,outars,inob,r,
+      inworkar,outworkar,loopax,adda,kwa)
+    writeoutars(dc,r)
+  end
+end
 function getRetCubeType(oc,ispar,max_cache)
   eltype=typeof(oc.desc.genOut(oc.outtype))
   outsize=sizeof(eltype)*(length(oc.allAxes)>0 ? prod(map(length,oc.allAxes)) : 1)

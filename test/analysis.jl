@@ -3,7 +3,7 @@ using Test
 import Base.Iterators
 using Distributed
 using Statistics
-addprocs(2)
+#addprocs(2)
 @everywhere using ESDL, Statistics
 
 @everywhere function sub_and_return_mean(xout1,xout2,xin)
