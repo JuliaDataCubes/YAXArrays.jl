@@ -55,8 +55,8 @@ function extractLonLats(c::AbstractCubeData,pl::Matrix;kwargs...)
   pointax = SpatialPointAxis([(pl[i,1],pl[i,2]) for i in 1:size(pl,1)])
   loninds = map(ll->axVal2Index(lonax,ll[1]),pointax.values)
   latinds = map(ll->axVal2Index(latax,ll[2]),pointax.values)
-  incubes=InDims("Lon","Lat",miss=MaskMissing())
-  outcubes=OutDims(pointax,miss=MaskMissing())
+  incubes=InDims("Lon","Lat")
+  outcubes=OutDims(pointax)
   y=mapCube(toPointAxis,c,loninds,latinds;indims=incubes,outdims=outcubes,max_cache=1e8,kwargs...)
 end
 export extractLonLats
@@ -92,7 +92,7 @@ function sampleLandPoints(cdata::CubeAPI.AbstractCubeData,nsample::Integer,nomis
   w=Weights(map(i->cosd(i[2]),sax.values))
   sax2=SpatialPointAxis(sample(sax.values,w,nsample,replace=false))
   y=mapCube(toPointAxis,cdata,axlist[ilon],axlist[ilat],
-   indims=InDims("Lon","Lat",miss=NaNMissing()),outdims=OutDims(sax2,miss=NaNMissing()),max_cache=1e8);
+   indims=InDims("Lon","Lat"),outdims=OutDims(sax2),max_cache=1e8);
 end
 export sampleLandPoints
 

@@ -58,7 +58,7 @@ Base.ndims(::AbstractCubeData{T,N}) where {T,N}=N
 cubeproperties(::AbstractCubeData)=Dict{String,Any}()
 
 "Chunks, if given"
-cubechunks(c::AbstractCubeData) = (size(c,1),map(i->1,2:ndims(c)))
+cubechunks(c::AbstractCubeData) = (size(c,1),map(i->1,2:ndims(c))...)
 
 "Offset of the first chunk"
 chunkoffset(c::AbstractCubeData) = ntuple(i->0,ndims(c))
@@ -103,6 +103,7 @@ CubeMem(axes::Vector{CubeAxis},data,mask) = CubeMem(axes,data,mask,Dict{String,A
 Base.permutedims(c::CubeMem,p)=CubeMem(c.axes[collect(p)],permutedims(c.data,p),permutedims(c.mask,p))
 caxes(c::CubeMem)=c.axes
 cubeproperties(c::CubeMem)=c.properties
+iscompressed(c::AbstractCubeMem)=false
 
 Base.IndexStyle(::CubeMem)=Base.LinearFast()
 Base.getindex(c::CubeMem,i::Integer)=iszero(c.mask[i] & 0x01) ? getindex(c.data,i) : missing

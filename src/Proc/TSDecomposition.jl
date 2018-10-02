@@ -40,8 +40,8 @@ in 4 time windows (Trend, Long-Term Variability, Annual Cycle, Fast Oscillations
 
 """
 function filterTSFFT(c::AbstractCubeData;kwargs...)
-  indims = InDims(TimeAxis,miss=NaNMissing())
-  outdims = OutDims(TimeAxis,(c,p)->ScaleAxis(["Trend", "Long-Term Variability", "Annual Cycle", "Fast Oscillations"]),miss=NaNMissing())
+  indims = InDims(TimeAxis)
+  outdims = OutDims(TimeAxis,(c,p)->ScaleAxis(["Trend", "Long-Term Variability", "Annual Cycle", "Fast Oscillations"]))
   mapCube(filterTSFFT,c,getNpY(c);indims=indims,outdims=outdims,kwargs...)
 end
 

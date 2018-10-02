@@ -24,10 +24,10 @@ mout = zeros(UInt8,4,4,322,2)
 ddconc = readCubeData(conccube)
 @test ddconc.data[:,:,:,1] == dd1.data
 @test ddconc.data[:,:,:,2] == dd2.data
-@test isa(ESDL.Cubes.gethandle(conccube,(2,2,2,2)),ESDL.CubeAPI.CachedArrays.CachedArray)
+#@test isa(ESDL.Cubes.gethandle(conccube,(2,2,2,2)),ESDL.CubeAPI.CachedArrays.CachedArray)
 @test mean(ddconc.data,dims=1)[1,:,:,:]==mapslices(mean∘skipmissing,conccube,"Lon").data
 conccube2 = concatenateCubes([dd1,dd2],CategoricalAxis("NewAxis",["v1","v2"]))
-@test isa(ESDL.Cubes.gethandle(conccube2,(2,2,2,2)),Tuple{AbstractArray,AbstractArray})
+#@test isa(ESDL.Cubes.gethandle(conccube2,(2,2,2,2)),Tuple{AbstractArray,AbstractArray})
 @test mean(ddconc.data,dims=1)[1,:,:,:]==mapslices(mean∘skipmissing,conccube2,"Lon").data
 end
 
@@ -39,8 +39,8 @@ dd2 = SliceCube(d1,"Var","air")
 dd3 = SliceCube(d1,TimeAxis,Date(2002,1,8))
 dd4 = SliceCube(d1,LatAxis,50.625)
 dd5 = SliceCube(d2,LonAxis,30.125)
-@test isa(ESDL.Cubes.gethandle(dd2,(2,2,2)),ESDL.CubeAPI.CachedArrays.CachedArray)
-@test isa(ESDL.Cubes.gethandle(dd5,(2,2,2)),Tuple{AbstractArray,AbstractArray})
+#@test isa(ESDL.Cubes.gethandle(dd2,(2,2,2)),ESDL.CubeAPI.CachedArrays.CachedArray)
+#@test isa(ESDL.Cubes.gethandle(dd5,(2,2,2)),Tuple{AbstractArray,AbstractArray})
 @test ESDL.axes(dd2)==ESDL.axes(d1)[1:3]
 @test ESDL.axes(dd3)==ESDL.axes(d1)[[1,2,4]]
 @test ESDL.axes(dd4)==ESDL.axes(d1)[[1,3,4]]
