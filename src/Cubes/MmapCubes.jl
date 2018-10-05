@@ -87,6 +87,7 @@ end
 @generated function Base.size(x::MmapCubePerm{T,N}) where {T,N}
   :(@ntuple $N i->length(x.axes[x.perm[i]]))
 end
+Base.size(x::Union{MmapCube,MmapCubePerm},i)=size(x)[i]
 caxes(y::MmapCube)=y.axes
 caxes(t::MmapCubePerm)=[t.axes[t.perm[i]] for i=1:length(t.axes)]
 getCubeDes(v::MmapCube)="Memory mapped cube"

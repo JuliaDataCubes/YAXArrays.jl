@@ -261,6 +261,7 @@ function mapCube(fu::Function,
   generateOutCubes(dc)
   @debug_print "Generating cube handles"
   getCubeHandles(dc)
+  @debug_print "Generating work arrays"
   generateworkarrays(dc)
   @debug_print "Running main Loop"
   debug && return(dc)
@@ -334,21 +335,22 @@ function runLoop(dc::DATConfig)
     else
       allRanges = (allRanges,)
     end
-    pmap(runLoop,allRanges...)
+    pmap(runLooppar,allRanges...)
   else
     runLoop(dc,allRanges)
   end
   dc.outcubes
 end
 
-function runLoop(allRanges::Array)
+function runLooppar(allRanges)
   dc = Main.PMDATMODULE.dc
-  runLoop(dc,allRanges)
+  runLoop(dc,(allRanges,))
 end
 
 function runLoop(dc::DATConfig, allRanges)
   inars = map(ic->ic.handle,dc.incubes)
   outars = map(ic->ic.handle,dc.outcubes)
+  filters = map(ic->ic.desc.procfilter,dc.incubes)
   inob = InnerObj(dc)
   laxlengths = totuple(length.(dc.LoopAxes))
   inworkar = totuple(map(i->i.workarray,dc.incubes))
@@ -359,7 +361,7 @@ function runLoop(dc::DATConfig, allRanges)
   #@show first(allRanges)
   foreach(allRanges) do r
     updateinars(dc,r)
-    innerLoop(dc.fu,inars,outars,inob,r,
+    innerLoop(dc.fu,inars,outars,filters,inob,r,
       inworkar,outworkar,loopax,adda,kwa)
     writeoutars(dc,r)
   end
@@ -403,11 +405,11 @@ function getCubeHandles(dc::DATConfig)
   if dc.ispar
     freshworkermodule()
     global dcg=dc
-      passobj(1, workers(), [:dcg],from_mod=ESDL.DAT,to_mod=Main.PMDATMODULE)
+    passobj(1, workers(), [:dcg],from_mod=ESDL.DAT,to_mod=Main.PMDATMODULE)
     @everywhereelsem begin
       dc=Main.PMDATMODULE.dcg
-      foreach(ESDL.DAT.allocatecachebuf,dc.outcubes)
-      foreach(ESDL.DAT.allocatecachebuf,dc.incubes)
+      foreach(i->ESDL.DAT.allocatecachebuf(i,dc.loopCacheSize),dc.outcubes)
+      foreach(i->ESDL.DAT.allocatecachebuf(i,dc.loopCacheSize),dc.incubes)
     end
   else
     foreach(i->allocatecachebuf(i,dc.loopCacheSize),dc.outcubes)
@@ -561,7 +563,7 @@ end
 
 using DataStructures: OrderedDict
 using Base.Cartesian
-@generated function innerLoop(f,xin::NTuple{NIN,Any},xout::NTuple{NOUT,Any},::InnerObj{T1,T2,T4,R,UPDOUT,LR},loopRanges::T3,
+@generated function innerLoop(f,xin::NTuple{NIN,Any},xout::NTuple{NOUT,Any},filters,::InnerObj{T1,T2,T4,R,UPDOUT,LR},loopRanges::T3,
   inwork,outwork,loopaxes::LAX,addargs,kwargs) where {T1,T2,T3,T4,R,NIN,NOUT,UPDOUT,LR,LAX}
 
   NinCol      = T1
@@ -605,7 +607,6 @@ using Base.Cartesian
     end
   end
   loopBody=quote end
-
   callargs=Any[:f,Expr(:parameters,Expr(:...,:kwargs))]
   R && foreach(j->push!(callargs,outworksyms[j]),1:NOUT)
   append!(loopBody.args,subIn)
@@ -616,12 +617,26 @@ using Base.Cartesian
     push!(callargs,:axdict)
   end
   push!(callargs,Expr(:...,:addargs))
+  runBody = quote end
   if R
-    push!(loopBody.args,Expr(:call,callargs...))
+    push!(runBody.args,Expr(:call,callargs...))
   else
     lhs = NOUT>1 ? Expr(:tuple,[:($(outworksyms[j])[:]) for j=1:NOUT]...) : :($(outworksyms[1])[:])
     rhs = Expr(:call,callargs...)
-    push!(loopBody.args,:($lhs.=$rhs))
+    push!(runBody.args,:($lhs.=$rhs))
+  end
+  #Add mask filter to loop body
+  setzeroex = quote end
+  foreach(i->push!(setzeroex.args,:($(outworksyms[i]).mask[:] .= mv)),1:NOUT)
+  foreach(1:NIN) do i
+    push!(loopBody.args,quote
+      mv = docheck(filters[$i],$(inworksyms[i]))
+      if !iszero(mv)
+        $setzeroex
+      else
+        $runBody
+      end
+    end)
   end
   append!(loopBody.args,subOut)
   loopEx = length(loopRangesE.args)==0 ? loopBody : Expr(:for,loopRangesE,loopBody)
@@ -634,7 +649,7 @@ using Base.Cartesian
     show(b,loopEx)
     s=String(take!(b))
     loopEx=quote
-      #println($s)
+      println($s)
       $loopEx
     end
   end

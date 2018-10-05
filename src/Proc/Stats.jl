@@ -1,5 +1,6 @@
 module Stats
 export normalizeTS, timeVariance, timeMean, spatialMean
+import ..DAT: NValid
 using ..DAT
 using ..CubeAPI
 using ..Proc
@@ -17,18 +18,13 @@ Normalize a time series to zeros mean and unit variance
 **Output Axes** `TimeAxis`
 """
 function normalizeTS(c::AbstractCubeData;kwargs...)
-  mapCube(normalizeTS,c;indims=InDims("Time"),outdims=OutDims("Time"),kwargs...)
+  mapCube(normalizeTS,c;indims=InDims("Time",filter = NValid(2)),outdims=OutDims("Time"),kwargs...)
 end
 function normalizeTS(xout::AbstractVector,xin::AbstractVector)
-  ndp = count(!ismissing,xin)
-  if ndp > 2
-    m = mean(skipmissing(xin))
-    s = std(skipmissing(xin))
-    s = s==zero(s) ? one(s) : s
-    map!(x->(x-m)/s,xout,xin)
-  else
-    xout[:]=missing
-  end
+  m = mean(skipmissing(xin))
+  s = std(skipmissing(xin))
+  s = s==zero(s) ? one(s) : s
+  map!(x->(x-m)/s,xout,xin)
 end
 
 

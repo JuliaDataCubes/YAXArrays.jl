@@ -6,6 +6,7 @@ using ..CubeAPI
 using ..Proc
 using FFTW
 using Statistics
+import ..DAT: AnyMissing
 
 #Looks like linreg is broken in 0.7, here is a custom version, this should be replaced soon:
 function linreg(x,y)
@@ -40,7 +41,7 @@ in 4 time windows (Trend, Long-Term Variability, Annual Cycle, Fast Oscillations
 
 """
 function filterTSFFT(c::AbstractCubeData;kwargs...)
-  indims = InDims(TimeAxis)
+  indims = InDims(TimeAxis,filter=AnyMissing())
   outdims = OutDims(TimeAxis,(c,p)->ScaleAxis(["Trend", "Long-Term Variability", "Annual Cycle", "Fast Oscillations"]))
   mapCube(filterTSFFT,c,getNpY(c);indims=indims,outdims=outdims,kwargs...)
 end

@@ -95,6 +95,7 @@ function freshworkermodule()
         using ESDL
     end))
     Core.eval(Main,quote
+      using Distributed
       rs=Future[]
       for pid in workers()
         n=remotecall_fetch(()->in(:PMDATMODULE,names(Main)),pid)
@@ -102,9 +103,6 @@ function freshworkermodule()
           r1=remotecall(()->(Core.eval(Main,:(using ESDL));nothing),pid)
           r2=remotecall(()->(Core.eval(Main,:(module PMDATMODULE
           using ESDL
-          import ESDL.CubeAPI.CachedArrays.CachedArray
-          import ESDL.CubeAPI.CachedArrays.MaskedCacheBlock
-          import ESDL.CubeAPI.CachedArrays
           import ESDL.ESDLTools.totuple
         end));nothing),pid)
           push!(rs,r1)
