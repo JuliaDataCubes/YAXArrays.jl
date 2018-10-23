@@ -25,6 +25,35 @@ function wrapWorkArray(t::AsDataFrame,a,cablabaxes)
   df
 end
 
+abstract type ProcFilter end
+struct AllMissing <: ProcFilter end
+struct NValid     <: ProcFilter
+  n::Int
+end
+struct AnyMissing <: ProcFilter end
+struct AnyOcean   <: ProcFilter end
+struct NoFilter   <: ProcFilter end
+struct StdZero    <: ProcFilter end
+struct UserFilter{F} <: ProcFilter
+  f::F
+end
+
+docheck(::NoFilter)         = 0x00
+replacevalue(::ProcFilter)  = 0x01
+replacevalue(::AnyOcean)  = 0x05
+checkskip(::AllMissing,x)   = all(i->!iszero(i & 0x01),x.mask)
+checkskip(::AnyMissing,x)   = any(i->!iszero(i & 0x01),x.mask)
+checkskip(::AnyOcean,x)     = any(i->!iszero(i & 0x04),x.mask)
+checkskip(nv::NValid,x)     = count(i->iszero(i & 0x01),x.mask) < nv.n
+checkskip(uf::UserFilter,x) = uf.f(x)
+checkskip(::StdZero,x)      = all(i->i==x[1],x)
+docheck(pf::ProcFilter,x)::UInt8 = checkskip(pf,x) ? replacevalue(pf) : 0x00
+docheck(pf::Tuple,x)        = reduce(|,map(i->docheck(i,x),pf))
+
+getprocfilter(f::Function) = (UserFilter(f),)
+getprocfilter(pf::ProcFilter) = (pf,)
+getprocfilter(pf::NTuple{N,<:ProcFilter}) where N = pf
+
 """
     InDims(axisdesc)
 
@@ -32,20 +61,24 @@ Creates a description of an Input Data Cube for cube operations. Takes a single
   or a Vector/Tuple of axes as first argument. Axes can be specified by their
   name (String), through an Axis type, or by passing a concrete axis.
 
-- axisdesc: List of input axis names
-- miss: Representation of missing values for this input cube, must be a subtype of [MissingRepr](@ref)
-- include_axes: If set to `true` the array will be represented as an AxisArray inside the inner function, so that axes values can be accessed
+### Keyword arguments
+
+    * `artype` how shall the array be represented in the inner function. Defaults to `AsArray`, alternatives are `AsDataFrame` or `AsAxisArray`
+    * `filter` define some filter to skip the computation, e.g. when all values are missing. Defaults to
+    `AllMissing()`, possible values are `AnyMissing()`, `AnyOcean()`, `StdZero()`, `NValid(n)`
+    (for at least n non-missing elements). It is also possible to provide a custom one-argument function
+    that takes the array and returns `true` if the compuation shall be skipped and `false` otherwise.
 """
 mutable struct InDims
   axisdesc::Tuple
-  miss::MissingRepr
   artype::ArTypeRepr
+  procfilter::Tuple
 end
-function InDims(axisdesc::AxisDescriptorAll...; miss::MissingRepr=MaskMissing(),artype::ArTypeRepr=AsArray())
+function InDims(axisdesc::AxisDescriptorAll...; artype::ArTypeRepr=AsArray(), filter = AllMissing())
   descs = map(get_descriptor,axisdesc)
   any(i->isa(i,ByFunction),descs) && error("Input cubes can not be specified through a function")
   isa(artype,AsDataFrame) && length(descs)!=2 && error("DataFrame representation only possible if for 2D inner arrays")
-  InDims(descs,miss,artype)
+  InDims(descs,artype,getprocfilter(filter))
 end
 
 """
@@ -56,7 +89,6 @@ Creates a description of an Output Data Cube for cube operations. Takes a single
   name (String), through an Axis type, or by passing a concrete axis.
 
 - axisdesc: List of input axis names
-- miss: Representation of missing values for this input cube, must be a subtype of [MissingRepr](@ref), defaults to `MaskMissing`
 - genOut: function to initialize the values of the output cube given its element type. Defaults to `zero`
 - finalizeOut: function to finalize the values of an output cube, defaults to identity.
 - retCubeType: sepcifies the type of the return cube, can be `CubeMem` to force in-memory, `TempCube` to force disk storage, or `"auto"` to let the system decide.
@@ -65,7 +97,6 @@ Creates a description of an Output Data Cube for cube operations. Takes a single
 struct OutDims
   axisdesc::Tuple
   bcaxisdesc::Tuple
-  miss::MissingRepr
   genOut::Function
   finalizeOut::Function
   retCubeType::Any
@@ -75,7 +106,6 @@ struct OutDims
 end
 function OutDims(axisdesc...;
            bcaxisdesc=(),
-           miss::MissingRepr=MaskMissing(),
            genOut=zero,
            finalizeOut=identity,
            retCubeType=:auto,
@@ -85,8 +115,7 @@ function OutDims(axisdesc...;
   descs = map(get_descriptor,axisdesc)
   bcdescs = totuple(map(get_descriptor,bcaxisdesc))
   isa(artype,AsDataFrame) && length(descs)!=2 && error("DataFrame representation only possible if for 2D inner arrays")
-  update && !isa(miss,NoMissing) && error("Updating output is only possible for miss=NoMissing()")
-  OutDims(descs,bcdescs,miss,genOut,finalizeOut,retCubeType,update,artype,outtype)
+  OutDims(descs,bcdescs,genOut,finalizeOut,retCubeType,update,artype,outtype)
 end
 
 registerDATFunction(a...;kwargs...)=@warn("Registration does not exist anymore, ignoring....")

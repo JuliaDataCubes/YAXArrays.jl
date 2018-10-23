@@ -20,8 +20,8 @@ end
 function spatialinterp(c::AbstractCubeData,newlons::AbstractRange,newlats::AbstractRange;order=Linear(),bc = Flat())
   oldlons = getAxis("Lon",c).values
   oldlats = getAxis("Lat",c).values
-  indims=InDims("Lon","Lat",miss=NaNMissing())
-  outdims=OutDims(LonAxis(newlons),LatAxis(newlats),miss=NaNMissing())
+  indims=InDims("Lon","Lat")
+  outdims=OutDims(LonAxis(newlons),LatAxis(newlats))
   if step(oldlats)<0
     oldlats = reverse(oldlats)
     newlats = reverse(newlats)

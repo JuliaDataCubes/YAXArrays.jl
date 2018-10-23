@@ -34,4 +34,7 @@ include("Proc/Proc.jl")
 
 using .Cubes, .CubeAPI, .DAT, .Proc, .ESDLTools
 
+include("precompile.jl")
+_precompile_()
+
 end # module

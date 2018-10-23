@@ -1,7 +1,7 @@
 export ConcatCube, concatenateCubes
 export mergeAxes
 import ..ESDLTools.getiperm
-import ..Cubes: _read, gethandle, getcachehandle, handletype, caxes
+import ..Cubes: _read, gethandle, caxes, iscompressed, cubechunks, chunkoffset
 
 mutable struct PermCube{T,N,C} <: AbstractCubeData{T,N}
   parent::C
@@ -12,6 +12,9 @@ Base.size(x::PermCube,i)=size(x.parent,x.perm[i])
 caxes(v::PermCube)=caxes(v.parent)[collect(v.perm)]
 getCubeDes(v::PermCube)=getCubeDes(v.parent)
 permtuple(t,perm)=ntuple(i->t[perm[i]],length(t))
+iscompressed(c::PermCube)=iscompressed(c.parent)
+cubechunks(c::PermCube)=cubechunks(c.parent)[collect(c.perm)]
+chunkoffset(c::PermCube)=chunkoffset(c.parent)[collect(c.perm)]
 function _read(x::PermCube{T,N},thedata::Tuple{Any,Any},r::CartesianIndices{N}) where {T,N}
   perm=x.perm
   iperm=getiperm(perm)
@@ -23,69 +26,69 @@ function _read(x::PermCube{T,N},thedata::Tuple{Any,Any},r::CartesianIndices{N}) 
   permutedims!(thedata[2],mout,perm)
 end
 Base.permutedims(x::AbstractCubeData{T,N},perm) where {T,N}=PermCube{T,N,typeof(x)}(x,perm)
-gethandle(c::PermCube,block_size)=gethandle(c,block_size,handletype(c.parent))
-function gethandle(c::PermCube,block_size,::ViewHandle)
+function gethandle(c::PermCube,block_size)
   data,mask = gethandle(c.parent)
   PermutedDimsArray(data,c.perm),PermutedDimsArray(mask,c.perm)
 end
-gethandle(c::PermCube,block_size,::CacheHandle) = getcachehandle(c,CartesianIndex(block_size))
 
 import Base.Iterators.product
 
-mutable struct MergedAxisCube{T,N,C} <: AbstractCubeData{T,N}
-  parent::C
-  imerge::Int
-  newAxes::Vector{CubeAxis}
-end
-getCubeDes(v::MergedAxisCube)=getCubeDes(v.parent)
-function caxes(v::MergedAxisCube)
-  v.newAxes
-end
-cubeproperties(v::MergedAxisCube)=cubeproperties(v.parent)
-Base.size(x::MergedAxisCube)=ntuple(i->length(x.newAxes[i]),ndims(x))
-Base.size(x::MergedAxisCube,i)=length(x.newAxes[i])
-function _read(x::MergedAxisCube{T,N},thedata::Tuple{Any,Any},r::CartesianIndices{N}) where {T,N}
-
-  s1,s2 = size(x.parent)[x.imerge:x.imerge+1]
-  sr = r.indices[x.imerge]
-
-  aout,mout = thedata
-  saout=size(aout)
-  if length(sr)==1
-        sr2 = ind2sub((s1,s2),first(sr))
-        aout2 = reshape(aout,saout[1:x.imerge-1]...,1,1,saout[x.imerge+1:end]...)
-        mout2 = reshape(mout,saout[1:x.imerge-1]...,1,1,saout[x.imerge+1:end]...)
-        r2 = CartesianIndices(r.indices[1:x.imerg-1]...,sr2[1],sr2[2],r.indices[x.imerge+1:end]...)
-        _read(x.parent,(aout2,mout2),r2)
-  elseif sr[2]-sr[1]==size(x,x.imerge)-1
-        aout2 = reshape(aout,saout[1:x.imerge-1]...,s1,s2,saout[x.imerge+1:end]...)
-        mout2 = reshape(mout,saout[1:x.imerge-1]...,s1,s2,saout[x.imerge+1:end]...)
-        r2 = CartesianIndices(r.indices[1:x.imerge-1]...,1:s1,1:s2,r.indices[x.imerge+1:end]...)
-    _read(x.parent,(aout2,mout2),r2)
-  else
-    error("Cropping into mergedaxiscubes not yet possible")
-  end
-end
-gethandle(c::MergedAxisCube,block_size)=gethandle(c,block_size,handletype(c.parent))
-function gethandle(c::MergedAxisCube,block_size,::ViewHandle)
-  data,mask = gethandle(c.parent)
-  s = size(data)
-  reshape(data,s[1:c.imerge-1]...,s[c.imerge]*s[c.imerge+1],s[c.imerge+2:end]...), reshape(mask,s[1:c.imerge-1]...,s[c.imerge]*s[c.imerge+1],s[c.imerge+2:end]...)
-end
-gethandle(c::MergedAxisCube,block_size,::CacheHandle) = getcachehandle(c,CartesianIndex(block_size))
-
-
-function mergeAxes(c::AbstractCubeData,a1,a2)
-    i1=findAxis(a1,c)
-    i2=findAxis(a2,c)
-    abs(i1-i2)==1 || error("Can only merge axes that are consecutive in cube")
-    ax = caxes(c)
-    imerge=min(i1,i2)
-    a1 = ax[imerge]
-    a2 = ax[imerge+1]
-    newAx = CategoricalAxis(string(axname(a1),"_x_",axname(a2)),product(a1.values,a2.values))
-    MergedAxisCube{eltype(c),ndims(c)-1,typeof(c)}(c,min(i1,i2),[ax[1:imerge-1];newAx;ax[imerge+2:end]])
-end
+# mutable struct MergedAxisCube{T,N,C} <: AbstractCubeData{T,N}
+#   parent::C
+#   imerge::Int
+#   newAxes::Vector{CubeAxis}
+# end
+# getCubeDes(v::MergedAxisCube)=getCubeDes(v.parent)
+# function caxes(v::MergedAxisCube)
+#   v.newAxes
+# end
+# cubeproperties(v::MergedAxisCube)=cubeproperties(v.parent)
+# iscompressed(c::MergedAxisCube)=iscompressed(c.parent)
+# #TODO implement proper chunk function for merged axes
+# #Also the order of the merged axes needs to be completely different to be efficient
+#
+# Base.size(x::MergedAxisCube)=ntuple(i->length(x.newAxes[i]),ndims(x))
+# Base.size(x::MergedAxisCube,i)=length(x.newAxes[i])
+# function _read(x::MergedAxisCube{T,N},thedata::Tuple{Any,Any},r::CartesianIndices{N}) where {T,N}
+#
+#   s1,s2 = size(x.parent)[x.imerge:x.imerge+1]
+#   sr = r.indices[x.imerge]
+#
+#   aout,mout = thedata
+#   saout=size(aout)
+#   if length(sr)==1
+#         sr2 = ind2sub((s1,s2),first(sr))
+#         aout2 = reshape(aout,saout[1:x.imerge-1]...,1,1,saout[x.imerge+1:end]...)
+#         mout2 = reshape(mout,saout[1:x.imerge-1]...,1,1,saout[x.imerge+1:end]...)
+#         r2 = CartesianIndices(r.indices[1:x.imerg-1]...,sr2[1],sr2[2],r.indices[x.imerge+1:end]...)
+#         _read(x.parent,(aout2,mout2),r2)
+#   elseif sr[2]-sr[1]==size(x,x.imerge)-1
+#         aout2 = reshape(aout,saout[1:x.imerge-1]...,s1,s2,saout[x.imerge+1:end]...)
+#         mout2 = reshape(mout,saout[1:x.imerge-1]...,s1,s2,saout[x.imerge+1:end]...)
+#         r2 = CartesianIndices(r.indices[1:x.imerge-1]...,1:s1,1:s2,r.indices[x.imerge+1:end]...)
+#     _read(x.parent,(aout2,mout2),r2)
+#   else
+#     error("Cropping into mergedaxiscubes not yet possible")
+#   end
+# end
+#
+# function gethandle(c::MergedAxisCube,block_size)
+#   data,mask = gethandle(c.parent)
+#   s = size(data)
+#   reshape(data,s[1:c.imerge-1]...,s[c.imerge]*s[c.imerge+1],s[c.imerge+2:end]...), reshape(mask,s[1:c.imerge-1]...,s[c.imerge]*s[c.imerge+1],s[c.imerge+2:end]...)
+# end
+#
+# function mergeAxes(c::AbstractCubeData,a1,a2)
+#     i1=findAxis(a1,c)
+#     i2=findAxis(a2,c)
+#     abs(i1-i2)==1 || error("Can only merge axes that are consecutive in cube")
+#     ax = caxes(c)
+#     imerge=min(i1,i2)
+#     a1 = ax[imerge]
+#     a2 = ax[imerge+1]
+#     newAx = CategoricalAxis(string(axname(a1),"_x_",axname(a2)),product(a1.values,a2.values))
+#     MergedAxisCube{eltype(c),ndims(c)-1,typeof(c)}(c,min(i1,i2),[ax[1:imerge-1];newAx;ax[imerge+2:end]])
+# end
 
 
 mutable struct TransformedCube{T,N,F} <: AbstractCubeData{T,N}
@@ -106,12 +109,15 @@ function Base.map(op, incubes::AbstractCubeData...; T::Type=eltype(incubes[1]))
   TransformedCube{T,N,typeof(op)}(incubes,op,axlist,props)
 end
 
-gethandle(c::TransformedCube,block_size)=getcachehandle(c,CartesianIndex(block_size))
-
 Base.size(x::TransformedCube)=size(x.parents[1])
 Base.size(x::TransformedCube{T,N},i) where {T,N}=size(x.parents[1],i)
 caxes(v::TransformedCube)=v.cubeAxes
 getCubeDes(v::TransformedCube)="Transformed cube $(getCubeDes(v.parents[1]))"
+iscompressed(v::TransformedCube)=any(iscompressed,v.parents)
+cubechunks(v::TransformedCube)=cubechunks(v.parents[1])
+chunkoffset(v::TransformedCube)=chunkoffset(v.parents[1])
+
+
 using Base.Cartesian
 function _read(x::TransformedCube{T,N},thedata::Tuple,r::CartesianIndices{N}) where {T,N}
   aout,mout=thedata
@@ -179,6 +185,9 @@ end
 Base.size(x::ConcatCube)=(size(x.cubelist[1])...,length(x.catAxis))
 Base.size(x::ConcatCube{T,N},i) where {T,N}=i==N ? length(x.catAxis) : size(x.cubelist[1],i)
 caxes(v::ConcatCube)=[v.cubeAxes;v.catAxis]
+iscompressed(x::ConcatCube)=any(iscompressed,x.cubelist)
+cubechunks(x::ConcatCube)=(cubechunks(x.cubelist[1])...,1)
+chunkoffset(x::ConcatCube)=(chunkoffset(x.cubelist[1])...,0)
 getCubeDes(v::ConcatCube)="Collection of $(getCubeDes(v.cubelist[1]))"
 using Base.Cartesian
 @generated function _read(x::ConcatCube{T,N},thedata::Tuple,r::CartesianIndices{N}) where {T,N}
@@ -197,8 +206,7 @@ using Base.Cartesian
 end
 
 using RecursiveArrayTools
-gethandle(c::ConcatCube,block_size)=gethandle(c,block_size,handletype(c))
-function gethandle(c::ConcatCube,block_size,::ViewHandle)
+function gethandle(c::ConcatCube,block_size)
   data,mask = gethandle(c.cubelist[1])
   d = [data]
   m = [mask]
@@ -209,8 +217,6 @@ function gethandle(c::ConcatCube,block_size,::ViewHandle)
   end
   VectorOfArray(d),VectorOfArray(m)
 end
-gethandle(c::ConcatCube,block_size,::CacheHandle) = getcachehandle(c,CartesianIndex(block_size))
-handletype(c::ConcatCube)=any(i->handletype(i)==CacheHandle(),c.cubelist) ? CacheHandle() : ViewHandle()
 
 export SliceCube
 mutable struct SliceCube{T,N,iax} <: AbstractCubeData{T,N}
@@ -237,6 +243,10 @@ Base.size(x::SliceCube)=x.size
 Base.size(x::SliceCube,i)=x.size[i]
 caxes(v::SliceCube)=v.cubeAxes
 getCubeDes(v::SliceCube)=getCubeDes(v.parent)
+iscompressed(v::SliceCube)=iscomporessed(v.parent)
+cubechunks(v::SliceCube{T,N,F}) where {T,N,F} = cubechunks(v.parent)[[1:F-1;F+1:end]]
+chunkoffset(v::SliceCube{T,N,F}) where {T,N,F} = chunkoffset(v.parent)[[1:F-1;F+1:end]]
+
 using Base.Cartesian
 @generated function _read(x::SliceCube{T,N,F},thedata::Tuple,r::CartesianIndices{N}) where {T,N,F}
   iax = F
@@ -254,8 +264,7 @@ using Base.Cartesian
 end
 
 
-gethandle(c::SliceCube,block_size)=gethandle(c,block_size,handletype(c.parent))
-@generated function gethandle(c::SliceCube{T,N,F},block_size,::ViewHandle) where {T,N,F}
+@generated function gethandle(c::SliceCube{T,N,F},block_size) where {T,N,F}
   iax = F
   v1 = Expr(:call,:view,:data,insert!(Any[:(:) for i=1:N],iax,:(c.ival))...)
   v2 = Expr(:call,:view,:mask,insert!(Any[:(:) for i=1:N],iax,:(c.ival))...)
@@ -264,4 +273,3 @@ gethandle(c::SliceCube,block_size)=gethandle(c,block_size,handletype(c.parent))
     ($v1,$v2)
   end
 end
-gethandle(c::SliceCube,block_size,::CacheHandle) = getcachehandle(c,CartesianIndex(block_size))

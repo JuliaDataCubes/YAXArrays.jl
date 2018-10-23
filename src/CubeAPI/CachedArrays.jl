@@ -1,7 +1,7 @@
 module CachedArrays
 using ...Cubes
 import ...Cubes: gethandle, getSubRange, getcachehandle, _read
-export CachedArray, MaskedCacheBlock, getSubRange, getSubRange2
+export CachedArray, MaskedCacheBlock, getSubRange
 using ..CubeAPI
 using ..ESDLTools
 using ..Mask

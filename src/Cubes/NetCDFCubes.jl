@@ -43,4 +43,3 @@ function _read(x::NetCDFCube{T,N},thedata::Tuple{Any,Any},r::CartesianIndices{N}
   ncread!(x.file,x.varname,thedata[1],start = sta,count=cou)
   map!(i->i==x.mv ? 0x01 : 0x00, thedata[2],thedata[1])
 end
-gethandle(x::NetCDFCube,blocksize)=getcachehandle(x,CartesianIndex(blocksize))

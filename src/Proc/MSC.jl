@@ -40,8 +40,8 @@ function removeMSC(c::AbstractCubeData;kwargs...)
         NpY,
         zeros(NpY),
         zeros(Int,NpY);
-        indims  = InDims( "Time", miss = MaskMissing()),
-        outdims = OutDims("Time", miss = MaskMissing()),
+        indims  = InDims( "Time" ),
+        outdims = OutDims("Time" ),
         kwargs...
     )
 end
@@ -57,7 +57,7 @@ Fills missing values of each time series in a cube with the mean annual cycle.
 """
 function gapFillMSC(c::AbstractCubeData;kwargs...)
   NpY=getNpY(c)
-  mapCube(gapFillMSC,c,NpY,zeros(NpY),zeros(Int,NpY);indims=InDims("Time",miss=MaskMissing()),outdims=OutDims("Time",miss=MaskMissing()),kwargs...)
+  mapCube(gapFillMSC,c,NpY,zeros(NpY),zeros(Int,NpY);indims=InDims("Time"),outdims=OutDims("Time"),kwargs...)
 end
 
 function gapFillMSC(aout::AbstractVector,ain::AbstractVector,NpY::Integer,tmsc,tnmsc)
@@ -80,8 +80,8 @@ Returns the mean annual cycle from each time series.
 
 """
 function getMSC(c::AbstractCubeData;kwargs...)
-  outdims = OutDims(MSCAxis(getNpY(c)),miss=MaskMissing())
-  indims = InDims(TimeAxis,miss=MaskMissing())
+  outdims = OutDims(MSCAxis(getNpY(c)))
+  indims = InDims(TimeAxis)
   mapCube(getMSC,c,zeros(Int,getNpY(c));indims=indims,outdims=outdims,kwargs...)
 end
 function getMSC(xout::AbstractVector{<:AbstractFloat},xin::AbstractVector{<:AbstractFloat},nmsc::Vector{Int}=zeros(Int,length(xout));imscstart::Int=1,NpY=length(xout))
@@ -138,8 +138,8 @@ Returns the median annual cycle from each time series.
 **Output Axes** `MSC`axis
 """
 function getMedSC(c::AbstractCubeData;kwargs...)
-  outdims = OutDims(MSCAxis(getNpY(c)),miss=MaskMissing())
-  indims = InDims(TimeAxis,miss=MaskMissing())
+  outdims = OutDims(MSCAxis(getNpY(c)))
+  indims = InDims(TimeAxis)
   mapCube(getMedSC,c;indims=indims,outdims=outdims,kwargs...)
 end
 

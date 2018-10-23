@@ -6,7 +6,7 @@ module Cubes
 export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, TimeHAxis, QuantileAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, caxes,
        AbstractSubCube, CubeMem, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis, axVal2Index, MSCAxis,
        getSingVal, ScaleAxis, axname, @caxis_str, rmCube, cubeproperties, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
-       getOutAxis, needshandle, gethandle, handletype, getcachehandle, ByInference
+       getOutAxis, ByInference
 
 include("Mask.jl")
 import .Mask: MaskArray
@@ -57,6 +57,14 @@ Base.ndims(::AbstractCubeData{T,N}) where {T,N}=N
 
 cubeproperties(::AbstractCubeData)=Dict{String,Any}()
 
+"Chunks, if given"
+cubechunks(c::AbstractCubeData) = (size(c,1),map(i->1,2:ndims(c))...)
+
+"Offset of the first chunk"
+chunkoffset(c::AbstractCubeData) = ntuple(i->0,ndims(c))
+
+function iscompressed end
+
 "Supertype of all subtypes of the original data cube"
 abstract type AbstractSubCube{T,N} <: AbstractCubeData{T,N} end
 
@@ -95,6 +103,7 @@ CubeMem(axes::Vector{CubeAxis},data,mask) = CubeMem(axes,data,mask,Dict{String,A
 Base.permutedims(c::CubeMem,p)=CubeMem(c.axes[collect(p)],permutedims(c.data,p),permutedims(c.mask,p))
 caxes(c::CubeMem)=c.axes
 cubeproperties(c::CubeMem)=c.properties
+iscompressed(c::AbstractCubeMem)=false
 
 Base.IndexStyle(::CubeMem)=Base.LinearFast()
 Base.getindex(c::CubeMem,i::Integer)=iszero(c.mask[i] & 0x01) ? getindex(c.data,i) : missing
@@ -131,12 +140,6 @@ Returns an indexable handle to the data.
 gethandle(c::AbstractCubeMem) = (c.data,c.mask)
 gethandle(c::CubeAxis) = collect(c.values)
 gethandle(c,block_size)=gethandle(c)
-function getcachehandle end
-
-struct ViewHandle end
-struct CacheHandle end
-handletype(::AbstractCubeMem)=ViewHandle()
-handletype(::AbstractSubCube)=CacheHandle()
 
 
 import ..ESDLTools.toRange
@@ -151,6 +154,15 @@ function _read(c::AbstractCubeData,thedata::Tuple,r::CartesianIndices)
   copyto!(outmask,mask)
 end
 
+function _write(c::AbstractCubeData,thedata::Tuple,r::CartesianIndices)
+  N=ndims(r)
+  outar,outmask=thedata
+  rr = convert(NTuple{N,UnitRange},r)
+  h = gethandle(c,size(r))
+  data,mask = getSubRange(h,rr...)
+  copyto!(data,outar)
+  copyto!(mask,outmask)
+end
 "This function creates a new view of the cube, joining longitude and latitude axes to a single spatial axis"
 function mergeLonLat!(c::CubeMem)
 ilon=findAxis(LonAxis,c.axes)
@@ -194,8 +206,8 @@ function Base.getindex(c::AbstractCubeData,i::IndR...)
   mout = fill(0xff,size(r))
   _read(c,(aout,mout),r)
   squeezedims = totuple(findall(j->isa(j,Integer),i))
-  dropdims(aout,dims=squeezedims)
-  dropdims(mout,dims=squeezedims)
+  aout = dropdims(aout,dims=squeezedims)
+  mout = dropdims(mout,dims=squeezedims)
   #map!((m,v)->(m & 0x01)!=0x00 ? missing : v,aout,mout,aout)
   MaskArray(aout,mout)
 end
@@ -248,7 +260,7 @@ function saveCube(c::CubeMem{T},name::AbstractString) where T
   isdir(newfolder) && error("$(name) alreaday exists, please pick another name")
   mkpath(newfolder)
   tc=Cubes.MmapCube(c.axes,folder=newfolder,T=T)
-  dh,mh = Cubes.getmmaphandles(tc)
+  dh,mh = Cubes.getmmaphandles(tc,mode="r+")
   copyto!(dh,c.data)
   copyto!(mh,c.mask)
 end

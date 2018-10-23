@@ -3,11 +3,11 @@ using Test
 import Base.Iterators
 using Distributed
 using Statistics
-addprocs(2)
+#addprocs(2)
 @everywhere using ESDL, Statistics
 
 @everywhere function sub_and_return_mean(xout1,xout2,xin)
-    m=mean(Iterators.filter(isfinite,xin))
+    m=mean(skipmissing(xin))
     for i=1:length(xin)
         xout1[i]=xin[i]-m
     end
@@ -15,8 +15,8 @@ addprocs(2)
 end
 function sub_and_return_mean(c::ESDL.AbstractCubeData)
   mapCube(sub_and_return_mean,c,
-  indims=InDims("Time",miss=ESDL.NaNMissing()),
-  outdims=(OutDims("Time",miss=ESDL.NaNMissing()),OutDims(miss=ESDL.NaNMissing())))
+  indims=InDims("Time"),
+  outdims=(OutDims("Time"),OutDims()))
 end
 
 function doTests()

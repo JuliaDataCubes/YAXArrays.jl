@@ -1,5 +1,6 @@
 module CubeAPI
-import ..Cubes: caxes, AbstractSubCube, AbstractCubeData, AbstractCubeMem, gethandle, readCubeData, CubeMem, _read, cubeproperties
+import ..Cubes: caxes, AbstractSubCube, AbstractCubeData, AbstractCubeMem, gethandle, readCubeData, CubeMem,
+  _read, cubeproperties, cubechunks, iscompressed, chunkoffset
 using ..Cubes.Axes
 using ..ESDLTools
 import ..ESDLTools: getiperm
@@ -132,7 +133,7 @@ function Cube(;resolution="low")
         Cube("/home/jovyan/work/datacube/esdc-8d-0.25deg-1x720x1440-1.0.1_1")
       end
     else
-      Cube(joinpath(ENV["ESDL_CUBEDIR"],"$(resolution)-res"))
+      Cube(joinpath(ENV["ESDL_CUBEDIR"]))
     end
   catch
     RemoteCube(resolution=resolution)
@@ -238,7 +239,14 @@ function Base.show(io::IO,c::RemoteCube)
   println(io)
 end
 
-
+function cubechunks(c::Union{Cube,RemoteCube})
+  cs = reverse(c.config.chunk_sizes)
+  if cs == (0,0,0)
+    cs = (c.config.grid_width,1,1)
+  end
+  cs
+end
+iscompressed(c::Union{Cube,RemoteCube})=c.config.comp_level>0
 """
     immutable SubCube{T,C} <: AbstractCubeData{T,4}
 
@@ -267,6 +275,13 @@ struct SubCube{T,C} <: AbstractSubCube{T,3}
   properties::Dict{String}
 end
 caxes(s::SubCube)=CubeAxis[s.lonAxis,s.latAxis,s.timeAxis]
+cubechunks(s::SubCube) = cubechunks(s.cube)
+iscompressed(s::AbstractSubCube) = iscompressed(s.cube)
+function chunkoffset(s::SubCube)
+  clon,clat,ctime = cubechunks(s)
+  (mod(s.sub_grid[3]-1,clon),mod(s.sub_grid[1]-1,clat),mod(s.sub_times[2]-1,ctime))
+end
+
 
 """
     immutable SubCubePerm{T} <: AbstractCubeData{T,3}
@@ -286,6 +301,8 @@ struct SubCubePerm{T} <: AbstractSubCube{T,3}
 end
 SubCubePerm(p::SubCube,perm::Tuple{Int,Int,Int})=SubCubePerm(p,perm,getiperm(perm))
 caxes(s::SubCubePerm)=CubeAxis[s.parent.lonAxis,s.parent.latAxis,s.parent.timeAxis][collect(s.perm)]
+cubechunks(s::SubCubePerm) = cubechunks(s.parent.cube)[collect(s.perm)]
+chunkoffset(s::SubCubePerm) = chunkoffset(s.parent)[collect(s.perm)]
 
 Base.eltype(s::AbstractCubeData{T}) where {T}=T
 Base.ndims(s::Union{SubCube,SubCubePerm})=3
@@ -343,6 +360,14 @@ end
 SubCubeVPerm(p::SubCubeV{T},perm::Tuple{Int,Int,Int,Int}) where {T}=SubCubeVPerm{T}(p,perm,getiperm(perm))
 caxes(s::SubCubeV)=CubeAxis[s.lonAxis,s.latAxis,s.timeAxis,s.varAxis]
 caxes(s::SubCubeVPerm)=CubeAxis[s.parent.lonAxis,s.parent.latAxis,s.parent.timeAxis,s.parent.varAxis][collect(s.perm)]
+cubechunks(s::SubCubeV) = (cubechunks(s.cube)...,1)
+cubechunks(s::SubCubeVPerm) = cubechunks(s.parent)[collect(s.perm)]
+function chunkoffset(s::SubCubeV)
+  clon,clat,ctime,_ = cubechunks(s)
+  (mod(s.sub_grid[3]-1,clon),mod(s.sub_grid[1]-1,clat),mod(s.sub_times[2]-1,ctime),0)
+end
+chunkoffset(s::SubCubeVPerm)=chunkoffset(s.parent)[collect(s.perm)]
+
 Base.ndims(s::SubCubeV)=4
 Base.ndims(s::SubCubeVPerm)=4
 Base.size(s::SubCubeV)=(length(s.lonAxis),length(s.latAxis),length(s.timeAxis),length(s.varAxis))
@@ -393,9 +418,20 @@ Representation of a `SubCubeStatic` with permuted dimensions.
 struct SubCubeStaticPerm{T} <: AbstractSubCube{T,2}
   parent::SubCubeV{T}
 end
-SubCubeStaticPerm(p::SubCubeStatic{T}) where {T}=SubCubeVPerm{T}(p)
+function SubCubeStaticPerm(p::SubCubeStatic{T}) where {T}
+  @assert p==(2,1)
+  SubCubeStaticPerm{T}(p)
+end
 caxes(s::SubCubeStatic)=CubeAxis[s.lonAxis,s.latAxis]
 caxes(s::SubCubeStaticPerm)=CubeAxis[s.parent.latAxis,s.parent.lonAxis]
+cubechunks(s::SubCubeStatic) = (cubechunks(s.parent)[1],cubechunks(s.parent)[2])
+cubechunks(s::SubCubeStaticPerm) = (cubechunks(s.parent)[2],cubechunks(s.parent)[1])
+function chunkoffset(s::SubCubeStatic)
+  clon,clat = cubechunks(s)
+  (mod(s.sub_grid[3]-1,clon),mod(s.sub_grid[1]-1,clat))
+end
+chunkoffset(s::SubCubeStaticPerm) = reverse(chunkoffset(s.parent))
+
 Base.ndims(s::SubCubeStatic)=2
 Base.ndims(s::SubCubeStaticPerm)=2
 Base.size(s::SubCubeStatic)=(length(s.lonAxis),length(s.latAxis))
@@ -408,6 +444,7 @@ sgetiperm(s::Union{SubCubePerm,SubCubeVPerm})=s.iperm
 getperm(s::SubCubeStaticPerm)=(2,1)
 getiperm(s::SubCubeStaticPerm)=(2,1)
 Base.permutedims(c::SubCubeStatic{T},perm::NTuple{2,Int}) where {T}=perm==(2,1) ? SubCubeStaticPerm(c) : error("There is only one permutation of a lon-lat cube, so perm must be (2,1)")
+iscompressed(s::Union{SubCubePerm,SubCubeVPerm,SubCubeStaticPerm}) = iscompressed(s.parent.cube)
 
 
 """
@@ -603,7 +640,7 @@ function getCubeData(cube::UCube,
       push!(variableNew,variable[i])
       push!(varTypes,t)
     else
-      warn("Skipping variable $(variable[i]), not found in Datacube")
+      @warn("Skipping variable $(variable[i]), not found in Datacube")
     end
   end
   t=reduce(promote_type,varTypes,init=varTypes[1])
@@ -929,8 +966,8 @@ function readFromDataYear(cube::Cube,outar::AbstractArray{T,3},mask::AbstractArr
   return fin,y,i1cur,itcur
 end
 
-include("CachedArrays.jl")
-using .CachedArrays
+#include("CachedArrays.jl")
+#using .CachedArrays
 
 function getMemHandle(cube::AbstractCubeData{T},nblock,block_size;startInd::Int=1) where T
   CachedArray(cube,nblock,block_size,CachedArrays.MaskedCacheBlock{T,length(block_size)},startInd=startInd)

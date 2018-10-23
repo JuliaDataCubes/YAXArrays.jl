@@ -27,8 +27,8 @@ package.
 **Output Axes** `TimeAxis`, `Method`axis
 """
 function cubeAnomalies(c::AbstractCubeData,methods,trainArray;kwargs...)
-  indims = InDims(TimeAxis,VariableAxis,miss=NaNMissing())
-  outdims = OutDims(TimeAxis,CategoricalAxis("Method",methods),miss=NaNMissing())
+  indims = InDims(TimeAxis,VariableAxis)
+  outdims = OutDims(TimeAxis,CategoricalAxis("Method",methods))
   P = getDetectParameters(methods,trainArray,length(getAxis(TimeAxis,c)))
   mapCube(cubeAnomalies,c,P;indims=indims,outdims=outdims,kwargs...)
 end
@@ -43,8 +43,8 @@ end
 
 
 function simpleAnomalies(c::AbstractCubeData,methods;kwargs...)
-  indims = InDims(TimeAxis,VariableAxis,miss=NaNMissing())
-  outdims = OutDims(TimeAxis,CategoricalAxis("Method",methods),miss=NaNMissing())
+  indims = InDims(TimeAxis,VariableAxis)
+  outdims = OutDims(TimeAxis,CategoricalAxis("Method",methods))
   mapCube(simpleAnomalies,c,methods;indims=indims,outdims=outdims,kwargs...)
 end
 
