@@ -10,6 +10,7 @@ import ...ESDL.workdir
 import DataFrames
 import Distributed: nprocs
 import DataFrames: DataFrame
+import ProgressMeter: Progress, next!
 using Dates
 import StatsBase.Weights
 using ESDL.CubeAPI.Mask
@@ -25,9 +26,6 @@ const hasparprogress=[false]
 const progresscolor=[:cyan]
 function __init__()
   @require IJulia = "7073ff75-c697-5162-941a-fcdaad2a7d2a" begin progresscolor[1] = :blue end
-  @require ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca" begin
-    import ProgressMeter: Progress, next!
-  end
 end
 
 function mask2miss(a::Tuple,workAr::MaskArray)
