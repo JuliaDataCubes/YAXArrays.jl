@@ -345,21 +345,26 @@ function runLooppar(allRanges)
   runLoop(dc,(allRanges,))
 end
 
-function runLoop(dc::DATConfig, allRanges)
+function getallargs(dc::DATConfig)
   inars = map(ic->ic.handle,dc.incubes)
   outars = map(ic->ic.handle,dc.outcubes)
   filters = map(ic->ic.desc.procfilter,dc.incubes)
   inob = InnerObj(dc)
-  laxlengths = totuple(length.(dc.LoopAxes))
   inworkar = totuple(map(i->i.workarray,dc.incubes))
   outworkar = totuple(map(i->i.workarray,dc.outcubes))
   loopax = totuple(dc.LoopAxes)
   adda = dc.addargs
   kwa = dc.kwargs
+  (inars,outars,filters,inob,inworkar,outworkar,
+  loopax,adda,kwa)
+end
+
+function runLoop(dc::DATConfig, allRanges)
+  allargs = getallargs(dc)
   #@show first(allRanges)
   foreach(allRanges) do r
     updateinars(dc,r)
-    innerLoop(dc.fu,inars,outars,filters,inob,r,
+    innerLoop(dc.fu,r,inars,outars,filters,inob,
       inworkar,outworkar,loopax,adda,kwa)
     writeoutars(dc,r)
   end
@@ -475,23 +480,24 @@ function getCacheSizes(dc::DATConfig)
     dc.loopCacheSize=Int[length(x) for x in dc.LoopAxes]
     return dc
   end
-  inAxlengths      = map(cube->Int.(length.(cube.axesSmall)),dc.incubes)
-  inblocksizes     = map((x,T)->prod(x)*mysizeof(eltype(T.cube)),inAxlengths,dc.incubes)
+  inAxlengths      = Vector{Int}[Int.(length.(cube.axesSmall)) for cube in dc.incubes]
+  inblocksizes     = map((x,T)->isempty(x) ? mysizeof(eltype(T.cube)) : prod(x)*mysizeof(eltype(T.cube)),inAxlengths,dc.incubes)
   inblocksize,imax = findmax(inblocksizes)
-  outblocksizes    = map(C->length(C.axesSmall)>0 ? sizeof(C.outtype)*prod(map(length,C.axesSmall)) : 1,dc.outcubes)
+  outblocksizes    = map(C->length(C.axesSmall)>0 ? sizeof(C.outtype)*prod(map(Int∘length,C.axesSmall)) : 1,dc.outcubes)
   outblocksize     = length(outblocksizes) > 0 ? findmax(outblocksizes)[1] : 1
   #Now add cache miss information for each input cube to every loop axis
   cmisses= NamedTuple{(:iloopax,:cs, :iscompressed, :innerleap),Tuple{Int64,Int64,Bool,Int64}}[]
   foreach(dc.LoopAxes,1:length(dc.LoopAxes)) do lax,ilax
     for ic in dc.incubes
       ii = findAxis(lax,ic.cube)
-      if ii>0
-        inax = prod(map(length,ic.axesSmall))
+      if !isa(ii,Nothing)
+        inax = isempty(ic.axesSmall) ? 1 : prod(map(length,ic.axesSmall))
         push!(cmisses,(iloopax = ilax,cs = cubechunks(ic.cube)[ii],iscompressed = iscompressed(ic.cube), innerleap=inax))
       end
     end
   end
   sort!(cmisses,lt=cmpcachmisses)
+  #@show cmisses
   loopCacheSize    = getLoopCacheSize(max(inblocksize,outblocksize),map(length,dc.LoopAxes),dc.max_cache, cmisses)
   for cube in dc.incubes
     if !cube.isMem
@@ -514,22 +520,24 @@ function getLoopCacheSize(preblocksize,loopaxlengths,max_cache,cmisses)
   incfac=totcachesize/preblocksize
   incfac<1 && error("The requested slices do not fit into the specified cache. Please consider increasing max_cache")
   loopCacheSize = ones(Int,length(loopaxlengths))
-
   # Go through list of cache misses first and decide
   imiss = 1
   while imiss<=length(cmisses)
     il = cmisses[imiss].iloopax
     s = min(cmisses[imiss].cs,loopaxlengths[il])/loopCacheSize[il]
-    if s<incfac
-      loopCacheSize[il]=min(cmisses[imiss].cs,loopaxlengths[il])
-      incfac=totcachesize/preblocksize/prod(loopCacheSize)
-    else
-      ii=floor(Int,incfac)
-      while ii>1 && rem(s,ii)!=0
-        ii=ii-1
+    #Check if cache size is already set for this axis
+    if loopCacheSize[il]==1
+      if s<incfac
+        loopCacheSize[il]=min(cmisses[imiss].cs,loopaxlengths[il])
+        incfac=totcachesize/preblocksize/prod(loopCacheSize)
+      else
+        ii=floor(Int,incfac)
+        while ii>1 && rem(s,ii)!=0
+          ii=ii-1
+        end
+        loopCacheSize[il]=ii
+        break
       end
-      loopCacheSize[il]=ii
-      break
     end
     imiss+=1
   end
@@ -561,7 +569,7 @@ end
 
 using DataStructures: OrderedDict
 using Base.Cartesian
-@generated function innerLoop(f,xin::NTuple{NIN,Any},xout::NTuple{NOUT,Any},filters,::InnerObj{T1,T2,T4,R,UPDOUT,LR},loopRanges::T3,
+@generated function innerLoop(f,loopRanges::T3,xin::NTuple{NIN,Any},xout::NTuple{NOUT,Any},filters,::InnerObj{T1,T2,T4,R,UPDOUT,LR},
   inwork,outwork,loopaxes::LAX,addargs,kwargs) where {T1,T2,T3,T4,R,NIN,NOUT,UPDOUT,LR,LAX}
 
   NinCol      = T1
@@ -683,4 +691,5 @@ function getFrontPerm(dc::AbstractCubeData{T},dims) where T
   return ntuple(i->perm[i],N)
 end
 
+include("dciterators.jl")
 end
