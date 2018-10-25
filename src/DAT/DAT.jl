@@ -311,8 +311,8 @@ updatears(dc,clist,r,f) = foreach(clist) do ic
   indsr   = ntuple(i->r[ic.loopinds[i]],length(ic.loopinds))
   indsall = CartesianIndices((indscol...,indsr...))
   if size(ic.handle[1]) != size(indsall)
-    hinds = CartesianIndices(map(i->1:length(i),indsall.indices))
-    f(ic.cube,(view(ic.handle[1],hinds),view(ic.handle[2],hinds)),indsall)
+    hinds = map(i->1:length(i),indsall.indices)
+    f(ic.cube,(view(ic.handle[1],hinds...),view(ic.handle[2],hinds...)),indsall)
   else
     f(ic.cube,ic.handle,indsall)
   end
