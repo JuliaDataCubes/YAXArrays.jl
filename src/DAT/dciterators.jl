@@ -20,10 +20,20 @@ struct CubeIterator{R,ART,ARTBC,LAX,RN}
 end
 Base.IteratorSize(::Type{<:CubeIterator})=Base.HasLength()
 Base.IteratorEltype(::Type{<:CubeIterator})=Base.HasEltype()
-function Base.eltype(t::Type{<:CubeIterator})
-  NamedTuple{getrownames(t),Tuple{axtypes(t)...,cubeeltypes(t)...}}
+function Base.eltype(i::Type{CubeIterator{A,B,C,D,E}}) where {A,B,C,D,E}
+  rn = getrownames(i)
+  ct = cubeeltypes(i)
+  if length(rn)>length(ct)
+    NamedTuple{rn,Tuple{axtypes(i)...,ct...}}
+  else
+    NamedTuple{rn,Tuple{ct...}}
+  end
 end
-gettupletypes(::Type{Tuple{A}}) where A = A
+function cubeeltypes(::Type{<:CubeIterator{<:Any,ART}}) where ART
+  allt = gettupletypes.(gettupletypes(ART))
+  map(i->eltype(i[1]),allt)
+end
+gettupletypes(::Type{Tuple{A}}) where A = (A,)
 gettupletypes(::Type{Tuple{A,B}}) where {A,B} = (A,B)
 gettupletypes(::Type{Tuple{A,B,C}}) where {A,B,C} = (A,B,C)
 gettupletypes(::Type{Tuple{A,B,C,D}}) where {A,B,C,D} = (A,B,C,D)
@@ -40,9 +50,7 @@ function CubeIterator(dc,r;varnames::Tuple=ntuple(i->Symbol("x$i"),length(dc.inc
     inars = getproperty.(dc.incubes,:handle)
     length(varnames) == length(dc.incubes) || error("Supplied $(length(varnames)) varnames and $(length(dc.incubes)) cubes.")
     if include_loopvars
-      foreach(loopaxes) do lax
-        varnames = (axsym(lax),varnames...)
-      end
+      varnames = (map(axsym,loopaxes)...,varnames...)
     end
     inarsbc = map(ic->PickAxisArray(MaskArray(ic.handle...),ic.loopinds...),dc.incubes)
     CubeIterator{typeof(r),typeof(inars),typeof(inarsbc),typeof(loopaxes),varnames}(dc,r,inars,inarsbc,loopaxes)
@@ -58,7 +66,7 @@ end
 function Base.iterate(ci::CubeIterator)
     rnow,blockstate = iterate(ci.r)
     updateinars(ci.dc,rnow)
-    innerinds = CartesianIndices(rnow)
+    innerinds = CartesianIndices(length.(rnow))
     indnow, innerstate = iterate(innerinds)
     getrow(ci,ci.inarsBC,indnow),(rnow=rnow,blockstate=blockstate,innerinds = innerinds, innerstate=innerstate)
 end
@@ -71,7 +79,7 @@ function Base.iterate(ci::CubeIterator,s)
         else
             rnow, blockstate = t2
             updateinars(ci.dc,rnow)
-            innerinds = CartesianIndices(rnow)
+            innerinds = CartesianIndices(length.(rnow))
             indnow,innerstate = iterate(innerinds)
         end
     else
@@ -84,7 +92,7 @@ end
 @generated function getrow(ci::CI,inarsBC,indnow) where CI
     rn = getrownames(CI)
     nc = getncubes(CI)
-    exlist = [:($(rn[i]) = inarsBC[$i][indnow]) for i = (length(rn)-nc+1):length(rn)]
+    exlist = [:($(rn[i]) = inarsBC[$ir][indnow]) for (ir,i) = enumerate((length(rn)-nc+1):length(rn))]
     if length(rn)>nc
       exlist2 = [:($(rn[i]) = ci.loopaxes[$i].values[indnow.I[$i]]) for i=1:(length(rn)-nc)]
       exlist = [exlist2;exlist]
@@ -92,10 +100,18 @@ end
     Expr(:tuple,exlist...)
 end
 
-export toTable
+export CubeTable
 function CubeTable(c::AbstractCubeData...;include_axes=true)
   indims = map(i->InDims(),c)
   configiter = mapCube(identity,c,debug=true,indims=indims,outdims=());
-  r=distributeLoopRanges(totuple(configiter.loopCacheSize),totuple(map(length,configiter.LoopAxes)),getchunkoffsets(configiter))
+  r = distributeLoopRanges(totuple(configiter.loopCacheSize),totuple(map(length,configiter.LoopAxes)),getchunkoffsets(configiter))
   ci = CubeIterator(configiter,r, include_loopvars=include_axes)
 end
+
+
+import Tables
+Tables.istable(::Type{<:CubeIterator}) = true
+Tables.rowaccess(::Type{<:CubeIterator}) = true
+Tables.rows(x::CubeIterator) = x
+Tables.schema(x::CubeIterator) = Tables.schema(typeof(x))
+Tables.schema(x::Type{<:CubeIterator}) = Tables.Schema(getrownames(x),(axtypes(x)...,cubeeltypes(x)...))
