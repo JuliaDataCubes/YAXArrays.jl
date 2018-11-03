@@ -922,7 +922,8 @@ getNanVal(::Type{T}) where {T<:AbstractFloat} = convert(T,NaN)
 getNanVal(::Type{T}) where {T<:Integer}       = typemax(T)
 getNanVal(::Type{T}) where {T<:Union{<:Number,Missing}} = missing
 getCopy(x::AbstractArray{Union{T,Missing}}) where T = zeros(T,size(x)),T
-getCopy(x::AbstractArray) = x,eltype(x)
+getCopy(x::AbstractArray) = zeros(eltype(x),size(x)),eltype(x)
+getCopy(x::Array) = x,eltype(x)
 
 function readFromDataYear(cube::Cube,outar::AbstractArray{T,3},mask::AbstractArray{UInt8,3},variable,y,grid_x1,nx,grid_y1,ny,itcur,i1cur,ntime,NpY) where T
   filename=joinpath(cube.base_dir,"data",variable,string(y,"_",variable,".nc"))

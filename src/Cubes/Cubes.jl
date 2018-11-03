@@ -106,7 +106,6 @@ cubeproperties(c::CubeMem)=c.properties
 iscompressed(c::AbstractCubeMem)=false
 
 Base.IndexStyle(::CubeMem)=Base.LinearFast()
-Base.getindex(c::CubeMem,i::Integer)=iszero(c.mask[i] & 0x01) ? getindex(c.data,i) : missing
 function Base.setindex!(c::CubeMem,i::Integer,v)
   if isa(v,Missing)
     setindex!(c.mask,i,c.mask[i] | 0x01)
@@ -202,7 +201,7 @@ function Base.getindex(c::AbstractCubeData,i::IndR...)
   length(i)==ndims(c) || error("You must provide $(ndims(c)) indices")
   ax = totuple(caxes(c))
   r = CartesianIndices(map((ii,iax)->getfirst(ii,iax):getlast(ii,iax),i,ax))
-  aout = zeros(Union{eltype(c),Missing},size(r))
+  aout = zeros(eltype(c),size(r))
   mout = fill(0xff,size(r))
   _read(c,(aout,mout),r)
   squeezedims = totuple(findall(j->isa(j,Integer),i))
