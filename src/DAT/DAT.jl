@@ -364,8 +364,7 @@ function runLoop(dc::DATConfig, allRanges)
   #@show first(allRanges)
   foreach(allRanges) do r
     updateinars(dc,r)
-    innerLoop(dc.fu,r,inars,outars,filters,inob,
-      inworkar,outworkar,loopax,adda,kwa)
+    innerLoop(dc.fu,r,allargs...)
     writeoutars(dc,r)
   end
 end

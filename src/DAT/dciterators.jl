@@ -174,7 +174,6 @@ macro CubeTable(cubes...)
   end
 end
 function _CubeTable(thetype,c::AbstractCubeData...;include_axes=true,varnames=varnames)
-  println("Hallo")
   indims = map(i->InDims(),c)
   configiter = mapCube(identity,c,debug=true,indims=indims,outdims=());
   r = collect(distributeLoopRanges(totuple(configiter.loopCacheSize),totuple(map(length,configiter.LoopAxes)),getchunkoffsets(configiter)))
