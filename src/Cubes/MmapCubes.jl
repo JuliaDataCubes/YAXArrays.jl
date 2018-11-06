@@ -101,7 +101,11 @@ tmp directory (for `TempCube`s) or by storing the data to disk (for `CubeMem`s)
 function saveCube(c::MmapCube,name::String)
   newfolder=joinpath(workdir[1],name)
   isdir(newfolder) && error("$(name) already exists, please pick another name")
-  mv(c.folder,newfolder)
+  # the julia cp implentation currently can only deal with files <2GB
+  # the issue is:
+  # https://github.com/JuliaLang/julia/issues/14574
+  # mv(c.folder,newfolder)
+  run(`mv $(c.folder) $(newfolder)`)
   c.folder=newfolder
   c.persist=true
 end
