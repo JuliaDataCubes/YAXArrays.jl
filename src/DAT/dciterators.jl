@@ -144,6 +144,25 @@ end
 #     Expr(:(::),Expr(:tuple,exlist...),eltype(ci))
 # end
 
+abstract type CubeRow
+end
+function Base.show(io::IO,s::CubeRow)
+  print(io,"Cube Row: ")
+  for n in propertynames(s)
+    print(io,string(n), "=",getproperty(s,n)," ")
+  end
+end
+Base.show(io::IO,s::Type{<:CubeRow})="Cube Row"
+function Base.iterate(s::CubeRow,state=1)
+  allnames = propertynames(s)
+  if state<=length(allnames)
+    (getproperty(s,allnames[state]),state+1)
+  else
+    nothing
+  end
+end
+
+
 import DataStructures: OrderedDict
 export CubeTable
 macro CubeTable(cubes...)
@@ -166,10 +185,9 @@ macro CubeTable(cubes...)
   theparams = Expr(:curly,s,[Symbol("T$i") for i=1:length(clist)]...)
   fields = Expr(:block,[Expr(:(::),fn,Symbol("T$i")) for (i,fn) in enumerate(allnames)]...)
   quote
-    struct $theparams
+    struct $theparams <: CubeRow
       $fields
     end
-    Base.show(io::IO,s::$s)=print(io,"an iterator with fields")
     _CubeTable($s,$(allcubes...),include_axes=$include_axes, varnames=$(Expr(:tuple,allnames...)))
   end
 end
