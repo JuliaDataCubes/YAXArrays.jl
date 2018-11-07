@@ -53,6 +53,9 @@ function MmapCube(axlist;folder=mktempdir(),T=Float32,persist::Bool=true,overwri
 end
 cubeproperties(c::MmapCube)=c.properties
 getmmaphandles(y::MmapCube{T};mode="r") where T = getmmaphandles(y.folder,y.axes,T,mode=mode)
+gethandle(y::MmapCube)=getmmaphandles(y)
+iscompressed(::MmapCube)=false
+iscompressed(::MmapCubePerm)=false
 function getmmaphandles(folder, axlist,T;mode="r")
 
   s=map(length,axlist)
@@ -91,7 +94,7 @@ Base.size(x::Union{MmapCube,MmapCubePerm},i)=size(x)[i]
 caxes(y::MmapCube)=y.axes
 caxes(t::MmapCubePerm)=[t.axes[t.perm[i]] for i=1:length(t.axes)]
 getCubeDes(v::MmapCube)="Memory mapped cube"
-Base.permutedims(c::MmapCube{T,N},perm) where {T,N}=MmapCubePerm{T,N}(c.axes,c.folder,perm,c.properties)
+#Base.permutedims(c::MmapCube{T,N},perm) where {T,N}=MmapCubePerm{T,N}(c.axes,c.folder,perm,c.properties)
 """
     saveCube(c::AbstractCubeData, name::String)
 

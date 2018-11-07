@@ -3,8 +3,8 @@ struct PickAxisArray{P,N}
   stride::NTuple{N,Int}
 end
 function PickAxisArray(p,indmask)
-  @show indmask
-  @show ndims(p)
+  #@show indmask
+  #@show ndims(p)
   @assert sum(indmask) == ndims(p)
   strides = zeros(Int,length(indmask))
   s = 1
@@ -56,32 +56,30 @@ Base.eltype(i::Type{<:CubeIterator{A,B,C,D,E,F}}) where {A,B,C,D,E,F} = F
 # axtypes(::Type{<:CubeIterator{A,B,C,D,E}}) where {A,B,C,D,E} = axtype.(gettupletypes(D))
 # axtype(::Type{<:CubeAxis{T}}) where T = T
 getrownames(t::Type{<:CubeIterator}) = fieldnames(t)
-getncubes(::Type{<:CubeIterator{A,B,C,D,E}}) where {A,B,C,D,E} = tuplelen(B)
+getncubes(::Type{<:CubeIterator{A,B}}) where {A,B} = tuplelen(B)
 tuplelen(::Type{<:NTuple{N,<:Any}}) where N=N
 axsym(ax::CubeAxis{<:Any,S}) where S = S
 
-function CubeIterator(s,dc,r;varnames::Tuple=ntuple(i->Symbol("x$i"),length(dc.incubes)),include_loopvars=true)
+lift64(::Type{Float32})=Float64
+lift64(::Type{Int32})=Int64
+lift64(T)=T
+
+function CubeIterator(s,dc,r;varnames::Tuple=ntuple(i->Symbol("x$i"),length(dc.incubes)),include_loopvars=())
     loopaxes = ntuple(i->dc.LoopAxes[i],length(dc.LoopAxes))
     inars = getproperty.(dc.incubes,:handle)
     length(varnames) == length(dc.incubes) || error("Supplied $(length(varnames)) varnames and $(length(dc.incubes)) cubes.")
-    if include_loopvars
-      varnames = (map(axsym,loopaxes)...,varnames...)
-      ilax = ntuple(i->i,length(loopaxes))
-    else
-      ilax = ()
-    end
-    lopi = falses(length(loopaxes))
-    foreach(ilax) do il
-      lopi[il]=true
-    end
     rt = map(c->Union{eltype(c.handle[1]),Missing},dc.incubes)
-    laxt = map(ax->eltype(ax),loopaxes[lopi])
     inarsbc = map(dc.incubes) do ic
       allax = falses(length(dc.LoopAxes))
       allax[ic.loopinds].=true
       PickAxisArray(MaskArray(ic.handle...),allax)
     end
-    et = map(i->Union{eltype(i[1]),Missing},inars)
+    et = map(i->Union{lift64(eltype(i[1])),Missing},inars)
+    if !isempty(include_loopvars)
+      ilax = map(i->findAxis(i,collect(loopaxes)),include_loopvars)
+      any(isequal(nothing),ilax) && error("Axis not found in cubes")
+      et=(et...,map(i->eltype(loopaxes[i]),ilax)...)
+    end
     CubeIterator{typeof(r),typeof(inars),typeof(inarsbc),typeof(loopaxes),ilax,s{et...}}(dc,r,inars,inarsbc,loopaxes)
 end
 function Base.show(io::IO,ci::CubeIterator{<:Any,<:Any,<:Any,<:Any,<:Any,E}) where E
@@ -119,6 +117,22 @@ function Base.iterate(ci::CubeIterator,s)
       innerinds=innerinds::CartesianIndices{N,NTuple{N,Base.OneTo{Int64}}},
       innerstate=innerstate::CartesianIndex{N})
 end
+abstract type CubeRow
+end
+#Base.getproperty(s::CubeRow,v::Symbol)=Base.getfield(s,v)
+abstract type CubeRowAx<:CubeRow
+end
+# function Base.getproperty(s::T,v::Symbol) where T<:CubeRowAx
+#   if v in fieldnames(T)
+#     getfield(s,v)
+#   else
+#     ax = getfield(s,:axes)
+#     ind = getfield(s,:i)
+#     i = findfirst(i->axsym(i)==v,ax)
+#     ax[i].values[ind.I[i]]
+#   end
+# end
+
 # @noinline function getrow(ci::CubeIterator{R,ART,ARTBC,LAX,ILAX,RN,RT},inarsBC,indnow)::NamedTuple{RN,RT} where {R,ART,ARTBC,LAX,ILAX,RN,RT}
 #   axvals = map(i->ci.loopaxes[i].values[indnow.I[i]],ILAX)
 #   cvals  = map(i->i[indnow],inarsBC)
@@ -126,11 +140,17 @@ end
 #   #NamedTuple{RN,RT}(axvals...,cvals...)
 #   NamedTuple{RN,RT}(allvals)
 # end
-function getrow(ci::CubeIterator,inarsBC,indnow)
-   #axvals = map(i->ci.loopaxes[i].values[indnow.I[i]],ILAX)
+function getrow(ci::CubeIterator{<:Any,<:Any,<:Any,<:Any,ILAX,S},inarsBC,indnow) where {ILAX,S<:CubeRowAx}
+   inds = map(i->indnow.I[i],ILAX)
+   #axvals = map((i,indnow)->ci.loopaxes[i][indnow],ILAX,inds)
+   axvalsall = map((ax,i)->ax.values[i],ci.loopaxes,indnow.I)
+   axvals = map(i->axvalsall[i],ILAX)
    cvals  = map(i->i[indnow],inarsBC)
-   #NamedTuple{RN,RT}(axvals...,cvals...)
-   eltype(ci)(cvals...)
+   S(cvals...,axvals...)
+end
+function getrow(ci::CubeIterator{<:Any,<:Any,<:Any,<:Any,<:Any,S},inarsBC,indnow) where S<:CubeRow
+   cvals  = map(i->i[indnow],inarsBC)
+   S(cvals...)
 end
 
 # @generated function getrow(ci::CI,inarsBC,indnow) where CI
@@ -144,15 +164,19 @@ end
 #     Expr(:(::),Expr(:tuple,exlist...),eltype(ci))
 # end
 
-abstract type CubeRow
-end
 function Base.show(io::IO,s::CubeRow)
   print(io,"Cube Row: ")
   for n in propertynames(s)
     print(io,string(n), "=",getproperty(s,n)," ")
   end
 end
-Base.show(io::IO,s::Type{<:CubeRow})="Cube Row"
+function Base.show(io::IO,s::CubeRowAx)
+  print(io,"Cube Row: ")
+  for n in propertynames(s)
+    print(io,string(n), "=",getproperty(s,n)," ")
+  end
+end
+Base.show(io::IO,s::Type{<:CubeRow})=print(io,"Cube Row with fields: ",fieldnames(s)...)
 function Base.iterate(s::CubeRow,state=1)
   allnames = propertynames(s)
   if state<=length(allnames)
@@ -166,17 +190,22 @@ end
 import DataStructures: OrderedDict
 export CubeTable
 macro CubeTable(cubes...)
-  include_axes=false
+  axargs=[]
   clist = OrderedDict{Any,Any}()
   for c in cubes
     if isa(c,Symbol)
-      if c == :include_axes
-        include_axes=true
-      else
-        clist[esc(c)]=esc(c)
-      end
+      clist[esc(c)]=esc(c)
     elseif isa(c,Expr) && c.head==:(=)
-      clist[esc(c.args[1])]=esc(c.args[2])
+      if c.args[1]==:axes
+        axdef = c.args[2]
+        if isa(axdef,Symbol)
+          push!(axargs,axdef)
+        else
+          append!(axargs,axdef.args)
+        end
+      else
+        clist[esc(c.args[1])]=esc(c.args[2])
+      end
     end
   end
   allcubes = collect(values(clist))
@@ -184,14 +213,29 @@ macro CubeTable(cubes...)
   s = esc(gensym())
   theparams = Expr(:curly,s,[Symbol("T$i") for i=1:length(clist)]...)
   fields = Expr(:block,[Expr(:(::),fn,Symbol("T$i")) for (i,fn) in enumerate(allnames)]...)
+  #pn = Expr(:tuple,map(i->QuoteNode(i.args[1]),allnames)...)
+  if !isempty(axargs)
+    foreach(axargs) do ax
+      as = Symbol(ax)
+      push!(theparams.args,Symbol("AX$as"))
+      push!(fields.args,:($(esc(as))::$(Symbol("AX$as"))))
+      #push!(pn.args,as)
+    end
+    supert=:CubeRowAx
+  else
+    supert=:CubeRow
+  end
   quote
-    struct $theparams <: CubeRow
+    struct $theparams <: $supert
       $fields
     end
-    _CubeTable($s,$(allcubes...),include_axes=$include_axes, varnames=$(Expr(:tuple,allnames...)))
+    #Base.propertynames(s::$s)=$pn
+    _CubeTable($s,$(allcubes...),include_axes=$(Expr(:tuple,string.(axargs)...)), varnames=$(Expr(:tuple,QuoteNode.(allnames)...)))
   end
 end
-function _CubeTable(thetype,c::AbstractCubeData...;include_axes=true,varnames=varnames)
+
+
+function _CubeTable(thetype,c::AbstractCubeData...;include_axes=(),varnames=varnames)
   indims = map(i->InDims(),c)
   configiter = mapCube(identity,c,debug=true,indims=indims,outdims=());
   r = collect(distributeLoopRanges(totuple(configiter.loopCacheSize),totuple(map(length,configiter.LoopAxes)),getchunkoffsets(configiter)))
