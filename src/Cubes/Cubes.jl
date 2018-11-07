@@ -130,6 +130,11 @@ function getSubRange(c::Tuple{AbstractArray{T,N},AbstractArray{UInt8,N}},i...;wr
   return (view(c[1],i...),view(c[2],i...))
 end
 getSubRange(c::Tuple{AbstractArray{T,0},AbstractArray{UInt8,0}};write::Bool=true) where {T}=c
+function getSubRange(c::AbstractArray,i...)
+  d = view(c,i...)
+  z = zeros(UInt8,size(d))
+  d,z
+end
 
 """
     gethandle(c::AbstractCubeData, [block_size])
@@ -201,7 +206,7 @@ function Base.getindex(c::AbstractCubeData,i::IndR...)
   length(i)==ndims(c) || error("You must provide $(ndims(c)) indices")
   ax = totuple(caxes(c))
   r = CartesianIndices(map((ii,iax)->getfirst(ii,iax):getlast(ii,iax),i,ax))
-  aout = zeros(eltype(c),size(r))
+  aout = Array{eltype(c)}(undef,size(r))
   mout = fill(0xff,size(r))
   _read(c,(aout,mout),r)
   squeezedims = totuple(findall(j->isa(j,Integer),i))
@@ -232,6 +237,7 @@ include("NetCDFCubes.jl")
 
 getCubeDes(c::AbstractSubCube)="Data Cube view"
 #getCubeDes(c::TempCube)="Temporary Data Cube"
+getCubeDes(::CubeAxis)="Cube axis"
 getCubeDes(c::CubeMem)="In-Memory data cube"
 getCubeDes(c::EmptyCube)="Empty Data Cube (placeholder)"
 function Base.show(io::IO,c::AbstractCubeData)

@@ -125,7 +125,7 @@ function _read(x::TransformedCube{T,N},thedata::Tuple,r::CartesianIndices{N}) wh
   minter=[]
   for i=1:length(x.parents)
     c=x.parents[i]
-    aouti=zeros(eltype(c),size(aout))
+    aouti=Array{eltype(c)}(undef,size(aout))
     mouti=zeros(UInt8,size(mout))
     _read(c,(aouti,mouti),r)
     push!(ainter,aouti)

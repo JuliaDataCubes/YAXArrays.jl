@@ -691,4 +691,5 @@ function getFrontPerm(dc::AbstractCubeData{T},dims) where T
 end
 
 include("dciterators.jl")
+include("tablestats.jl")
 end

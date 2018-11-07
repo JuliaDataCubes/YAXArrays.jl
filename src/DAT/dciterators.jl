@@ -176,7 +176,11 @@ function Base.show(io::IO,s::CubeRowAx)
     print(io,string(n), "=",getproperty(s,n)," ")
   end
 end
-Base.show(io::IO,s::Type{<:CubeRow})=print(io,"Cube Row with fields: ",fieldnames(s)...)
+function Base.show(io::IO,s::Type{<:CubeRow})
+  foreach(fieldnames(s)) do fn
+    print(io,fn,"::",fieldtype(s,fn),", ")
+  end
+end
 function Base.iterate(s::CubeRow,state=1)
   allnames = propertynames(s)
   if state<=length(allnames)
