@@ -79,6 +79,8 @@ function CubeIterator(s,dc,r;varnames::Tuple=ntuple(i->Symbol("x$i"),length(dc.i
       ilax = map(i->findAxis(i,collect(loopaxes)),include_loopvars)
       any(isequal(nothing),ilax) && error("Axis not found in cubes")
       et=(et...,map(i->eltype(loopaxes[i]),ilax)...)
+    else
+      ilax=()
     end
     CubeIterator{typeof(r),typeof(inars),typeof(inarsbc),typeof(loopaxes),ilax,s{et...}}(dc,r,inars,inarsbc,loopaxes)
 end
@@ -252,4 +254,4 @@ Tables.istable(::Type{<:CubeIterator}) = true
 Tables.rowaccess(::Type{<:CubeIterator}) = true
 Tables.rows(x::CubeIterator) = x
 Tables.schema(x::CubeIterator) = Tables.schema(typeof(x))
-Tables.schema(x::Type{<:CubeIterator}) = Tables.Schema(getrownames(x),(axtypes(x)...,cubeeltypes(x)...))
+Tables.schema(x::Type{<:CubeIterator}) = Tables.Schema(fieldnames(eltype(x)),map(s->fieldtype(eltype(x),s),fieldnames(eltype(x))))
