@@ -1,5 +1,6 @@
 using ESDL
 using Test
+using Dates
 import Base.Iterators
 using Distributed
 using Statistics
@@ -43,22 +44,20 @@ function doTests()
   dmem=readCubeData(d1)
   mtime=mapslices(mean∘skipmissing,dmem,("lon","lat"))
 
-  #wv=cosd.(dmem.axes[2].values)
-  #goodinds=dmem.mask.==0x00
   end
-  # the element-wise operations are right now a problem with the julia 0.6
-  #@test Float32(sum(dmem.data[goodinds].*wv[goodinds])/sum(wv[goodinds]))==readCubeData(mtime).data[1]
-
   # Test Mean seasonal cycle retrieval
   @testset "Seasonal cycle statistics and anomalies" begin
   cdata=getCubeData(c,variable="soil_moisture",longitude=(30,30),latitude=(50.75,50.75))
   d=readCubeData(cdata)
+
   x2=getMSC(d)
+
   x3=getMedSC(d)
-  dstep3=d.data[1,1,3:46:506]
-  mstep3=d.mask[1,1,3:46:506]
-  @test mean(dstep3[mstep3.==0x00])==readCubeData(x2).data[3]
-  @test median(dstep3[mstep3.==0x00])==readCubeData(x3).data[3]
+
+  a = d[1,1,:]
+  a = a[3:46:end]
+  @test mean(skipmissing(a))==x2[3,1,1]
+  @test median(skipmissing(a))==x3[3,1,1]
 
   # Test gap filling
   cube_filled=readCubeData(gapFillMSC(d))
@@ -80,28 +79,10 @@ function doTests()
   @test 1.0-1e-6 <= std(anom_normalized.data) <= 1.0+1e-6
   end
 
-  # @testset "Anomaly detection" begin
-  # d3=getCubeData(c,variable=["gross_primary_productivity","air_temperature_2m"],longitude=(30,30),latitude=(50.75,50.75))
-  # anom_new=removeMSC(d3)
-  # anom_norm=readCubeData(normalizeTS(anom_new))
-  # anoms_detected = cubeAnomalies(anom_norm,["KDE","T2","REC"],reshape(Float64.(anom_norm.data),(506,2)))
-  # end
-# Test generation of new axes
-
 
   d1=getCubeData(c,variable=["gross_primary_productivity","net_ecosystem_exchange"],longitude=(30,30),latitude=(50,50))
   d2=getCubeData(c,variable=["gross_primary_productivity","air_temperature_2m"],longitude=(30,30),latitude=(50,50))
 
-  #@testset "Quantiles" begin
-  #Test Quantiles
-  #cdata=getCubeData(c,variable=["soil_moisture","gross_primary_productivity"],longitude=(30,30),latitude=(50.75,50.75))
-  #o=readCubeData(mapCube(timelonlatquantiles,cdata,[0.1,0.5,0.9]))
-  #o2=readCubeData(cdata)
-  #size(o2.data)
-  #o2=o2.data[:,:,:,1][o2.mask[:,:,:,1].==0x00]
-  #@test quantile(o2,[0.1,0.5,0.9])==o.data[:,1]
-  #end
-  #nothing
 
   @testset "Multiple output cubes" begin
   #Test onvolving multiple output cubes

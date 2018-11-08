@@ -30,16 +30,23 @@ end
 struct GroupedOnlineAggregator{O,S,BY,W,C}<:TableAggregator
     d::O
     w::W
+    by::BY
 end
 value(o::GroupedOnlineAggregator)=Dict(zip(keys(o.d),map(value,(values(o.d)))))
 unmiss(::Type{Union{T,Missing}}) where T = T
 unmiss(T)=T
-function GroupedOnlineAggregator(O::Type{<:WeightedOnlineStat},s::Symbol,by::NTuple{N,Symbol},w,iter) where N
+struct SymType{S}
+end
+SymType(s::Symbol)=SymType{s}()
+(f::SymType{S})(x) where S=getproperty(x,S)
+
+getbytypes(et,by) = Tuple{map(i->unmiss(Base.return_types(i,Tuple{et})[1]),by)...}
+function GroupedOnlineAggregator(O::Type{<:WeightedOnlineStat},s::Symbol,by,w,iter) where N
     ost = typeof(O())
     et = eltype(iter)
-    bytypes = Tuple{map(i->unmiss(fieldtype(et,i)),by)...}
+    bytypes = Tuple{map(i->unmiss(Base.return_types(i,Tuple{et})[1]),by)...}
     d = Dict{bytypes,ost}()
-    GroupedOnlineAggregator{typeof(d),s,by,typeof(w),O}(d,w)
+    GroupedOnlineAggregator{typeof(d),s,typeof(by),typeof(w),O}(d,w,by)
 end
 
 dicteltype(::Type{<:Dict{K,V}}) where {K,V} = V
@@ -49,7 +56,7 @@ function fitrow!(o::GroupedOnlineAggregator{T,S,BY,W,C},r) where {T,S,BY,W,C}
     if !ismissing(v)
         w = o.w(r)
         if w==nothing
-            bykey = map(i->getproperty(r,i),BY)
+            bykey = map(i->i(r),o.by)
             if !any(ismissing,bykey)
                 if haskey(o.d,bykey)
                     fit!(o.d[bykey],v)
@@ -60,7 +67,7 @@ function fitrow!(o::GroupedOnlineAggregator{T,S,BY,W,C},r) where {T,S,BY,W,C}
             end
         else
            if !ismissing(w)
-                bykey = map(i->getproperty(r,i),BY)
+                bykey = map(i->i(r),o.by)
                 if !any(ismissing,bykey)
                     if haskey(o.d,bykey)
                         fit!(o.d[bykey],v,w)
@@ -77,6 +84,7 @@ export TableAggregator, fittable
 function TableAggregator(iter,O::Type{<:OnlineStat},fitsym;by=(),weight=nothing)
     if !isempty(by)
         weight==nothing && (weight=(i->nothing))
+        by = map(i->isa(i,Symbol) ? (SymType(i)) : i,by)
         GroupedOnlineAggregator(O,fitsym,by,weight,iter)
     else
         if weight==nothing

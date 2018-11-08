@@ -57,14 +57,13 @@ Fills missing values of each time series in a cube with the mean annual cycle.
 """
 function gapFillMSC(c::AbstractCubeData;kwargs...)
   NpY=getNpY(c)
-  mapCube(gapFillMSC,c,NpY,zeros(NpY),zeros(Int,NpY);indims=InDims("Time"),outdims=OutDims("Time"),kwargs...)
+  mapCube(gapFillMSC,c,NpY,zeros(Union{Float64,Missing},NpY),zeros(Int,NpY);indims=InDims("Time"),outdims=OutDims("Time"),kwargs...)
 end
 
 function gapFillMSC(aout::AbstractVector,ain::AbstractVector,NpY::Integer,tmsc,tnmsc)
   xin,maskin = ain.data, ain.mask
   xout,maskout = aout.data, aout.mask
-  map!((m,v)->(m & 0x01)==0 ? v : oftype(v,NaN),xin,maskin,xin)
-  getMSC(tmsc,xin,tnmsc,NpY=NpY)
+  fillmsc(1,tmsc,tnmsc,ain,NpY)
   replaceMisswithMSC(tmsc,xin,xout,maskin,maskout,NpY)
 end
 
@@ -82,23 +81,13 @@ Returns the mean annual cycle from each time series.
 function getMSC(c::AbstractCubeData;kwargs...)
   outdims = OutDims(MSCAxis(getNpY(c)))
   indims = InDims(TimeAxis)
-  mapCube(getMSC,c,zeros(Int,getNpY(c));indims=indims,outdims=outdims,kwargs...)
+  mapCube(getMSC,c,zeros(Int,getNpY(c)),zeros(Union{Float64,Missing},getNpY(c));indims=indims,outdims=outdims,kwargs...)
 end
-function getMSC(xout::AbstractVector{<:AbstractFloat},xin::AbstractVector{<:AbstractFloat},nmsc::Vector{Int}=zeros(Int,length(xout));imscstart::Int=1,NpY=length(xout))
-    #Reshape the cube to squeeze unimportant variables
-    NpY=length(xout)
-    fillmsc(imscstart,xout,nmsc,xin,NpY)
-end
-function getMSC(aout::AbstractVector,ain::AbstractVector,nmsc::Vector{Int}=zeros(Int,length(aout.data));imscstart::Int=1,NpY=length(aout.data))
-    #Reshape the cube to squeeze unimportant variables
-    xout,mout = aout.data, aout.mask
-    xin,min   = ain.data, ain.mask
-    NpY=length(xout)
-    map!((m,v)->(m & 0x01)==0 ? v : oftype(v,NaN),xin,min,xin)
-    fillmsc(imscstart,xout,nmsc,xin,NpY)
-    for i=1:length(xout)
-      mout[i] = isnan(xout[i]) ? (min[i] | 0x01) : 0x00
-    end
+
+function getMSC(aout::AbstractVector,ain::AbstractVector,nmsc,fmsc;imscstart::Int=1,NpY=length(aout.data))
+    NpY=length(aout)
+    fillmsc(imscstart,fmsc,nmsc,ain,NpY)
+    copyto!(aout,fmsc)
 end
 
 
@@ -117,7 +106,9 @@ end
 function replaceMisswithMSC(msc::AbstractVector,xin::AbstractArray,xout::AbstractArray,maskin,maskout,NpY::Integer)
   imsc=1
   for i in eachindex(xin)
-    if (maskin[i] & (MISSING | OUTOFPERIOD))>0 && !isnan(msc[imsc])
+    #println(maskin[i]," ",msc[imsc])
+    if (maskin[i] & MISSING)>0 && !ismissing(msc[imsc])
+      #println("inside")
       xout[i]=msc[imsc]
       maskout[i]=FILLED
     else
@@ -169,17 +160,17 @@ end
 
 "Calculates the mean seasonal cycle of a vector"
 function fillmsc(imscstart::Integer,msc::AbstractVector{T1},nmsc::AbstractVector{Int},xin::AbstractVector,NpY) where T1
-    imsc=imscstart
-    fill!(msc,zero(T1))
-    fill!(nmsc,0)
-    for v in xin
-        if !isnan(v)
-            msc[imsc]  += v
-            nmsc[imsc] += 1
-        end
-        imsc=imsc==NpY ? 1 : imsc+1 # Increase msc time step counter
+  imsc=imscstart
+  fill!(msc,zero(T1))
+  fill!(nmsc,0)
+  for v in xin
+    if !ismissing(v)
+      msc[imsc]  += v
+      nmsc[imsc] += 1
     end
-    for i in 1:NpY msc[i] = nmsc[i] > 0 ? msc[i]/nmsc[i] : NaN end # Get MSC by dividing by number of points
+    imsc=imsc==NpY ? 1 : imsc+1 # Increase msc time step counter
+  end
+  for i in 1:NpY msc[i] = nmsc[i] > 0 ? msc[i]/nmsc[i] : missing end # Get MSC by dividing by number of points
 end
 
 
