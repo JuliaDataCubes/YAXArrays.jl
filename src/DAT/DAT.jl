@@ -325,24 +325,17 @@ function runLoop(dc::DATConfig)
   allRanges=distributeLoopRanges(totuple(dc.loopCacheSize),totuple(map(length,dc.LoopAxes)),getchunkoffsets(dc))
   #@show collect(allRanges)
   if dc.ispar
-    #TODO Check this for multiple output cubes, how to parallelize
-    #I thnk this should work, but not 100% sure yet
-    if isdefined(Main,:PmapProgressMeter)
-      #@everywhereelsem using PmapProgressMeter
-      allRanges = (Progress(length(allRanges),1),allRanges)
-    else
-      allRanges = (allRanges,)
-    end
-    pmap(runLooppar,allRanges...)
+    pmapfun = isdefined(:Main,:ProgressMeter) ? progress_pmap : pmap
+    pmapfun(runLooppar,allRanges)
   else
-    runLoop(dc,allRanges)
+    runLoop(dc,allRanges,isdefined(:Main,:ProgressMeter))
   end
   dc.outcubes
 end
 
 function runLooppar(allRanges)
   dc = Main.PMDATMODULE.dc
-  runLoop(dc,(allRanges,))
+  runLoop(dc,(allRanges,),false)
 end
 
 function getallargs(dc::DATConfig)
@@ -359,15 +352,21 @@ function getallargs(dc::DATConfig)
   loopax,adda,kwa)
 end
 
-function runLoop(dc::DATConfig, allRanges)
+function runLoop(dc::DATConfig, allRanges, showprog)
   allargs = getallargs(dc)
-  #@show first(allRanges)
-  foreach(allRanges) do r
+  runLoopArgs(dc,allargs,allRanges,showprog)
+end
+
+@noinline function runLoopArgs(dc,args,allRanges,doprogress)
+  doprogress && (pm = Progress(length(allRanges)))
+  for r in allRanges
     updateinars(dc,r)
-    innerLoop(dc.fu,r,allargs...)
+    innerLoop(dc.fu,r,args...)
     writeoutars(dc,r)
+    doprogress && next!(pm)
   end
 end
+
 function getRetCubeType(oc,ispar,max_cache)
   eltype=typeof(oc.desc.genOut(oc.outtype))
   outsize=sizeof(eltype)*(length(oc.allAxes)>0 ? prod(map(length,oc.allAxes)) : 1)

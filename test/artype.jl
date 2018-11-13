@@ -10,11 +10,10 @@ d = getCubeData(c,variable=["air_temperature_2m","gross_primary_productivity"],l
                 time=(Date("2002-01-01"),Date("2008-12-31")))
 
 dmem=readCubeData(d)
-    
+
 function docor(xout,xin)
     #Inside this function, xin is now a data frame
     @test isa(xin,DataFrame)
-    @show xin
     xout[1]=cor(xin[:air_temperature_2m],xin[:gross_primary_productivity])
 end
 indims = InDims(TimeAxis,VariableAxis,artype = AsDataFrame())

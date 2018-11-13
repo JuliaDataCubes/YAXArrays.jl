@@ -6,7 +6,7 @@ import Interpolations: BSpline, scale,extrapolate, interpolate, Constant, Linear
   Cubic, OnGrid, Flat, Line,Free, Periodic, Reflect
 function fremap(xout,xin,oldlons,oldlats,newlons,newlats;order=Linear(),bc = Flat())
   #interp = LinearInterpolation((oldlons,oldlats),xin);
-  interp = extrapolate(scale(interpolate(xin, BSpline(order), OnGrid()), oldlons,oldlats), bc)
+  interp = extrapolate(scale(interpolate(xin, BSpline(order)), oldlons,oldlats), bc)
   for (ilat,lat) in enumerate(newlats)
     for (ilon,lon) in enumerate(newlons)
       xout[ilon,ilat]=interp(lon,lat)

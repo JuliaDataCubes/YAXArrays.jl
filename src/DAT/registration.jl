@@ -41,10 +41,13 @@ end
 docheck(::NoFilter)         = 0x00
 replacevalue(::ProcFilter)  = 0x01
 replacevalue(::AnyOcean)  = 0x05
-checkskip(::AllMissing,x)   = all(i->!iszero(i & 0x01),x.mask)
-checkskip(::AnyMissing,x)   = any(i->!iszero(i & 0x01),x.mask)
-checkskip(::AnyOcean,x)     = any(i->!iszero(i & 0x04),x.mask)
-checkskip(nv::NValid,x)     = count(i->iszero(i & 0x01),x.mask) < nv.n
+checkskip(::AllMissing,x::MaskArray)   = all(i->!iszero(i & 0x01),x.mask)
+checkskip(::AllMissing,df::DataFrame)  = any(map(i->all(ismissing,getindex(df,i)),names(df)))
+checkskip(::AnyMissing,x::MaskArray)   = any(i->!iszero(i & 0x01),x.mask)
+checkskip(::AnyMissing,df::DataFrame)  = any(map(i->any(ismissing,getindex(df,i)),names(df)))
+checkskip(::AnyOcean,x::MaskArray)     = any(i->!iszero(i & 0x04),x.mask)
+checkskip(::AnyOcean,x::DataFrame)     = false
+checkskip(nv::NValid,x::MaskArray)     = count(i->iszero(i & 0x01),x.mask) < nv.n
 checkskip(uf::UserFilter,x) = uf.f(x)
 checkskip(::StdZero,x)      = all(i->i==x[1],x)
 docheck(pf::ProcFilter,x)::UInt8 = checkskip(pf,x) ? replacevalue(pf) : 0x00

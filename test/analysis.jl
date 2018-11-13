@@ -4,7 +4,7 @@ using Dates
 import Base.Iterators
 using Distributed
 using Statistics
-#addprocs(2)
+addprocs(2)
 @everywhere using ESDL, Statistics
 
 @everywhere function sub_and_return_mean(xout1,xout2,xin)
@@ -86,14 +86,14 @@ function doTests()
 
   @testset "Multiple output cubes" begin
   #Test onvolving multiple output cubes
-  c1=getCubeData(c,variable="gross_primary_productivity",longitude=(30,31),latitude=(50,51))
+  c1=getCubeData(c,variable="gross_primary_productivity",longitude=(30,31),latitude=(50,51),time=2001:2010)
 
   c2=readCubeData(c1)
 
   cube_wo_mean,cube_means=sub_and_return_mean(c2)
 
-  @test isapprox(permutedims(c2.data.-mean(c2.data,dims=3),(3,1,2)),readCubeData(cube_wo_mean).data)
-  @test isapprox(mean(c2.data,dims=3)[:,:,1],readCubeData(cube_means).data)
+  @test isapprox(permutedims(c2[:,:,:].-mean(c2[:,:,:],dims=3),(3,1,2)),readCubeData(cube_wo_mean)[:,:,:])
+  @test isapprox(mean(c2[:,:,:],dims=3)[:,:,1],cube_means[:,:])
   end
 end
 

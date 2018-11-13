@@ -40,7 +40,7 @@ function Base.setindex!(m::MaskArray, v, i::Int)
     m.mask[i] = m.mask[i] & 0xfe
     m.data[i] = v
 end
-Base.IndexStyle(::Type{<:MaskArray})=IndexLinear()
+Base.IndexStyle(::Type{<:MaskArray{<:Any,<:Any,P}}) where P = Base.IndexStyle(P)
 Base.length(m::MaskArray)=length(m.data)
 Base.ismissing(m::MaskArray, i::Integer...) = !iszero(m.mask[i...] & MISSING)
 isvalid(m::MaskArray, i::Integer...) = iszero(m.mask[i...] & MISSING)

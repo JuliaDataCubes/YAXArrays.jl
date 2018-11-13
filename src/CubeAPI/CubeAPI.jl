@@ -514,6 +514,7 @@ function getCubeData(cube::UCube,
   longitude,
   latitude)
 
+  isa(time,UnitRange) && (time=(Date(first(time)),Date(last(time),12,31)))
   isa(time,TimeType) && (time=(time,time))
   isa(latitude,Real) && (latitude=(latitude,latitude))
   isa(longitude,Real) && (longitude=(longitude,longitude))

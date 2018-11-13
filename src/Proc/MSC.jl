@@ -11,8 +11,7 @@ function removeMSC(aout,ain,NpY::Integer,tmsc,tnmsc)
     xout, maskout = aout.data, aout.mask
     xin,  maskin  = ain.data,  ain.mask
     #Start loop through all other variables
-    map!((m,v)->(m & 0x01)==0 ? v : oftype(v,NaN),xin,maskin,xin)
-    getMSC(tmsc,xin,tnmsc,NpY=NpY)
+    fillmsc(1,tmsc,tnmsc,xin,NpY)
     subtractMSC(tmsc,xin,xout,NpY)
     copyto!(maskout,maskin)
     xout

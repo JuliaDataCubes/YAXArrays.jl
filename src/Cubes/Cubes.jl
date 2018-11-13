@@ -195,7 +195,7 @@ getlast(i::Colon,a::CubeAxis)=length(a)
 
 function Base.getindex(c::AbstractCubeData,i::Integer...)
   length(i)==ndims(c) || error("You must provide $(ndims(c)) indices")
-  r = CartesianIndices(CartesianIndex(i),CartesianIndex(i))
+  r = CartesianIndices((first(i):first(i),Base.tail(i)...))
   aout = zeros(eltype(c),size(r))
   mout = fill(0xff,size(r))
   _read(c,(aout,mout),r)
