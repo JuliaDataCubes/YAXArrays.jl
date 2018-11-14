@@ -15,20 +15,21 @@ permtuple(t,perm)=ntuple(i->t[perm[i]],length(t))
 iscompressed(c::PermCube)=iscompressed(c.parent)
 cubechunks(c::PermCube)=cubechunks(c.parent)[collect(c.perm)]
 chunkoffset(c::PermCube)=chunkoffset(c.parent)[collect(c.perm)]
-function _read(x::PermCube{T,N},thedata::Tuple{Any,Any},r::CartesianIndices{N}) where {T,N}
+function _read(x::PermCube{T,N},thedata::AbstractArray,r::CartesianIndices{N}) where {T,N}
   perm=x.perm
   iperm=getiperm(perm)
   r2=CartesianIndices((permtuple(r.indices,iperm)))
   sr = size(r2)
-  aout,mout=zeros(T,sr...),zeros(UInt8,sr...)
-  _read(x.parent,(aout,mout),r2)
-  permutedims!(thedata[1],aout,perm)
-  permutedims!(thedata[2],mout,perm)
+  aout = MaskArray(zeros(T,sr...),zeros(UInt8,sr...))
+  _read(x.parent,aout,r2)
+  permutedims!(thedata.data,aout.data,perm)
+  permutedims!(thedata.mask,aout.mask,perm)
+
 end
 Base.permutedims(x::AbstractCubeData{T,N},perm) where {T,N}=PermCube{T,N,typeof(x)}(x,perm)
 function gethandle(c::PermCube,block_size)
-  data,mask = gethandle(c.parent)
-  PermutedDimsArray(data,c.perm),PermutedDimsArray(mask,c.perm)
+  handle = gethandle(c.parent)
+  PermutedDimsArray(handle,c.perm)
 end
 
 import Base.Iterators.product
@@ -119,21 +120,17 @@ chunkoffset(v::TransformedCube)=chunkoffset(v.parents[1])
 
 
 using Base.Cartesian
-function _read(x::TransformedCube{T,N},thedata::Tuple,r::CartesianIndices{N}) where {T,N}
-  aout,mout=thedata
-  ainter=[]
-  minter=[]
-  for i=1:length(x.parents)
-    c=x.parents[i]
-    aouti=Array{eltype(c)}(undef,size(aout))
-    mouti=zeros(UInt8,size(mout))
-    _read(c,(aouti,mouti),r)
-    push!(ainter,aouti)
-    push!(minter,mouti)
+function _read(x::TransformedCube{T,N},thedata::AbstractArray,r::CartesianIndices{N}) where {T,N}
+  ainter=map(x.parents) do c
+    aouti=MaskArray(Array{eltype(c)}(undef,size(aout)), zeros(UInt8,size(mout)))
+    _read(c,aouti,r)
+    aouti
   end
-  map!(x.op,aout,ainter...)
-  map!((x...)->reduce(|,x),mout,minter...)
-  return aout,mout
+  datas = map(i->i.data,ainter)
+  masks = map(i->i.mask,ainter)
+  map!(x.op,thedata.data,datas...)
+  map!((x...)->reduce(|,x),thedata.mask,masks...)
+  return thedata
 end
 
 ops2 = [:+, :-,:/, :*, :max, :min]
@@ -190,32 +187,22 @@ cubechunks(x::ConcatCube)=(cubechunks(x.cubelist[1])...,1)
 chunkoffset(x::ConcatCube)=(chunkoffset(x.cubelist[1])...,0)
 getCubeDes(v::ConcatCube)="Collection of $(getCubeDes(v.cubelist[1]))"
 using Base.Cartesian
-@generated function _read(x::ConcatCube{T,N},thedata::Tuple,r::CartesianIndices{N}) where {T,N}
+@generated function _read(x::ConcatCube{T,N},thedata::AbstractArray,r::CartesianIndices{N}) where {T,N}
   viewEx1=Expr(:call,:view,:aout,fill(Colon(),N-1)...,:j)
-  viewEx2=Expr(:call,:view,:mout,fill(Colon(),N-1)...,:j)
   quote
-    aout,mout=thedata
+    aout=thedata
     rnew = CartesianIndices(r.indices[1:end-1])
     for (j,i)=enumerate(r.indices[end])
       a=$viewEx1
-      m=$viewEx2
-      _read(x.cubelist[i],(a,m),rnew)
+      _read(x.cubelist[i],a,rnew)
     end
-    return aout,mout
+    return aout
   end
 end
 
 using RecursiveArrayTools
 function gethandle(c::ConcatCube,block_size)
-  data,mask = gethandle(c.cubelist[1])
-  d = [data]
-  m = [mask]
-  for i=2:length(c.cubelist)
-    data,mask = gethandle(c.cubelist[i])
-    push!(d,data)
-    push!(m,mask)
-  end
-  VectorOfArray(d),VectorOfArray(m)
+  VectorOfArray(map(gethandle,c.cubelist))
 end
 
 export SliceCube
@@ -248,28 +235,26 @@ cubechunks(v::SliceCube{T,N,F}) where {T,N,F} = cubechunks(v.parent)[[1:F-1;F+1:
 chunkoffset(v::SliceCube{T,N,F}) where {T,N,F} = chunkoffset(v.parent)[[1:F-1;F+1:end]]
 
 using Base.Cartesian
-@generated function _read(x::SliceCube{T,N,F},thedata::Tuple,r::CartesianIndices{N}) where {T,N,F}
+@generated function _read(x::SliceCube{T,N,F},thedata::AbstractArray,r::CartesianIndices{N}) where {T,N,F}
   iax = F
   newinds = Expr(:tuple,insert!(Any[:(r.indices[$i]) for i=1:N],iax,:(x.ival:x.ival))...)
   newsize   = Expr(:tuple,insert!(Any[:(sout[$i]) for i=1:N],iax,1)...)
   quote
-    aout,mout=thedata
-    sout = size(aout)
+    sout = size(thedata)
     newsize = $newsize
-    aout2,mout2 = reshape(aout,newsize), reshape(mout,newsize)
+    aout2 = reshape(thedata,newsize)
     rnew   = CartesianIndices($newinds)
-    _read(x.parent, (aout2,mout2), rnew)
-    return aout,mout
+    _read(x.parent, aout2, rnew)
+    return thedata
   end
 end
 
 
 @generated function gethandle(c::SliceCube{T,N,F},block_size) where {T,N,F}
   iax = F
-  v1 = Expr(:call,:view,:data,insert!(Any[:(:) for i=1:N],iax,:(c.ival))...)
-  v2 = Expr(:call,:view,:mask,insert!(Any[:(:) for i=1:N],iax,:(c.ival))...)
+  v1 = Expr(:call,:view,:a,insert!(Any[:(:) for i=1:N],iax,:(c.ival))...)
   quote
-    data,mask = gethandle(c.parent)
-    ($v1,$v2)
+    a = gethandle(c.parent)
+    $v1
   end
 end

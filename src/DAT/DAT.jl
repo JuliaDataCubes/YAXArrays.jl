@@ -28,27 +28,26 @@ function __init__()
   @require IJulia = "7073ff75-c697-5162-941a-fcdaad2a7d2a" begin progresscolor[1] = :blue end
 end
 
-function mask2miss(a::Tuple,workAr::MaskArray)
-  copyto!(workAr.data,a[1])
-  copyto!(workAr.mask,a[2])
+function mask2miss(a::MaskArray,workAr::MaskArray)
+  copyto!(workAr.data,a.data)
+  copyto!(workAr.mask,a.mask)
 end
-function mask2miss(a::Tuple,workAr::DataFrame)
-  data,mask = a
-  for ivar in 1:size(data,2), iobs in 1:size(data,1)
-    if iszero(mask[iobs,ivar] & 0x01)
-      workAr[iobs,ivar]=data[iobs,ivar]
+function mask2miss(a::MaskArray,workAr::DataFrame)
+  for ivar in 1:size(a,2), iobs in 1:size(a,1)
+    if iszero(a.mask[iobs,ivar] & 0x01)
+      workAr[iobs,ivar]=a.data[iobs,ivar]
     else
       workAr[iobs,ivar]=missing
     end
   end
 end
 function miss2mask!(target,source::MaskArray)
-  copyto!(target[1],source.data)
-  copyto!(target[2],source.mask)
+  copyto!(target.data,source.data)
+  copyto!(target.mask,source.mask)
 end
 function miss2mask!(target,source::DataFrame)
-  copyto!(target[1],source)
-  map!(i->ismissing(i) ? 0x01 : 0x00, target[2],source)
+  copyto!(target.data,source)
+  map!(i->ismissing(i) ? 0x01 : 0x00, target.mask,source)
 end
 
 include("registration.jl")
@@ -310,9 +309,9 @@ updatears(dc,clist,r,f) = foreach(clist) do ic
   indscol = ntuple(i->1:size(ic.cube,i),length(ic.axesSmall))
   indsr   = ntuple(i->r[ic.loopinds[i]],length(ic.loopinds))
   indsall = CartesianIndices((indscol...,indsr...))
-  if size(ic.handle[1]) != size(indsall)
+  if size(ic.handle) != size(indsall)
     hinds = map(i->1:length(i),indsall.indices)
-    f(ic.cube,(view(ic.handle[1],hinds...),view(ic.handle[2],hinds...)),indsall)
+    f(ic.cube,view(ic.handle,hinds...),indsall)
   else
     f(ic.cube,ic.handle,indsall)
   end
@@ -421,7 +420,7 @@ end
 function allocatecachebuf(ic::Union{InputCube,OutputCube},loopcachesize) where N
   sl = ntuple(i->loopcachesize[i],length(ic.loopinds))
   s = (map(length,ic.axesSmall)...,sl...)
-  ic.handle = (zeros(eltype(ic.cube),s...),zeros(UInt8,s...))
+  ic.handle = MaskArray(zeros(eltype(ic.cube),s...),zeros(UInt8,s...))
 end
 
 function init_DATworkers()
@@ -673,8 +672,8 @@ function setSubRange2(work,xout,cols...)
   miss2mask!(xview,work)
 end
 
-getSubRange(x::Tuple{Array,Array},cols...)=(view(x[1],cols...),view(x[2],cols...))
-getSubRange(x::Array,cols...)=(view(x,cols...),nothing)
+getSubRange(x::MaskArray,cols...) = MaskArray(view(x.data,cols...),view(x.mask,cols...))
+getSubRange(x::Array,cols...)     = view(x,cols...)
 
 "Calculate an axis permutation that brings the wanted dimensions to the front"
 function getFrontPerm(dc::AbstractCubeData{T},dims) where T

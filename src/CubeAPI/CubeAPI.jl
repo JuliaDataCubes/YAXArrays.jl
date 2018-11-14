@@ -690,7 +690,7 @@ function readCubeData(s::SubCube{T}) where T
   y1,i1,y2,i2,ntime,NpY           = s.sub_times
   outar=Array{T}(undef,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)
   mask=zeros(UInt8,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)
-  _read(s,(outar,mask),CartesianIndices((grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)))
+  _read(s,MaskArray(outar,mask),CartesianIndices((grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)))
   return CubeMem(CubeAxis[s.lonAxis,s.latAxis,s.timeAxis],outar,mask)
 end
 
@@ -699,7 +699,7 @@ function readCubeData(s::SubCubeV{T}) where T
   y1,i1,y2,i2,ntime,NpY           = s.sub_times
   outar=Array{T}(undef,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime,length(s.varAxis))
   mask=zeros(UInt8,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime,length(s.varAxis))
-  _read(s,(outar,mask),CartesianIndices((grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime,length(s.varAxis))))
+  _read(s,MaskArray(outar,mask),CartesianIndices((grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime,length(s.varAxis))))
   return CubeMem(CubeAxis[s.lonAxis,s.latAxis,s.timeAxis,s.varAxis],outar,mask)
 end
 
@@ -708,23 +708,23 @@ function readCubeData(s::SubCubeStatic{T}) where T
   y1,i1,y2,i2,ntime,NpY           = s.sub_times
   outar=Array{T}(undef,grid_x2-grid_x1+1,grid_y2-grid_y1+1)
   mask=zeros(UInt8,grid_x2-grid_x1+1,grid_y2-grid_y1+1)
-  _read(s,(reshape(outar,(size(outar,1),size(outar,2),1)),reshape(mask,(size(mask,1),size(mask,2),1))),CartesianIndices((grid_x2-grid_x1+1,grid_y2-grid_y1+1,1)))
+  _read(s,MaskArray(reshape(outar,(size(outar,1),size(outar,2),1)),reshape(mask,(size(mask,1),size(mask,2),1))),CartesianIndices((grid_x2-grid_x1+1,grid_y2-grid_y1+1,1)))
   return CubeMem(CubeAxis[s.lonAxis,s.latAxis],outar,mask)
 end
 
 """
 Add a function to read some CubeData in a permuted way, we will make a copy here for simplicity, however, this might change in the future
 """
-function _read(s::Union{SubCubeVPerm{T},SubCubePerm{T},SubCubeStaticPerm{T}},t::Tuple,r::CartesianIndices{N}) where {T,N}  #;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,findin(s.perm,1)[1]),ny::Int=size(outar,findin(s.perm,2)[1]),nt::Int=size(outar,findin(s.perm,3)[1]),nv::Int=size(outar,findin(s.perm,4)[1]))
+function _read(s::Union{SubCubeVPerm{T},SubCubePerm{T},SubCubeStaticPerm{T}},t::MaskArray,r::CartesianIndices{N}) where {T,N}  #;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,findin(s.perm,1)[1]),ny::Int=size(outar,findin(s.perm,2)[1]),nt::Int=size(outar,findin(s.perm,3)[1]),nv::Int=size(outar,findin(s.perm,4)[1]))
   iperm=sgetiperm(s)
   perm=sgetperm(s)
-  outar,mask=t
+  outar,mask=t.data,t.mask
   sout=size(r)[iperm]
   newinds=r.indices[iperm]
   #println("xoffs=$xoffs yoffs=$yoffs toffs=$toffs voffs=$voffs nx=$nx ny=$ny nt=$nt nv=$nv")
   outartemp=Array{T}(undef,sout...)
   masktemp=zeros(UInt8,sout...)
-  _read(s.parent,(outartemp,masktemp),CartesianIndices(newinds))
+  _read(s.parent,MaskArray(outartemp,masktemp),CartesianIndices(newinds))
   mypermutedims!(outar,outartemp,Val{perm})
   mypermutedims!(mask,masktemp,Val{perm})
 end
@@ -792,9 +792,9 @@ end
 gettoffsnt(::AbstractSubCube,r::CartesianIndices)=(first(r.indices[3]) - 1,length(r.indices[3]))
 gettoffsnt(::SubCubeStatic,r::CartesianIndices{2})=(0,1)
 
-function _read(s::AbstractSubCube,t::Tuple,r::CartesianIndices) #;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,1),ny::Int=size(outar,2),nt::Int=size(outar,3),nv::Int=length(s.variable))
+function _read(s::AbstractSubCube,t::AbstractArray,r::CartesianIndices) #;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,1),ny::Int=size(outar,2),nt::Int=size(outar,3),nv::Int=length(s.variable))
 
-  outar,mask=t
+  outar,mask=t.data,t.mask
   grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid
   y1,i1,y2,i2,ntime,NpY           = s.sub_times
 

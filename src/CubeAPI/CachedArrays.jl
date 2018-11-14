@@ -316,7 +316,7 @@ function read_subblock!(x::MaskedCacheBlock{T,N},y::AbstractCubeData{T},block_si
     #r = CartesianIndices(CItimes((x.position-CartesianIndex{N}()),block_size)+CartesianIndex{N}(),CItimes((x.position),block_size))
     rnew = map((p,s)->((p-1)*s+1):(p*s),x.position.I,block_size.I)
     r = CartesianIndices(rnew)
-    _read(y,(x.data,x.mask),r)
+    _read(y,MaskArray(x.data,x.mask),r)
 end
 
 function read_subblock!(x::SimpleCacheBlock{T,N},y::AbstractCubeData{T},block_size::CartesianIndex{N}) where {T,N}

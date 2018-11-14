@@ -8,7 +8,8 @@ c=Cube()
 
 d = getCubeData(c,variable="air_temperature_2m",longitude=(30,31),latitude=(50,51),
               time=(Date("2002-01-01"),Date("2008-12-31")))
-oo=mapCube(Mean,d)
+
+mytable = @CubeTable tair=d axes=(lat,)
 
 oo2=mapCube(Mean,d,by=(LatAxis,))
 
@@ -62,7 +63,7 @@ end
 p=cubePCA(dm,by=[randmask],noutdims=2)
 
 println((explained_variance(p)).data[1, 1])
-  
+
 @test all([0.984 0.45; 0.09 0.45] .< explained_variance(p).data[1,1])
 rotation_matrix(p)
 transformPCA(p,dm).data
@@ -76,7 +77,7 @@ oogrouped = mapCube(Mean,d2,by=(mask,))
 @test isa(oogrouped.axes[1],CategoricalAxis{String,:Label})
 
 @show oogrouped.data, oogrouped.mask
-  
+
 oogrouped2 = mapCube(Mean,d2,by=(mask2,))
 
 for k=1:10

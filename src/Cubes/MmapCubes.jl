@@ -1,5 +1,6 @@
 export MmapCube,getmmaphandles
 import ..ESDLTools.totuple
+import .Mask: MaskArray
 abstract type AbstractMmapCube{T,N}<:AbstractCubeData{T,N} end
 using Serialization
 using Distributed
@@ -65,23 +66,21 @@ function getmmaphandles(folder, axlist,T;mode="r")
   ma = open(joinpath(folder,"mask.bin"),mode) do fm
     Mmap.mmap(fm,Array{UInt8,length(axlist)},totuple(s))
   end
-  ar,ma
+  MaskArray(ar,ma)
 end
 
-function _write(y::MmapCube,thedata::Tuple,r::CartesianIndices{N}) where N
-    din,min = thedata
-    dout,mout   = getmmaphandles(y,mode="r+")
+function _write(y::MmapCube,thedata::MaskArray,r::CartesianIndices{N}) where N
+    cubeh   = getmmaphandles(y,mode="r+")
     for (i,ic) in enumerate(r)
-        dout[ic]=din[i]
-        mout[ic]=min[i]
+        cubeh.data[ic]=thedata.data[i]
+        cubeh.mask[ic]=thedata.mask[i]
     end
 end
-function _read(y::MmapCube,thedata::Tuple,r::CartesianIndices{N}) where N
-    dout,mout = thedata
-    din,min   = getmmaphandles(y)
+function _read(y::MmapCube,thedata::MaskArray,r::CartesianIndices{N}) where N
+    cubeh   = getmmaphandles(y)
     for (i,ic) in enumerate(r)
-        dout[i]=din[ic]
-        mout[i]=min[ic]
+        thedata.data[i]=cubeh.data[ic]
+        thedata.mask[i]=cubeh.mask[ic]
     end
 end
 @generated function Base.size(x::MmapCube{T,N}) where {T,N}

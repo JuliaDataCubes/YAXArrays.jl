@@ -25,24 +25,34 @@ function isvalidorfilled(x::AbstractArray{UInt8})
   a
 end
 
-struct MaskArray{T,N,P<:AbstractArray{T,N}}<: AbstractArray{Union{T,Missing},N}
+struct MaskArray{T,N,P<:AbstractArray{T,N},P2<:AbstractArray{UInt8,N}}<: AbstractArray{Union{T,Missing},N}
     data::P
-    mask::Array{UInt8,N}
-end
-function MaskArray(data::AbstractArray, mask::AbstractArray{UInt8})
-    size(data)==size(mask) || throw(DimensionMismatch("Data and Mask array must have the same size"))
-    MaskArray(data,mask)
+    mask::P2
 end
 Base.size(m::MaskArray)=size(m.data)
 Base.getindex(m::MaskArray,i::Int)=(m.mask[i] & 0x01)==0x01 ? missing : m.data[i]
+Base.getindex(m::MaskArray{<:Any,N},i::Vararg{Int, N}) where N = (m.mask[i...] & 0x01) == 0x01 ? missing : m.data[i...]
 Base.setindex!(m::MaskArray, ::Missing, i::Int) = m.mask[i]=m.mask[i] | 0x01
+Base.setindex!(m::MaskArray, ::Missing, i::Vararg{Int, N}) where N = m.mask[i...]=m.mask[i...] | 0x01
 function Base.setindex!(m::MaskArray, v, i::Int)
     m.mask[i] = m.mask[i] & 0xfe
     m.data[i] = v
 end
+function Base.setindex!(m::MaskArray{<:Any,N}, v, i::Vararg{Int, N}) where N
+    m.mask[i...] = m.mask[i...] & 0xfe
+    m.data[i...] = v
+end
+Base.Array(m::MaskArray)=map((d,ma)->iszero(ma & MISSING) ? d : missing,m.data,m.mask)
+Base.view(m::MaskArray,i...)=MaskArray(view(m.data,i...),view(m.mask,i...))
 Base.IndexStyle(::Type{<:MaskArray{<:Any,<:Any,P}}) where P = Base.IndexStyle(P)
 Base.length(m::MaskArray)=length(m.data)
 Base.ismissing(m::MaskArray, i::Integer...) = !iszero(m.mask[i...] & MISSING)
+Base.dropdims(m::MaskArray;dims=dims) = MaskArray(dropdims(m.data,dims=dims),dropdims(m.mask,dims=dims))
+function Base.copyto!(m1::MaskArray,m2::MaskArray)
+  copyto!(m1.data,m2.data)
+  copyto!(m1.mask,m2.mask)
+end
+Base.reshape(m::MaskArray,s::Tuple{Vararg{Int64,N}} where N)=MaskArray(reshape(m.data,s),reshape(m.mask,s))
 isvalid(m::MaskArray, i::Integer...) = iszero(m.mask[i...] & MISSING)
 isocean(m::MaskArray, i::Integer...) = (m.mask[i...] & OCEAN_VALID)==OCEAN_VALID
 isfilled(m::MaskArray, i::Integer...) = (m.mask[i...] & FILLED)==FILLED
