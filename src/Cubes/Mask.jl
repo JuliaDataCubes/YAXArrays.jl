@@ -25,12 +25,13 @@ function isvalidorfilled(x::AbstractArray{UInt8})
   a
 end
 
-struct MaskArray{T,N,P<:AbstractArray{T,N},P2<:AbstractArray{UInt8,N}}<: AbstractArray{Union{T,Missing},N}
+struct MaskArray{T,N,P<:AbstractArray{T,N},P2<:AbstractArray{UInt8,N}} <: AbstractArray{Union{T,Missing},N}
     data::P
     mask::P2
 end
+Base.show(io::IO,m::MaskArray)=print(io,"A Mask array")
 Base.size(m::MaskArray)=size(m.data)
-Base.getindex(m::MaskArray,i::Int)=(m.mask[i] & 0x01)==0x01 ? missing : m.data[i]
+Base.getindex(m::MaskArray,i::Int) = (m.mask[i] & 0x01)==0x01 ? missing : m.data[i]
 Base.getindex(m::MaskArray{<:Any,N},i::Vararg{Int, N}) where N = (m.mask[i...] & 0x01) == 0x01 ? missing : m.data[i...]
 Base.setindex!(m::MaskArray, ::Missing, i::Int) = m.mask[i]=m.mask[i] | 0x01
 Base.setindex!(m::MaskArray, ::Missing, i::Vararg{Int, N}) where N = m.mask[i...]=m.mask[i...] | 0x01

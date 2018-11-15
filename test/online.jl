@@ -11,7 +11,7 @@ d = getCubeData(c,variable="air_temperature_2m",longitude=(30,31),latitude=(50,5
 
 mytable = @CubeTable tair=d axes=(lat,)
 
-oo2=mapCube(Mean,d,by=(LatAxis,))
+
 
 d2=readCubeData(d)
 

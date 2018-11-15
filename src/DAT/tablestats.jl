@@ -8,6 +8,7 @@ function OnlineAggregator(O::Type{<:OnlineStat},s::Symbol) where N
     os = O()
     OnlineAggregator{typeof(os),s}(os)
 end
+cubeeltype(t::OnlineAggregator)=Float64
 function fitrow!(o::OnlineAggregator{T,S},r) where {T<:OnlineStat,S}
     v = getproperty(r,S)
     !ismissing(v) && fit!(o.o,v)
@@ -17,6 +18,7 @@ struct WeightOnlineAggregator{O,S,W}<:TableAggregator
     o::O
     w::W
 end
+cubeeltype(t::WeightOnlineAggregator{<:WeightedOnlineStat{T}}) where T=T
 function WeightOnlineAggregator(O::Type{<:WeightedOnlineStat},s::Symbol,w) where N
     os = O()
     WeightOnlineAggregator{typeof(os),s,typeof(w)}(os,w)
@@ -41,6 +43,10 @@ SymType(s::Symbol)=SymType{s}()
 (f::SymType{S})(x) where S=getproperty(x,S)
 
 getbytypes(et,by) = Tuple{map(i->unmiss(Base.return_types(i,Tuple{et})[1]),by)...}
+cubeeltype(t::GroupedOnlineAggregator{T}) where T=cubeeltype(T)
+cubeeltype(t::Type{<:Dict{<:Any,T}}) where T = cubeeltype(T)
+cubeeltype(t::Type{<:WeightedOnlineStat{T}}) where T = T
+
 function GroupedOnlineAggregator(O::Type{<:WeightedOnlineStat},s::Symbol,by,w,iter) where N
     ost = typeof(O())
     et = eltype(iter)
@@ -94,8 +100,61 @@ function TableAggregator(iter,O::Type{<:OnlineStat},fitsym;by=(),weight=nothing)
         end
     end
 end
+
+function tooutaxis(::SymType{s},iter::CubeIterator{<:Any,<:Any,<:Any,<:Any,<:Any,S},k,ibc) where {s,S}
+    ichosen = findfirst(i->i===s,fieldnames(S))
+    if ichosen<=length(iter.inars)
+        bycube = iter.dc.incubes[ichosen].cube
+        if haskey(bycube.properties,"labels")
+            idict=bycube.properties["labels"]
+            axname=get(bycube.properties,"name","Label")
+            outAxis=CategoricalAxis(axname,collect(String,values(idict)))
+            convertdict=Dict(k=>i for (i,k) in enumerate(keys(idict)))
+        else
+            sort!(k)
+            outAxis=CategoricalAxis("Label$(ibc)",k)
+            convertdict=Dict(k=>i for (i,k) in enumerate(k))
+        end
+    else
+       iax = findAxis(string(s),iter.dc.LoopAxes)
+        outAxis=iter.dc.LoopAxes[iax]
+        convertdict=Dict(k=>i for (i,k) in enumerate(outAxis.values))
+    end
+    outAxis,convertdict
+end
+function tooutaxis(f,iter::CubeIterator{<:Any,<:Any,<:Any,<:Any,<:Any,S},k,ibc) where S
+    sort!(k)
+    outAxis=CategoricalAxis("Category$(ibc)",k)
+    convertdict=Dict(k=>i for (i,k) in enumerate(k))
+    outAxis,convertdict
+end
+
+tooutcube(agg,iter)=CubeMem(CubeAxis[],fill(value(agg.o)),fill(0x00))
+function tooutcube(agg::GroupedOnlineAggregator,iter::CubeIterator{<:Any,<:Any,<:Any,<:Any,ILAX}) where ILAX
+  by=agg.by
+   outax = ntuple(length(by)) do ibc
+        bc=agg.by[ibc]
+     tooutaxis(bc,iter,unique(map(i->i[ibc],collect(keys(agg.d)))),ibc)
+   end
+    snew = map(i->length(i[1]),ntuple(i->outax[i],length(outax)))
+    aout = zeros(cubeeltype(agg),snew)
+    mout = fill(0x01,snew)
+    axall = map(i->i[1],outax)
+    convdictall = map(i->i[2],outax)
+    filloutar(aout,mout,convdictall,agg.d)
+    CubeMem(collect(CubeAxis,axall),aout,mout)
+end
+function filloutar(aout,mout,convdictall,g)
+    for (k,v) in g
+        i = CartesianIndex(map((i,d)->d[i],k,convdictall))
+        aout[i]=value(v)
+        @assert mout[i]==0x01
+        mout[i]=0x00
+    end
+end
+
 function fittable(tab,o::Type{<:OnlineStat},fitsym;by=(),weight=nothing)
   agg = TableAggregator(tab,o,fitsym,by=by,weight=weight)
   foreach(i->fitrow!(agg,i),tab)
-  value(agg)
+  tooutcube(agg,tab)
 end

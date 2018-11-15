@@ -72,7 +72,7 @@ function CubeIterator(s,dc,r;varnames::Tuple=ntuple(i->Symbol("x$i"),length(dc.i
     inarsbc = map(dc.incubes) do ic
       allax = falses(length(dc.LoopAxes))
       allax[ic.loopinds].=true
-      PickAxisArray(MaskArray(ic.handle...),allax)
+      PickAxisArray(ic.handle,allax)
     end
     et = map(i->Union{lift64(eltype(i[1])),Missing},inars)
     if !isempty(include_loopvars)
@@ -197,6 +197,7 @@ import DataStructures: OrderedDict
 export CubeTable
 macro CubeTable(cubes...)
   axargs=[]
+  fastloopvar=""
   clist = OrderedDict{Any,Any}()
   for c in cubes
     if isa(c,Symbol)
@@ -209,6 +210,8 @@ macro CubeTable(cubes...)
         else
           append!(axargs,axdef.args)
         end
+      elseif c.args[1]==:fastest
+        fastloopvar=c.args[2]
       else
         clist[esc(c.args[1])]=esc(c.args[2])
       end
@@ -236,14 +239,42 @@ macro CubeTable(cubes...)
       $fields
     end
     #Base.propertynames(s::$s)=$pn
-    _CubeTable($s,$(allcubes...),include_axes=$(Expr(:tuple,string.(axargs)...)), varnames=$(Expr(:tuple,QuoteNode.(allnames)...)))
+    _CubeTable($s,$(allcubes...),include_axes=$(Expr(:tuple,string.(axargs)...)), varnames=$(Expr(:tuple,QuoteNode.(allnames)...)),fastvar=$(QuoteNode(fastloopvar)))
   end
 end
 
 
-function _CubeTable(thetype,c::AbstractCubeData...;include_axes=(),varnames=varnames)
-  indims = map(i->InDims(),c)
+function _CubeTable(thetype,c::AbstractCubeData...;include_axes=(),varnames=varnames,fastvar="")
+  inax=nothing
+  if isempty(string(fastvar))
+    indims = map(i->InDims(),c)
+  else
+    indims = map(c) do i
+      iax = findAxis(string(fastvar),i)
+      if iax > 0
+        inax = caxes(i)[iax]
+        InDims(string(fastvar))
+      else
+        InDims()
+      end
+    end
+  end
   configiter = mapCube(identity,c,debug=true,indims=indims,outdims=());
+  @show (inax)
+  if inax !== nothing
+    linax = length(inax)
+    pushfirst!(configiter.LoopAxes,inax)
+    pushfirst!(configiter.loopCacheSize,linax)
+    foreach(configiter.incubes) do ic1
+      if !isempty(ic1.axesSmall)
+        empty!(ic1.axesSmall)
+        map!(i->i+1,ic1.loopinds,ic1.loopinds)
+        pushfirst!(ic1.loopinds,1)
+      else
+        map!(i->i+1,ic1.loopinds,ic1.loopinds)
+      end
+    end
+  end
   r = collect(distributeLoopRanges(totuple(configiter.loopCacheSize),totuple(map(length,configiter.LoopAxes)),getchunkoffsets(configiter)))
   ci = CubeIterator(thetype,configiter,r, include_loopvars=include_axes,varnames=varnames)
 end

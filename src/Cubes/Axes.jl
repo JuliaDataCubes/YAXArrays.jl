@@ -241,7 +241,7 @@ function findAxis(bs::ByName,axlist::Vector{T}) where T<:CubeAxis
   matchstr=bs.name
   ism=map(i->startswith(lowercase(axname(i)),lowercase(matchstr)),axlist)
   sism=sum(ism)
-  sism==0 && error("No axis found matching string $matchstr")
+  sism==0 && return 0
   sism>1 && error("Multiple axes found matching string $matchstr")
   i=findfirst(ism)
 end
