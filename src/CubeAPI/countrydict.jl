@@ -307,6 +307,7 @@
 |ZWE|Zimbabwe
 """
 const known_regions = Dict{String,NTuple{4,Float64}}(
+"World"=>(-180.0,-90.0,179.999999999999,90.0),
 "Africa"=>(-17.0,-40.0,51.0,40.0),
 "Asia"=>(30.0,5.0,179.5,80.0),
 "Australia"=>(110.0,-40.0,155.0,-8.0),
