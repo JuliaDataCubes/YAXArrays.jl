@@ -194,7 +194,25 @@ end
 
 
 import DataStructures: OrderedDict
-export CubeTable
+export @CubeTable
+"""
+    @CubeTable input_vars...
+
+Macro to turn a DataCube object into an iterable table. Takes a list of as arguments,
+specified either by a cube variable name alone or by a `name=cube` expression. For example
+`@CubeTable cube1 country=cube2` would generate a Table with the entries `cube1` and `country`,
+where `cube1` contains the values of `cube1` and `country` the values of `cube2`. The cubes
+are matched and broadcasted along their axes like in `mapCube`.
+
+In addition, one can specify
+`axes=(ax1,ax2...)` when one wants to include the values of certain xes in the table. For example
+the command `@CubeTable tair=cube1 axes=(lon,lat,time)` would produce an iterator over a data structure
+with entries `tair`, `lon`, `lat` and `time`.
+
+Lastly there is an option to specify which axis shall be the fastest changing when iterating over the cube.
+For example `@CubeTable cube1 fastest=time` will ensure that the iterator will always loop over consecutive
+time steps of the same location. 
+"""
 macro CubeTable(cubes...)
   axargs=[]
   fastloopvar=""
