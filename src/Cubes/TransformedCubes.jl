@@ -230,7 +230,7 @@ Base.size(x::SliceCube)=x.size
 Base.size(x::SliceCube,i)=x.size[i]
 caxes(v::SliceCube)=v.cubeAxes
 getCubeDes(v::SliceCube)=getCubeDes(v.parent)
-iscompressed(v::SliceCube)=iscomporessed(v.parent)
+iscompressed(v::SliceCube)=iscompressed(v.parent)
 cubechunks(v::SliceCube{T,N,F}) where {T,N,F} = cubechunks(v.parent)[[1:F-1;F+1:end]]
 chunkoffset(v::SliceCube{T,N,F}) where {T,N,F} = chunkoffset(v.parent)[[1:F-1;F+1:end]]
 

@@ -131,3 +131,15 @@ function loadCube(name::String)
   isdir(newfolder) || error("$(name) does not exist")
   openmmapcube(newfolder)
 end
+
+"""
+    rmCube(name::String)
+
+Deletes a memory-mapped data cube.
+"""
+function rmCube(name::String)
+  newfolder=joinpath(workdir[1],name)
+  isdir(newfolder) || error("$(name) does not exist")
+  rm(newfolder,recursive=true)
+end
+export rmCube
