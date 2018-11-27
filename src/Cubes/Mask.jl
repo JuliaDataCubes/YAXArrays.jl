@@ -34,7 +34,7 @@ Base.size(m::MaskArray)=size(m.data)
 Base.getindex(m::MaskArray,i::Int) = (m.mask[i] & 0x01)==0x01 ? missing : m.data[i]
 Base.getindex(m::MaskArray{<:Any,N},i::Vararg{Int, N}) where N = (m.mask[i...] & 0x01) == 0x01 ? missing : m.data[i...]
 Base.setindex!(m::MaskArray, ::Missing, i::Int) = m.mask[i]=m.mask[i] | 0x01
-Base.setindex!(m::MaskArray, ::Missing, i::Vararg{Int, N}) where N = m.mask[i...]=m.mask[i...] | 0x01
+Base.setindex!(m::MaskArray{<:Any,N}, ::Missing, i::Vararg{Int, N}) where N = m.mask[i...]=m.mask[i...] | 0x01
 function Base.setindex!(m::MaskArray, v, i::Int)
     m.mask[i] = m.mask[i] & 0xfe
     m.data[i] = v
