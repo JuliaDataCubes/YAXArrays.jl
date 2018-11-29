@@ -265,7 +265,7 @@ end
 import Base.Iterators: take, drop
 Base.show(io::IO,a::RangeAxis)=print(io,rpad(Axes.axname(a),20," "),"Axis with ",length(a)," Elements from ",first(a.values)," to ",last(a.values))
 function Base.show(io::IO,a::CategoricalAxis)
-  print(io,rpad(Axes.axname(a),20," "), "Axis with elements: ")
+  print(io,rpad(Axes.axname(a),20," "), "Axis with ", length(a), " elements: ")
   if length(a.values)<10
     for v in a.values
       print(io,v," ")
