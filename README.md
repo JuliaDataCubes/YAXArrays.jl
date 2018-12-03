@@ -13,5 +13,4 @@
 
 # Documentation
 
-The Documentation is available [here]
-(https://esa-esdl.github.io/ESDL.jl/latest).
+The Documentation is available [here](https://esa-esdl.github.io/ESDL.jl/latest).
