@@ -1,4 +1,6 @@
 import OnlineStats: OnlineStat, fit!, value
+import IterTools
+import WeightedOnlineStats
 import WeightedOnlineStats: WeightedOnlineStat
 abstract type TableAggregator end
 struct OnlineAggregator{O,S}<:TableAggregator
@@ -18,7 +20,6 @@ struct WeightOnlineAggregator{O,S,W}<:TableAggregator
     o::O
     w::W
 end
-cubeeltype(t::WeightOnlineAggregator{<:WeightedOnlineStat{T}}) where T=T
 function WeightOnlineAggregator(O::Type{<:WeightedOnlineStat},s::Symbol,w) where N
     os = O()
     WeightOnlineAggregator{typeof(os),s,typeof(w)}(os,w)
@@ -46,6 +47,9 @@ getbytypes(et,by) = Tuple{map(i->unmiss(Base.return_types(i,Tuple{et})[1]),by)..
 cubeeltype(t::GroupedOnlineAggregator{T}) where T=cubeeltype(T)
 cubeeltype(t::Type{<:Dict{<:Any,T}}) where T = cubeeltype(T)
 cubeeltype(t::Type{<:WeightedOnlineStat{T}}) where T = T
+cubeeltype(t::ESDL.DAT.GroupedOnlineAggregator{T1, T2, T3, T4, T5}) where
+        {T1, T2, T3, T4, T5 <:WeightedOnlineStat{WeightedOnlineStats.VectorOb}} =
+    eltype(last(first(t.d)))
 
 function GroupedOnlineAggregator(O::Type{<:WeightedOnlineStat},s::Symbol,by,w,iter) where N
     ost = typeof(O())
@@ -130,13 +134,40 @@ function tooutaxis(f,iter::CubeIterator{<:Any,<:Any,<:Any,<:Any,<:Any,S},k,ibc) 
 end
 
 tooutcube(agg,iter)=CubeMem(CubeAxis[],fill(value(agg.o)),fill(0x00))
-function tooutcube(agg::GroupedOnlineAggregator,iter::CubeIterator{<:Any,<:Any,<:Any,<:Any,ILAX}) where ILAX
+function tooutcube(
+    agg::GroupedOnlineAggregator,
+    iter::CubeIterator{<:Any,<:Any,<:Any,<:Any,ILAX}
+  ) where ILAX
   by=agg.by
    outax = ntuple(length(by)) do ibc
-        bc=agg.by[ibc]
-     tooutaxis(bc,iter,unique(map(i->i[ibc],collect(keys(agg.d)))),ibc)
+       bc=agg.by[ibc]
+       tooutaxis(bc,iter,unique(map(i->i[ibc],collect(keys(agg.d)))),ibc)
    end
     snew = map(i->length(i[1]),ntuple(i->outax[i],length(outax)))
+    aout = zeros(cubeeltype(agg),snew)
+    mout = fill(0x01,snew)
+    axall = map(i->i[1],outax)
+    convdictall = map(i->i[2],outax)
+    filloutar(aout,mout,convdictall,agg.d)
+    CubeMem(collect(CubeAxis,axall),aout,mout)
+end
+function tooutcube(
+        agg::GroupedOnlineAggregator{T1, T2, T3, T4, T5},
+        iter::CubeIterator{<:Any,<:Any,<:Any,<:Any,ILAX}
+    ) where {
+        ILAX, T1, T2, T3, T4,
+        T5 <: WeightedOnlineStat{WeightedOnlineStats.VectorOb}
+    }
+    by = agg.by
+    s1 = agg.d |> first |> last |> value |> size
+    outax = ntuple(length(by)) do ibc
+        bc = agg.by[ibc]
+        tooutaxis(
+            bc, iter, unique(map(i -> i[ibc], collect(keys(agg.d)))), ibc
+        )
+    end
+
+    snew = (s1..., map(i -> length(i[1]), ntuple(i->outax[i], length(outax)))...)
     aout = zeros(cubeeltype(agg),snew)
     mout = fill(0x01,snew)
     axall = map(i->i[1],outax)
@@ -172,4 +203,37 @@ function fittable(tab,o::Type{<:OnlineStat},fitsym;by=(),weight=nothing)
   agg = TableAggregator(tab,o,fitsym,by=by,weight=weight)
   foreach(i->fitrow!(agg,i),tab)
   tooutcube(agg,tab)
+end
+
+struct collectedValue{V,S}
+    value::V
+    laststruct::S
+end
+
+function Base.getproperty(s::collectedValue,sy::Symbol)
+    if sy == :value
+        getfield(s,:value)
+    else
+        getproperty(getfield(s,:laststruct),sy)
+    end
+end
+
+function collectval(row::Union{Tuple, Vector})
+    nvars = length(row)
+    val = collectedValue([row[n].value for n in 1:nvars], row[end])
+end
+
+function fittable(
+        tab,
+        o::Type{<:WeightedOnlineStat{WeightedOnlineStats.VectorOb}},
+        fitsym;
+        by=(),
+        weight=nothing,
+        nvars=1
+    )
+    tab2 = IterTools.partition(tab, nvars) |>
+        x -> IterTools.imap(collectval, x)
+    agg = TableAggregator(tab2, o, fitsym, by=by, weight=weight)
+    foreach(i -> fitrow!(agg,i), tab2)
+    agg, tab
 end

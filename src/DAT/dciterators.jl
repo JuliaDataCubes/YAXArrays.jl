@@ -278,7 +278,6 @@ function _CubeTable(thetype,c::AbstractCubeData...;include_axes=(),varnames=varn
     end
   end
   configiter = mapCube(identity,c,debug=true,indims=indims,outdims=());
-  @show (inax)
   if inax !== nothing
     linax = length(inax)
     pushfirst!(configiter.LoopAxes,inax)
