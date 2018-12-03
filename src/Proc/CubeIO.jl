@@ -149,7 +149,7 @@ function exportcube(r::AbstractCubeData,filename::String;priorities = Dict("LON"
   dl = map(i->i.dimlen,dims) |> cumprod
   isplit = findfirst(i->i>1e6,dl)
   isplit < 1 && (isplit=length(dl)+1)
-  incubes = InDims(ax_cont[1:(isplit-1)]...,miss=MaskMissing())
+  incubes = InDims(ax_cont[1:(isplit-1)]...)
   cont_loop = Dict(ii=>axname.(ax_cont[ii]) for ii in isplit:length(ax_cont))
 
   mapCube(writefun,r,length(ax_cont),cont_loop,filename,indims=incubes,include_loopvars=true,ispar=false)
