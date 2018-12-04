@@ -1,7 +1,7 @@
 name = "ESDL"
 uuid = "359177bc-a543-11e8-11b7-bb015dba3358"
 authors = ["Fabian Gans <fgans@bgc-jena.mpg.de>"]
-version = "0.4.5"
+version = "0.4.6"
 
 [deps]
 AxisArrays = "39de3d68-74b9-583c-8d2d-e117c070f3a9"
