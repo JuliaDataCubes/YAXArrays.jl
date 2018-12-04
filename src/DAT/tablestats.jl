@@ -24,11 +24,14 @@ function WeightOnlineAggregator(O::Type{<:WeightedOnlineStat},s::Symbol,w) where
     os = O()
     WeightOnlineAggregator{typeof(os),s,typeof(w)}(os,w)
 end
+cubeeltype(t::WeightOnlineAggregator{T}) where T = cubeeltype(T)
 value(o::WeightOnlineAggregator)=value(o.o)
 function fitrow!(o::WeightOnlineAggregator{T,S},r) where {T<:OnlineStat,S}
     v = getproperty(r,S)
     w = o.w(r)
-    !ismissing(v) && !ismissing(w) && fit!(o.o,v,w)
+    if !ismissing(v) && !ismissing(w)
+      fit!(o.o,v,w)
+    end
 end
 struct GroupedOnlineAggregator{O,S,BY,W,C}<:TableAggregator
     d::O
@@ -42,14 +45,13 @@ struct SymType{S}
 end
 SymType(s::Symbol)=SymType{s}()
 (f::SymType{S})(x) where S=getproperty(x,S)
-
+import WeightedOnlineStats: WeightedCovMatrix
 getbytypes(et,by) = Tuple{map(i->unmiss(Base.return_types(i,Tuple{et})[1]),by)...}
 cubeeltype(t::GroupedOnlineAggregator{T}) where T=cubeeltype(T)
 cubeeltype(t::Type{<:Dict{<:Any,T}}) where T = cubeeltype(T)
 cubeeltype(t::Type{<:WeightedOnlineStat{T}}) where T = T
-cubeeltype(t::ESDL.DAT.GroupedOnlineAggregator{T1, T2, T3, T4, T5}) where
-        {T1, T2, T3, T4, T5 <:WeightedOnlineStat{WeightedOnlineStats.VectorOb}} =
-    eltype(last(first(t.d)))
+cubeeltype(t::Type{<:WeightedCovMatrix{T}}) where T = T
+
 
 function GroupedOnlineAggregator(O::Type{<:WeightedOnlineStat},s::Symbol,by,w,iter) where N
     ost = typeof(O())
@@ -133,57 +135,67 @@ function tooutaxis(f,iter::CubeIterator{<:Any,<:Any,<:Any,<:Any,<:Any,S},k,ibc) 
     outAxis,convertdict
 end
 
-tooutcube(agg,iter)=CubeMem(CubeAxis[],fill(value(agg.o)),fill(0x00))
-function tooutcube(
-    agg::GroupedOnlineAggregator,
-    iter::CubeIterator{<:Any,<:Any,<:Any,<:Any,ILAX}
-  ) where ILAX
-  by=agg.by
-   outax = ntuple(length(by)) do ibc
-       bc=agg.by[ibc]
-       tooutaxis(bc,iter,unique(map(i->i[ibc],collect(keys(agg.d)))),ibc)
-   end
-    snew = map(i->length(i[1]),ntuple(i->outax[i],length(outax)))
-    aout = zeros(cubeeltype(agg),snew)
-    mout = fill(0x01,snew)
-    axall = map(i->i[1],outax)
-    convdictall = map(i->i[2],outax)
-    filloutar(aout,mout,convdictall,agg.d)
-    CubeMem(collect(CubeAxis,axall),aout,mout)
+varsym(::WeightOnlineAggregator{<:Any,S}) where S = S
+varsym(::OnlineAggregator{<:Any,S}) where S = S
+varsym(::GroupedOnlineAggregator{<:Any,S}) where S = S
+axt(::CategoricalAxis)=CategoricalAxis
+axt(::RangeAxis)=RangeAxis
+getStatType(::WeightOnlineAggregator{T}) where T = T
+getStatType(::OnlineAggregator{T}) where T = T
+getStatType(t::GroupedOnlineAggregator{T}) where T=getStatType(T)
+getStatType(t::Type{<:Dict{<:Any,T}}) where T = T
+
+getStatOutAxes(tab,agg)=getStatOutAxes(tab,agg,getStatType(agg))
+getStatOutAxes(tab,agg,::Type{<:OnlineStat})=()
+function getStatOutAxes(tab,agg,::Type{<:WeightedCovMatrix})
+    nvar = length(fieldnames(eltype(tab)))
+    ax = getAxis(String(varsym(agg)),collect(tab.loopaxes))
+    oldname = ESDL.Cubes.Axes.axname(ax)
+    coname = string("Co",oldname)
+    v = ax.values
+    axtype = axt(ax)
+    a1 = axtype(oldname,copy(v))
+    a2 = axtype(coname,copy(v))
+    (a1,a2)
 end
-function tooutcube(
-        agg::GroupedOnlineAggregator{T1, T2, T3, T4, T5},
-        iter::CubeIterator{<:Any,<:Any,<:Any,<:Any,ILAX}
-    ) where {
-        ILAX, T1, T2, T3, T4,
-        T5 <: WeightedOnlineStat{WeightedOnlineStats.VectorOb}
-    }
+function getByAxes(iter,agg::GroupedOnlineAggregator)
     by = agg.by
-    s1 = agg.d |> first |> last |> value |> size
-    outax = ntuple(length(by)) do ibc
-        bc = agg.by[ibc]
-        tooutaxis(
-            bc, iter, unique(map(i -> i[ibc], collect(keys(agg.d)))), ibc
-        )
-    end
-
-    snew = (s1..., map(i -> length(i[1]), ntuple(i->outax[i], length(outax)))...)
-    aout = zeros(cubeeltype(agg),snew)
-    mout = fill(0x01,snew)
-    axall = map(i->i[1],outax)
-    convdictall = map(i->i[2],outax)
-    filloutar(aout,mout,convdictall,agg.d)
-    CubeMem(collect(CubeAxis,axall),aout,mout)
-end
-function filloutar(aout,mout,convdictall,g)
-    for (k,v) in g
-        i = CartesianIndex(map((i,d)->d[i],k,convdictall))
-        aout[i]=value(v)
-        @assert mout[i]==0x01
-        mout[i]=0x00
+    ntuple(length(by)) do ibc
+      bc=agg.by[ibc]
+      tooutaxis(bc,iter,unique(map(i->i[ibc],collect(keys(agg.d)))),ibc)
     end
 end
+getByAxes(iter,agg)=()
 
+function tooutcube(
+    agg,
+    iter
+  )
+  outaxby = getByAxes(iter,agg)
+  axby = map(i->i[1],outaxby)
+  convdictall = map(i->i[2],outaxby)
+
+  outaxstat = getStatOutAxes(iter,agg)
+  outax = (outaxstat...,axby...)
+  snew = map(length,outax)
+  aout = zeros(cubeeltype(agg),snew)
+  mout = fill(0x01,snew)
+
+  filloutar(aout,mout,convdictall,agg,map(i->1:length(i),outaxstat))
+
+  CubeMem(collect(CubeAxis,outax),aout,mout)
+end
+function filloutar(aout,mout,convdictall,agg::GroupedOnlineAggregator,s)
+    for (k,v) in agg.d
+        i = CartesianIndices((s...,map((i,d)->d[i]:d[i],k,convdictall)...))
+        aout[i.indices...]=value(v)
+        mout[i.indices...].=0x00
+    end
+end
+function filloutar(aout,mout,convdictall,agg,g)
+    aout[:]=value(agg.o)
+    fill!(mout,0x00)
+end
 """
     fittable(tab,o::Type{<:OnlineStat},fitsym;by=(),weight=nothing)
 
@@ -205,35 +217,37 @@ function fittable(tab,o::Type{<:OnlineStat},fitsym;by=(),weight=nothing)
   tooutcube(agg,tab)
 end
 
-struct collectedValue{V,S}
+struct collectedValue{V,S,SY}
     value::V
     laststruct::S
 end
 
-function Base.getproperty(s::collectedValue,sy::Symbol)
-    if sy == :value
+function Base.getproperty(s::collectedValue{<:Any,<:Any,SY},sy::Symbol) where SY
+    if sy == SY
         getfield(s,:value)
     else
         getproperty(getfield(s,:laststruct),sy)
     end
 end
 
-function collectval(row::Union{Tuple, Vector})
+function collectval(row::Union{Tuple, Vector},::Val{SY}) where SY
     nvars = length(row)
-    val = collectedValue([row[n].value for n in 1:nvars], row[end])
+    v = ntuple(i->getfield(row[i],SY),nvars) |> collect
+    val = collectedValue{typeof(v),typeof(row[end]),SY}(v, row[end])
 end
 
 function fittable(
-        tab,
-        o::Type{<:WeightedOnlineStat{WeightedOnlineStats.VectorOb}},
-        fitsym;
-        by=(),
-        weight=nothing,
-        nvars=1
-    )
-    tab2 = IterTools.partition(tab, nvars) |>
-        x -> IterTools.imap(collectval, x)
-    agg = TableAggregator(tab2, o, fitsym, by=by, weight=weight)
-    foreach(i -> fitrow!(agg,i), tab2)
-    tooutcube(agg, tab)
+  tab,
+  o::Type{<:WeightedOnlineStat{WeightedOnlineStats.VectorOb}},
+  fitsym;
+  by=(),
+  weight=nothing
+  )
+  nvars = length(getAxis(string(fitsym),collect(tab.loopaxes)))
+  tab2 = IterTools.partition(tab, nvars) |>
+  x -> IterTools.imap(a->collectval(a,Val(fitsym)), x)
+  agg = TableAggregator(tab2, o, fitsym, by=by, weight=weight)
+  foreach(i -> fitrow!(agg,i), tab2)
+  return agg
+  tooutcube(agg, tab)
 end
