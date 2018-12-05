@@ -37,7 +37,7 @@ include("CubeIO.jl")
 include("TSDecomposition.jl")
 include("remap.jl")
 using .ReSample, .MSC, .Stats, .CubeIO,
-  .TSDecomposition, .DATOnlineStats
+  .TSDecomposition
 
 
 
