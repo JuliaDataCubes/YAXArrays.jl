@@ -148,9 +148,7 @@ end
 function getrow(ci::CubeIterator{<:Any,<:Any,<:Any,<:Any,ILAX,S},inarsBC,indnow,offs) where {ILAX,S<:CubeRowAx}
    #inds = map(i->indnow.I[i],ILAX)
    #axvals = map((i,indnow)->ci.loopaxes[i][indnow],ILAX,inds)
-   @show offs
    axvalsall = map((ax,i,o)->ax.values[i+o],ci.loopaxes,indnow.I,offs)
-   @show axvalsall
    axvals = map(i->axvalsall[i],ILAX)
    cvals  = map(i->i[indnow],inarsBC)
    S(cvals...,axvals...)
