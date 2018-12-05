@@ -93,7 +93,8 @@ function Base.iterate(ci::CubeIterator)
     updateinars(ci.dc,rnow)
     innerinds = CartesianIndices(length.(rnow))
     indnow, innerstate = iterate(innerinds)
-    getrow(ci,ci.inarsBC,indnow),(rnow=rnow,blockstate=blockstate,innerinds = innerinds, innerstate=innerstate)
+    offs = map(i->first(i)-1,rnow)
+    getrow(ci,ci.inarsBC,indnow,offs),(rnow=rnow,blockstate=blockstate,innerinds = innerinds, innerstate=innerstate)
 end
 function Base.iterate(ci::CubeIterator,s)
     t1 = iterate(s.innerinds,s.innerstate)
@@ -108,13 +109,15 @@ function Base.iterate(ci::CubeIterator,s)
             updateinars(ci.dc,rnow)
             innerinds = CartesianIndices(length.(rnow))
             indnow,innerstate = iterate(innerinds)
+            
         end
     else
         rnow, blockstate = s.rnow, s.blockstate
         innerinds = s.innerinds
         indnow, innerstate = iterate(innerinds,s.innerstate)
     end
-    getrow(ci,ci.inarsBC,indnow),(rnow=rnow::NTuple{N,UnitRange{Int64}},
+    offs = map(i->first(i)-1,rnow)
+    getrow(ci,ci.inarsBC,indnow,offs),(rnow=rnow::NTuple{N,UnitRange{Int64}},
       blockstate=blockstate::Int64,
       innerinds=innerinds::CartesianIndices{N,NTuple{N,Base.OneTo{Int64}}},
       innerstate=innerstate::CartesianIndex{N})
@@ -142,15 +145,17 @@ end
 #   #NamedTuple{RN,RT}(axvals...,cvals...)
 #   NamedTuple{RN,RT}(allvals)
 # end
-function getrow(ci::CubeIterator{<:Any,<:Any,<:Any,<:Any,ILAX,S},inarsBC,indnow) where {ILAX,S<:CubeRowAx}
-   inds = map(i->indnow.I[i],ILAX)
+function getrow(ci::CubeIterator{<:Any,<:Any,<:Any,<:Any,ILAX,S},inarsBC,indnow,offs) where {ILAX,S<:CubeRowAx}
+   #inds = map(i->indnow.I[i],ILAX)
    #axvals = map((i,indnow)->ci.loopaxes[i][indnow],ILAX,inds)
-   axvalsall = map((ax,i)->ax.values[i],ci.loopaxes,indnow.I)
+   @show offs
+   axvalsall = map((ax,i,o)->ax.values[i+o],ci.loopaxes,indnow.I,offs)
+   @show axvalsall
    axvals = map(i->axvalsall[i],ILAX)
    cvals  = map(i->i[indnow],inarsBC)
    S(cvals...,axvals...)
 end
-function getrow(ci::CubeIterator{<:Any,<:Any,<:Any,<:Any,<:Any,S},inarsBC,indnow) where S<:CubeRow
+function getrow(ci::CubeIterator{<:Any,<:Any,<:Any,<:Any,<:Any,S},inarsBC,indnow,offs) where S<:CubeRow
    cvals  = map(i->i[indnow],inarsBC)
    S(cvals...)
 end
