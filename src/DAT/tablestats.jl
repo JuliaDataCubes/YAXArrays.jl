@@ -248,6 +248,5 @@ function fittable(
   x -> IterTools.imap(a->collectval(a,Val(fitsym)), x)
   agg = TableAggregator(tab2, o, fitsym, by=by, weight=weight)
   foreach(i -> fitrow!(agg,i), tab2)
-  return agg
   tooutcube(agg, tab)
 end
