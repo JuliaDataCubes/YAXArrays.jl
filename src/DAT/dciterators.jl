@@ -277,8 +277,19 @@ function _CubeTable(thetype,c::AbstractCubeData...;include_axes=(),varnames=varn
       end
     end
   end
-  configiter = mapCube(identity,c,debug=true,indims=indims,outdims=());
-  if inax !== nothing
+  inaxname = inax==nothing ? nothing : axname(inax)
+  axnames = map(i->axname.(caxes(i)),c)
+  allvars = union(axnames...)
+  allnums = collect(1:length(allvars))
+  perms = map(axnames) do v
+    map(i->findfirst(isequal(i),allvars),v)
+  end
+  c2 = map(perms,c) do p,cube
+    issorted(p) ? cube : permutedims(cube,sortperm(p))
+  end
+    
+    configiter = mapCube(identity,c2,debug=true,indims=indims,outdims=());
+    if inax !== nothing
     linax = length(inax)
     pushfirst!(configiter.LoopAxes,inax)
     pushfirst!(configiter.loopCacheSize,linax)
