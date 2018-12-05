@@ -188,7 +188,7 @@ end
 function filloutar(aout,mout,convdictall,agg::GroupedOnlineAggregator,s)
     for (k,v) in agg.d
         i = CartesianIndices((s...,map((i,d)->d[i]:d[i],k,convdictall)...))
-        aout[i.indices...]=value(v)
+        aout[i.indices...].=value(v)
         mout[i.indices...].=0x00
     end
 end
