@@ -93,7 +93,8 @@ function fitrow!(o::GroupedOnlineAggregator{T,S,BY,W,C},r) where {T,S,BY,W,C}
     end
 end
 export TableAggregator, fittable
-function TableAggregator(iter,O::Type{<:OnlineStat},fitsym;by=(),weight=nothing)
+TableAggregator(iter,O::Type{<:OnlineStat},fitsym)=TableAggregator(iter,O(),fitsym)
+function TableAggregator(iter,O::OnlineStat,fitsym;by=(),weight=nothing)
     if !isempty(by)
         weight==nothing && (weight=(i->nothing))
         by = map(i->isa(i,Symbol) ? (SymType(i)) : i,by)
@@ -149,7 +150,7 @@ getStatOutAxes(tab,agg)=getStatOutAxes(tab,agg,getStatType(agg))
 getStatOutAxes(tab,agg,::Type{<:OnlineStat})=()
 function getStatOutAxes(tab,agg,::Type{<:WeightedCovMatrix})
     nvar = length(fieldnames(eltype(tab)))
-    ax = getAxis(String(varsym(agg)),collect(tab.loopaxes))
+    ax = tab.loopaxes[1]
     oldname = ESDL.Cubes.Axes.axname(ax)
     coname = string("Co",oldname)
     v = ax.values
@@ -197,7 +198,7 @@ function filloutar(aout,mout,convdictall,agg,g)
     fill!(mout,0x00)
 end
 """
-    fittable(tab,o::Type{<:OnlineStat},fitsym;by=(),weight=nothing)
+    fittable(tab,o,fitsym;by=(),weight=nothing)
 
 Loops through an iterable table `tab` and thereby fitting an OnlineStat `o` with the values
 specified through `fitsym`. Optionally one can specify a field (or tuple) to group by.
@@ -216,6 +217,7 @@ function fittable(tab,o::Type{<:OnlineStat},fitsym;by=(),weight=nothing)
   foreach(i->fitrow!(agg,i),tab)
   tooutcube(agg,tab)
 end
+fittable(tab,o::Type{<:OnlineStat},fitsym;kwargs...)=fittable(tab,o(),fitsym;kwargs...)                            
 
 struct collectedValue{V,S,SY}
     value::V
@@ -236,6 +238,10 @@ function collectval(row::Union{Tuple, Vector},::Val{SY}) where SY
     val = collectedValue{typeof(v),typeof(row[end]),SY}(v, row[end])
 end
 
+function cubefittable(tab,o,fitsym;kwargs...)
+  agg=fittable(tab,o,fitsym,kwargs...)
+  tooutcube(agg,tab)
+end
 function fittable(
   tab,
   o::Type{<:WeightedOnlineStat{WeightedOnlineStats.VectorOb}},
@@ -243,10 +249,10 @@ function fittable(
   by=(),
   weight=nothing
   )
-  nvars = length(getAxis(string(fitsym),collect(tab.loopaxes)))
+  nvars = length(tab.loopaxes[1])
   tab2 = IterTools.partition(tab, nvars) |>
   x -> IterTools.imap(a->collectval(a,Val(fitsym)), x)
   agg = TableAggregator(tab2, o, fitsym, by=by, weight=weight)
   foreach(i -> fitrow!(agg,i), tab2)
-  tooutcube(agg, tab)
+  agg
 end
