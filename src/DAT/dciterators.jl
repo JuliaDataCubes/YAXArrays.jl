@@ -109,7 +109,7 @@ function Base.iterate(ci::CubeIterator,s)
             updateinars(ci.dc,rnow)
             innerinds = CartesianIndices(length.(rnow))
             indnow,innerstate = iterate(innerinds)
-            
+
         end
     else
         rnow, blockstate = s.rnow, s.blockstate
@@ -214,7 +214,7 @@ with entries `tair`, `lon`, `lat` and `time`.
 
 Lastly there is an option to specify which axis shall be the fastest changing when iterating over the cube.
 For example `@CubeTable cube1 fastest=time` will ensure that the iterator will always loop over consecutive
-time steps of the same location. 
+time steps of the same location.
 """
 macro CubeTable(cubes...)
   axargs=[]
@@ -288,9 +288,15 @@ function _CubeTable(thetype,c::AbstractCubeData...;include_axes=(),varnames=varn
     map(i->findfirst(isequal(i),allvars),v)
   end
   c2 = map(perms,c) do p,cube
-    issorted(p) ? cube : permutedims(cube,sortperm(p))
+    if issorted(p)
+      cube
+    else 
+      pp=sortperm(p)
+      pp = ntuple(i->pp[i],length(pp))
+      permutedims(cube,pp)
+    end
   end
-    
+
     configiter = mapCube(identity,c2,debug=true,indims=indims,outdims=());
     if inax !== nothing
     linax = length(inax)
