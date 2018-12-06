@@ -1,14 +1,13 @@
 import OnlineStats: OnlineStat, fit!, value
 import IterTools
-import WeightedOnlineStats
+using WeightedOnlineStats
 import WeightedOnlineStats: WeightedOnlineStat
 abstract type TableAggregator end
 struct OnlineAggregator{O,S}<:TableAggregator
     o::O
 end
-function OnlineAggregator(O::Type{<:OnlineStat},s::Symbol) where N
-    os = O()
-    OnlineAggregator{typeof(os),s}(os)
+function OnlineAggregator(O::OnlineStat,s::Symbol) where N
+    OnlineAggregator{typeof(O),s}(copy(O))
 end
 cubeeltype(t::OnlineAggregator)=Float64
 function fitrow!(o::OnlineAggregator{T,S},r) where {T<:OnlineStat,S}
@@ -20,9 +19,8 @@ struct WeightOnlineAggregator{O,S,W}<:TableAggregator
     o::O
     w::W
 end
-function WeightOnlineAggregator(O::Type{<:WeightedOnlineStat},s::Symbol,w) where N
-    os = O()
-    WeightOnlineAggregator{typeof(os),s,typeof(w)}(os,w)
+function WeightOnlineAggregator(O::WeightedOnlineStat,s::Symbol,w) where N
+    WeightOnlineAggregator{typeof(O),s,typeof(w)}(copy(O),w)
 end
 cubeeltype(t::WeightOnlineAggregator{T}) where T = cubeeltype(T)
 value(o::WeightOnlineAggregator)=value(o.o)
@@ -37,6 +35,7 @@ struct GroupedOnlineAggregator{O,S,BY,W,C}<:TableAggregator
     d::O
     w::W
     by::BY
+    cloneobj::C
 end
 value(o::GroupedOnlineAggregator)=Dict(zip(keys(o.d),map(value,(values(o.d)))))
 unmiss(::Type{Union{T,Missing}}) where T = T
@@ -45,7 +44,6 @@ struct SymType{S}
 end
 SymType(s::Symbol)=SymType{s}()
 (f::SymType{S})(x) where S=getproperty(x,S)
-import WeightedOnlineStats: WeightedCovMatrix
 getbytypes(et,by) = Tuple{map(i->unmiss(Base.return_types(i,Tuple{et})[1]),by)...}
 cubeeltype(t::GroupedOnlineAggregator{T}) where T=cubeeltype(T)
 cubeeltype(t::Type{<:Dict{<:Any,T}}) where T = cubeeltype(T)
@@ -53,17 +51,17 @@ cubeeltype(t::Type{<:WeightedOnlineStat{T}}) where T = T
 cubeeltype(t::Type{<:WeightedCovMatrix{T}}) where T = T
 
 
-function GroupedOnlineAggregator(O::Type{<:WeightedOnlineStat},s::Symbol,by,w,iter) where N
-    ost = typeof(O())
+function GroupedOnlineAggregator(O::OnlineStat,s::Symbol,by,w,iter) where N
+    ost = typeof(O)
     et = eltype(iter)
     bytypes = Tuple{map(i->unmiss(Base.return_types(i,Tuple{et})[1]),by)...}
     d = Dict{bytypes,ost}()
-    GroupedOnlineAggregator{typeof(d),s,typeof(by),typeof(w),O}(d,w,by)
+    GroupedOnlineAggregator{typeof(d),s,typeof(by),typeof(w),ost}(d,w,by,O)
 end
 
 dicteltype(::Type{<:Dict{K,V}}) where {K,V} = V
 dictktype(::Type{<:Dict{K,V}}) where {K,V} = K
-function fitrow!(o::GroupedOnlineAggregator{T,S,BY,W,C},r) where {T,S,BY,W,C}
+function fitrow!(o::GroupedOnlineAggregator{T,S,BY,W},r) where {T,S,BY,W,C}
     v = getproperty(r,S)
     if !ismissing(v)
         w = o.w(r)
@@ -73,7 +71,7 @@ function fitrow!(o::GroupedOnlineAggregator{T,S,BY,W,C},r) where {T,S,BY,W,C}
                 if haskey(o.d,bykey)
                     fit!(o.d[bykey],v)
                 else
-                    o.d[bykey] = C()
+                    o.d[bykey] = copy(o.cloneobj)
                     fit!(o.d[bykey],v)
                 end
             end
@@ -84,7 +82,7 @@ function fitrow!(o::GroupedOnlineAggregator{T,S,BY,W,C},r) where {T,S,BY,W,C}
                     if haskey(o.d,bykey)
                         fit!(o.d[bykey],v,w)
                     else
-                        o.d[bykey] = C()
+                        o.d[bykey] = copy(o.cloneobj)
                         fit!(o.d[bykey],v,w)
                     end
                 end
@@ -92,9 +90,8 @@ function fitrow!(o::GroupedOnlineAggregator{T,S,BY,W,C},r) where {T,S,BY,W,C}
         end
     end
 end
-export TableAggregator, fittable
-TableAggregator(iter,O::Type{<:OnlineStat},fitsym)=TableAggregator(iter,O(),fitsym)
-function TableAggregator(iter,O::OnlineStat,fitsym;by=(),weight=nothing)
+export TableAggregator, fittable, cubefittable
+function TableAggregator(iter,O,fitsym;by=(),weight=nothing)
     if !isempty(by)
         weight==nothing && (weight=(i->nothing))
         by = map(i->isa(i,Symbol) ? (SymType(i)) : i,by)
@@ -212,12 +209,12 @@ area and grouped by country and month
 fittable(iter,WeightedMean,:tair,weight=(i->cosd(i.lat)),by=(i->month(i.time),:country))
 ````
 """
-function fittable(tab,o::Type{<:OnlineStat},fitsym;by=(),weight=nothing)
+function fittable(tab,o,fitsym;by=(),weight=nothing)
   agg = TableAggregator(tab,o,fitsym,by=by,weight=weight)
   foreach(i->fitrow!(agg,i),tab)
-  tooutcube(agg,tab)
+  agg
 end
-fittable(tab,o::Type{<:OnlineStat},fitsym;kwargs...)=fittable(tab,o(),fitsym;kwargs...)                            
+fittable(tab,o::Type{<:OnlineStat},fitsym;kwargs...)=fittable(tab,o(),fitsym;kwargs...)
 
 struct collectedValue{V,S,SY}
     value::V
@@ -239,12 +236,12 @@ function collectval(row::Union{Tuple, Vector},::Val{SY}) where SY
 end
 
 function cubefittable(tab,o,fitsym;kwargs...)
-  agg=fittable(tab,o,fitsym,kwargs...)
+  agg=fittable(tab,o,fitsym;kwargs...)
   tooutcube(agg,tab)
 end
 function fittable(
   tab,
-  o::Type{<:WeightedOnlineStat{WeightedOnlineStats.VectorOb}},
+  o::WeightedCovMatrix,
   fitsym;
   by=(),
   weight=nothing
