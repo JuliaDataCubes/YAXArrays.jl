@@ -97,24 +97,25 @@ end
 export sampleLandPoints
 
 using NetCDF
-import IterTools: product
-function writefun(xout,xin,a,nd,cont_loop,filename;kwargs...)
+import Base.Iterators: product
+function writefun(xout,xin::AbstractArray{Union{Missing,T}},a,nd,cont_loop,filename;kwargs...) where T
 
-  x = map((m,v)->m==0x00 ? v : oftype(v,-9999.0),xin.mask,xin.data)
+
+
+  x = map(ix->ismissing(ix) ? convert(T,-9999.0) : ix,xin)
 
   count_vec = fill(-1,nd)
   start_vec = fill(1,nd)
 
-  used_inds = Int[]
+  used_syms = Symbol[]
   for (k,v) in cont_loop
     count_vec[k] = 1
-    ia = findfirst(i->i[1]==Symbol(v),a)
-    start_vec[k] = a[ia][2][1]
-    push!(used_inds,ia)
+    start_vec[k] = a[Symbol(v)][1]
+    push!(used_syms,Symbol(v))
   end
 
-  splinds = Iterators.filter(i->!in(i,used_inds),1:length(a))
-  vn = join(string.([a[s][2][2] for s in splinds]),"_")
+  splinds = Iterators.filter(i->!in(i,used_syms),keys(a))
+  vn = join(string.([a[s][2] for s in splinds]),"_")
   isempty(vn) && (vn="layer")
 
   ncwrite(x,filename,vn,start=start_vec,count=count_vec)
@@ -147,12 +148,12 @@ function exportcube(r::AbstractCubeData,filename::String;priorities = Dict("LON"
     ncwrite(d.vals,filename,d.name)
   end
   dl = map(i->i.dimlen,dims) |> cumprod
-  isplit = findfirst(i->i>1e6,dl)
-  isplit < 1 && (isplit=length(dl)+1)
+  isplit = findfirst(i->i>5e7,dl)
+  isplit isa Nothing && (isplit=length(dl)+1)
   incubes = InDims(ax_cont[1:(isplit-1)]...)
-  cont_loop = Dict(ii=>axname.(ax_cont[ii]) for ii in isplit:length(ax_cont))
+  cont_loop = Dict(ii=>axname(ax_cont[ii]) for ii in isplit:length(ax_cont))
 
-  mapCube(writefun,r,length(ax_cont),cont_loop,filename,indims=incubes,include_loopvars=true,ispar=false)
+  mapCube(writefun,r,length(ax_cont),cont_loop,filename,indims=incubes,include_loopvars=true,ispar=false,max_cache=5e7)
   ncclose(filename)
   nothing
 end
