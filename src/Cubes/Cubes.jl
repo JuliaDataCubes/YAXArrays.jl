@@ -8,8 +8,6 @@ export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesC
        getSingVal, ScaleAxis, axname, @caxis_str, rmCube, cubeproperties, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
        getOutAxis, ByInference
 
-include("Mask.jl")
-import .Mask: MaskArray
 
 """
     AbstractCubeData{T,N}
@@ -33,10 +31,10 @@ getSingVal(c::AbstractCubeData,a...)=error("getSingVal called in the wrong way w
 """
 function readCubeData(x::AbstractCubeData{T,N}) where {T,N}
   s=size(x)
-  aout,mout=zeros(T,s...),zeros(UInt8,s...)
+  aout = zeros(Union{T,Missing},s...)
   r=CartesianIndices(s)
-  _read(x,MaskArray(aout,mout),r)
-  CubeMem(collect(CubeAxis,caxes(x)),aout,mout)
+  _read(x,aout,r)
+  CubeMem(collect(CubeAxis,caxes(x)),aout)
 end
 
 """
@@ -89,96 +87,66 @@ the output cube is small enough to fit in memory or by explicitly calling
 
 * `axes` a `Vector{CubeAxis}` containing the Axes of the Cube
 * `data` N-D array containing the data
-* `mask` N-D array containgin the mask
 
 """
 mutable struct CubeMem{T,N} <: AbstractCubeMem{T,N}
   axes::Vector{CubeAxis}
   data::Array{T,N}
-  mask::Array{UInt8,N}
   properties::Dict{String}
 end
 
-CubeMem(axes::Vector{CubeAxis},data,mask) = CubeMem(axes,data,mask,Dict{String,Any}())
-Base.permutedims(c::CubeMem,p)=CubeMem(c.axes[collect(p)],permutedims(c.data,p),permutedims(c.mask,p))
+CubeMem(axes::Vector{CubeAxis},data) = CubeMem(axes,data,Dict{String,Any}())
+Base.permutedims(c::CubeMem,p)=CubeMem(c.axes[collect(p)],permutedims(c.data,p))
 caxes(c::CubeMem)=c.axes
 cubeproperties(c::CubeMem)=c.properties
 iscompressed(c::AbstractCubeMem)=false
 
 Base.IndexStyle(::CubeMem)=Base.LinearFast()
 function Base.setindex!(c::CubeMem,i::Integer,v)
-  if isa(v,Missing)
-    setindex!(c.mask,i,c.mask[i] | 0x01)
-  else
-    setindex!(c.mask,i,c.mask[i] & 0xfe)
-    setindex!(c.data,i,v)
-  end
+  c.data[i] = v
 end
 Base.size(c::CubeMem)=size(c.data)
 Base.size(c::CubeMem,i)=size(c.data,i)
-Base.similar(c::CubeMem)=cubeMem(c.axes,similar(c.data),copy(c.mask))
+Base.similar(c::CubeMem)=CubeMem(c.axes,similar(c.data))
 Base.ndims(c::CubeMem{T,N}) where {T,N}=N
 
-getSingVal(c::CubeMem{T,N},i...;write::Bool=true) where {T,N}=(c.data[i...],c.mask[i...])
-getSingVal(c::CubeMem{T,0};write::Bool=true) where {T}=(c.data[1],c.mask[1])
-getSingVal(c::CubeAxis{T},i;write::Bool=true) where {T}=(c.values[i],nothing)
+#getSingVal(c::CubeMem{T,N},i...;write::Bool=true) where {T,N}=(c.data[i...],c.mask[i...])
+#getSingVal(c::CubeMem{T,0};write::Bool=true) where {T}=(c.data[1],c.mask[1])
+#getSingVal(c::CubeAxis{T},i;write::Bool=true) where {T}=(c.values[i],nothing)
 
 readCubeData(c::CubeMem)=c
 
-function getSubRange(c::MaskArray,i...;write::Bool=true)
+function getSubRange(c::AbstractArray,i...;write::Bool=true)
   length(i)==ndims(c) || error("Wrong number of view arguments to getSubRange. Cube is: $c \n indices are $i")
   return view(c,i...)
 end
 getSubRange(c::Tuple{AbstractArray{T,0},AbstractArray{UInt8,0}};write::Bool=true) where {T}=c
-function getSubRange(c::AbstractArray,i...)
-  d = view(c,i...)
-  z = zeros(UInt8,size(d))
-  MaskArray(d,z)
-end
+getSubRange(c::AbstractArray,i...) = view(c,i...)
 
 """
     gethandle(c::AbstractCubeData, [block_size])
 
 Returns an indexable handle to the data.
 """
-gethandle(c::AbstractCubeMem) = MaskArray(c.data,c.mask)
+gethandle(c::AbstractCubeMem) = c.data
 gethandle(c::CubeAxis) = collect(c.values)
 gethandle(c,block_size)=gethandle(c)
 
 
 import ..ESDLTools.toRange
 #Generic fallback method for _read
-function _read(c::CubeMem,thedata::MaskArray,r::CartesianIndices)
+function _read(c::CubeMem,thedata::AbstractArray,r::CartesianIndices)
   N=ndims(r)
-  rr = convert(NTuple{N,UnitRange},r)
-  h = MaskArray(c.data,c.mask)
-  cubeview = getSubRange(h,rr...)
+  cubeview = view(c.data,r.indices...)
   copyto!(thedata,cubeview)
 end
 
-function _write(c::CubeMem,thedata::MaskArray,r::CartesianIndices)
+function _write(c::CubeMem,thedata::AbstractArray,r::CartesianIndices)
   N=ndims(r)
-  rr = convert(NTuple{N,UnitRange},r)
-  h = MaskArray(c.data,c.mask)
-  cubeview = getSubRange(h,rr...)
+  cubeview = getSubRange(c.data,r.indices...)
   copyto!(cubeview,thedata)
 end
-"This function creates a new view of the cube, joining longitude and latitude axes to a single spatial axis"
-function mergeLonLat!(c::CubeMem)
-ilon=findAxis(LonAxis,c.axes)
-ilat=findAxis(LatAxis,c.axes)
-ilat==ilon+1 || error("Lon and Lat axes must be consecutive to merge")
-lonAx=c.axes[ilon]
-latAx=c.axes[ilat]
-newVals=Tuple{Float64,Float64}[(lonAx.values[i],latAx.values[j]) for i=1:length(lonAx), j=1:length(latAx)]
-newAx=SpatialPointAxis(reshape(newVals,length(lonAx)*length(latAx)));
-allNewAx=[c.axes[1:ilon-1];newAx;c.axes[ilat+1:end]];
-s  = size(c.data)
-s1 = s[1:ilon-1]
-s2 = s[ilat+1:end]
-newShape=(s1...,length(lonAx)*length(latAx),s2...)
-CubeMem(allNewAx,reshape(c.data,newShape),reshape(c.mask,newShape))
-end
+
 
 #Implement getindex on AbstractCubeData objects
 const IndR = Union{Integer,Colon,UnitRange}
@@ -193,19 +161,17 @@ function Base.getindex(c::AbstractCubeData,i::Integer...)
   length(i)==ndims(c) || error("You must provide $(ndims(c)) indices")
   r = CartesianIndices((first(i):first(i),Base.tail(i)...))
   aout = zeros(eltype(c),size(r))
-  mout = fill(0xff,size(r))
-  _read(c,MaskArray(aout,mout),r)
-  return ((mout[1] & 0x01)!=0x00) ? missing : aout[1]
+  _read(c,aout,r)
+  return aout[1]
 end
 
 function Base.getindex(c::AbstractCubeData,i::IndR...)
   length(i)==ndims(c) || error("You must provide $(ndims(c)) indices")
   ax = totuple(caxes(c))
   r = CartesianIndices(map((ii,iax)->getfirst(ii,iax):getlast(ii,iax),i,ax))
-  aout = MaskArray(Array{eltype(c)}(undef,size(r)),fill(0xff,size(r)))
+  aout = Array{eltype(c)}(undef,size(r))
   _read(c,aout,r)
-  squeezedims = totuple(findall(j->isa(j,Integer),i))
-  Array{Union{eltype(c),Missing}}(dropdims(aout,dims=squeezedims))
+  reshape(aout,map(length,ax))
 end
 Base.read(d::AbstractCubeData)=getindex(d,fill(Colon(),ndims(d))...)
 
@@ -258,8 +224,7 @@ function saveCube(c::CubeMem{T},name::AbstractString) where T
   mkpath(newfolder)
   tc=Cubes.MmapCube(c.axes,folder=newfolder,T=T)
   handle = Cubes.getmmaphandles(tc,mode="r+")
-  copyto!(handle.data,c.data)
-  copyto!(handle.mask,c.mask)
+  copyto!(handle,c.data)
 end
 
 import Base.Iterators: take, drop
