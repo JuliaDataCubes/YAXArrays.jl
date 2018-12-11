@@ -48,11 +48,6 @@ end
 
 function filterTSFFT(outar::AbstractMatrix,y::AbstractVector, annfreq::Number;nharm::Int=3)
 
-    maski = outar.mask
-    outar = outar.data
-
-    y = y.data
-
     size(outar) == (length(y),4) || error("Wrong size of output array")
 
     detrendTS!(outar,y)
@@ -103,6 +98,5 @@ function filterTSFFT(outar::AbstractMatrix,y::AbstractVector, annfreq::Number;nh
         outar[i,2]=real(fyout[i])
         outar[i,4]=real(fy[i])
     end
-    maski .= 0x00
 end
 end

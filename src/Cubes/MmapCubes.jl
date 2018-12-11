@@ -1,6 +1,5 @@
 export MmapCube,getmmaphandles
 import ..ESDLTools.totuple
-import .Mask: MaskArray
 abstract type AbstractMmapCube{T,N}<:AbstractCubeData{T,N} end
 using Serialization
 using Distributed
@@ -35,7 +34,6 @@ function MmapCube(axlist;folder=mktempdir(),T=Float32,persist::Bool=true,overwri
     if overwrite
       isfile(joinpath(folder,"axinfo.bin")) && rm(joinpath(folder,"axinfo.bin"))
       isfile(joinpath(folder,"data.bin")) && rm(joinpath(folder,"data.bin"))
-      isfile(joinpath(folder,"mask.bin")) && rm(joinpath(folder,"mask.bin"))
     else
       error("Folder $folder is not empty, set overwrite=true to overwrite.")
     end
@@ -47,7 +45,6 @@ function MmapCube(axlist;folder=mktempdir(),T=Float32,persist::Bool=true,overwri
   end
   s=map(length,axlist)
   open(f->write(f,zeros(T,s...)),joinpath(folder,"data.bin"),"w")
-  open(f->write(f,zeros(UInt8,s...)),joinpath(folder,"mask.bin"),"w")
   ntc=MmapCube{T,length(axlist)}(axlist,folder,persist,properties)
   finalizer(cleanMmapCube,ntc)
   ntc
@@ -63,24 +60,19 @@ function getmmaphandles(folder, axlist,T;mode="r")
   ar = open(joinpath(folder,"data.bin"),mode) do fd
     Mmap.mmap(fd,Array{T,length(axlist)},totuple(s))
   end
-  ma = open(joinpath(folder,"mask.bin"),mode) do fm
-    Mmap.mmap(fm,Array{UInt8,length(axlist)},totuple(s))
-  end
-  MaskArray(ar,ma)
+  ar
 end
 
-function _write(y::MmapCube,thedata::MaskArray,r::CartesianIndices{N}) where N
+function _write(y::MmapCube,thedata::AbstractArray,r::CartesianIndices{N}) where N
     cubeh   = getmmaphandles(y,mode="r+")
     for (i,ic) in enumerate(r)
-        cubeh.data[ic]=thedata.data[i]
-        cubeh.mask[ic]=thedata.mask[i]
+        cubeh[ic]=thedata[i]
     end
 end
-function _read(y::MmapCube,thedata::MaskArray,r::CartesianIndices{N}) where N
+function _read(y::MmapCube,thedata::AbstractArray,r::CartesianIndices{N}) where N
     cubeh   = getmmaphandles(y)
     for (i,ic) in enumerate(r)
-        thedata.data[i]=cubeh.data[ic]
-        thedata.mask[i]=cubeh.mask[ic]
+        thedata[i]=cubeh[ic]
     end
 end
 @generated function Base.size(x::MmapCube{T,N}) where {T,N}

@@ -3,34 +3,23 @@ using ..Cubes
 using ..DAT
 using ..CubeAPI
 using ..Proc
-using ..Mask
 
 import NetCDF.ncread, NetCDF.ncclose
 import StatsBase.Weights
 import StatsBase.sample
-
+import Base.Iterators
 
 function getSpatiaPointAxis(mask::CubeMem)
     a=Tuple{Float64,Float64}[]
     ax=caxes(mask)
-    ocval=OCEAN
-    for (ilat,lat) in enumerate(ax[2].values)
-        for (ilon,lon) in enumerate(ax[1].values)
-            if (mask.mask[ilon,ilat] & ocval) != ocval
-                push!(a,(lon,lat))
-            end
-        end
-    end
+    anew = Iterators.product(ax[1].values,ax[2].values)
     SpatialPointAxis(a)
 end
 
 function toPointAxis(aout,ain,loninds,latinds)
-  xout, maskout = aout.data, aout.mask
-  xin , maskin  = ain.data, ain.mask
   iout = 1
   for (ilon,ilat) in zip(loninds,latinds)
-    xout[iout]=xin[ilon,ilat]
-    maskout[iout]=maskin[ilon,ilat]
+    aout[iout]=ain[ilon,ilat]
     iout+=1
   end
 end
@@ -99,8 +88,6 @@ export sampleLandPoints
 using NetCDF
 import Base.Iterators: product
 function writefun(xout,xin::AbstractArray{Union{Missing,T}},a,nd,cont_loop,filename;kwargs...) where T
-
-
 
   x = map(ix->ismissing(ix) ? convert(T,-9999.0) : ix,xin)
 

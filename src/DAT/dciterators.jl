@@ -32,7 +32,6 @@ end
 Base.getindex(a::PickAxisArray,i::CartesianIndex) = a[i.I]
 
 import ESDL.DAT: DATConfig
-import ESDL.CubeAPI.Mask: MaskArray
 struct CubeIterator{R,ART,ARTBC,LAX,ILAX,S}
     dc::DATConfig
     r::R
@@ -290,7 +289,7 @@ function _CubeTable(thetype,c::AbstractCubeData...;include_axes=(),varnames=varn
   c2 = map(perms,c) do p,cube
     if issorted(p)
       cube
-    else 
+    else
       pp=sortperm(p)
       pp = ntuple(i->pp[i],length(pp))
       permutedims(cube,pp)

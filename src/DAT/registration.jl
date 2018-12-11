@@ -39,19 +39,15 @@ struct UserFilter{F} <: ProcFilter
 end
 
 docheck(::NoFilter)         = 0x00
-replacevalue(::ProcFilter)  = 0x01
-replacevalue(::AnyOcean)  = 0x05
-checkskip(::AllMissing,x::MaskArray)   = all(i->!iszero(i & 0x01),x.mask)
+checkskip(::AllMissing,x::AbstractArray)   = all(ismissing,x)
 checkskip(::AllMissing,df::DataFrame)  = any(map(i->all(ismissing,getindex(df,i)),names(df)))
-checkskip(::AnyMissing,x::MaskArray)   = any(i->!iszero(i & 0x01),x.mask)
+checkskip(::AnyMissing,x::AbstractArray)   = any(ismissing,x)
 checkskip(::AnyMissing,df::DataFrame)  = any(map(i->any(ismissing,getindex(df,i)),names(df)))
-checkskip(::AnyOcean,x::MaskArray)     = any(i->!iszero(i & 0x04),x.mask)
-checkskip(::AnyOcean,x::DataFrame)     = false
-checkskip(nv::NValid,x::MaskArray)     = count(i->iszero(i & 0x01),x.mask) < nv.n
+checkskip(nv::NValid,x::AbstractArray)     = count(ismissing,x) < nv.n
 checkskip(uf::UserFilter,x) = uf.f(x)
 checkskip(::StdZero,x)      = all(i->i==x[1],x)
-docheck(pf::ProcFilter,x)::UInt8 = checkskip(pf,x) ? replacevalue(pf) : 0x00
-docheck(pf::Tuple,x)        = reduce(|,map(i->docheck(i,x),pf))
+docheck(pf::ProcFilter,x)::Bool = checkskip(pf,x)
+docheck(pf::Tuple,x)        = reduce(||,map(i->docheck(i,x),pf))
 
 getprocfilter(f::Function) = (UserFilter(f),)
 getprocfilter(pf::ProcFilter) = (pf,)

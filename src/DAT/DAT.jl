@@ -13,7 +13,6 @@ import DataFrames: DataFrame
 import ProgressMeter: Progress, next!
 using Dates
 import StatsBase.Weights
-using ESDL.CubeAPI.Mask
 global const debugDAT=false
 macro debug_print(e)
   debugDAT && return(:(println($e)))
@@ -26,28 +25,6 @@ const hasparprogress=[false]
 const progresscolor=[:cyan]
 function __init__()
   @require IJulia = "7073ff75-c697-5162-941a-fcdaad2a7d2a" begin progresscolor[1] = :blue end
-end
-
-function mask2miss(a::MaskArray,workAr::MaskArray)
-  copyto!(workAr.data,a.data)
-  copyto!(workAr.mask,a.mask)
-end
-function mask2miss(a::MaskArray,workAr::DataFrame)
-  for ivar in 1:size(a,2), iobs in 1:size(a,1)
-    if iszero(a.mask[iobs,ivar] & 0x01)
-      workAr[iobs,ivar]=a.data[iobs,ivar]
-    else
-      workAr[iobs,ivar]=missing
-    end
-  end
-end
-function miss2mask!(target,source::MaskArray)
-  copyto!(target.data,source.data)
-  copyto!(target.mask,source.mask)
-end
-function miss2mask!(target,source::DataFrame)
-  copyto!(target.data,source)
-  map!(i->ismissing(i) ? 0x01 : 0x00, target.mask,source)
 end
 
 include("registration.jl")
@@ -77,7 +54,7 @@ function setworkarray(c::InputCube)
   wa = createworkarray(eltype(c.cube),ntuple(i->length(c.axesSmall[i]),length(c.axesSmall)))
   c.workarray = wrapWorkArray(c.desc.artype,wa,c.axesSmall)
 end
-createworkarray(T,s)=MaskArray(Array{T}(undef,s...),Array{UInt8}(undef,s...))
+createworkarray(T,s)=Array{T}(undef,s...)
 
 
 
@@ -420,7 +397,7 @@ end
 function allocatecachebuf(ic::Union{InputCube,OutputCube},loopcachesize) where N
   sl = ntuple(i->loopcachesize[i],length(ic.loopinds))
   s = (map(length,ic.axesSmall)...,sl...)
-  ic.handle = MaskArray(zeros(eltype(ic.cube),s...),zeros(UInt8,s...))
+  ic.handle = zeros(eltype(ic.cube),s...)
 end
 
 function init_DATworkers()
@@ -630,11 +607,11 @@ using Base.Cartesian
   end
   #Add mask filter to loop body
   setzeroex = quote end
-  foreach(i->push!(setzeroex.args,:($(outworksyms[i]).mask[:] .= mv)),1:NOUT)
+  foreach(i->push!(setzeroex.args,:($(outworksyms[i]) .= missing)),1:NOUT)
   foreach(1:NIN) do i
     push!(loopBody.args,quote
       mv = docheck(filters[$i],$(inworksyms[i]))
-      if !iszero(mv)
+      if mv
         $setzeroex
       else
         $runBody
@@ -663,17 +640,16 @@ function getSubRange2(work,xin,cols...)
   #println(typeof(xin),cols)
   xview = getSubRange(xin,cols...)
   #println(xview,missrep,typeof(work))
-  mask2miss(xview,work)
+  work.=xview
   return nothing
 end
 
 function setSubRange2(work,xout,cols...)
   xview = getSubRange(xout,cols...)
-  miss2mask!(xview,work)
+  xview.=work
 end
 
-getSubRange(x::MaskArray,cols...) = MaskArray(view(x.data,cols...),view(x.mask,cols...))
-getSubRange(x::Array,cols...)     = view(x,cols...)
+getSubRange(x::AbstractArray,cols...)     = view(x,cols...)
 
 "Calculate an axis permutation that brings the wanted dimensions to the front"
 function getFrontPerm(dc::AbstractCubeData{T},dims) where T
