@@ -15,7 +15,7 @@ function linreg(x,y)
   a,b
 end
 
-function detrendTS!(outar::Matrix,xin::Vector{T}) where T
+function detrendTS!(outar::AbstractMatrix,xin::AbstractVector{T}) where T
     x=T[i for i in 1:length(xin)]
     a,b=linreg(x,xin)
     for i in eachindex(xin)
@@ -46,7 +46,12 @@ function filterTSFFT(c::AbstractCubeData;kwargs...)
   mapCube(filterTSFFT,c,getNpY(c);indims=indims,outdims=outdims,kwargs...)
 end
 
-function filterTSFFT(outar::Matrix{T},y::Vector{T}, annfreq::Number;nharm::Int=3) where T<:Real
+function filterTSFFT(outar::AbstractMatrix,y::AbstractVector, annfreq::Number;nharm::Int=3)
+
+    maski = outar.mask
+    outar = outar.data
+
+    y = y.data
 
     size(outar) == (length(y),4) || error("Wrong size of output array")
 
@@ -98,6 +103,6 @@ function filterTSFFT(outar::Matrix{T},y::Vector{T}, annfreq::Number;nharm::Int=3
         outar[i,2]=real(fyout[i])
         outar[i,4]=real(fy[i])
     end
-    outar
+    maski .= 0x00
 end
 end

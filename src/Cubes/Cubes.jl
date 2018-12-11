@@ -205,7 +205,7 @@ function Base.getindex(c::AbstractCubeData,i::IndR...)
   aout = MaskArray(Array{eltype(c)}(undef,size(r)),fill(0xff,size(r)))
   _read(c,aout,r)
   squeezedims = totuple(findall(j->isa(j,Integer),i))
-  Array(dropdims(aout,dims=squeezedims))
+  Array{Union{eltype(c),Missing}}(dropdims(aout,dims=squeezedims))
 end
 Base.read(d::AbstractCubeData)=getindex(d,fill(Colon(),ndims(d))...)
 
