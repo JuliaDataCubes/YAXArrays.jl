@@ -4,6 +4,11 @@ abstract type AbstractMmapCube{T,N}<:AbstractCubeData{T,N} end
 using Serialization
 using Distributed
 using Mmap
+using SentinelMissings
+unmiss(::Type{Union{T,Missing}}) where T = T
+unmiss(::Type{T}) where T = T
+missval(::Type{T}) where T<: Integer = typemax(T)
+missval(::Type{T}) where T<: AbstractFloat = convert(T,NaN)
 
 """
     MmapCube{T,N}
@@ -44,7 +49,7 @@ function MmapCube(axlist;folder=mktempdir(),T=Float32,persist::Bool=true,overwri
     serialize(f,T)
   end
   s=map(length,axlist)
-  open(f->write(f,zeros(T,s...)),joinpath(folder,"data.bin"),"w")
+  open(f->write(f,fill(missval(unmiss(T)),s...)),joinpath(folder,"data.bin"),"w")
   ntc=MmapCube{T,length(axlist)}(axlist,folder,persist,properties)
   finalizer(cleanMmapCube,ntc)
   ntc
@@ -58,9 +63,9 @@ function getmmaphandles(folder, axlist,T;mode="r")
 
   s=map(length,axlist)
   ar = open(joinpath(folder,"data.bin"),mode) do fd
-    Mmap.mmap(fd,Array{T,length(axlist)},totuple(s))
+    Mmap.mmap(fd,Array{unmiss(T),length(axlist)},totuple(s))
   end
-  ar
+  as_sentinel(ar,missval(unmiss(T)))
 end
 
 function _write(y::MmapCube,thedata::AbstractArray,r::CartesianIndices{N}) where N

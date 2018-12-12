@@ -820,6 +820,7 @@ end
 show(io::IO,::MIME"text/markdown",v::Vector{ESDLVarInfo})=foreach(x->show(io,MIME"text/markdown"(),x),v)
 
 getCopy(x::AbstractArray{Union{T,Missing}}) where T = zeros(T,size(x)),T
+getCopy(x::Array{Union{T,Missing}}) where T = zeros(T,size(x)),T
 getCopy(x::AbstractArray) = zeros(eltype(x),size(x)),eltype(x)
 getCopy(x::Array) = x,eltype(x)
 

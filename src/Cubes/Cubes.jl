@@ -121,7 +121,6 @@ function getSubRange(c::AbstractArray,i...;write::Bool=true)
   return view(c,i...)
 end
 getSubRange(c::Tuple{AbstractArray{T,0},AbstractArray{UInt8,0}};write::Bool=true) where {T}=c
-getSubRange(c::AbstractArray,i...) = view(c,i...)
 
 """
     gethandle(c::AbstractCubeData, [block_size])
@@ -169,9 +168,12 @@ function Base.getindex(c::AbstractCubeData,i::IndR...)
   length(i)==ndims(c) || error("You must provide $(ndims(c)) indices")
   ax = totuple(caxes(c))
   r = CartesianIndices(map((ii,iax)->getfirst(ii,iax):getlast(ii,iax),i,ax))
+  lall = map((rr,ii)->(length(rr),!isa(ii,Integer)),r.indices,i)
+  lshort = filter(ii->ii[2],collect(lall))
+  newshape = map(ii->ii[1],lshort)
   aout = Array{eltype(c)}(undef,size(r))
   _read(c,aout,r)
-  reshape(aout,map(length,ax))
+  reshape(aout,newshape...)
 end
 Base.read(d::AbstractCubeData)=getindex(d,fill(Colon(),ndims(d))...)
 

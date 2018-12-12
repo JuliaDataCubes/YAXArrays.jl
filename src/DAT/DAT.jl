@@ -73,13 +73,14 @@ mutable struct OutputCube
   workarray::Any
   handle::Any                       #Cache to write the output to
   folder::String                   #Folder to store the cube to
-  outtype::DataType
+  outtype
 end
 getcube(c::OutputCube)      = c.cube
 getsmallax(c::Union{InputCube,OutputCube})=c.axesSmall
 getAxis(desc,c::OutputCube) = getAxis(desc,c.cube)
 getAxis(desc,c::InputCube)  = getAxis(desc,c.cube)
 function setworkarray(c::OutputCube)
+  @show eltype(c.cube)
   wa = createworkarray(eltype(c.cube),ntuple(i->length(c.axesSmall[i]),length(c.axesSmall)))
   c.workarray = wrapWorkArray(c.desc.artype,wa,c.axesSmall)
 end
@@ -176,7 +177,7 @@ end
 
 getOuttype(outtype::Int,cdata)=eltype(cdata[outtype])
 function getOuttype(outtype::DataType,cdata)
-  isconcretetype(outtype) ? outtype : eltype(cdata[1])
+  outtype
 end
 
 mapCube(fu::Function,cdata::AbstractCubeData,addargs...;kwargs...)=mapCube(fu,(cdata,),addargs...;kwargs...)
@@ -344,7 +345,8 @@ end
 end
 
 function getRetCubeType(oc,ispar,max_cache)
-  eltype=typeof(oc.desc.genOut(oc.outtype))
+
+  eltype=Union{typeof(oc.desc.genOut(oc.outtype)),Missing}
   outsize=sizeof(eltype)*(length(oc.allAxes)>0 ? prod(map(length,oc.allAxes)) : 1)
   if string(oc.desc.retCubeType)=="auto"
     if ispar || outsize>max_cache
@@ -366,7 +368,7 @@ function generateOutCube(::Type{T},eltype,oc::OutputCube,loopCacheSize) where T<
   outar=Array{eltype}(undef,newsize...)
   genFun=oc.desc.genOut
   map!(_->genFun(eltype),outar,1:length(outar))
-  oc.cube = Cubes.CubeMem(oc.allAxes,outar,zeros(UInt8,newsize...))
+  oc.cube = Cubes.CubeMem(oc.allAxes,outar)
 end
 
 generateOutCubes(dc::DATConfig)=foreach(dc.outcubes) do c

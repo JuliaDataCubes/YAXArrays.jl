@@ -10,7 +10,7 @@ function removeMSC(aout,ain,NpY::Integer,tmsc,tnmsc)
     #Start loop through all other variables
     fillmsc(1,tmsc,tnmsc,ain,NpY)
     subtractMSC(tmsc,ain,aout,NpY)
-    xout
+    nothing
 end
 
 function alloc_msc_helpers(cube)
@@ -36,7 +36,7 @@ function removeMSC(c::AbstractCubeData;kwargs...)
         zeros(NpY),
         zeros(Int,NpY);
         indims  = InDims( "Time" ),
-        outdims = OutDims("Time" ),
+        outdims = OutDims("Time" , retCubeType = MmapCube),
         kwargs...
     )
 end
