@@ -593,7 +593,7 @@ using Base.Cartesian
   append!(loopBody.args,subIn)
   append!(callargs,inworksyms)
   if LR
-    exloopdict = Expr(:tuple,[:($(loopnames[il]) = ($(Symbol("i_$il")),loopaxes[$il].values[$(Symbol("i_$il"))])) for il=1:Nloopvars]...)
+    exloopdict = Expr(:tuple,[:($(loopnames[il]) = ($(Symbol("i_$il"))+first(loopRanges[$il])-1,loopaxes[$il].values[$(Symbol("i_$il"))+first(loopRanges[$il])-1])) for il=1:Nloopvars]...)
     push!(loopBody.args,:(axdict = $exloopdict))
     push!(callargs,:axdict)
   end

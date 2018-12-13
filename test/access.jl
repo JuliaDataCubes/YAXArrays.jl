@@ -83,5 +83,32 @@ saveCube(data1,"mySavedCube")
 data3=readCubeData(loadCube("mySavedCube"))
 @test data1.axes==data3.axes
 @test data1.data==data3.data
+
+# Test loadOrGenerate macro
+d=getCubeData(c,time=2001:2005,longitude=(30,31),latitude=(50,51),variable=["gross_primary_productivity","net_ecosystem_exchange"])
+
+rmCube("Anomalies")
+@loadOrGenerate danom=>"Anomalies" begin
+    danom = removeMSC(d)
+end
+
+@test danom isa ESDL.CubeMem
+
+@loadOrGenerate danom=>"Anomalies" begin
+    error("This should never execute")
+end;
+@test danom isa ESDL.Cubes.MmapCube
+
+
+#Test exportcube
+@test ncread(ncf,"Lon") == 30.125:0.25:30.875
+@test ncread(ncf,"Lat") == 50.875:-0.25:50.125
+@test ncgetatt(ncf,"Time","units") == "days since 2001-01-01"
+@test getAxis("Time",danom).values .- Date(2001) == Day.(ncread(ncf,"Time"))
+
+
+@test ncread(ncf,"gross_primary_productivity")[:,:,:] == permutedims(danom[:,:,:,1],(2,3,1))
+neear = replace(danom[:,:,:,2],missing=>-9999.0)
+@test all(isequal.(ncread(ncf,"net_ecosystem_exchange")[:,:,:],permutedims(neear,(2,3,1))))
 end
 end

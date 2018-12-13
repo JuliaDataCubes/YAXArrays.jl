@@ -1,12 +1,10 @@
 export MmapCube,getmmaphandles
-import ..ESDLTools.totuple
+import ..ESDLTools: totuple, unmiss
 abstract type AbstractMmapCube{T,N}<:AbstractCubeData{T,N} end
 using Serialization
 using Distributed
 using Mmap
 using SentinelMissings
-unmiss(::Type{Union{T,Missing}}) where T = T
-unmiss(::Type{T}) where T = T
 missval(::Type{T}) where T<: Integer = typemax(T)
 missval(::Type{T}) where T<: AbstractFloat = convert(T,NaN)
 
@@ -65,10 +63,6 @@ function getmmaphandles(folder, axlist,T;mode="r")
   ar = open(joinpath(folder,"data.bin"),mode) do fd
     Mmap.mmap(fd,Array{SentinelMissings.SentinelMissing{unmiss(T),missval(unmiss(T))},length(axlist)},totuple(s))
   end
-  # @show missval(unmiss(T))
-  # @show eltype(ar)
-  # @show size(ar)
-  # as_sentinel(ar,missval(unmiss(T)))
   ar
 end
 
@@ -140,7 +134,7 @@ Deletes a memory-mapped data cube.
 """
 function rmCube(name::String)
   newfolder=joinpath(workdir[1],name)
-  isdir(newfolder) || error("$(name) does not exist")
-  rm(newfolder,recursive=true)
+  isdir(newfolder) && rm(newfolder,recursive=true)
+  nothing
 end
 export rmCube

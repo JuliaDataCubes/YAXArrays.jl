@@ -20,7 +20,7 @@ function _read(x::PermCube{T,N},thedata::AbstractArray,r::CartesianIndices{N}) w
   iperm=getiperm(perm)
   r2=CartesianIndices((permtuple(r.indices,iperm)))
   sr = size(r2)
-  zeros(T,sr...)
+  aout = zeros(T,sr...)
   _read(x.parent,aout,r2)
   permutedims!(thedata,aout,perm)
 

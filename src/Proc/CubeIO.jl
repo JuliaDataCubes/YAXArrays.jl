@@ -4,6 +4,7 @@ using ..DAT
 using ..CubeAPI
 using ..Proc
 
+import ...ESDLTools: unmiss
 import NetCDF.ncread, NetCDF.ncclose
 import StatsBase.Weights
 import StatsBase.sample
@@ -104,7 +105,10 @@ function writefun(xout,xin::AbstractArray{Union{Missing,T}},a,nd,cont_loop,filen
   splinds = Iterators.filter(i->!in(i,used_syms),keys(a))
   vn = join(string.([a[s][2] for s in splinds]),"_")
   isempty(vn) && (vn="layer")
-
+  @show start_vec
+  @show count_vec
+  @show vn
+  @show a
   ncwrite(x,filename,vn,start=start_vec,count=count_vec)
 end
 
@@ -129,7 +133,7 @@ function exportcube(r::AbstractCubeData,filename::String;priorities = Dict("LON"
   dims = map(NcDim,ax_cont)
   isempty(ax_cat) && (ax_cat=[VariableAxis(["layer"])])
   it = map(i->i.values,ax_cat)
-  vars = NcVar[NcVar(join(collect(string.(a)),"_"),dims,t=eltype(r),atts=Dict("missing_value"=>-9999.0)) for a in product(it...)]
+  vars = NcVar[NcVar(join(collect(string.(a)),"_"),dims,t=unmiss(eltype(r)),atts=Dict("missing_value"=>-9999.0)) for a in product(it...)]
   file = NetCDF.create(filename,vars)
   for d in dims
     ncwrite(d.vals,filename,d.name)
