@@ -76,8 +76,6 @@ mask2=CubeMem(d2.axes[1:2],rand(1:10,4,4),zeros(UInt8,4,4),Dict("labels"=>Dict(i
 oogrouped = mapCube(Mean,d2,by=(mask,))
 @test isa(oogrouped.axes[1],CategoricalAxis{String,:Label})
 
-@show oogrouped.data, oogrouped.mask
-
 oogrouped2 = mapCube(Mean,d2,by=(mask2,))
 
 for k=1:10

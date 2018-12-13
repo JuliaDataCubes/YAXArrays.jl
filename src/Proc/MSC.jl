@@ -36,7 +36,7 @@ function removeMSC(c::AbstractCubeData;kwargs...)
         zeros(NpY),
         zeros(Int,NpY);
         indims  = InDims( "Time" ),
-        outdims = OutDims("Time" , retCubeType = MmapCube),
+        outdims = OutDims("Time" ),
         kwargs...
     )
 end
@@ -77,7 +77,7 @@ function getMSC(c::AbstractCubeData;kwargs...)
   mapCube(getMSC,c,zeros(Int,getNpY(c)),zeros(Union{Float64,Missing},getNpY(c));indims=indims,outdims=outdims,kwargs...)
 end
 
-function getMSC(aout::AbstractVector,ain::AbstractVector,nmsc,fmsc;imscstart::Int=1,NpY=length(aout.data))
+function getMSC(aout::AbstractVector,ain::AbstractVector,nmsc,fmsc;imscstart::Int=1,NpY=length(aout))
     NpY=length(aout)
     fillmsc(imscstart,fmsc,nmsc,ain,NpY)
     copyto!(aout,fmsc)
@@ -123,19 +123,19 @@ function getMedSC(c::AbstractCubeData;kwargs...)
   mapCube(getMedSC,c;indims=indims,outdims=outdims,kwargs...)
 end
 
-function getMedSC(aout::AbstractVector,ain::AbstractVector)
+function getMedSC(aout::AbstractVector{Union{T,Missing}},ain::AbstractVector) where T
     #Reshape the cube to squeeze unimportant variables
-    NpY=length(xout)
-    yvec=eltype(xout)[]
+    NpY=length(aout)
+    yvec=T[]
     q=[convert(eltype(yvec),0.5)]
-    for doy=1:length(xout)
+    for doy=1:length(aout)
         empty!(yvec)
-        for i=doy:NpY:length(xin)
-            ismissing(xin[i]) || push!(yvec,xin[i])
+        for i=doy:NpY:length(ain)
+            ismissing(ain[i]) || push!(yvec,ain[i])
         end
-        xout[doy] = isempty(yxvec) ? missing : quantile!(yvec,q)[1]
+        aout[doy] = isempty(yvec) ? missing : quantile!(yvec,q)[1]
     end
-    xout
+    aout
 end
 
 

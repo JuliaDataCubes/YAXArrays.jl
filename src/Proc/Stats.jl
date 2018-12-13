@@ -18,7 +18,8 @@ Normalize a time series to zeros mean and unit variance
 **Output Axes** `TimeAxis`
 """
 function normalizeTS(c::AbstractCubeData;kwargs...)
-  mapCube(normalizeTS,c;indims=InDims("Time",filter = NValid(2)),outdims=OutDims("Time"),kwargs...)
+  println("Normalizing")
+  mapCube(normalizeTS,c;indims=InDims("Time",filter=NValid(3)),outdims=OutDims("Time"),kwargs...)
 end
 function normalizeTS(xout::AbstractVector,xin::AbstractVector)
   m = mean(skipmissing(xin))

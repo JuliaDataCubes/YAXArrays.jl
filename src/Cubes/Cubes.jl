@@ -110,10 +110,6 @@ Base.size(c::CubeMem,i)=size(c.data,i)
 Base.similar(c::CubeMem)=CubeMem(c.axes,similar(c.data))
 Base.ndims(c::CubeMem{T,N}) where {T,N}=N
 
-#getSingVal(c::CubeMem{T,N},i...;write::Bool=true) where {T,N}=(c.data[i...],c.mask[i...])
-#getSingVal(c::CubeMem{T,0};write::Bool=true) where {T}=(c.data[1],c.mask[1])
-#getSingVal(c::CubeAxis{T},i;write::Bool=true) where {T}=(c.values[i],nothing)
-
 readCubeData(c::CubeMem)=c
 
 function getSubRange(c::AbstractArray,i...;write::Bool=true)

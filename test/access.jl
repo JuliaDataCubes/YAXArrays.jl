@@ -83,6 +83,5 @@ saveCube(data1,"mySavedCube")
 data3=readCubeData(loadCube("mySavedCube"))
 @test data1.axes==data3.axes
 @test data1.data==data3.data
-@test data1.mask==data3.mask
 end
 end
