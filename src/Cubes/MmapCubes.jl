@@ -63,9 +63,13 @@ function getmmaphandles(folder, axlist,T;mode="r")
 
   s=map(length,axlist)
   ar = open(joinpath(folder,"data.bin"),mode) do fd
-    Mmap.mmap(fd,Array{unmiss(T),length(axlist)},totuple(s))
+    Mmap.mmap(fd,Array{SentinelMissings.SentinelMissing{unmiss(T),missval(unmiss(T))},length(axlist)},totuple(s))
   end
-  as_sentinel(ar,missval(unmiss(T)))
+  # @show missval(unmiss(T))
+  # @show eltype(ar)
+  # @show size(ar)
+  # as_sentinel(ar,missval(unmiss(T)))
+  ar
 end
 
 function _write(y::MmapCube,thedata::AbstractArray,r::CartesianIndices{N}) where N

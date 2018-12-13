@@ -4,7 +4,7 @@ using Dates
 import Base.Iterators
 using Distributed
 using Statistics
-#addprocs(2)
+addprocs(2)
 @everywhere using ESDL, Statistics
 
 @everywhere function sub_and_return_mean(xout1,xout2,xin)
@@ -29,7 +29,7 @@ function doTests()
 
   dmem=readCubeData(d)
 
-  @testset "Simple statistics using reduceCube" begin
+  @testset "Simple statistics using mapslices" begin
   # Basic statistics
   m=mapslices(mean∘skipmissing,d,"Time")
 
@@ -101,7 +101,7 @@ end
 @testset "Parallel processing" begin
 doTests()
 end
-#rmprocs(workers())
+rmprocs(workers())
 
 @testset "Single proc processing" begin
 doTests()

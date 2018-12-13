@@ -9,7 +9,7 @@ import ...ESDL
 import ...ESDL.workdir
 import DataFrames
 import Distributed: nprocs
-import DataFrames: DataFrame
+import DataFrames: DataFrame, ncol
 import ProgressMeter: Progress, next!
 using Dates
 import StatsBase.Weights
@@ -638,10 +638,16 @@ using Base.Cartesian
 end
 
 function getSubRange2(work,xin,cols...)
-  #println(typeof(xin),cols)
   xview = getSubRange(xin,cols...)
-  #println(xview,missrep,typeof(work))
   work.=xview
+  return nothing
+end
+
+function getSubRange2(work::DataFrame,xin,cols...)
+  xview = getSubRange(xin,cols...)
+  for i = 1:size(xview,2)
+    work[i].=view(xview,:,i)
+  end
   return nothing
 end
 
