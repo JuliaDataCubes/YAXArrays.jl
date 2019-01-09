@@ -1,6 +1,7 @@
 using ESDL
 using Test
 
+include("table.jl")
 include("access.jl")
 include("axes.jl")
 include("analysis.jl")
