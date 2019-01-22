@@ -206,7 +206,7 @@ For example the following would caluclate a weighted mean over a cube weighted b
 area and grouped by country and month
 
 ````julia
-fittable(iter,WeightedMean,:tair,weight=(i->cosd(i.lat)),by=(i->month(i.time),:country))
+fittable(iter,WeightedMean,:tair,weight=(i->abs(cosd(i.lat))),by=(i->month(i.time),:country))
 ````
 """
 function fittable(tab,o,fitsym;by=(),weight=nothing)
