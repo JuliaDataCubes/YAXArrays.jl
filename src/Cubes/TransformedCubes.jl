@@ -121,7 +121,7 @@ chunkoffset(v::TransformedCube)=chunkoffset(v.parents[1])
 using Base.Cartesian
 function _read(x::TransformedCube{T,N},thedata::AbstractArray,r::CartesianIndices{N}) where {T,N}
   ainter=map(x.parents) do c
-    aouti=Array{eltype(c)}(undef,size(aout))
+    aouti=Array{eltype(c)}(undef,size(thedata))
     _read(c,aouti,r)
     aouti
   end
@@ -164,6 +164,7 @@ axis `catAxis`
 """
 function concatenateCubes(cl,catAxis::CubeAxis)
   length(catAxis.values)==length(cl) || error("catAxis must have same length as cube list")
+  @show cl[1]
   axlist=copy(caxes(cl[1]))
   T=eltype(cl[1])
   N=ndims(cl[1])

@@ -46,14 +46,19 @@ function filterTSFFT(c::AbstractCubeData;kwargs...)
   mapCube(filterTSFFT,c,getNpY(c);indims=indims,outdims=outdims,kwargs...)
 end
 
+unmiss(::Type{T}) where T =T
+unmiss(::Type{Union{T,Missing}}) where T=T
+
 function filterTSFFT(outar::AbstractMatrix,y::AbstractVector, annfreq::Number;nharm::Int=3)
+
+  any(ismissing,y) && return outar[:].=missing
 
     size(outar) == (length(y),4) || error("Wrong size of output array")
 
     detrendTS!(outar,y)
     l        = length(y)
 
-    fy       = Complex{eltype(y)}[y[i]-outar[i,1] for i=1:l]
+    fy       = Complex{unmiss(eltype(y))}[y[i]-outar[i,1] for i=1:l]
     fft!(fy)
     fyout    = similar(fy)
     czero    = zero(eltype(fy))

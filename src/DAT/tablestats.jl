@@ -176,23 +176,20 @@ function tooutcube(
   outaxstat = getStatOutAxes(iter,agg)
   outax = (outaxstat...,axby...)
   snew = map(length,outax)
-  aout = zeros(cubeeltype(agg),snew)
-  mout = fill(0x01,snew)
+  aout = fill!(zeros(Union{cubeeltype(agg),Missing},snew),missing)
 
-  filloutar(aout,mout,convdictall,agg,map(i->1:length(i),outaxstat))
+  filloutar(aout,convdictall,agg,map(i->1:length(i),outaxstat))
 
-  CubeMem(collect(CubeAxis,outax),aout,mout)
+  CubeMem(collect(CubeAxis,outax),aout)
 end
-function filloutar(aout,mout,convdictall,agg::GroupedOnlineAggregator,s)
+function filloutar(aout,convdictall,agg::GroupedOnlineAggregator,s)
     for (k,v) in agg.d
         i = CartesianIndices((s...,map((i,d)->d[i]:d[i],k,convdictall)...))
         aout[i.indices...].=value(v)
-        mout[i.indices...].=0x00
     end
 end
-function filloutar(aout,mout,convdictall,agg,g)
+function filloutar(aout,convdictall,agg,g)
     aout[:]=value(agg.o)
-    fill!(mout,0x00)
 end
 """
     fittable(tab,o,fitsym;by=(),weight=nothing)

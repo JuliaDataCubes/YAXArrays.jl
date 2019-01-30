@@ -13,11 +13,6 @@ function removeMSC(aout,ain,NpY::Integer,tmsc,tnmsc)
     nothing
 end
 
-function alloc_msc_helpers(cube)
-  NpY=getNpY(cube)
-  (NpY,zeros(Float64,NpY),zeros(Int,NpY))
-end
-
 """
     removeMSC(c::AbstractCubeData)
 
@@ -33,7 +28,7 @@ function removeMSC(c::AbstractCubeData;kwargs...)
         removeMSC,
         c,
         NpY,
-        zeros(NpY),
+        zeros(Union{Missing,Float64},NpY),
         zeros(Int,NpY);
         indims  = InDims( "Time" ),
         outdims = OutDims("Time" ),

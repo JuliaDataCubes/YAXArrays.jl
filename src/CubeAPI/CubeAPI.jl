@@ -563,6 +563,7 @@ expandknownvars(v::String)=expandknownvars([v])
 
 ismiss(k::Integer)=(k==typemax(k))
 ismiss(k::AbstractFloat)=isnan(k)
+ismiss(k::Missing)=true
 
 function getCubeData(cube::UCube,
   variable::Vector{T},

@@ -304,6 +304,7 @@ function runLoop(dc::DATConfig)
     pmapfun = isdefined(:Main,:ProgressMeter) ? progress_pmap : pmap
     pmapfun(runLooppar,allRanges)
   else
+    @show isdefined(:Main,:ProgressMeter)
     runLoop(dc,allRanges,isdefined(:Main,:ProgressMeter))
   end
   dc.outcubes

@@ -202,7 +202,7 @@ function axVal2Index(axis::CategoricalAxis{String},v::String;fuzzy::Bool=false)
   end
   r
 end
-axVal2Index(x,v;fuzzy::Bool=false)=min(max(v,1),length(x))
+axVal2Index(x,v::CartesianIndex{1};fuzzy::Bool=false)=min(max(v.I[1],1),length(x))
 
 abstract type AxisDescriptor end
 getAxis(d::Any,v::Any)=error("getAxis not defined for $d $v")
