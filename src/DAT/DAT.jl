@@ -10,7 +10,7 @@ import ...ESDL.workdir
 import DataFrames
 import Distributed: nprocs
 import DataFrames: DataFrame, ncol
-import ProgressMeter: Progress, next!
+import ProgressMeter: Progress, next!, progress_pmap
 using Dates
 import StatsBase.Weights
 global const debugDAT=false
@@ -203,6 +203,7 @@ Map a given function `fun` over slices of the data cube `cube`.
 * `inplace` does the function write to an output array inplace or return a single value> defaults to `true`
 * `ispar` boolean to determine if parallelisation should be applied, defaults to `true` if workers are available.
 * `outfolder` a folder where the output cube is stroed, defaults to the result of `ESDLdir()`
+* `showprog` boolean indicating if a ProgressMeter shall be shown
 * `kwargs` additional keyword arguments passed to the inner function
 
 The first argument is always the function to be applied, the second is the input cube or
@@ -220,6 +221,7 @@ function mapCube(fu::Function,
     ispar=nprocs()>1,
     debug=false,
     include_loopvars=false,
+    showprog=true,
     kwargs...)
   @debug_print "Check if function is registered"
   @debug_print "Generating DATConfig"
@@ -239,7 +241,7 @@ function mapCube(fu::Function,
   generateworkarrays(dc)
   @debug_print "Running main Loop"
   debug && return(dc)
-  runLoop(dc)
+  runLoop(dc,showprog)
   @debug_print "Finalizing Output Cube"
 
   if length(dc.outcubes)==1
@@ -297,15 +299,14 @@ end
 updateinars(dc,r)=updatears(dc,dc.incubes,r,_read)
 writeoutars(dc,r)=updatears(dc,dc.outcubes,r,_write)
 
-function runLoop(dc::DATConfig)
+function runLoop(dc::DATConfig,showprog)
   allRanges=distributeLoopRanges(totuple(dc.loopCacheSize),totuple(map(length,dc.LoopAxes)),getchunkoffsets(dc))
   #@show collect(allRanges)
   if dc.ispar
-    pmapfun = isdefined(:Main,:ProgressMeter) ? progress_pmap : pmap
+    pmapfun = showprog ? progress_pmap : pmap
     pmapfun(runLooppar,allRanges)
   else
-    @show isdefined(:Main,:ProgressMeter)
-    runLoop(dc,allRanges,isdefined(:Main,:ProgressMeter))
+    runLoop(dc,allRanges,showprog)
   end
   dc.outcubes
 end

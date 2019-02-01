@@ -167,7 +167,8 @@ getByAxes(iter,agg)=()
 
 function tooutcube(
     agg,
-    iter
+    iter,
+    post
   )
   outaxby = getByAxes(iter,agg)
   axby = map(i->i[1],outaxby)
@@ -178,7 +179,7 @@ function tooutcube(
   snew = map(length,outax)
   aout = fill!(zeros(Union{cubeeltype(agg),Missing},snew),missing)
 
-  filloutar(aout,convdictall,agg,map(i->1:length(i),outaxstat))
+  filloutar(aout,convdictall,agg,map(i->1:length(i),outaxstat),post)
 
   CubeMem(collect(CubeAxis,outax),aout)
 end
@@ -232,9 +233,9 @@ function collectval(row::Union{Tuple, Vector},::Val{SY}) where SY
     val = collectedValue{typeof(v),typeof(row[end]),SY}(v, row[end])
 end
 
-function cubefittable(tab,o,fitsym;kwargs...)
+function cubefittable(tab,o,fitsym;post=OnlineStats.value,kwargs...)
   agg=fittable(tab,o,fitsym;kwargs...)
-  tooutcube(agg,tab)
+  tooutcube(agg,tab,post)
 end
 function fittable(
   tab,

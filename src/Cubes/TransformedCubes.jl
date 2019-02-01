@@ -164,7 +164,6 @@ axis `catAxis`
 """
 function concatenateCubes(cl,catAxis::CubeAxis)
   length(catAxis.values)==length(cl) || error("catAxis must have same length as cube list")
-  @show cl[1]
   axlist=copy(caxes(cl[1]))
   T=eltype(cl[1])
   N=ndims(cl[1])
