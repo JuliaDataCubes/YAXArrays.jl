@@ -24,9 +24,9 @@ end
 #This is probably not the final solution, we define a set of static variables that are treated differently when reading
 const static_vars = Set(["water_mask","country_mask","srex_mask"])
 const country_numeric_labels = include("countrylabels.jl")
-const country_numeric_alpha_2 = include("country_iso_numeric_iso_alpha_2.jl")
-const country_numeric_alpha_3 = include("country_iso_numeric_iso_alpha_3.jl")
-const countrylabels = country_numeric
+const country_numeric_alpha_2 = include("country_iso_numeric_iso_alpha2.jl")
+const country_numeric_alpha_3 = include("country_iso_numeric_iso_alpha3.jl")
+const countrylabels = country_numeric_labels
 const srexlabels = include("srexlabels.jl")
 include("vardict.jl")
 const known_labels = Dict("water_mask"=>Dict(0x01=>"land",0x02=>"water"),"country_mask"=>countrylabels,"srex_mask"=>srexlabels)
