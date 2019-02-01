@@ -1,4 +1,4 @@
-import OnlineStats: OnlineStat, fit!, value
+import OnlineStats: OnlineStat, Extrema, fit!, value
 import IterTools
 using WeightedOnlineStats
 import WeightedOnlineStats: WeightedOnlineStat
@@ -49,6 +49,7 @@ cubeeltype(t::GroupedOnlineAggregator{T}) where T=cubeeltype(T)
 cubeeltype(t::Type{<:Dict{<:Any,T}}) where T = cubeeltype(T)
 cubeeltype(t::Type{<:WeightedOnlineStat{T}}) where T = T
 cubeeltype(t::Type{<:WeightedCovMatrix{T}}) where T = T
+cubeeltype(t::Type{<:Extrema{T, <:Any}}) where T = T
 
 
 function GroupedOnlineAggregator(O::OnlineStat,s::Symbol,by,w,iter) where N
@@ -145,6 +146,9 @@ getStatType(t::Type{<:Dict{<:Any,T}}) where T = T
 
 getStatOutAxes(tab,agg)=getStatOutAxes(tab,agg,getStatType(agg))
 getStatOutAxes(tab,agg,::Type{<:OnlineStat})=()
+function getStatOutAxes(tab, agg, ::Type{<:Extrema})
+    ( CategoricalAxis(:Extrema, ["min", "max"]), )
+end
 function getStatOutAxes(tab,agg,::Type{<:WeightedCovMatrix})
     nvar = length(fieldnames(eltype(tab)))
     ax = tab.loopaxes[1]
