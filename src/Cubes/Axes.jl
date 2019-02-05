@@ -235,13 +235,13 @@ function findAxis(bt::ByType,v::Vector{S}) where S<:CubeAxis
   for i=1:length(v)
     isa(v[i],a) && return i
   end
-  return 0
+  return nothing
 end
 function findAxis(bs::ByName,axlist::Vector{T}) where T<:CubeAxis
   matchstr=bs.name
   ism=map(i->startswith(lowercase(axname(i)),lowercase(matchstr)),axlist)
   sism=sum(ism)
-  sism==0 && return 0
+  sism==0 && return nothing
   sism>1 && error("Multiple axes found matching string $matchstr")
   i=findfirst(ism)
 end
@@ -251,8 +251,8 @@ function findAxis(bv::ByValue,axlist::Vector{T}) where T<:CubeAxis
 end
 function getAxis(desc,axlist::Vector{T}) where T<:CubeAxis
   i = findAxis(desc,axlist)
-  if i==0
-    error("Axis $desc not found in $axlist")
+  if isa(i,Nothing)
+    return nothing
   else
     return axlist[i]
   end

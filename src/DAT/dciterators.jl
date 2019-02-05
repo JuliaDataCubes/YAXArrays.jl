@@ -42,6 +42,21 @@ end
 Base.IteratorSize(::Type{<:CubeIterator})=Base.HasLength()
 Base.IteratorEltype(::Type{<:CubeIterator})=Base.HasEltype()
 Base.eltype(i::Type{<:CubeIterator{A,B,C,D,E,F}}) where {A,B,C,D,E,F} = F
+# function splitIterator(ci::CubeIterator)
+#   t=typeof(ci)
+#   map(ci.r) do r
+#     dcnew = deepcopy(ci.dc)
+#     inars = getproperty.(dcnew.incubes,:handle)
+#     inarsbc = map(dcnew.incubes) do ic
+#       allax = falses(length(dc.LoopAxes))
+#       allax[icnew.loopinds].=true
+#       PickAxisArray(icnew.handle,allax)
+#     end
+#     loopaxes=deepcopy(ci.loopaxes)
+#     t(dcnew,r,inars,inarsbc,loopaxes)
+#   end
+# end
+
 # function cubeeltypes(::Type{<:CubeIterator{<:Any,ART}}) where ART
 #   allt = gettupletypes.(gettupletypes(ART))
 #   map(i->Union{eltype(i[1]),Missing},allt)
