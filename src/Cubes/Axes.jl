@@ -279,8 +279,8 @@ function getOutAxis(desc::Tuple{ByInference},axlist,incubes,pargs,f)
       i = findall(i->i==s,length.(axlist))
       if length(i)==1
         return axlist[i[1]]
-      else
-        info("Found multiple matching axes for output dimension $il")
+      elseif length(i)>1
+        @info "Found multiple matching axes for output dimension $il"
       end
     end
     return RangeAxis("OutAxis$(il)",1:s)

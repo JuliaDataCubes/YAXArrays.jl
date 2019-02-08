@@ -38,7 +38,7 @@ struct UserFilter{F} <: ProcFilter
   f::F
 end
 
-docheck(::NoFilter)         = 0x00
+checkskip(::NoFilter,x)         = false
 checkskip(::AllMissing,x::AbstractArray)   = all(ismissing,x)
 checkskip(::AllMissing,df::DataFrame)  = any(map(i->all(ismissing,getindex(df,i)),names(df)))
 checkskip(::AnyMissing,x::AbstractArray)   = any(ismissing,x)
