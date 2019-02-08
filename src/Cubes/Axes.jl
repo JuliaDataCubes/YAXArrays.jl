@@ -203,7 +203,11 @@ function axVal2Index(axis::CategoricalAxis{String},v::String;fuzzy::Bool=false)
   r
 end
 axVal2Index(x,v::CartesianIndex{1};fuzzy::Bool=false)=min(max(v.I[1],1),length(x))
-
+function axVal2Index(x,v;fuzzy::Bool=false)
+  i = findfirst(isequal(v),x.values)
+  isnothing(i) && error("Value $v not found in x")
+  return i
+end
 abstract type AxisDescriptor end
 getAxis(d::Any,v::Any)=error("getAxis not defined for $d $v")
 struct ByName <: AxisDescriptor
