@@ -28,6 +28,7 @@ function YearStepRange(start::Date,stop::Date,step::Day)
     NPY=ceil(Int,366/Dates.value(step))
     YearStepRange(startyear,startst,stopyear,stopst,Dates.value(step),NPY)
 end
+Base.in(d1::Date,av::YearStepRange) = any(isequal(d1),av)
 function Base.length(x::YearStepRange)
     (-x.startst+1+x.stopst+(x.stopyear-x.startyear)*x.NPY)
 end
