@@ -59,7 +59,7 @@ end
 macro defineRanAxis(axname,eltype)
   newname=esc(Symbol(string(axname,"Axis")))
   quote
-    const $newname = _RangeAxis{T,$(QuoteNode(axname)),R} where R<:AbstractVector{T} where T<:$(eltype)
+    const $newname = RangeAxis{T,$(QuoteNode(axname)),R} where R<:AbstractVector{T} where T<:$(eltype)
     $(newname)(v::AbstractVector{T}) where T = RangeAxis{T,$(QuoteNode(axname)),typeof(v)}(v)
   end
 end
@@ -119,7 +119,7 @@ CategoricalAxis(s::AbstractString,v)=CategoricalAxis(Symbol(s),v)
 @defineCatAxis Scale String
 @defineCatAxis Quantile AbstractFloat
 
-struct _RangeAxis{T,S,R} <: CubeAxis{T,S}
+struct RangeAxis{T,S,R<:AbstractVector{T}} <: CubeAxis{T,S}
   values::R
 end
 
@@ -134,8 +134,6 @@ The default constructor is:
     RangeAxis(axname::String,values::Range{T})
 
 """
-const RangeAxis = _RangeAxis{T,S,R} where R<:AbstractVector{T} where S where T
-
 RangeAxis(s::Symbol,v::AbstractVector{T}) where T = RangeAxis{T,s,typeof(v)}(v)
 RangeAxis(s::AbstractString,v)=RangeAxis(Symbol(s),v)
 
@@ -174,18 +172,18 @@ function axVal2Index(a::RangeAxis{T,S,F},v::Date;fuzzy=false) where {T<:Date,S,F
   r = (y-a.values.startyear)*a.values.NPY + d÷a.values.step + 1
   return max(1,min(length(a.values),r))
 end
-function axVal2Index(a::_RangeAxis{T,S,F},v::Date;fuzzy=false) where {T<:Date,S,F<:StepRange}
+function axVal2Index(a::RangeAxis{T,S,F},v::Date;fuzzy=false) where {T<:Date,S,F<:StepRange}
   dd = map(i->abs((i-v).value),a.values)
   mi,ind = findmin(dd)
   return ind
 end
 
-function axVal2Index(a::_RangeAxis{T,S,F},v::Date;fuzzy=false) where {T<:Date,S,F}
+function axVal2Index(a::RangeAxis{T,S,F},v::Date;fuzzy=false) where {T<:Date,S,F}
   dd = map(i->abs((i-v).value),a.values)
   mi,ind = findmin(dd)
   return ind
 end
-axVal2Index(axis::_RangeAxis{T,S,F},v;fuzzy::Bool=false) where {T,S,F<:StepRangeLen}=min(max(round(Int,(v-first(axis.values))/step(axis.values))+1,1),length(axis))
+axVal2Index(axis::RangeAxis{T,S,F},v;fuzzy::Bool=false) where {T,S,F<:StepRangeLen}=min(max(round(Int,(v-first(axis.values))/step(axis.values))+1,1),length(axis))
 function axVal2Index(axis::CategoricalAxis{String},v::String;fuzzy::Bool=false)
   r=findfirst(isequal(v),axis.values)
   if r==nothing
