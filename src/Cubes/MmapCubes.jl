@@ -1,10 +1,12 @@
 export MmapCube,getmmaphandles
-import ..ESDLTools.totuple
-import .Mask: MaskArray
+import ..ESDLTools: totuple, unmiss
 abstract type AbstractMmapCube{T,N}<:AbstractCubeData{T,N} end
 using Serialization
 using Distributed
 using Mmap
+using SentinelMissings
+missval(::Type{T}) where T<: Integer = typemax(T)
+missval(::Type{T}) where T<: AbstractFloat = convert(T,NaN)
 
 """
     MmapCube{T,N}
@@ -35,7 +37,6 @@ function MmapCube(axlist;folder=mktempdir(),T=Float32,persist::Bool=true,overwri
     if overwrite
       isfile(joinpath(folder,"axinfo.bin")) && rm(joinpath(folder,"axinfo.bin"))
       isfile(joinpath(folder,"data.bin")) && rm(joinpath(folder,"data.bin"))
-      isfile(joinpath(folder,"mask.bin")) && rm(joinpath(folder,"mask.bin"))
     else
       error("Folder $folder is not empty, set overwrite=true to overwrite.")
     end
@@ -46,8 +47,7 @@ function MmapCube(axlist;folder=mktempdir(),T=Float32,persist::Bool=true,overwri
     serialize(f,T)
   end
   s=map(length,axlist)
-  open(f->write(f,zeros(T,s...)),joinpath(folder,"data.bin"),"w")
-  open(f->write(f,zeros(UInt8,s...)),joinpath(folder,"mask.bin"),"w")
+  open(f->write(f,fill(missval(unmiss(T)),s...)),joinpath(folder,"data.bin"),"w")
   ntc=MmapCube{T,length(axlist)}(axlist,folder,persist,properties)
   finalizer(cleanMmapCube,ntc)
   ntc
@@ -61,26 +61,21 @@ function getmmaphandles(folder, axlist,T;mode="r")
 
   s=map(length,axlist)
   ar = open(joinpath(folder,"data.bin"),mode) do fd
-    Mmap.mmap(fd,Array{T,length(axlist)},totuple(s))
+    Mmap.mmap(fd,Array{SentinelMissings.SentinelMissing{unmiss(T),missval(unmiss(T))},length(axlist)},totuple(s))
   end
-  ma = open(joinpath(folder,"mask.bin"),mode) do fm
-    Mmap.mmap(fm,Array{UInt8,length(axlist)},totuple(s))
-  end
-  MaskArray(ar,ma)
+  ar
 end
 
-function _write(y::MmapCube,thedata::MaskArray,r::CartesianIndices{N}) where N
+function _write(y::MmapCube,thedata::AbstractArray,r::CartesianIndices{N}) where N
     cubeh   = getmmaphandles(y,mode="r+")
     for (i,ic) in enumerate(r)
-        cubeh.data[ic]=thedata.data[i]
-        cubeh.mask[ic]=thedata.mask[i]
+        cubeh[ic]=thedata[i]
     end
 end
-function _read(y::MmapCube,thedata::MaskArray,r::CartesianIndices{N}) where N
+function _read(y::MmapCube,thedata::AbstractArray,r::CartesianIndices{N}) where N
     cubeh   = getmmaphandles(y)
     for (i,ic) in enumerate(r)
-        thedata.data[i]=cubeh.data[ic]
-        thedata.mask[i]=cubeh.mask[ic]
+        thedata[i]=cubeh[ic]
     end
 end
 @generated function Base.size(x::MmapCube{T,N}) where {T,N}
@@ -139,7 +134,7 @@ Deletes a memory-mapped data cube.
 """
 function rmCube(name::String)
   newfolder=joinpath(workdir[1],name)
-  isdir(newfolder) || error("$(name) does not exist")
-  rm(newfolder,recursive=true)
+  isdir(newfolder) && rm(newfolder,recursive=true)
+  nothing
 end
 export rmCube

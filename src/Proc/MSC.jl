@@ -4,22 +4,13 @@ using ..Cubes
 using ..DAT
 using ..CubeAPI
 using ..Proc
-using ..CubeAPI.Mask
 import Statistics: quantile!
 
 function removeMSC(aout,ain,NpY::Integer,tmsc,tnmsc)
-    xout, maskout = aout.data, aout.mask
-    xin,  maskin  = ain.data,  ain.mask
     #Start loop through all other variables
-    fillmsc(1,tmsc,tnmsc,xin,NpY)
-    subtractMSC(tmsc,xin,xout,NpY)
-    copyto!(maskout,maskin)
-    xout
-end
-
-function alloc_msc_helpers(cube)
-  NpY=getNpY(cube)
-  (NpY,zeros(Float64,NpY),zeros(Int,NpY))
+    fillmsc(1,tmsc,tnmsc,ain,NpY)
+    subtractMSC(tmsc,ain,aout,NpY)
+    nothing
 end
 
 """
@@ -37,7 +28,7 @@ function removeMSC(c::AbstractCubeData;kwargs...)
         removeMSC,
         c,
         NpY,
-        zeros(NpY),
+        zeros(Union{Missing,Float64},NpY),
         zeros(Int,NpY);
         indims  = InDims( "Time" ),
         outdims = OutDims("Time" ),
@@ -60,10 +51,8 @@ function gapFillMSC(c::AbstractCubeData;kwargs...)
 end
 
 function gapFillMSC(aout::AbstractVector,ain::AbstractVector,NpY::Integer,tmsc,tnmsc)
-  xin,maskin = ain.data, ain.mask
-  xout,maskout = aout.data, aout.mask
   fillmsc(1,tmsc,tnmsc,ain,NpY)
-  replaceMisswithMSC(tmsc,xin,xout,maskin,maskout,NpY)
+  replaceMisswithMSC(tmsc,ain,aout,NpY)
 end
 
 
@@ -83,7 +72,7 @@ function getMSC(c::AbstractCubeData;kwargs...)
   mapCube(getMSC,c,zeros(Int,getNpY(c)),zeros(Union{Float64,Missing},getNpY(c));indims=indims,outdims=outdims,kwargs...)
 end
 
-function getMSC(aout::AbstractVector,ain::AbstractVector,nmsc,fmsc;imscstart::Int=1,NpY=length(aout.data))
+function getMSC(aout::AbstractVector,ain::AbstractVector,nmsc,fmsc;imscstart::Int=1,NpY=length(aout))
     NpY=length(aout)
     fillmsc(imscstart,fmsc,nmsc,ain,NpY)
     copyto!(aout,fmsc)
@@ -102,17 +91,13 @@ function subtractMSC(msc::AbstractVector,xin2::AbstractVector,xout2,NpY)
 end
 
 "Replaces missing values with mean seasonal cycle"
-function replaceMisswithMSC(msc::AbstractVector,xin::AbstractArray,xout::AbstractArray,maskin,maskout,NpY::Integer)
+function replaceMisswithMSC(msc::AbstractVector,xin::AbstractArray,xout::AbstractArray,NpY::Integer)
   imsc=1
   for i in eachindex(xin)
-    #println(maskin[i]," ",msc[imsc])
-    if (maskin[i] & MISSING)>0 && !ismissing(msc[imsc])
-      #println("inside")
+    if ismissing(xin[i]) && !ismissing(msc[imsc])
       xout[i]=msc[imsc]
-      maskout[i]=FILLED
     else
       xout[i]=xin[i]
-      maskout[i]=maskin[i]
     end
     imsc= imsc==NpY ? 1 : imsc+1 # Increase msc time step counter
   end
@@ -133,27 +118,19 @@ function getMedSC(c::AbstractCubeData;kwargs...)
   mapCube(getMedSC,c;indims=indims,outdims=outdims,kwargs...)
 end
 
-function getMedSC(aout::AbstractVector,ain::AbstractVector)
-  xout,maskout = aout.data, aout.mask
-  xin,maskin   = ain.data, ain.mask
+function getMedSC(aout::AbstractVector{Union{T,Missing}},ain::AbstractVector) where T
     #Reshape the cube to squeeze unimportant variables
-    NpY=length(xout)
-    yvec=eltype(xout)[]
+    NpY=length(aout)
+    yvec=T[]
     q=[convert(eltype(yvec),0.5)]
-    for doy=1:length(xout)
+    for doy=1:length(aout)
         empty!(yvec)
-        for i=doy:NpY:length(xin)
-            maskin[i]==VALID && push!(yvec,xin[i])
+        for i=doy:NpY:length(ain)
+            ismissing(ain[i]) || push!(yvec,ain[i])
         end
-        if length(yvec) > 0
-            xout[doy]=quantile!(yvec,q)[1]
-            maskout[doy]=VALID
-        else
-            xout[doy]=NaN
-            maskout[doy]=ESDL.CubeAPI.MISSING
-        end
+        aout[doy] = isempty(yvec) ? missing : quantile!(yvec,q)[1]
     end
-    xout
+    aout
 end
 
 

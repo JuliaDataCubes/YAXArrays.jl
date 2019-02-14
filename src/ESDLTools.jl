@@ -7,7 +7,8 @@ toRange, getiperm, CItimes, CIdiv, @loadOrGenerate, expandTuple
 expandTuple(x,nin)=ntuple(i->x,nin)
 expandTuple(x::Tuple,nin)=x
 
-
+unmiss(::Type{Union{T,Missing}}) where T = T
+unmiss(::Type{T}) where T = T
 
 function getiperm(perm)
     iperm = Array{Int}(undef,length(perm))

@@ -3,34 +3,24 @@ using ..Cubes
 using ..DAT
 using ..CubeAPI
 using ..Proc
-using ..Mask
 
+import ...ESDLTools: unmiss
 import NetCDF.ncread, NetCDF.ncclose
 import StatsBase.Weights
 import StatsBase.sample
-
+import Base.Iterators
 
 function getSpatiaPointAxis(mask::CubeMem)
     a=Tuple{Float64,Float64}[]
     ax=caxes(mask)
-    ocval=OCEAN
-    for (ilat,lat) in enumerate(ax[2].values)
-        for (ilon,lon) in enumerate(ax[1].values)
-            if (mask.mask[ilon,ilat] & ocval) != ocval
-                push!(a,(lon,lat))
-            end
-        end
-    end
+    anew = Iterators.product(ax[1].values,ax[2].values)
     SpatialPointAxis(a)
 end
 
 function toPointAxis(aout,ain,loninds,latinds)
-  xout, maskout = aout.data, aout.mask
-  xin , maskin  = ain.data, ain.mask
   iout = 1
   for (ilon,ilat) in zip(loninds,latinds)
-    xout[iout]=xin[ilon,ilat]
-    maskout[iout]=maskin[ilon,ilat]
+    aout[iout]=ain[ilon,ilat]
     iout+=1
   end
 end
@@ -100,8 +90,6 @@ using NetCDF
 import Base.Iterators: product
 function writefun(xout,xin::AbstractArray{Union{Missing,T}},a,nd,cont_loop,filename;kwargs...) where T
 
-
-
   x = map(ix->ismissing(ix) ? convert(T,-9999.0) : ix,xin)
 
   count_vec = fill(-1,nd)
@@ -117,7 +105,6 @@ function writefun(xout,xin::AbstractArray{Union{Missing,T}},a,nd,cont_loop,filen
   splinds = Iterators.filter(i->!in(i,used_syms),keys(a))
   vn = join(string.([a[s][2] for s in splinds]),"_")
   isempty(vn) && (vn="layer")
-
   ncwrite(x,filename,vn,start=start_vec,count=count_vec)
 end
 
@@ -142,7 +129,8 @@ function exportcube(r::AbstractCubeData,filename::String;priorities = Dict("LON"
   dims = map(NcDim,ax_cont)
   isempty(ax_cat) && (ax_cat=[VariableAxis(["layer"])])
   it = map(i->i.values,ax_cat)
-  vars = NcVar[NcVar(join(collect(string.(a)),"_"),dims,t=eltype(r),atts=Dict("missing_value"=>-9999.0)) for a in product(it...)]
+  elt = unmiss(eltype(r))
+  vars = NcVar[NcVar(join(collect(string.(a)),"_"),dims,t=elt,atts=Dict("missing_value"=>convert(elt,-9999.0))) for a in product(it...)]
   file = NetCDF.create(filename,vars)
   for d in dims
     ncwrite(d.vals,filename,d.name)

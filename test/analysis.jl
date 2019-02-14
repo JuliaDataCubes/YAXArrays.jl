@@ -29,7 +29,7 @@ function doTests()
 
   dmem=readCubeData(d)
 
-  @testset "Simple statistics using reduceCube" begin
+  @testset "Simple statistics using mapslices" begin
   # Basic statistics
   m=mapslices(mean∘skipmissing,d,"Time")
 
@@ -61,11 +61,11 @@ function doTests()
 
   # Test gap filling
   cube_filled=readCubeData(gapFillMSC(d))
-  imiss=findfirst(i->i==0x01,d.mask)
-  @test cube_filled.mask[imiss]==ESDL.Mask.FILLED
+  imiss=findfirst(i->ismissing(i),d.data)
+  @test !ismissing(cube_filled.data[imiss])
   its=mod(imiss.I[3]-1,46)+1
   @test cube_filled.data[imiss]≈readCubeData(x2).data[its]
-  @test !any(cube_filled.mask.==ESDL.Mask.MISSING)
+  @test !any(ismissing(cube_filled.data))
 
   # Test removal of MSC
 
@@ -74,9 +74,10 @@ function doTests()
 
 
   # Test normalization
-  anom_normalized=readCubeData(normalizeTS(cube_anomalies))
-  @test mean(anom_normalized.data)<1e7
-  @test 1.0-1e-6 <= std(anom_normalized.data) <= 1.0+1e-6
+  anom_normalized=normalizeTS(cube_anomalies)[:,:,:]
+  #@show cube_anomalies[:,:,:]
+  @test mean(anom_normalized)<1e7
+  @test 1.0-1e-6 <= std(anom_normalized) <= 1.0+1e-6
   end
 
 

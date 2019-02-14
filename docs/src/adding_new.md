@@ -57,7 +57,6 @@ The resulting cube has the same dimensions like the input cube. All variables ex
 By default, the data that are passed to the user-defined function will always be represented as an Array{Union{T,Missing}}, so they use Julia's `Missing` type to represent missing data. However, there might be several reasons for the missingnes of a single data value, like it might be in the ocean, or it is out of the dataset period or it is an observation gap. In the ESDC this information is stored in a special mask type (see [Cube Masks](@ref)), that can be accessed inside the UDF. For example, if we want to rewrite the `myNorm` function defined above, but we want to only calculate the mean and std based on values that were not gapfilled, one could do so:
 
 ```@example 1
-import ESDL.Mask
 function mynorm_nonfilled(xout, ain)
   #Destructure the tuple into the data and mask array
   xin,min = ain

@@ -28,6 +28,7 @@ function YearStepRange(start::Date,stop::Date,step::Day)
     NPY=ceil(Int,366/Dates.value(step))
     YearStepRange(startyear,startst,stopyear,stopst,Dates.value(step),NPY)
 end
+Base.in(d1::Date,av::YearStepRange) = any(isequal(d1),av)
 function Base.length(x::YearStepRange)
     (-x.startst+1+x.stopst+(x.stopyear-x.startyear)*x.NPY)
 end
@@ -59,7 +60,7 @@ end
 macro defineRanAxis(axname,eltype)
   newname=esc(Symbol(string(axname,"Axis")))
   quote
-    const $newname = _RangeAxis{T,$(QuoteNode(axname)),R} where R<:AbstractVector{T} where T<:$(eltype)
+    const $newname = RangeAxis{T,$(QuoteNode(axname)),R} where R<:AbstractVector{T} where T<:$(eltype)
     $(newname)(v::AbstractVector{T}) where T = RangeAxis{T,$(QuoteNode(axname)),typeof(v)}(v)
   end
 end
@@ -119,7 +120,7 @@ CategoricalAxis(s::AbstractString,v)=CategoricalAxis(Symbol(s),v)
 @defineCatAxis Scale String
 @defineCatAxis Quantile AbstractFloat
 
-struct _RangeAxis{T,S,R} <: CubeAxis{T,S}
+struct RangeAxis{T,S,R<:AbstractVector{T}} <: CubeAxis{T,S}
   values::R
 end
 
@@ -134,8 +135,6 @@ The default constructor is:
     RangeAxis(axname::String,values::Range{T})
 
 """
-const RangeAxis = _RangeAxis{T,S,R} where R<:AbstractVector{T} where S where T
-
 RangeAxis(s::Symbol,v::AbstractVector{T}) where T = RangeAxis{T,s,typeof(v)}(v)
 RangeAxis(s::AbstractString,v)=RangeAxis(Symbol(s),v)
 
@@ -174,18 +173,18 @@ function axVal2Index(a::RangeAxis{T,S,F},v::Date;fuzzy=false) where {T<:Date,S,F
   r = (y-a.values.startyear)*a.values.NPY + d÷a.values.step + 1
   return max(1,min(length(a.values),r))
 end
-function axVal2Index(a::_RangeAxis{T,S,F},v::Date;fuzzy=false) where {T<:Date,S,F<:StepRange}
+function axVal2Index(a::RangeAxis{T,S,F},v::Date;fuzzy=false) where {T<:Date,S,F<:StepRange}
   dd = map(i->abs((i-v).value),a.values)
   mi,ind = findmin(dd)
   return ind
 end
 
-function axVal2Index(a::_RangeAxis{T,S,F},v::Date;fuzzy=false) where {T<:Date,S,F}
+function axVal2Index(a::RangeAxis{T,S,F},v::Date;fuzzy=false) where {T<:Date,S,F}
   dd = map(i->abs((i-v).value),a.values)
   mi,ind = findmin(dd)
   return ind
 end
-axVal2Index(axis::_RangeAxis{T,S,F},v;fuzzy::Bool=false) where {T,S,F<:StepRangeLen}=min(max(round(Int,(v-first(axis.values))/step(axis.values))+1,1),length(axis))
+axVal2Index(axis::RangeAxis{T,S,F},v;fuzzy::Bool=false) where {T,S,F<:StepRangeLen}=min(max(round(Int,(v-first(axis.values))/step(axis.values))+1,1),length(axis))
 function axVal2Index(axis::CategoricalAxis{String},v::String;fuzzy::Bool=false)
   r=findfirst(isequal(v),axis.values)
   if r==nothing
@@ -202,8 +201,12 @@ function axVal2Index(axis::CategoricalAxis{String},v::String;fuzzy::Bool=false)
   end
   r
 end
-axVal2Index(x,v;fuzzy::Bool=false)=min(max(v,1),length(x))
-
+axVal2Index(x,v::CartesianIndex{1};fuzzy::Bool=false)=min(max(v.I[1],1),length(x))
+function axVal2Index(x,v;fuzzy::Bool=false)
+  i = findfirst(isequal(v),x.values)
+  isnothing(i) && error("Value $v not found in x")
+  return i
+end
 abstract type AxisDescriptor end
 getAxis(d::Any,v::Any)=error("getAxis not defined for $d $v")
 struct ByName <: AxisDescriptor
@@ -235,13 +238,13 @@ function findAxis(bt::ByType,v::Vector{S}) where S<:CubeAxis
   for i=1:length(v)
     isa(v[i],a) && return i
   end
-  return 0
+  return nothing
 end
 function findAxis(bs::ByName,axlist::Vector{T}) where T<:CubeAxis
   matchstr=bs.name
   ism=map(i->startswith(lowercase(axname(i)),lowercase(matchstr)),axlist)
   sism=sum(ism)
-  sism==0 && return 0
+  sism==0 && return nothing
   sism>1 && error("Multiple axes found matching string $matchstr")
   i=findfirst(ism)
 end
@@ -251,8 +254,8 @@ function findAxis(bv::ByValue,axlist::Vector{T}) where T<:CubeAxis
 end
 function getAxis(desc,axlist::Vector{T}) where T<:CubeAxis
   i = findAxis(desc,axlist)
-  if i==0
-    error("Axis $desc not found in $axlist")
+  if isa(i,Nothing)
+    return nothing
   else
     return axlist[i]
   end
@@ -279,8 +282,8 @@ function getOutAxis(desc::Tuple{ByInference},axlist,incubes,pargs,f)
       i = findall(i->i==s,length.(axlist))
       if length(i)==1
         return axlist[i[1]]
-      else
-        info("Found multiple matching axes for output dimension $il")
+      elseif length(i)>1
+        @info "Found multiple matching axes for output dimension $il"
       end
     end
     return RangeAxis("OutAxis$(il)",1:s)

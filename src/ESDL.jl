@@ -5,6 +5,8 @@
 Some info on the project...
 """
 module ESDL
+import Dates: Date
+export Date
 export ESDLdir, getAxis
 export Cube, getCubeData,readCubeData,CubeMem,CubeAxis, TimeAxis, TimeHAxis, VariableAxis, LonAxis, FitAxis, LatAxis, CountryAxis, SpatialPointAxis, saveCube, loadCube,
         RangeAxis, CategoricalAxis, MSCAxis, getSingVal, ScaleAxis, QuantileAxis, MethodAxis, RemoteCube, showVarInfo, @caxis_str,

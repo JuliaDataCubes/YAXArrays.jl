@@ -9,11 +9,10 @@ import ...ESDL
 import ...ESDL.workdir
 import DataFrames
 import Distributed: nprocs
-import DataFrames: DataFrame
-import ProgressMeter: Progress, next!
+import DataFrames: DataFrame, ncol
+import ProgressMeter: Progress, next!, progress_pmap
 using Dates
 import StatsBase.Weights
-using ESDL.CubeAPI.Mask
 global const debugDAT=false
 macro debug_print(e)
   debugDAT && return(:(println($e)))
@@ -26,28 +25,6 @@ const hasparprogress=[false]
 const progresscolor=[:cyan]
 function __init__()
   @require IJulia = "7073ff75-c697-5162-941a-fcdaad2a7d2a" begin progresscolor[1] = :blue end
-end
-
-function mask2miss(a::MaskArray,workAr::MaskArray)
-  copyto!(workAr.data,a.data)
-  copyto!(workAr.mask,a.mask)
-end
-function mask2miss(a::MaskArray,workAr::DataFrame)
-  for ivar in 1:size(a,2), iobs in 1:size(a,1)
-    if iszero(a.mask[iobs,ivar] & 0x01)
-      workAr[iobs,ivar]=a.data[iobs,ivar]
-    else
-      workAr[iobs,ivar]=missing
-    end
-  end
-end
-function miss2mask!(target,source::MaskArray)
-  copyto!(target.data,source.data)
-  copyto!(target.mask,source.mask)
-end
-function miss2mask!(target,source::DataFrame)
-  copyto!(target.data,source)
-  map!(i->ismissing(i) ? 0x01 : 0x00, target.mask,source)
 end
 
 include("registration.jl")
@@ -77,7 +54,7 @@ function setworkarray(c::InputCube)
   wa = createworkarray(eltype(c.cube),ntuple(i->length(c.axesSmall[i]),length(c.axesSmall)))
   c.workarray = wrapWorkArray(c.desc.artype,wa,c.axesSmall)
 end
-createworkarray(T,s)=MaskArray(Array{T}(undef,s...),Array{UInt8}(undef,s...))
+createworkarray(T,s)=Array{T}(undef,s...)
 
 
 
@@ -96,7 +73,7 @@ mutable struct OutputCube
   workarray::Any
   handle::Any                       #Cache to write the output to
   folder::String                   #Folder to store the cube to
-  outtype::DataType
+  outtype
 end
 getcube(c::OutputCube)      = c.cube
 getsmallax(c::Union{InputCube,OutputCube})=c.axesSmall
@@ -199,7 +176,7 @@ end
 
 getOuttype(outtype::Int,cdata)=eltype(cdata[outtype])
 function getOuttype(outtype::DataType,cdata)
-  isconcretetype(outtype) ? outtype : eltype(cdata[1])
+  outtype
 end
 
 mapCube(fu::Function,cdata::AbstractCubeData,addargs...;kwargs...)=mapCube(fu,(cdata,),addargs...;kwargs...)
@@ -226,6 +203,7 @@ Map a given function `fun` over slices of the data cube `cube`.
 * `inplace` does the function write to an output array inplace or return a single value> defaults to `true`
 * `ispar` boolean to determine if parallelisation should be applied, defaults to `true` if workers are available.
 * `outfolder` a folder where the output cube is stroed, defaults to the result of `ESDLdir()`
+* `showprog` boolean indicating if a ProgressMeter shall be shown
 * `kwargs` additional keyword arguments passed to the inner function
 
 The first argument is always the function to be applied, the second is the input cube or
@@ -243,6 +221,7 @@ function mapCube(fu::Function,
     ispar=nprocs()>1,
     debug=false,
     include_loopvars=false,
+    showprog=true,
     kwargs...)
   @debug_print "Check if function is registered"
   @debug_print "Generating DATConfig"
@@ -262,7 +241,7 @@ function mapCube(fu::Function,
   generateworkarrays(dc)
   @debug_print "Running main Loop"
   debug && return(dc)
-  runLoop(dc)
+  runLoop(dc,showprog)
   @debug_print "Finalizing Output Cube"
 
   if length(dc.outcubes)==1
@@ -320,14 +299,14 @@ end
 updateinars(dc,r)=updatears(dc,dc.incubes,r,_read)
 writeoutars(dc,r)=updatears(dc,dc.outcubes,r,_write)
 
-function runLoop(dc::DATConfig)
+function runLoop(dc::DATConfig,showprog)
   allRanges=distributeLoopRanges(totuple(dc.loopCacheSize),totuple(map(length,dc.LoopAxes)),getchunkoffsets(dc))
   #@show collect(allRanges)
   if dc.ispar
-    pmapfun = isdefined(:Main,:ProgressMeter) ? progress_pmap : pmap
+    pmapfun = showprog ? progress_pmap : pmap
     pmapfun(runLooppar,allRanges)
   else
-    runLoop(dc,allRanges,isdefined(:Main,:ProgressMeter))
+    runLoop(dc,allRanges,showprog)
   end
   dc.outcubes
 end
@@ -367,7 +346,8 @@ end
 end
 
 function getRetCubeType(oc,ispar,max_cache)
-  eltype=typeof(oc.desc.genOut(oc.outtype))
+
+  eltype=Union{typeof(oc.desc.genOut(oc.outtype)),Missing}
   outsize=sizeof(eltype)*(length(oc.allAxes)>0 ? prod(map(length,oc.allAxes)) : 1)
   if string(oc.desc.retCubeType)=="auto"
     if ispar || outsize>max_cache
@@ -389,7 +369,7 @@ function generateOutCube(::Type{T},eltype,oc::OutputCube,loopCacheSize) where T<
   outar=Array{eltype}(undef,newsize...)
   genFun=oc.desc.genOut
   map!(_->genFun(eltype),outar,1:length(outar))
-  oc.cube = Cubes.CubeMem(oc.allAxes,outar,zeros(UInt8,newsize...))
+  oc.cube = Cubes.CubeMem(oc.allAxes,outar)
 end
 
 generateOutCubes(dc::DATConfig)=foreach(dc.outcubes) do c
@@ -420,7 +400,7 @@ end
 function allocatecachebuf(ic::Union{InputCube,OutputCube},loopcachesize) where N
   sl = ntuple(i->loopcachesize[i],length(ic.loopinds))
   s = (map(length,ic.axesSmall)...,sl...)
-  ic.handle = MaskArray(zeros(eltype(ic.cube),s...),zeros(UInt8,s...))
+  ic.handle = zeros(eltype(ic.cube),s...)
 end
 
 function init_DATworkers()
@@ -615,7 +595,7 @@ using Base.Cartesian
   append!(loopBody.args,subIn)
   append!(callargs,inworksyms)
   if LR
-    exloopdict = Expr(:tuple,[:($(loopnames[il]) = ($(Symbol("i_$il")),loopaxes[$il].values[$(Symbol("i_$il"))])) for il=1:Nloopvars]...)
+    exloopdict = Expr(:tuple,[:($(loopnames[il]) = ($(Symbol("i_$il"))+first(loopRanges[$il])-1,loopaxes[$il].values[$(Symbol("i_$il"))+first(loopRanges[$il])-1])) for il=1:Nloopvars]...)
     push!(loopBody.args,:(axdict = $exloopdict))
     push!(callargs,:axdict)
   end
@@ -630,11 +610,11 @@ using Base.Cartesian
   end
   #Add mask filter to loop body
   setzeroex = quote end
-  foreach(i->push!(setzeroex.args,:($(outworksyms[i]).mask[:] .= mv)),1:NOUT)
+  foreach(i->push!(setzeroex.args,:($(outworksyms[i]) .= missing)),1:NOUT)
   foreach(1:NIN) do i
     push!(loopBody.args,quote
       mv = docheck(filters[$i],$(inworksyms[i]))
-      if !iszero(mv)
+      if mv
         $setzeroex
       else
         $runBody
@@ -660,20 +640,25 @@ using Base.Cartesian
 end
 
 function getSubRange2(work,xin,cols...)
-  #println(typeof(xin),cols)
   xview = getSubRange(xin,cols...)
-  #println(xview,missrep,typeof(work))
-  mask2miss(xview,work)
+  work.=xview
+  return nothing
+end
+
+function getSubRange2(work::DataFrame,xin,cols...)
+  xview = getSubRange(xin,cols...)
+  for i = 1:size(xview,2)
+    work[i].=view(xview,:,i)
+  end
   return nothing
 end
 
 function setSubRange2(work,xout,cols...)
   xview = getSubRange(xout,cols...)
-  miss2mask!(xview,work)
+  xview.=work
 end
 
-getSubRange(x::MaskArray,cols...) = MaskArray(view(x.data,cols...),view(x.mask,cols...))
-getSubRange(x::Array,cols...)     = view(x,cols...)
+getSubRange(x::AbstractArray,cols...)     = view(x,cols...)
 
 "Calculate an axis permutation that brings the wanted dimensions to the front"
 function getFrontPerm(dc::AbstractCubeData{T},dims) where T

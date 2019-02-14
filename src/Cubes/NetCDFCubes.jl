@@ -40,7 +40,6 @@ getCubeDes(v::NetCDFCube)="NetCDF data cube"
 function _read(x::NetCDFCube{T,N},thedata::AbstractArray,r::CartesianIndices{N}) where {T,N}
   sta = collect(r.start.I)
   cou = [r.stop.I[i]-r.start.I[i]+1 for i=1:N]
-  ncread!(x.file,x.varname,thedata.data,start = sta,count=cou)
-  map!(i->i==x.mv ? 0x01 : 0x00, thedata.mask,thedata.data)
-
+  ncread!(x.file,x.varname,thedata,start = sta,count=cou)
+  replace!(thedata,x.mv=>missing)
 end

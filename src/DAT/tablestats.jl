@@ -1,6 +1,8 @@
-import OnlineStats: OnlineStat, fit!, value
+import OnlineStats: OnlineStat, Extrema, fit!, value
 import IterTools
 using WeightedOnlineStats
+import ProgressMeter: next!, Progress
+
 import WeightedOnlineStats: WeightedOnlineStat
 abstract type TableAggregator end
 struct OnlineAggregator{O,S}<:TableAggregator
@@ -49,6 +51,7 @@ cubeeltype(t::GroupedOnlineAggregator{T}) where T=cubeeltype(T)
 cubeeltype(t::Type{<:Dict{<:Any,T}}) where T = cubeeltype(T)
 cubeeltype(t::Type{<:WeightedOnlineStat{T}}) where T = T
 cubeeltype(t::Type{<:WeightedCovMatrix{T}}) where T = T
+cubeeltype(t::Type{<:Extrema{T}}) where T = T
 
 
 function GroupedOnlineAggregator(O::OnlineStat,s::Symbol,by,w,iter) where N
@@ -145,6 +148,9 @@ getStatType(t::Type{<:Dict{<:Any,T}}) where T = T
 
 getStatOutAxes(tab,agg)=getStatOutAxes(tab,agg,getStatType(agg))
 getStatOutAxes(tab,agg,::Type{<:OnlineStat})=()
+function getStatOutAxes(tab, agg, ::Type{<:Extrema})
+    ( CategoricalAxis(:Extrema, ["min", "max"]), )
+end
 function getStatOutAxes(tab,agg,::Type{<:WeightedCovMatrix})
     nvar = length(fieldnames(eltype(tab)))
     ax = tab.loopaxes[1]
@@ -154,6 +160,12 @@ function getStatOutAxes(tab,agg,::Type{<:WeightedCovMatrix})
     axtype = axt(ax)
     a1 = axtype(oldname,copy(v))
     a2 = axtype(coname,copy(v))
+    (a1,a2)
+end
+function getStatOutAxes(tab,agg,::Type{<:WeightedHist})
+    nbin = getnbins(agg)
+    a1 = RangeAxis("Bin",1:nbin)
+    a2 = CategoricalAxis("Hist",["MidPoints","Frequency"])
     (a1,a2)
 end
 function getByAxes(iter,agg::GroupedOnlineAggregator)
@@ -167,7 +179,8 @@ getByAxes(iter,agg)=()
 
 function tooutcube(
     agg,
-    iter
+    iter,
+    post
   )
   outaxby = getByAxes(iter,agg)
   axby = map(i->i[1],outaxby)
@@ -176,23 +189,20 @@ function tooutcube(
   outaxstat = getStatOutAxes(iter,agg)
   outax = (outaxstat...,axby...)
   snew = map(length,outax)
-  aout = zeros(cubeeltype(agg),snew)
-  mout = fill(0x01,snew)
+  aout = fill!(zeros(Union{cubeeltype(agg),Missing},snew),missing)
 
-  filloutar(aout,mout,convdictall,agg,map(i->1:length(i),outaxstat))
+  filloutar(aout,convdictall,agg,map(i->1:length(i),outaxstat),post)
 
-  CubeMem(collect(CubeAxis,outax),aout,mout)
+  CubeMem(collect(CubeAxis,outax),aout)
 end
-function filloutar(aout,mout,convdictall,agg::GroupedOnlineAggregator,s)
+function filloutar(aout,convdictall,agg::GroupedOnlineAggregator,s,post)
     for (k,v) in agg.d
         i = CartesianIndices((s...,map((i,d)->d[i]:d[i],k,convdictall)...))
-        aout[i.indices...].=value(v)
-        mout[i.indices...].=0x00
+        aout[i.indices...].=post(v)
     end
 end
-function filloutar(aout,mout,convdictall,agg,g)
-    aout[:]=value(agg.o)
-    fill!(mout,0x00)
+function filloutar(aout,convdictall,agg,g,post)
+    aout[:]=post(agg.o)
 end
 """
     fittable(tab,o,fitsym;by=(),weight=nothing)
@@ -209,9 +219,14 @@ area and grouped by country and month
 fittable(iter,WeightedMean,:tair,weight=(i->abs(cosd(i.lat))),by=(i->month(i.time),:country))
 ````
 """
-function fittable(tab,o,fitsym;by=(),weight=nothing)
+function fittable(tab,o,fitsym;by=(),weight=nothing,showprog=false)
   agg = TableAggregator(tab,o,fitsym,by=by,weight=weight)
-  foreach(i->fitrow!(agg,i),tab)
+  if showprog
+    p=Progress(length(tab),1)
+    foreach(i->begin fitrow!(agg,i); next!(p) end,tab)
+  else
+    foreach(i->fitrow!(agg,i),tab)
+  end
   agg
 end
 fittable(tab,o::Type{<:OnlineStat},fitsym;kwargs...)=fittable(tab,o(),fitsym;kwargs...)
@@ -235,21 +250,33 @@ function collectval(row::Union{Tuple, Vector},::Val{SY}) where SY
     val = collectedValue{typeof(v),typeof(row[end]),SY}(v, row[end])
 end
 
-function cubefittable(tab,o,fitsym;kwargs...)
-  agg=fittable(tab,o,fitsym;kwargs...)
-  tooutcube(agg,tab)
+getpostfunction(s::OnlineStat)=getpostfunction(typeof(s))
+getpostfunction(::Type{<:OnlineStat})=value
+getpostfunction(::Type{<:WeightedHist})=i->hcat(value(i)...)
+getnbins(f::GroupedOnlineAggregator)=f.cloneobj.alg.b
+getnbins(f::TableAggregator)=f.o.alg.b
+
+function cubefittable(tab,o,fitsym;post=getpostfunction(o),kwargs...)
+  agg=fittable(tab,o,fitsym;showprog=true,kwargs...)
+  tooutcube(agg,tab,post)
 end
 function fittable(
   tab,
   o::WeightedCovMatrix,
   fitsym;
   by=(),
-  weight=nothing
+  weight=nothing,
+  showprog=false
   )
   nvars = length(tab.loopaxes[1])
   tab2 = IterTools.partition(tab, nvars) |>
   x -> IterTools.imap(a->collectval(a,Val(fitsym)), x)
   agg = TableAggregator(tab2, o, fitsym, by=by, weight=weight)
-  foreach(i -> fitrow!(agg,i), tab2)
+  if showprog
+    p = Progress(length(tab2))
+    foreach(i -> begin fitrow!(agg,i);next!(p) end, tab2)
+  else
+    foreach(i -> fitrow!(agg,i), tab2)
+  end
   agg
 end

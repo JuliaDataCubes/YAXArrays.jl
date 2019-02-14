@@ -1,7 +1,7 @@
 name = "ESDL"
 uuid = "359177bc-a543-11e8-11b7-bb015dba3358"
 authors = ["Fabian Gans <fgans@bgc-jena.mpg.de>"]
-version = "0.4.15"
+version = "0.5.0"
 
 [deps]
 AxisArrays = "39de3d68-74b9-583c-8d2d-e117c070f3a9"
@@ -24,6 +24,7 @@ Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 ProgressMeter = "92933f4c-e287-5a05-a399-4b506db050ca"
 RecursiveArrayTools = "731186ca-8d62-57ce-b412-fbd966d074cd"
 Requires = "ae029012-a4dd-5104-9daa-d747884805df"
+SentinelMissings = "b1dc47e8-ebfd-568c-9de9-431a7ef94af6"
 Serialization = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"

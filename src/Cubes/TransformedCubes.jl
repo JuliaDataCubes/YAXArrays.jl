@@ -20,10 +20,9 @@ function _read(x::PermCube{T,N},thedata::AbstractArray,r::CartesianIndices{N}) w
   iperm=getiperm(perm)
   r2=CartesianIndices((permtuple(r.indices,iperm)))
   sr = size(r2)
-  aout = MaskArray(zeros(T,sr...),zeros(UInt8,sr...))
+  aout = zeros(T,sr...)
   _read(x.parent,aout,r2)
-  permutedims!(thedata.data,aout.data,perm)
-  permutedims!(thedata.mask,aout.mask,perm)
+  permutedims!(thedata,aout,perm)
 
 end
 Base.permutedims(x::AbstractCubeData{T,N},perm) where {T,N}=PermCube{T,N,typeof(x)}(x,perm)
@@ -122,14 +121,11 @@ chunkoffset(v::TransformedCube)=chunkoffset(v.parents[1])
 using Base.Cartesian
 function _read(x::TransformedCube{T,N},thedata::AbstractArray,r::CartesianIndices{N}) where {T,N}
   ainter=map(x.parents) do c
-    aouti=MaskArray(Array{eltype(c)}(undef,size(aout)), zeros(UInt8,size(mout)))
+    aouti=Array{eltype(c)}(undef,size(thedata))
     _read(c,aouti,r)
     aouti
   end
-  datas = map(i->i.data,ainter)
-  masks = map(i->i.mask,ainter)
-  map!(x.op,thedata.data,datas...)
-  map!((x...)->reduce(|,x),thedata.mask,masks...)
+  map!(x.op,thedata,ainter...)
   return thedata
 end
 

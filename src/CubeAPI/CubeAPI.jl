@@ -7,11 +7,9 @@ import ..ESDLTools: getiperm
 using Pkg
 import Markdown.@md_str
 export Cube, getCubeData,getTimeRanges,readCubeData, getMemHandle, RemoteCube, known_regions
-export isvalid, isinvalid, isvalid, isvalidorfilled, Mask
 export showVarInfo
 
 include("countrydict.jl")
-using ..Cubes.Mask
 using DataStructures
 using Dates
 import HTTP
@@ -25,7 +23,10 @@ end
 
 #This is probably not the final solution, we define a set of static variables that are treated differently when reading
 const static_vars = Set(["water_mask","country_mask","srex_mask"])
-const countrylabels = include("countrylabels.jl")
+const country_numeric_labels = include("countrylabels.jl")
+const country_numeric_alpha_2 = include("country_iso_numeric_iso_alpha2.jl")
+const country_numeric_alpha_3 = include("country_iso_numeric_iso_alpha3.jl")
+const countrylabels = country_numeric_labels
 const srexlabels = include("srexlabels.jl")
 include("vardict.jl")
 const known_labels = Dict("water_mask"=>Dict(0x01=>"land",0x02=>"water"),"country_mask"=>countrylabels,"srex_mask"=>srexlabels)
@@ -82,7 +83,7 @@ function parseEntry(d,e::Union{ConfigEntry{:ref_time},ConfigEntry{:start_time},C
 end
 function parseEntry(d,e::ConfigEntry{:chunk_sizes})
   if e.rhs=="None"
-    d.chunk_sizes=(-1,-1,-1)
+    d.chunk_sizes=(0,0,0)
   else
     p=Meta.parse(e.rhs).args
     d.chunk_sizes=(p[1],p[2],p[3])
@@ -538,56 +539,6 @@ function getLonLatsToRead(config,longitude,latitude)
   grid_y1,grid_y2,grid_x1,grid_x2
 end
 
-function getMaskFile(cube::Cube)
-  filename=joinpath(cube.base_dir,"data","water_mask","2001_water_mask.nc")
-  isfile(filename) && return(filename)
-  return ""
-end
-function getMaskFile(cube::RemoteCube)
-
-  filename=cube.config.spatial_res==0.25 ? string(cube.base_url,"dodsC/datasetRoot-low-res/data/water_mask/2001_water_mask.nc") : string(cube.base_url,"dodsC/datasetRoot-high-res/data/water_mask/2001_water_mask.nc")
-  try
-    nc=NetCDF.open(filename)
-    NetCDF.close(nc)
-    return filename
-  catch
-    return ""
-  end
-end
-
-getLandSeaMask!(mask::AbstractArray{UInt8,2},cube::UCube,grid_x1,nx,grid_y1,ny)=getLandSeaMask!(reshape(mask,(size(mask,1),size(mask,2),1)),cube,grid_x1,nx,grid_y1,ny)
-function getLandSeaMask!(mask::AbstractArray{UInt8,3},cube::UCube,grid_x1,nx,grid_y1,ny)
-  filename=getMaskFile(cube)
-  if !isempty(filename)
-    mask2 = ncread(filename,"water_mask",start=[grid_x1,grid_y1,1],count=[nx,ny,1])
-    mask[:,:,1]=mask2
-    for ilat=1:size(mask,2),ilon=1:size(mask,1)
-      mask[ilon,ilat,1]=(mask[ilon,ilat,1]-0x01)*0x05
-    end
-    nT=size(mask,3)
-    for itime=2:nT,ilat=1:size(mask,2),ilon=1:size(mask,1)
-      mask[ilon,ilat,itime]=mask[ilon,ilat,1]
-    end
-    ncclose(filename)
-  end
-end
-
-function getLandSeaMask!(mask::AbstractArray{UInt8,4},cube::UCube,grid_x1,nx,grid_y1,ny)
-  filename=filename=getMaskFile(cube)
-  if !isempty(filename)
-    mask2 = ncread(filename,"water_mask",start=[grid_x1,grid_y1,1],count=[nx,ny,1])
-    mask[:,:,1,1]=mask2
-    for ilat=1:size(mask,2),ilon=1:size(mask,1)
-      mask[ilon,ilat,1,1]=(mask[ilon,ilat,1,1]-0x01)*0x05
-    end
-    nT=size(mask,3)
-    for ivar=1:size(mask,4),itime=1:nT,ilat=1:size(mask,2),ilon=1:size(mask,1)
-      mask[ilon,ilat,itime,ivar]=mask[ilon,ilat,1,1]
-    end
-    ncclose(filename)
-  end
-end
-
 function getvartype(cube::Cube,variable)
   datafiles=sort!(readdir(joinpath(cube.base_dir,"data",variable)))
   eltype(NetCDF.open(joinpath(cube.base_dir,"data",variable,datafiles[1]),variable))
@@ -615,6 +566,7 @@ expandknownvars(v::String)=expandknownvars([v])
 
 ismiss(k::Integer)=(k==typemax(k))
 ismiss(k::AbstractFloat)=isnan(k)
+ismiss(k::Missing)=true
 
 function getCubeData(cube::UCube,
   variable::Vector{T},
@@ -644,7 +596,7 @@ function getCubeData(cube::UCube,
       @warn("Skipping variable $(variable[i]), not found in Datacube")
     end
   end
-  t=reduce(promote_type,varTypes,init=varTypes[1])
+  t=Union{reduce(promote_type,varTypes,init=varTypes[1]),Missing}
   properties=Dict{String,Any}()
   if length(variableNew)==1
     if time[1]==time[2]
@@ -689,104 +641,61 @@ function readCubeData(s::SubCube{T}) where T
   grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid
   y1,i1,y2,i2,ntime,NpY           = s.sub_times
   outar=Array{T}(undef,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)
-  mask=zeros(UInt8,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)
-  _read(s,MaskArray(outar,mask),CartesianIndices((grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)))
-  return CubeMem(CubeAxis[s.lonAxis,s.latAxis,s.timeAxis],outar,mask)
+  _read(s,outar,CartesianIndices((grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)))
+  return CubeMem(CubeAxis[s.lonAxis,s.latAxis,s.timeAxis],outar)
 end
 
 function readCubeData(s::SubCubeV{T}) where T
   grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid
   y1,i1,y2,i2,ntime,NpY           = s.sub_times
   outar=Array{T}(undef,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime,length(s.varAxis))
-  mask=zeros(UInt8,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime,length(s.varAxis))
-  _read(s,MaskArray(outar,mask),CartesianIndices((grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime,length(s.varAxis))))
-  return CubeMem(CubeAxis[s.lonAxis,s.latAxis,s.timeAxis,s.varAxis],outar,mask)
+  _read(s,outar,CartesianIndices((grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime,length(s.varAxis))))
+  return CubeMem(CubeAxis[s.lonAxis,s.latAxis,s.timeAxis,s.varAxis],outar)
 end
 
 function readCubeData(s::SubCubeStatic{T}) where T
   grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid
   y1,i1,y2,i2,ntime,NpY           = s.sub_times
   outar=Array{T}(undef,grid_x2-grid_x1+1,grid_y2-grid_y1+1)
-  mask=zeros(UInt8,grid_x2-grid_x1+1,grid_y2-grid_y1+1)
-  _read(s,MaskArray(reshape(outar,(size(outar,1),size(outar,2),1)),reshape(mask,(size(mask,1),size(mask,2),1))),CartesianIndices((grid_x2-grid_x1+1,grid_y2-grid_y1+1,1)))
-  return CubeMem(CubeAxis[s.lonAxis,s.latAxis],outar,mask)
+  _read(s,reshape(outar,(size(outar,1),size(outar,2),1)),CartesianIndices((grid_x2-grid_x1+1,grid_y2-grid_y1+1,1)))
+  return CubeMem(CubeAxis[s.lonAxis,s.latAxis],outar)
 end
 
 """
 Add a function to read some CubeData in a permuted way, we will make a copy here for simplicity, however, this might change in the future
 """
-function _read(s::Union{SubCubeVPerm{T},SubCubePerm{T},SubCubeStaticPerm{T}},t::MaskArray,r::CartesianIndices{N}) where {T,N}  #;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,findin(s.perm,1)[1]),ny::Int=size(outar,findin(s.perm,2)[1]),nt::Int=size(outar,findin(s.perm,3)[1]),nv::Int=size(outar,findin(s.perm,4)[1]))
+function _read(s::Union{SubCubeVPerm{T},SubCubePerm{T},SubCubeStaticPerm{T}},t::AbstractArray,r::CartesianIndices{N}) where {T,N}  #;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,findin(s.perm,1)[1]),ny::Int=size(outar,findin(s.perm,2)[1]),nt::Int=size(outar,findin(s.perm,3)[1]),nv::Int=size(outar,findin(s.perm,4)[1]))
   iperm=sgetiperm(s)
   perm=sgetperm(s)
-  outar,mask=t.data,t.mask
+  outar=t
   sout=size(r)[iperm]
   newinds=r.indices[iperm]
   #println("xoffs=$xoffs yoffs=$yoffs toffs=$toffs voffs=$voffs nx=$nx ny=$ny nt=$nt nv=$nv")
   outartemp=Array{T}(undef,sout...)
-  masktemp=zeros(UInt8,sout...)
-  _read(s.parent,MaskArray(outartemp,masktemp),CartesianIndices(newinds))
+  _read(s.parent,outartemp,CartesianIndices(newinds))
   mypermutedims!(outar,outartemp,Val{perm})
-  mypermutedims!(mask,masktemp,Val{perm})
 end
 
 getNv(r::CartesianIndices{2})=(0,1)
 getNv(r::CartesianIndices{3})=(0,1)
 getNv(r::CartesianIndices{4})=(first(r.indices[4])-1,length(r.indices[4]))
 
-function readAllyears(s::SubCube{T,RemoteCube},outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY) where T
+function readAllyears(s::SubCube{T,RemoteCube},outar,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY) where T
   tstart  = (y1 - year(s.cube.config.start_time))*NpY + i1
-  readRemote(s.cube,outar,mask,s.variable,grid_x1,nx,grid_y1,ny,tstart,nt)
+  readRemote(s.cube,outar,s.variable,grid_x1,nx,grid_y1,ny,tstart,nt)
 end
 
-function readAllyears(s::SubCubeStatic{T,RemoteCube},outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY) where T
+function readAllyears(s::SubCubeStatic{T,RemoteCube},outar,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY) where T
   tstart  = (y1 - year(s.cube.config.start_time))*NpY + i1
-  readRemote(s.cube,reshape(outar,(size(outar,1),size(outar,2),1)),reshape(mask,(size(mask,1),size(mask,2),1)),s.variable,grid_x1,nx,grid_y1,ny,tstart,1)
+  readRemote(s.cube,reshape(outar,(size(outar,1),size(outar,2),1)),s.variable,grid_x1,nx,grid_y1,ny,tstart,1)
 end
 
-function readAllyears(s::SubCubeV{T,RemoteCube},outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY) where T
+function readAllyears(s::SubCubeV{T,RemoteCube},outar,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY) where T
   tstart  = (y1 - year(s.cube.config.start_time))*NpY + i1
   for iv in (voffs+1):(nv+voffs)
     outar2=view(outar,:,:,:,iv-voffs)
-    mask2=view(mask,:,:,:,iv-voffs)
-    readRemote(s.cube,outar2,mask2,s.variable[iv],grid_x1,nx,grid_y1,ny,tstart,nt)
+    readRemote(s.cube,outar2,s.variable[iv],grid_x1,nx,grid_y1,ny,tstart,nt)
   end
-end
-
-
-function readRemote(cube::RemoteCube,outar::AbstractArray{T,3},mask::AbstractArray{UInt8,3},variable,grid_x1,nx,grid_y1,ny,tstart,nt) where T
-  @assert size(outar)==(nx,ny,nt)
-  filename=cube.dataset_paths[cube.var_name_to_var_index[variable]]
-  #xr = grid_x1:(grid_x1+nx-1)
-  #yr = grid_y1:(grid_y1+ny-1)
-  #tr = tstart:(tstart+nt-1)
-  nanval=convert(T,NaN)
-  #Make some assertions for inbounds
-  @assert tstart>0
-  @assert nt==size(outar,3)
-  @assert ny==size(outar,2)
-  @assert nx==size(outar,1)
-  @assert size(outar)==size(mask)
-  v=try
-    NetCDF.open(filename,variable);
-  catch
-    mask[:]  = OUTOFPERIOD
-    outar[:] = nanval
-    return false
-  end
-  scalefac::T = convert(T,get(v.atts,"scale_factor",one(T)))
-  offset::T   = convert(T,get(v.atts,"add_offset",zero(T)))
-  NetCDF.readvar!(v,outar,start=[grid_x1,grid_y1,tstart],count=[nx,ny,nt])
-  missval::T=convert(T,ncgetatt(filename,variable,"_FillValue"))
-  @inbounds for i in eachindex(outar)
-    if (outar[i] == missval) || isnan(outar[i])
-      mask[i]  = MISSING
-      outar[i] = nanval
-    else
-      outar[i]=outar[i]*scalefac+offset
-    end
-  end
-  ncclose(filename)
-  return true
 end
 
 gettoffsnt(::AbstractSubCube,r::CartesianIndices)=(first(r.indices[3]) - 1,length(r.indices[3]))
@@ -794,7 +703,7 @@ gettoffsnt(::SubCubeStatic,r::CartesianIndices{2})=(0,1)
 
 function _read(s::AbstractSubCube,t::AbstractArray,r::CartesianIndices) #;xoffs::Int=0,yoffs::Int=0,toffs::Int=0,voffs::Int=0,nx::Int=size(outar,1),ny::Int=size(outar,2),nt::Int=size(outar,3),nv::Int=length(s.variable))
 
-  outar,mask=t.data,t.mask
+  outar=t
   grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid
   y1,i1,y2,i2,ntime,NpY           = s.sub_times
 
@@ -819,42 +728,38 @@ function _read(s::AbstractSubCube,t::AbstractArray,r::CartesianIndices) #;xoffs:
 
   voffs,nv = getNv(r)
 
-  fill!(mask,zero(UInt8))
-  getLandSeaMask!(mask,s.cube,grid_x1,nx,grid_y1,ny)
-
-  readAllyears(s,outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
+  readAllyears(s,outar,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
 end
 
-function readAllyears(s::SubCube,outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
+function readAllyears(s::SubCube,outar,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
   ycur=y1   #Current year to read
   i1cur=i1  #Current time step in year
   itcur=1   #Current time step in output file
   fin = false
   while !fin
-    fin,ycur,i1cur,itcur = readFromDataYear(s.cube,outar,mask,s.variable,ycur,grid_x1,nx,grid_y1,ny,itcur,i1cur,nt,NpY)
+    fin,ycur,i1cur,itcur = readFromDataYear(s.cube,outar,s.variable,ycur,grid_x1,nx,grid_y1,ny,itcur,i1cur,nt,NpY)
   end
 end
 
-function readAllyears(s::SubCubeStatic,outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
+function readAllyears(s::SubCubeStatic,outar,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
   ycur=y1   #Current year to read
   i1cur=i1  #Current time step in year
   itcur=1   #Current time step in output file
   fin = false
   while !fin
-    fin,ycur,i1cur,itcur = readFromDataYear(s.cube,reshape(outar,(size(outar,1),size(outar,2),1)),reshape(mask,(size(mask,1),size(mask,2),1)),s.variable,ycur,grid_x1,nx,grid_y1,ny,itcur,i1cur,nt,NpY)
+    fin,ycur,i1cur,itcur = readFromDataYear(s.cube,reshape(outar,(size(outar,1),size(outar,2),1)),s.variable,ycur,grid_x1,nx,grid_y1,ny,itcur,i1cur,nt,NpY)
   end
 end
 
-function readAllyears(s::SubCubeV,outar,mask,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
+function readAllyears(s::SubCubeV,outar,y1,i1,grid_x1,nx,grid_y1,ny,nt,voffs,nv,NpY)
   for iv in (voffs+1):(nv+voffs)
     outar2=view(outar,:,:,:,iv-voffs)
-    mask2=view(mask,:,:,:,iv-voffs)
     ycur=y1   #Current year to read
     i1cur=i1  #Current time step in year
     itcur=1   #Current time step in output file
     fin = false
     while !fin
-      fin,ycur,i1cur,itcur = readFromDataYear(s.cube,outar2,mask2,s.variable[iv],ycur,grid_x1,nx,grid_y1,ny,itcur,i1cur,nt,NpY)
+      fin,ycur,i1cur,itcur = readFromDataYear(s.cube,outar2,s.variable[iv],ycur,grid_x1,nx,grid_y1,ny,itcur,i1cur,nt,NpY)
     end
   end
 end
@@ -918,27 +823,22 @@ function show(io::IO,::MIME"text/markdown",v::ESDLVarInfo)
 end
 show(io::IO,::MIME"text/markdown",v::Vector{ESDLVarInfo})=foreach(x->show(io,MIME"text/markdown"(),x),v)
 
-
-getNanVal(::Type{T}) where {T<:AbstractFloat} = convert(T,NaN)
-getNanVal(::Type{T}) where {T<:Integer}       = typemax(T)
-getNanVal(::Type{T}) where {T<:Union{<:Number,Missing}} = missing
 getCopy(x::AbstractArray{Union{T,Missing}}) where T = zeros(T,size(x)),T
+getCopy(x::Array{Union{T,Missing}}) where T = zeros(T,size(x)),T
 getCopy(x::AbstractArray) = zeros(eltype(x),size(x)),eltype(x)
 getCopy(x::Array) = x,eltype(x)
 
-function readFromDataYear(cube::Cube,outar::AbstractArray{T,3},mask::AbstractArray{UInt8,3},variable,y,grid_x1,nx,grid_y1,ny,itcur,i1cur,ntime,NpY) where T
+function readFromDataYear(cube::Cube,outar::AbstractArray{T,3},variable,y,grid_x1,nx,grid_y1,ny,itcur,i1cur,ntime,NpY) where T
   filename=joinpath(cube.base_dir,"data",variable,string(y,"_",variable,".nc"))
   ntleft = ntime - itcur + 1
   nt = min(NpY-i1cur+1,ntleft)
   xr = grid_x1:(grid_x1+nx-1)
   yr = grid_y1:(grid_y1+ny-1)
-  nanval=getNanVal(T)
   #Make some assertions for inbounds
   @assert itcur>0
   @assert (itcur+nt-1)<=size(outar,3)
   @assert ny==size(outar,2)
   @assert nx==size(outar,1)
-  @assert size(outar)==size(mask)
   outar2,T2 = getCopy(outar)
   if isfile(filename)
     v=convert(NcVar{T2},NetCDF.open(filename,variable))
@@ -948,8 +848,7 @@ function readFromDataYear(cube::Cube,outar::AbstractArray{T,3},mask::AbstractArr
     missval::T=convert(T,ncgetatt(filename,variable,"_FillValue"))
     @inbounds for k=itcur:(itcur+nt-1),j=1:ny,i=1:nx
       if (outar2[i,j,k] == missval) || isnan(outar2[i,j,k])
-        mask[i,j,k]=mask[i,j,k] | MISSING
-        outar[i,j,k]=nanval
+        outar[i,j,k]=missing
       else
         outar[i,j,k]=outar2[i,j,k]*scalefac+offset
       end
@@ -957,8 +856,7 @@ function readFromDataYear(cube::Cube,outar::AbstractArray{T,3},mask::AbstractArr
     ncclose(filename)
   else
     @inbounds for k=itcur:(itcur+nt-1),j=1:ny,i=1:nx
-      mask[i,j,k]=(mask[i,j,k] | OUTOFPERIOD)
-      outar[i,j,k]=nanval
+      outar[i,j,k]=missing
     end
   end
   itcur+=nt

@@ -32,7 +32,6 @@ end
 Base.getindex(a::PickAxisArray,i::CartesianIndex) = a[i.I]
 
 import ESDL.DAT: DATConfig
-import ESDL.CubeAPI.Mask: MaskArray
 struct CubeIterator{R,ART,ARTBC,LAX,ILAX,S}
     dc::DATConfig
     r::R
@@ -43,6 +42,21 @@ end
 Base.IteratorSize(::Type{<:CubeIterator})=Base.HasLength()
 Base.IteratorEltype(::Type{<:CubeIterator})=Base.HasEltype()
 Base.eltype(i::Type{<:CubeIterator{A,B,C,D,E,F}}) where {A,B,C,D,E,F} = F
+# function splitIterator(ci::CubeIterator)
+#   t=typeof(ci)
+#   map(ci.r) do r
+#     dcnew = deepcopy(ci.dc)
+#     inars = getproperty.(dcnew.incubes,:handle)
+#     inarsbc = map(dcnew.incubes) do ic
+#       allax = falses(length(dc.LoopAxes))
+#       allax[icnew.loopinds].=true
+#       PickAxisArray(icnew.handle,allax)
+#     end
+#     loopaxes=deepcopy(ci.loopaxes)
+#     t(dcnew,r,inars,inarsbc,loopaxes)
+#   end
+# end
+
 # function cubeeltypes(::Type{<:CubeIterator{<:Any,ART}}) where ART
 #   allt = gettupletypes.(gettupletypes(ART))
 #   map(i->Union{eltype(i[1]),Missing},allt)
@@ -290,7 +304,7 @@ function _CubeTable(thetype,c::AbstractCubeData...;include_axes=(),varnames=varn
   c2 = map(perms,c) do p,cube
     if issorted(p)
       cube
-    else 
+    else
       pp=sortperm(p)
       pp = ntuple(i->pp[i],length(pp))
       permutedims(cube,pp)
