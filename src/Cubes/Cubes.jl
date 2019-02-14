@@ -40,7 +40,7 @@ end
 """
 This function calculates a subset of a cube's data
 """
-function subsetCubeData end
+function subsetCube end
 
 #"""
 #Internal function to read a range from a datacube

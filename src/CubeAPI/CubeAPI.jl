@@ -83,7 +83,7 @@ function parseEntry(d,e::Union{ConfigEntry{:ref_time},ConfigEntry{:start_time},C
 end
 function parseEntry(d,e::ConfigEntry{:chunk_sizes})
   if e.rhs=="None"
-    d.chunk_sizes=(1,1,1)
+    d.chunk_sizes=(0,0,0)
   else
     p=Meta.parse(e.rhs).args
     d.chunk_sizes=(p[1],p[2],p[3])
