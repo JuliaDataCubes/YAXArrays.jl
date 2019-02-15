@@ -1,7 +1,6 @@
 module CubeIO
 using ..Cubes
 using ..DAT
-using ..CubeAPI
 using ..Proc
 
 import ...ESDLTools: unmiss
@@ -60,7 +59,7 @@ length `nsample`. If `nomissing=true` only grid cells will be selected which don
 This makes sense for gap-filled cubes to make sure that grid cells with systematic seasonal gaps are not selected
 in the sample.
 """
-function sampleLandPoints(cdata::CubeAPI.AbstractCubeData,nsample::Integer,nomissing=false)
+function sampleLandPoints(cdata::AbstractCubeData,nsample::Integer,nomissing=false)
   axlist=caxes(cdata)
   ilon=findAxis(LonAxis,axlist)
   ilat=findAxis(LatAxis,axlist)

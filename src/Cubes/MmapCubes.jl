@@ -4,7 +4,7 @@ abstract type AbstractMmapCube{T,N}<:AbstractCubeData{T,N} end
 using Serialization
 using Distributed
 using Mmap
-using SentinelMissings
+#using SentinelMissings
 missval(::Type{T}) where T<: Integer = typemax(T)
 missval(::Type{T}) where T<: AbstractFloat = convert(T,NaN)
 

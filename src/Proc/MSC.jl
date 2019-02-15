@@ -2,7 +2,6 @@ module MSC
 export removeMSC, gapFillMSC, getMSC, getMedSC
 using ..Cubes
 using ..DAT
-using ..CubeAPI
 using ..Proc
 import Statistics: quantile!
 

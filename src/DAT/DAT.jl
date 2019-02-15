@@ -1,11 +1,13 @@
 module DAT
 export mapCube, getInAxes, getOutAxes, findAxis, reduceCube, getAxis, InputCube, OutputCube
-using ..Cubes
-using ..CubeAPI
+import ..Cubes
 using ..ESDLTools
-using Distributed
-import ..Cubes: getAxis, getOutAxis, getAxis, cubechunks, iscompressed, chunkoffset, _write
+import Distributed: pmap, @everywhere
+import ..Cubes: getAxis, getOutAxis, getAxis, cubechunks, iscompressed, chunkoffset, _write,
+  CubeAxis, RangeAxis, CategoricalAxis, AbstractCubeData, MmapCube, CubeMem
+import ..Cubes.Axes: AxisDescriptor
 import ...ESDL
+import ..Cubes.ESDLZarr: ZArrayCube
 import ...ESDL.workdir
 import DataFrames
 import Distributed: nprocs
@@ -19,13 +21,8 @@ macro debug_print(e)
   :()
 end
 
-using Requires
-
 const hasparprogress=[false]
 const progresscolor=[:cyan]
-function __init__()
-  @require IJulia = "7073ff75-c697-5162-941a-fcdaad2a7d2a" begin progresscolor[1] = :blue end
-end
 
 include("registration.jl")
 
@@ -351,7 +348,7 @@ function getRetCubeType(oc,ispar,max_cache)
   outsize=sizeof(eltype)*(length(oc.allAxes)>0 ? prod(map(length,oc.allAxes)) : 1)
   if string(oc.desc.retCubeType)=="auto"
     if ispar || outsize>max_cache
-      cubetype = MmapCube
+      cubetype = ESDLZarr.ZArrayCube
     else
       cubetype = CubeMem
     end
@@ -361,10 +358,15 @@ function getRetCubeType(oc,ispar,max_cache)
   eltype,cubetype
 end
 
-function generateOutCube(::Type{T},eltype,oc::OutputCube,loopCacheSize) where T<:MmapCube
+function generateOutCube(::Type{T},eltype,oc::OutputCube,loopCacheSize,co) where T<:MmapCube
   oc.cube=MmapCube(oc.allAxes,folder=oc.folder,T=eltype,persist=false)
 end
-function generateOutCube(::Type{T},eltype,oc::OutputCube,loopCacheSize) where T<:CubeMem
+function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co) where T<:ZArrayCube
+  @show loopcachesize
+  @show co
+  oc.cube=ZArrayCube(oc.allAxes,folder=oc.folder,T=eltype,persist=false,chunksize=loopcachesize,chunkoffset=co)
+end
+function generateOutCube(::Type{T},eltype,oc::OutputCube,loopCacheSize,co) where T<:CubeMem
   newsize=map(length,oc.allAxes)
   outar=Array{eltype}(undef,newsize...)
   genFun=oc.desc.genOut
@@ -372,12 +374,15 @@ function generateOutCube(::Type{T},eltype,oc::OutputCube,loopCacheSize) where T<
   oc.cube = Cubes.CubeMem(oc.allAxes,outar)
 end
 
-generateOutCubes(dc::DATConfig)=foreach(dc.outcubes) do c
-  generateOutCube(c,dc.ispar,dc.max_cache,dc.loopCacheSize)
+function generateOutCubes(dc::DATConfig)
+  co = getchunkoffsets(dc)
+  foreach(dc.outcubes) do c
+    generateOutCube(c,dc.ispar,dc.max_cache,dc.loopCacheSize,co)
+  end
 end
-function generateOutCube(oc::OutputCube,ispar::Bool,max_cache,loopCacheSize)
+function generateOutCube(oc::OutputCube,ispar::Bool,max_cache,loopCacheSize,co)
   eltype,cubetype = getRetCubeType(oc,ispar,max_cache)
-  generateOutCube(cubetype,eltype,oc,loopCacheSize)
+  generateOutCube(cubetype,eltype,oc,loopCacheSize,co)
 end
 
 dcg=nothing

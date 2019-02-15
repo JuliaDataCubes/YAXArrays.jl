@@ -40,7 +40,7 @@ end
 """
 This function calculates a subset of a cube's data
 """
-function subsetCube end
+function subsetcube end
 
 #"""
 #Internal function to read a range from a datacube
@@ -201,6 +201,7 @@ function Base.show(io::IO,c::AbstractCubeData)
     for a in caxes(c)
         println(io,a)
     end
+
     foreach(cubeproperties(c)) do p
       println(io,p[1],": ",p[2])
     end
@@ -247,6 +248,6 @@ Base.show(io::IO,a::SpatialPointAxis)=print(io,"Spatial points axis with ",lengt
 
 
 include("TransformedCubes.jl")
-
+include("ZarrCubes.jl")
 
 end

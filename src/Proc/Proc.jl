@@ -2,7 +2,7 @@ module Proc
 export cubeAnomalies, removeMSC, gapFillMSC, normalizeTS, simpleAnomalies,
   sampleLandPoints, getMSC, filterTSFFT, getNpY, getMedSC, DATfitOnline,
   spatialinterp, extractLonLats, cubePCA, rotation_matrix, transformPCA, explained_variance,exportcube
-using ..DAT, ..CubeAPI, ..Cubes
+using ..DAT, ..Cubes
 
 import Dates.year
 """

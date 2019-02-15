@@ -157,7 +157,7 @@ axname(::Type{T}) where T<:CubeAxis{S,U} where {S,U} = U
 axunits(::CubeAxis)="unknown"
 axunits(::LonAxis)="degrees_east"
 axunits(::LatAxis)="degrees_north"
-function axVal2Index(a::RangeAxis{T,S,F},v;fuzzy=false) where {T,S,F<:StepRange}
+function axVal2Index(a::RangeAxis{<:Any,<:Any,<:AbstractRange},v;fuzzy=false)
   dt = v-first(a.values)
   r = round(Int,dt/step(a.values))+1
   return max(1,min(length(a.values),r))
@@ -184,7 +184,6 @@ function axVal2Index(a::RangeAxis{T,S,F},v::Date;fuzzy=false) where {T<:Date,S,F
   mi,ind = findmin(dd)
   return ind
 end
-axVal2Index(axis::RangeAxis{T,S,F},v;fuzzy::Bool=false) where {T,S,F<:StepRangeLen}=min(max(round(Int,(v-first(axis.values))/step(axis.values))+1,1),length(axis))
 function axVal2Index(axis::CategoricalAxis{String},v::String;fuzzy::Bool=false)
   r=findfirst(isequal(v),axis.values)
   if r==nothing
