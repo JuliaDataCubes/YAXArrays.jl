@@ -82,7 +82,7 @@ of the aliases:
 * `ScaleAxis` time scales after time series decomposition
 * `QuantileAxis` represents different quantiles
 
-### Cotinuous Axes
+### Continuous Axes
 
 * `LonAxis` longitudes
 * `LatAxis` latitudes
