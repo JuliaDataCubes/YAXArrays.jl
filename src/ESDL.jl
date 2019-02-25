@@ -11,7 +11,7 @@ export ESDLdir, getAxis
 export Cube, getCubeData,readCubeData,CubeMem,CubeAxis, TimeAxis, TimeHAxis, VariableAxis, LonAxis, FitAxis, LatAxis, CountryAxis, SpatialPointAxis, saveCube, loadCube,
         RangeAxis, CategoricalAxis, MSCAxis, getSingVal, ScaleAxis, QuantileAxis, MethodAxis, RemoteCube, showVarInfo, @caxis_str,
         axVal2Index, mapCubeSimple, concatenateCubes, SliceCube, NetCDFCube, mergeAxes, caxes #From Cube module
-export registerDATFunction, mapCube, reduceCube, getAxis, InDims, OutDims,
+export registerDATFunction, mapCube, reduceCube, getAxis, InDims, OutDims, (..),
         @CubeTable, AsArray,AsAxisArray,AsDataFrame, cubefittable, TableAggregator, fittable #From DAT module
 export cubeAnomalies, removeMSC, gapFillMSC, normalizeTS,DATfitOnline,
   sampleLandPoints, toPointAxis, getMSC, filterTSFFT, getNpY,

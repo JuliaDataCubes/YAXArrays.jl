@@ -188,7 +188,9 @@ function axVal2Index(axis::CategoricalAxis{String},v::String;fuzzy::Bool=false)
   r=findfirst(isequal(v),axis.values)
   if r==nothing
     if fuzzy
-      r=findall(i->startswith(lowercase(i),lowercase(v)),axis.values)
+      r=findall(axis.values) do i
+        startswith(lowercase(i),lowercase(v[1:min(length(i),length(v))]))
+      end
       if length(r)==1
         return(r[1])
       else

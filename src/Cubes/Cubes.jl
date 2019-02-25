@@ -6,7 +6,7 @@ module Cubes
 export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, TimeHAxis, QuantileAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, caxes,
        AbstractSubCube, CubeMem, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis, axVal2Index, MSCAxis,
        getSingVal, ScaleAxis, axname, @caxis_str, rmCube, cubeproperties, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
-       getOutAxis, ByInference
+       getOutAxis, Cube, (..), getCubeData
 
 
 """
@@ -25,6 +25,8 @@ getSingVal reads a single point from the cube's data
 """
 getSingVal(c::AbstractCubeData,a...)=error("getSingVal called in the wrong way with argument types $(typeof(c)), $(map(typeof,a))")
 
+Base.eltype(::AbstractCubeData{T}) where T = T
+Base.ndims(::AbstractCubeData{<:Any,N}) where N = N
 
 """
     readCubeData(cube::AbstractCubeData)
@@ -49,9 +51,6 @@ function subsetcube end
 
 "Returns the axes of a Cube"
 caxes(c::AbstractCubeData)=error("Axes function not implemented for $(typeof(c))")
-
-"Number of dimensions"
-Base.ndims(::AbstractCubeData{T,N}) where {T,N}=N
 
 cubeproperties(::AbstractCubeData)=Dict{String,Any}()
 
@@ -249,5 +248,6 @@ Base.show(io::IO,a::SpatialPointAxis)=print(io,"Spatial points axis with ",lengt
 
 include("TransformedCubes.jl")
 include("ZarrCubes.jl")
+import .ESDLZarr: (..), Cube, getCubeData
 
 end

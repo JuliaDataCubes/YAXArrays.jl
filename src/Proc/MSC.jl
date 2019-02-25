@@ -29,8 +29,8 @@ function removeMSC(c::AbstractCubeData;kwargs...)
         NpY,
         zeros(Union{Missing,Float64},NpY),
         zeros(Int,NpY);
-        indims  = InDims( "Time" ),
-        outdims = OutDims("Time" ),
+        indims  = InDims("Time"),
+        outdims = OutDims("Time"),
         kwargs...
     )
 end

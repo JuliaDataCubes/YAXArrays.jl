@@ -30,7 +30,7 @@ function Base.getindex(a::PickAxisArray{P,N},i::NTuple{N,Int}) where {P,N}
     a.parent[ilin]
 end
 Base.getindex(a::PickAxisArray,i::CartesianIndex) = a[i.I]
-
+import SentinelMissings
 import ESDL.DAT: DATConfig
 struct CubeIterator{R,ART,ARTBC,LAX,ILAX,S}
     dc::DATConfig
@@ -42,33 +42,7 @@ end
 Base.IteratorSize(::Type{<:CubeIterator})=Base.HasLength()
 Base.IteratorEltype(::Type{<:CubeIterator})=Base.HasEltype()
 Base.eltype(i::Type{<:CubeIterator{A,B,C,D,E,F}}) where {A,B,C,D,E,F} = F
-# function splitIterator(ci::CubeIterator)
-#   t=typeof(ci)
-#   map(ci.r) do r
-#     dcnew = deepcopy(ci.dc)
-#     inars = getproperty.(dcnew.incubes,:handle)
-#     inarsbc = map(dcnew.incubes) do ic
-#       allax = falses(length(dc.LoopAxes))
-#       allax[icnew.loopinds].=true
-#       PickAxisArray(icnew.handle,allax)
-#     end
-#     loopaxes=deepcopy(ci.loopaxes)
-#     t(dcnew,r,inars,inarsbc,loopaxes)
-#   end
-# end
 
-# function cubeeltypes(::Type{<:CubeIterator{<:Any,ART}}) where ART
-#   allt = gettupletypes.(gettupletypes(ART))
-#   map(i->Union{eltype(i[1]),Missing},allt)
-# end
-# gettupletypes(::Type{Tuple{A}}) where A = (A,)
-# gettupletypes(::Type{Tuple{A,B}}) where {A,B} = (A,B)
-# gettupletypes(::Type{Tuple{A,B,C}}) where {A,B,C} = (A,B,C)
-# gettupletypes(::Type{Tuple{A,B,C,D}}) where {A,B,C,D} = (A,B,C,D)
-# gettupletypes(::Type{Tuple{A,B,C,D,E}}) where {A,B,C,D,E} = (A,B,C,D,E)
-# gettupletypes(::Type{Tuple{A,B,C,D,E,F}}) where {A,B,C,D,E,F} = (A,B,C,D,E,F)
-# axtypes(::Type{<:CubeIterator{A,B,C,D,E}}) where {A,B,C,D,E} = axtype.(gettupletypes(D))
-# axtype(::Type{<:CubeAxis{T}}) where T = T
 getrownames(t::Type{<:CubeIterator}) = fieldnames(t)
 getncubes(::Type{<:CubeIterator{A,B}}) where {A,B} = tuplelen(B)
 tuplelen(::Type{<:NTuple{N,<:Any}}) where N=N
@@ -78,7 +52,11 @@ lift64(::Type{Float32})=Float64
 lift64(::Type{Int32})=Int64
 lift64(T)=T
 
-function CubeIterator(s,dc,r;varnames::Tuple=ntuple(i->Symbol("x$i"),length(dc.incubes)),include_loopvars=())
+defaultval(t::Type{<:AbstractFloat})=convert(t,NaN)
+defaultval(t::Signed)=typemin(t)+1
+defaultval(t::Unsigned)=typemax(t)-1
+
+function CubeIterator(dc,r;varnames::Tuple=ntuple(i->Symbol("x$i"),length(dc.incubes)),include_loopvars=())
     loopaxes = ntuple(i->dc.LoopAxes[i],length(dc.LoopAxes))
     inars = getproperty.(dc.incubes,:handle)
     length(varnames) == length(dc.incubes) || error("Supplied $(length(varnames)) varnames and $(length(dc.incubes)) cubes.")
@@ -88,7 +66,7 @@ function CubeIterator(s,dc,r;varnames::Tuple=ntuple(i->Symbol("x$i"),length(dc.i
       allax[ic.loopinds].=true
       PickAxisArray(ic.handle,allax)
     end
-    et = map(i->Union{lift64(eltype(i[1])),Missing},inars)
+    et = map(i->SentinelMissings.SentinelMissing{eltype(i[1]),defaultval(eltype(i[1]))},inars)
     if !isempty(include_loopvars)
       ilax = map(i->findAxis(i,collect(loopaxes)),include_loopvars)
       any(isequal(nothing),ilax) && error("Axis not found in cubes")
@@ -96,7 +74,9 @@ function CubeIterator(s,dc,r;varnames::Tuple=ntuple(i->Symbol("x$i"),length(dc.i
     else
       ilax=()
     end
-    CubeIterator{typeof(r),typeof(inars),typeof(inarsbc),typeof(loopaxes),ilax,s{et...}}(dc,r,inars,inarsbc,loopaxes)
+
+    elt = NamedTuple{(map(Symbol,varnames)...,map(Symbol,include_loopvars)...),Tuple{et...}}
+    CubeIterator{typeof(r),typeof(inars),typeof(inarsbc),typeof(loopaxes),ilax,elt}(dc,r,inars,inarsbc,loopaxes)
 end
 function Base.show(io::IO,ci::CubeIterator{<:Any,<:Any,<:Any,<:Any,<:Any,E}) where E
   print(io,"Datacube iterator with ", length(ci), " elements with fields: ",E)
@@ -159,15 +139,15 @@ end
 #   #NamedTuple{RN,RT}(axvals...,cvals...)
 #   NamedTuple{RN,RT}(allvals)
 # end
-function getrow(ci::CubeIterator{<:Any,<:Any,<:Any,<:Any,ILAX,S},inarsBC,indnow,offs) where {ILAX,S<:CubeRowAx}
+function getrow(ci::CubeIterator{<:Any,<:Any,<:Any,<:Any,ILAX,S},inarsBC,indnow,offs) where {ILAX,S}
    #inds = map(i->indnow.I[i],ILAX)
    #axvals = map((i,indnow)->ci.loopaxes[i][indnow],ILAX,inds)
    axvalsall = map((ax,i,o)->ax.values[i+o],ci.loopaxes,indnow.I,offs)
    axvals = map(i->axvalsall[i],ILAX)
    cvals  = map(i->i[indnow],inarsBC)
-   S(cvals...,axvals...)
+   S((cvals...,axvals...))
 end
-function getrow(ci::CubeIterator{<:Any,<:Any,<:Any,<:Any,<:Any,S},inarsBC,indnow,offs) where S<:CubeRow
+function getrow(ci::CubeIterator{<:Any,<:Any,<:Any,<:Any,(),S},inarsBC,indnow,offs) where S
    cvals  = map(i->i[indnow],inarsBC)
    S(cvals...)
 end
@@ -213,82 +193,36 @@ end
 import DataStructures: OrderedDict
 export @CubeTable
 """
-    @CubeTable input_vars...
+    CubeTable(c::AbstractCubeData...)
 
-Macro to turn a DataCube object into an iterable table. Takes a list of as arguments,
-specified either by a cube variable name alone or by a `name=cube` expression. For example
-`@CubeTable cube1 country=cube2` would generate a Table with the entries `cube1` and `country`,
-where `cube1` contains the values of `cube1` and `country` the values of `cube2`. The cubes
+Function to turn a DataCube object into an iterable table. Takes a list of as arguments,
+specified as a `name=cube` expression. For example
+`CubeTable(data=cube1,country=cube2)` would generate a Table with the entries `data` and `country`,
+where `data` contains the values of `cube1` and `country` the values of `cube2`. The cubes
 are matched and broadcasted along their axes like in `mapCube`.
 
 In addition, one can specify
-`axes=(ax1,ax2...)` when one wants to include the values of certain xes in the table. For example
-the command `@CubeTable tair=cube1 axes=(lon,lat,time)` would produce an iterator over a data structure
+`axes=(ax1,ax2...)` when one wants to include the values of certain axes in the table. For example
+the command `(CubeTable(tair=cube1 axes=("lon","lat","time"))` would produce an iterator over a data structure
 with entries `tair`, `lon`, `lat` and `time`.
 
 Lastly there is an option to specify which axis shall be the fastest changing when iterating over the cube.
-For example `@CubeTable cube1 fastest=time` will ensure that the iterator will always loop over consecutive
+For example `CubeTable(tair=cube1,fastest="time"` will ensure that the iterator will always loop over consecutive
 time steps of the same location.
 """
-macro CubeTable(cubes...)
-  axargs=[]
-  fastloopvar=""
-  clist = OrderedDict{Any,Any}()
-  for c in cubes
-    if isa(c,Symbol)
-      clist[esc(c)]=esc(c)
-    elseif isa(c,Expr) && c.head==:(=)
-      if c.args[1]==:axes
-        axdef = c.args[2]
-        if isa(axdef,Symbol)
-          push!(axargs,axdef)
-        else
-          append!(axargs,axdef.args)
-        end
-      elseif c.args[1]==:fastest
-        fastloopvar=c.args[2]
-      else
-        clist[esc(c.args[1])]=esc(c.args[2])
-      end
-    end
-  end
-  allcubes = collect(values(clist))
-  allnames = collect(keys(clist))
-  s = esc(gensym())
-  theparams = Expr(:curly,s,[Symbol("T$i") for i=1:length(clist)]...)
-  fields = Expr(:block,[Expr(:(::),fn,Symbol("T$i")) for (i,fn) in enumerate(allnames)]...)
-  #pn = Expr(:tuple,map(i->QuoteNode(i.args[1]),allnames)...)
-  if !isempty(axargs)
-    foreach(axargs) do ax
-      as = Symbol(ax)
-      push!(theparams.args,Symbol("AX$as"))
-      push!(fields.args,:($(esc(as))::$(Symbol("AX$as"))))
-      #push!(pn.args,as)
-    end
-    supert=:CubeRowAx
-  else
-    supert=:CubeRow
-  end
-  quote
-    struct $theparams <: $supert
-      $fields
-    end
-    #Base.propertynames(s::$s)=$pn
-    _CubeTable($s,$(allcubes...),include_axes=$(Expr(:tuple,string.(axargs)...)), varnames=$(Expr(:tuple,QuoteNode.(allnames)...)),fastvar=$(QuoteNode(fastloopvar)))
-  end
-end
-
-
-function _CubeTable(thetype,c::AbstractCubeData...;include_axes=(),varnames=varnames,fastvar="")
+function CubeTable(;include_axes=(),fastest="",cubes...)
   inax=nothing
-  if isempty(string(fastvar))
+  c = totuple(map((k,v)->v,keys(cubes),values(cubes)))
+  @show c
+  varnames = map(string,keys(cubes))
+  if isempty(string(fastest))
     indims = map(i->InDims(),c)
   else
     indims = map(c) do i
-      iax = findAxis(string(fastvar),i)
+      iax = findAxis(string(fastest),i)
       if iax > 0
         inax = caxes(i)[iax]
-        InDims(string(fastvar))
+        InDims(string(fastest))
       else
         InDims()
       end
@@ -315,7 +249,7 @@ function _CubeTable(thetype,c::AbstractCubeData...;include_axes=(),varnames=varn
     if inax !== nothing
     linax = length(inax)
     pushfirst!(configiter.LoopAxes,inax)
-    pushfirst!(configiter.loopCacheSize,linax)
+    pushfirst!(configiter.loopcachesize,linax)
     foreach(configiter.incubes) do ic1
       if !isempty(ic1.axesSmall)
         empty!(ic1.axesSmall)
@@ -326,8 +260,8 @@ function _CubeTable(thetype,c::AbstractCubeData...;include_axes=(),varnames=varn
       end
     end
   end
-  r = collect(distributeLoopRanges(totuple(configiter.loopCacheSize),totuple(map(length,configiter.LoopAxes)),getchunkoffsets(configiter)))
-  ci = CubeIterator(thetype,configiter,r, include_loopvars=include_axes,varnames=varnames)
+  r = collect(distributeLoopRanges(totuple(configiter.loopcachesize),totuple(map(length,configiter.LoopAxes)),getchunkoffsets(configiter)))
+  ci = CubeIterator(configiter,r,include_loopvars=include_axes,varnames=varnames)
 end
 
 

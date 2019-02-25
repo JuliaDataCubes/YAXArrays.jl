@@ -1,5 +1,6 @@
 export InDims, OutDims,AsArray,AsDataFrame,AsAxisArray
 const AxisDescriptorAll = Union{AxisDescriptor,String,Type{T},CubeAxis,Function} where T<:CubeAxis
+import ..Cubes.Axes: get_descriptor, ByFunction
 
 abstract type ArTypeRepr end
 struct AsArray <: ArTypeRepr end

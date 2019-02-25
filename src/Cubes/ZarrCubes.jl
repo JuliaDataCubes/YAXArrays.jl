@@ -1,47 +1,70 @@
 module ESDLZarr
 import ...ESDL
-import ZarrNative: ZGroup, zopen, ZArray, NoCompressor, zgroup, zcreate
+import Distributed: myid
+import ZarrNative: ZGroup, zopen, ZArray, NoCompressor, zgroup, zcreate, readblock!
 import ESDL.Cubes: cubechunks, iscompressed, AbstractCubeData, getCubeDes,
   caxes,chunkoffset, gethandle, subsetcube, axVal2Index, findAxis, _read,
-  _write, cubeproperties, ConcatCube
-import ESDL.Cubes.Axes: axname, CubeAxis, CategoricalAxis, RangeAxis
+  _write, cubeproperties, ConcatCube, concatenateCubes
+import ESDL.Cubes.Axes: axname, CubeAxis, CategoricalAxis, RangeAxis, TimeAxis
 import Dates: Day,Hour,Minute,Second,Month,Year, Date
 import IntervalSets: Interval, (..)
-export (..)
+export (..), Cubes, getCubeData
 const spand = Dict("days"=>Day,"months"=>Month,"years"=>Year,"seconds"=>Second,"minutes"=>Minute)
 
-mutable struct ZArrayCube{T,N,A<:ZArray{T,N},S} <: AbstractCubeData{T,N}
+mutable struct ZArrayCube{T,M,A<:ZArray{T},S} <: AbstractCubeData{T,M}
   a::A
   axes::Vector{CubeAxis}
   subset::S
+  persist::Bool
 end
-import ZarrNative: readblock!
 getCubeDes(::ZArrayCube)="ZArray Cube"
 caxes(z::ZArrayCube)=z.axes
-iscompressed(z::ZArrayCube)=!isa(z.a.metadata.compressor,ZarrNative.NoCompressor)
+iscompressed(z::ZArrayCube)=!isa(z.a.metadata.compressor,NoCompressor)
 cubechunks(z::ZArrayCube)=z.a.metadata.chunks
 function chunkoffset(z::ZArrayCube)
   cc = cubechunks(z)
-  map((s,c)->mod(s-1,c),s.subset,cc)
+  map((s,c)->mod(first(s)-1,c),z.subset,cc)
 end
-Base.size(z::ZArrayCube) = map(length,z.subset)
+chunkoffset(z::ZArrayCube{T,N,A,Nothing}) where A<:ZArray{T} where {T,N}  = ntuple(i->0,N)
+Base.size(z::ZArrayCube) = map(length,onlyrangetuple(z.subset))
+Base.size(z::ZArrayCube,i::Int) = length(onlyrangetuple(z.subset)[i])
+@inline onlyrangetuple(x::Integer,r...) = onlyrangetuple(r...)
+@inline onlyrangetuple(x,r...) = (x,onlyrangetuple(r...)...)
+@inline onlyrangetuple(x::Integer) = ()
+@inline onlyrangetuple(x) = (x,)
+@inline onlyrangetuple(x::Tuple)=onlyrangetuple(x...)
 Base.size(z::ZArrayCube{<:Any,<:Any,<:ZArray,Nothing}) = size(z.a)
+Base.size(z::ZArrayCube{<:Any,<:Any,<:ZArray,Nothing},i::Int) = size(z.a,i)
 #ESDL.Cubes.gethandle(z::ZArrayCube) = z.a
 
-function dataattfromaxis(ax::CubeAxis{<:Number})
-    ax.values, Dict{String,Any}()
+
+prependrange(r::AbstractRange,n) = n==0 ? r : range(first(r)-n*step(r),last(r),length=n+length(r))
+function prependrange(r::AbstractArray,n)
+  if n==0
+    return r
+  else
+    step = r[2]-r[1]
+    first = r[1] - step*n
+    last = r[1] - step
+    radd = range(first,last,length=n)
+    return [radd;r]
+  end
 end
-function dataattfromaxis(ax::CubeAxis{<:String})
-    1:length(ax.values), Dict{String,Any}("_ARRAYVALUES"=>collect(ax.values))
+
+function dataattfromaxis(ax::CubeAxis{<:Number},n)
+    prependrange(ax.values,n), Dict{String,Any}()
 end
-function dataattfromaxis(ax::CubeAxis{<:Date})
+function dataattfromaxis(ax::CubeAxis{<:String},n)
+    prependrange(1:length(ax.values),n), Dict{String,Any}("_ARRAYVALUES"=>collect(ax.values))
+end
+function dataattfromaxis(ax::CubeAxis{<:Date},n)
     refdate = Date(1980)
     vals = map(i->(i-refdate)/oneunit(Day),ax.values)
-    vals, Dict{String,Any}("units"=>"days since 1980-01-01")
+    prependrange(vals,n), Dict{String,Any}("units"=>"days since 1980-01-01")
 end
 
 function zarrayfromaxis(p::ZGroup,ax::CubeAxis,offs)
-    data, attr = dataattfromaxis(ax)
+    data, attr = dataattfromaxis(ax,offs)
     attr["_ARRAY_DIMENSIONS"]=[axname(ax)]
     attr["_ARRAY_OFFSET"]=offs
     za = zcreate(p,axname(ax), eltype(data),length(data),attrs=attr)
@@ -56,15 +79,21 @@ function cleanZArrayCube(y::ZArrayCube)
   end
 end
 
+defaultfillval(T::Type{<:AbstractFloat}) = convert(T,1e32)
+defaultfillval(::Type{Float16}) = Float16(3.2e4)
+defaultfillval(T::Type{<:Integer}) = typemax(T)
+
 function ZArrayCube(axlist;
   folder=tempname(),
-  T=Float32,
+  T=Union{Float32,Missing},
   chunksize = map(length,axlist),
   chunkoffset = ntuple(i->0,length(axlist)),
   compressor = NoCompressor(),
   persist::Bool=true,
   overwrite::Bool=false,
   properties=Dict{String,Any}(),
+  fillvalue= T>:Missing ? defaultfillval(Base.nonmissingtype(T)) : nothing,
+  compression = NoCompressor(),
   )
   if isdir(folder)
     if overwrite
@@ -86,8 +115,8 @@ function ZArrayCube(axlist;
       (chunkoffset[i]+1):(length(axlist.values[i])+chunkoffset[i])
     end
   end
-  za = zcreate(myar,"layer", T , s...,attrs=attr)
-  zout = ZArrayCube(za,axlist,subs)
+  za = zcreate(myar,"layer", T , s...,attrs=attr, fill_value=fillvalue,chunks=chunksize)
+  zout = ZArrayCube{T,length(s),typeof(za),typeof(subs)}(za,axlist,subs,persist)
   finalizer(cleanZArrayCube,zout)
   zout
 end
@@ -108,22 +137,27 @@ end
 getsubinds(subset::Tuple{},inds) = ()
 firstarg(x,s...) = x
 
+maybereshapedata(thedata::AbstractArray{<:Any,N},subinds::NTuple{N,<:Any}) where N = thedata
+maybereshapedata(thedata,subinds) = reshape(thedata,map(length,subinds))
+
 
 function _read(z::ZArrayCube{<:Any,N,<:Any},thedata::AbstractArray{<:Any,N},r::CartesianIndices{N}) where N
   allinds = CartesianIndices(map(Base.OneTo,size(z.a)))
   subinds = map(getindex,allinds.indices,z.subset)
   r2 = getsubinds(subinds,r.indices)
+  thedata = maybereshapedata(thedata,r2)
   readblock!(thedata,z.a,CartesianIndices(r2))
 end
 
 function _write(y::ZArrayCube{<:Any,N,<:Any,<:Nothing},thedata::AbstractArray,r::CartesianIndices{N}) where N
-  readblock!(thedata,z.a,r,readmode=false)
+  readblock!(thedata,y.a,r,readmode=false)
 end
 
 function _write(z::ZArrayCube{<:Any,N,<:Any},thedata::AbstractArray{<:Any,N},r::CartesianIndices{N}) where N
   allinds = CartesianIndices(map(Base.OneTo,size(z.a)))
   subinds = map(getindex,allinds.indices,z.subset)
   r2 = getsubinds(subinds,r.indices)
+  thedata = maybereshapedata(thedata,subinds)
   readblock!(thedata,z.a,CartesianIndices(r2),readmode=false)
 end
 
@@ -149,18 +183,18 @@ function parsetimeunits(unitstr)
     refdate = Date(map(i->parse(Int,m[i]),2:4)...)
     refdate,spand[m[1]]
 end
-function toaxis(dimname,g)
+function toaxis(dimname,g,offs)
     axname = dimname in ("lon","lat","time") ? uppercasefirst(dimname) : dimname
     ar = g[dimname]
     if axname=="Time" && haskey(ar.attrs,"units")
         refdate,span = parsetimeunits(ar.attrs["units"])
-        tsteps = refdate.+span.(ar[:])
+        tsteps = refdate.+span.(ar[offs+1:end])
         TimeAxis(tsteps)
     elseif haskey(ar.attrs,"_ARRAYVALUES")
       vals = ar.attrs["_ARRAYVALUES"]
       CategoricalAxis(axname,vals)
     else
-      axdata = testrange(ar[:])
+      axdata = testrange(ar[offs+1:end])
       RangeAxis(axname,axdata)
     end
 end
@@ -172,6 +206,10 @@ function testrange(x)
 end
 import DataStructures: counter
 
+Cube(s::String;kwargs...) = Cube(zopen(s);kwargs...)
+
+@deprecate getCubeData(c;kwargs...) subsetcube(c;kwargs...)
+
 function Cube(g::ZGroup;varlist=nothing,joinname="Variable")
 
   if varlist===nothing
@@ -180,14 +218,14 @@ function Cube(g::ZGroup;varlist=nothing,joinname="Variable")
   v1 = g[varlist[1]]
   s = size(v1)
   vardims = reverse((v1.attrs["_ARRAY_DIMENSIONS"]...,))
-  inneraxes = toaxis.(vardims,Ref(g))
-  offsets = map(i->g[i].attrs["_ARRAY_OFFSET"],vardims)
+  offsets = map(i->get(g[i].attrs,"_ARRAY_OFFSET",0),vardims)
+  inneraxes = toaxis.(vardims,Ref(g),offsets)
   iax = collect(CubeAxis,inneraxes)
   s.-offsets == length.(inneraxes) || throw(DimensionMismatch("Array dimensions do not fit"))
   allcubes = map(varlist) do iv
     v = g[iv]
     size(v) == s || throw(DimensionMismatch("All variables must have the same shape. $iv does not match $(varlist[1])"))
-    ZArrayCube(v,iax,nothing)
+    ZArrayCube{eltype(v),ndims(v),typeof(v),Nothing}(v,iax,nothing,true)
   end
   # Filter out minority element types
   c = counter(eltype(i) for i in allcubes)
@@ -214,8 +252,9 @@ interpretsubset(subexpr::AbstractVector,ax::CategoricalAxis)      = axVal2Index.
 axcopy(ax::RangeAxis,vals) = RangeAxis(axname(ax),vals)
 axcopy(ax::CategoricalAxis,vals) = CategoricalAxis(axname(ax),vals)
 
-function subsetcube(z::ZArrayCube;kwargs...)
-  subs = isnothing(z.subset) ? collect(Any,map(Base.OneTo,size(z))) : collect(z.subset)
+
+function subsetcube(z::ZArrayCube{T};kwargs...) where T
+  subs = isnothing(z.subset) ? collect(Any,map(Base.OneTo,size(z))) : collect(Any,z.subset)
   newaxes = deepcopy(caxes(z))
   foreach(kwargs) do kw
     axdes,subexpr = kw
@@ -228,11 +267,18 @@ function subsetcube(z::ZArrayCube;kwargs...)
       subinds = interpretsubset(subexpr,oldax)
       subs2 = subs[iax][subinds]
       subs[iax] = subs2
-      newaxes[iax] = axcopy(oldax,oldax.values[subinds])
+      if !isa(subinds,AbstractVector) && !isa(subinds,AbstractRange)
+        newaxes[iax] = axcopy(oldax,oldax.values[subinds:subinds])
+      else
+        newaxes[iax] = axcopy(oldax,oldax.values[subinds])
+      end
     end
   end
-  newaxes = filter(ax->length(ax)>1,newaxes) |> collect
-  ZArrayCube(z.a,newaxes,ntuple(i->subs[i],length(subs)))
+  inewaxes = findall(ax->length(ax)>1,newaxes)
+  newaxes = newaxes[inewaxes]
+  substuple = ntuple(i->subs[i],length(subs))
+  @assert length.(newaxes) == map(length,(substuple |> onlyrangetuple)) |> collect
+  ZArrayCube{T,length(newaxes),typeof(z.a),typeof(substuple)}(z.a,newaxes,substuple,true)
 end
 
 function subsetcube(z::ESDL.Cubes.ConcatCube{T,N};kwargs...) where {T,N}
@@ -244,7 +290,7 @@ function subsetcube(z::ESDL.Cubes.ConcatCube{T,N};kwargs...) where {T,N}
   if isnothing(isplitconcaxis)
     #We only need to subset the inner cubes
     cubelist = map(i->subsetcube(i;kwargs...),z.cubelist)
-    cubeaxes = caxes(first(z.cubelist))
+    cubeaxes = caxes(first(cubelist))
     cataxis = deepcopy(z.cataxis)
   else
     subs = kwargs[isplitconcaxis][2]
@@ -258,7 +304,7 @@ function subsetcube(z::ESDL.Cubes.ConcatCube{T,N};kwargs...) where {T,N}
     end
     cubeaxes = deepcopy(caxes(cubelist[1]))
   end
-  return length(cubelist)==1 ? cubelist[1] : ConcatCube{T,N}(cubelist,cataxis,cubeaxes,cubeproperties(z))
+  return length(cubelist)==1 ? cubelist[1] : ConcatCube{T,length(cubeaxes)+1}(cubelist,cataxis,cubeaxes,cubeproperties(z))
 end
 
 end # module
