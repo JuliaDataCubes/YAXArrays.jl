@@ -241,16 +241,17 @@ get_descriptor(a::Function)=ByFunction(a)
 get_descriptor(a)=error("$a is not a valid axis description")
 get_descriptor(a::AxisDescriptor)=a
 
+const VecOrTuple{S} = Union{Vector{<:S},NTuple{<:Any,S}} where S
 
 "Find a certain axis type in a vector of Cube axes and returns the index"
-function findAxis(bt::ByType,v::Vector{S}) where S<:CubeAxis
+function findAxis(bt::ByType,v::VecOrTuple{S}) where S<:CubeAxis
   a=bt.t
   for i=1:length(v)
     isa(v[i],a) && return i
   end
   return nothing
 end
-function findAxis(bs::ByName,axlist::Vector{T}) where T<:CubeAxis
+function findAxis(bs::ByName,axlist::VecOrTuple{T}) where T<:CubeAxis
   matchstr=bs.name
   ism=map(i->startswith(lowercase(axname(i)),lowercase(matchstr)),axlist)
   sism=sum(ism)
@@ -258,7 +259,7 @@ function findAxis(bs::ByName,axlist::Vector{T}) where T<:CubeAxis
   sism>1 && error("Multiple axes found matching string $matchstr")
   i=findfirst(ism)
 end
-function findAxis(bv::ByValue,axlist::Vector{T}) where T<:CubeAxis
+function findAxis(bv::ByValue,axlist::VecOrTuple{T}) where T<:CubeAxis
   v=bv.v
   return findfirst(i->i==v,axlist)
 end
@@ -325,8 +326,8 @@ function NcDim(a::CubeAxis{Date},start::Integer,count::Integer)
     count = oftype(count,length(a.values) - start + 1)
   end
   tv=a.values[start:(start+count-1)]
-  starttime=a.values[1]
-  startyear=Dates.year(starttime)
+  startyear=Dates.year(first(a.values))
+  starttime=Date(startyear)
   atts=Dict{Any,Any}("units"=>"days since $startyear-01-01")
   d=map(x->Float64(convert(Day,(x-starttime)).value),tv)
   NcDim(axname(a),length(d),values=d,atts=atts)

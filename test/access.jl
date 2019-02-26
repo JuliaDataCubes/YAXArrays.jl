@@ -11,7 +11,7 @@ d = getCubeData(c,variable="air_temperature_2m",longitude=(30,31),latitude=(51,5
                 time=(Date("2002-01-01"),Date("2008-12-31")))
 
 
-@test subset==(841:844, 157:160, 46:368)
+@test d.subset==(841:844, 157:160, 47:368)
 @test d.axes[1].values==30.125:0.25:30.875
 @test d.axes[2].values==50.875:-0.25:50.125
 @test isa(d.axes[1],LonAxis)
@@ -22,15 +22,14 @@ end
 d2 = getCubeData(c,variable=["air_temperature_2m","gross_primary_productivity"],longitude=(30,31),latitude=(50,51),
                 time=(Date("2002-01-01"),Date("2008-12-31")))
 
-import Dates
-
 @test d2.cataxis.values == ["air_temperature_2m", "gross_primary_productivity"]
 foreach(d2.cubelist) do cc
-  @test cc.subset ==(841:844, 157:160, 46:368)
+  @test cc.subset ==(841:844, 157:160, 47:368)
   @test cc.axes[1].values==30.125:0.25:30.875
   @test cc.axes[2].values==50.875:-0.25:50.125
-  @test first(cc.axes[3].values == Dates.Date(2002)
+  @test first(cc.axes[3].values) == Dates.Date(2002,1,5)
   @test last(cc.axes[3].values) == Dates.Date(2008, 12, 30)
+end
 end
 
 @testset "Test values in MemCube" begin
@@ -51,11 +50,22 @@ data2=readcubedata(d2)
 @test isapprox(data2.data[1,1,1:10,1],Float32[265.345,270.253,270.838,276.829,278.678,
   277.004,274.693,276.203,280.781,278.062])
 
-@test caxes(data1)==CubeAxis[LonAxis(30.125:0.25:30.875),LatAxis(50.875:-0.25:50.125),TimeAxis(ESDL.Cubes.Axes.YearStepRange(2002,1,2008,46,8,46))]
+@test caxes(data1)[1:2]==CubeAxis[LonAxis(30.125:0.25:30.875),LatAxis(50.875:-0.25:50.125)]
 
-@test caxes(data2)==CubeAxis[LonAxis(30.125:0.25:30.875),LatAxis(50.875:-0.25:50.125),TimeAxis(ESDL.Cubes.Axes.YearStepRange(2002,1,2008,46,8,46)),VariableAxis(["air_temperature_2m","gross_primary_productivity"])]
+tax = caxes(data1)[3]
+@test isa(tax, TimeAxis)
+@test tax.values[1] == Date(2002,01,05)
+@test tax.values[end] == Date(2008,12,30)
+@test length(tax.values) == 7*46
 
-@test_throws ArgumentError getCubeData(c,longitude=(10,-10))
+@test caxes(data2)[[1,2,4]]==CubeAxis[LonAxis(30.125:0.25:30.875),LatAxis(50.875:-0.25:50.125),VariableAxis(["air_temperature_2m","gross_primary_productivity"])]
+
+tax = caxes(data2)[3]
+@test isa(tax, TimeAxis)
+@test tax.values[1] == Date(2002,01,05)
+@test tax.values[end] == Date(2008,12,30)
+@test length(tax.values) == 7*46
+
 end
 
 @testset "Coordinate extraction" begin
@@ -77,42 +87,47 @@ d3 = getCubeData(c,variable="gross_primary_productivity",region="Cambodia",time=
 end
 
 @testset "Saving and loading cubes" begin
-d = getCubeData(c,variable="air_temperature_2m",longitude=(30,31),latitude=(51,50),
-                time=(Date("2002-01-01"),Date("2008-12-31")))
-data1=readcubedata(d)
-#Test saving cubes
-dire=mktempdir()
-ESDLdir(dire)
-saveCube(data1,"mySavedCube")
-data3=readcubedata(loadCube("mySavedCube"))
-@test data1.axes==data3.axes
-@test data1.data==data3.data
-
-# Test loadOrGenerate macro
-d=getCubeData(c,time=2001:2005,longitude=(30,31),latitude=(50,51),variable=["gross_primary_productivity","net_ecosystem_exchange"])
-
-rmCube("Anomalies")
-@loadOrGenerate danom=>"Anomalies" begin
-    danom = removeMSC(d)
-end
-
-@test danom isa ESDL.CubeMem
-
-@loadOrGenerate danom=>"Anomalies" begin
-    error("This should never execute")
-end;
-@test danom isa ESDL.Cubes.MmapCube
+  d = getCubeData(c,variable="air_temperature_2m",longitude=(30,31),latitude=(51,50),
+                  time=(Date("2002-01-01"),Date("2008-12-31")))
+  data1=readcubedata(d)
+  #Test saving cubes
+  dire=tempname()
+  ESDLdir(dire)
+  saveCube(data1,"mySavedCube")
 
 
-#Test exportcube
-@test ncread(ncf,"Lon") == 30.125:0.25:30.875
-@test ncread(ncf,"Lat") == 50.875:-0.25:50.125
-@test ncgetatt(ncf,"Time","units") == "days since 2001-01-01"
-@test getAxis("Time",danom).values .- Date(2001) == Day.(ncread(ncf,"Time"))
+  data3=readcubedata(loadCube("mySavedCube"))
+  @test data1.axes==data3.axes
+  @test data1.data==data3.data
+
+  # Test loadOrGenerate macro
+  d=getCubeData(c,time=Date(2001)..Date(2005),longitude=(30,31),latitude=(50,51),variable=["gross_primary_productivity","net_ecosystem_exchange"])
+
+  rmCube("Anomalies")
+  @loadOrGenerate danom=>"Anomalies" begin
+      danom = removeMSC(d)
+  end
+
+  @test danom isa ESDL.CubeMem
+
+  @loadOrGenerate danom=>"Anomalies" begin
+      error("This should never execute")
+  end;
+  @test danom isa ESDL.Cubes.ESDLZarr.ZArrayCube
+
+  ncf = tempname()
+  exportcube(danom,ncf)
+
+  using NetCDF, Dates
+  #Test exportcube
+  @test ncread(ncf,"Lon") == 30.125:0.25:30.875
+  @test ncread(ncf,"Lat") == 50.875:-0.25:50.125
+  @test ncgetatt(ncf,"Time","units") == "days since 2001-01-01"
+  @test getAxis("Time",danom).values .- Date(2001) == Day.(ncread(ncf,"Time"))
 
 
-@test ncread(ncf,"gross_primary_productivity")[:,:,:] == permutedims(danom[:,:,:,1],(2,3,1))
-neear = replace(danom[:,:,:,2],missing=>-9999.0)
-@test all(isequal.(ncread(ncf,"net_ecosystem_exchange")[:,:,:],permutedims(neear,(2,3,1))))
+  @test ncread(ncf,"gross_primary_productivity")[:,:,:] == permutedims(danom[:,:,:,1],(2,3,1))
+  neear = replace(danom[:,:,:,2],missing=>-9999.0)
+  @test all(isequal.(ncread(ncf,"net_ecosystem_exchange")[:,:,:],permutedims(neear,(2,3,1))))
 end
 end

@@ -191,7 +191,7 @@ end
 
 
 import DataStructures: OrderedDict
-export @CubeTable
+export CubeTable
 """
     CubeTable(c::AbstractCubeData...)
 
@@ -213,7 +213,7 @@ time steps of the same location.
 function CubeTable(;include_axes=(),fastest="",cubes...)
   inax=nothing
   c = totuple(map((k,v)->v,keys(cubes),values(cubes)))
-  @show c
+  all(i->isa(i,AbstractCubeData),c) || throw(ArgumentError("All inputs must be DataCubes"))
   varnames = map(string,keys(cubes))
   if isempty(string(fastest))
     indims = map(i->InDims(),c)

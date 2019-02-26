@@ -2,7 +2,7 @@ module DAT
 export mapCube, getInAxes, getOutAxes, findAxis, reduceCube, getAxis, InputCube, OutputCube
 import ..Cubes
 using ..ESDLTools
-import Distributed: pmap, @everywhere
+import Distributed: pmap, @everywhere, workers
 import ..Cubes: getAxis, getOutAxis, getAxis, cubechunks, iscompressed, chunkoffset, _write,
   CubeAxis, RangeAxis, CategoricalAxis, AbstractCubeData, MmapCube, CubeMem, AbstractCubeMem,
   caxes, findAxis, _read, _write

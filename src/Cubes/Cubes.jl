@@ -120,10 +120,6 @@ getSubRange(c::Tuple{AbstractArray{T,0},AbstractArray{UInt8,0}};write::Bool=true
 function _subsetcube end
 
 function subsetcube(z::CubeMem{T};region=nothing,kwargs...) where T
-  if !isa(region,Nothing)
-
-
-  end
   newaxes, substuple = _subsetcube(z,collect(Any,map(Base.OneTo,size(z)));kwargs...)
   CubeMem{T,length(newaxes)}(newaxes,z.data[substuple...],z.properties)
 end
@@ -230,10 +226,8 @@ See also loadCube, ESDLdir
 function saveCube(c::CubeMem{T},name::AbstractString) where T
   newfolder=joinpath(workdir[1],name)
   isdir(newfolder) && error("$(name) alreaday exists, please pick another name")
-  mkpath(newfolder)
-  tc=Cubes.MmapCube(c.axes,folder=newfolder,T=T)
-  handle = Cubes.getmmaphandles(tc,mode="r+")
-  copyto!(handle,c.data)
+  tc=Cubes.ESDLZarr.ZArrayCube(c.axes,folder=newfolder,T=T)
+  _write(tc,c.data,CartesianIndices(c.data))
 end
 
 import Base.Iterators: take, drop
@@ -259,6 +253,6 @@ Base.show(io::IO,a::SpatialPointAxis)=print(io,"Spatial points axis with ",lengt
 
 include("TransformedCubes.jl")
 include("ZarrCubes.jl")
-import .ESDLZarr: (..), Cube, getCubeData
+import .ESDLZarr: (..), Cube, getCubeData, loadCube, rmCube
 
 end

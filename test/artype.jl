@@ -1,6 +1,6 @@
 using ESDL
 using Test
-import DataFrames: DataFrame,aggregate,skipmissing
+import DataFrames: DataFrame,aggregate
 import Dates: year
 
 @testset "Dataframe representation" begin

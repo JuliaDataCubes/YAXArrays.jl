@@ -4,7 +4,7 @@ import Distributed: myid
 import ZarrNative: ZGroup, zopen, ZArray, NoCompressor, zgroup, zcreate, readblock!
 import ESDL.Cubes: cubechunks, iscompressed, AbstractCubeData, getCubeDes,
   caxes,chunkoffset, gethandle, subsetcube, axVal2Index, findAxis, _read,
-  _write, cubeproperties, ConcatCube, concatenateCubes, _subsetcube
+  _write, cubeproperties, ConcatCube, concatenateCubes, _subsetcube, workdir
 import ESDL.Cubes.Axes: axname, CubeAxis, CategoricalAxis, RangeAxis, TimeAxis,
   axVal2Index_lb, axVal2Index_ub, get_step
 import Dates: Day,Hour,Minute,Second,Month,Year, Date
@@ -87,7 +87,7 @@ defaultfillval(T::Type{<:Integer}) = typemax(T)
 function ZArrayCube(axlist;
   folder=tempname(),
   T=Union{Float32,Missing},
-  chunksize = map(length,axlist),
+  chunksize = ntuple(i->length(axlist[i]),length(axlist)),
   chunkoffset = ntuple(i->0,length(axlist)),
   compressor = NoCompressor(),
   persist::Bool=true,
@@ -210,7 +210,7 @@ import DataStructures: counter
 Cube(s::String;kwargs...) = Cube(zopen(s);kwargs...)
 Cube(;kwargs...) = Cube(get(ENV,"ESDL_CUBEDIR","/home/jovyan/work/datacube/ESDCv2.0.0/esdc-8d-0.25deg-184x90x90-2.0.0.zarr/");kwargs...)
 
-@deprecate getCubeData(c;longitude=lon,latitude=lat,kwargs...) subsetcube(c;lon=longitude,lat=latitude,kwargs...)
+@deprecate getCubeData(c;longitude=(-180.0,180.0),latitude=(-90.0,90.0),kwargs...) subsetcube(c;lon=longitude,lat=latitude,kwargs...)
 
 function Cube(g::ZGroup;varlist=nothing,joinname="Variable")
 
@@ -251,6 +251,7 @@ function interpretsubset(subexpr::NTuple{2,Any},ax)
   x, y = sorted(subexpr...)
   Colon()(sorted(axVal2Index_lb(ax,x),axVal2Index_ub(ax,y))...)
 end
+interpretsubset(subexpr::NTuple{2,Int},ax::RangeAxis{Date}) = interpretsubset(map(Date,subexpr),ax)
 interpretsubset(subexpr::Interval,ax)       = interpretsubset((subexpr.left,subexpr.right),ax)
 interpretsubset(subexpr::AbstractVector,ax::CategoricalAxis)      = axVal2Index.(Ref(ax),subexpr,fuzzy=true)
 
@@ -258,12 +259,21 @@ axcopy(ax::RangeAxis,vals) = RangeAxis(axname(ax),vals)
 axcopy(ax::CategoricalAxis,vals) = CategoricalAxis(axname(ax),vals)
 
 function _subsetcube(z::AbstractCubeData, subs;kwargs...)
+  if :region in keys(kwargs)
+    kwargs = collect(kwargs)
+    ireg = findfirst(i->i[1]==:region,kwargs)
+    reg = splice!(kwargs,ireg)
+    haskey(known_regions,reg[2]) || error("Region $(reg[2]) not known.")
+    lon1,lat1,lon2,lat2 = known_regions[reg[2]]
+    push!(kwargs,:lon=>lon1..lon2)
+    push!(kwargs,:lat=>lat1..lat2)
+  end
   newaxes = deepcopy(caxes(z))
   foreach(kwargs) do kw
     axdes,subexpr = kw
     axdes = string(axdes)
     iax = findAxis(axdes,caxes(z))
-    if isa(iax,Nothing)(iax)
+    if isa(iax,Nothing)
       throw(ArgumentError("Axis $axdes not found in cube"))
     else
       oldax = newaxes[iax]
@@ -277,12 +287,14 @@ function _subsetcube(z::AbstractCubeData, subs;kwargs...)
       end
     end
   end
-  inewaxes = findall(ax->length(ax)>1,newaxes)
-  newaxes = newaxes[inewaxes]
   substuple = ntuple(i->subs[i],length(subs))
+  inewaxes = findall(i->isa(i,AbstractRange),substuple)
+  newaxes = newaxes[inewaxes]
   @assert length.(newaxes) == map(length,(substuple |> onlyrangetuple)) |> collect
   newaxes, substuple
 end
+
+include(joinpath(@__DIR__,"../CubeAPI/countrydict.jl"))
 
 function subsetcube(z::ZArrayCube{T};kwargs...) where T
   subs = isa(z.subset,Nothing) ? collect(Any,map(Base.OneTo,size(z))) : collect(Any,z.subset)
@@ -317,5 +329,29 @@ function subsetcube(z::ESDL.Cubes.ConcatCube{T,N};kwargs...) where {T,N}
   end
   return length(cubelist)==1 ? cubelist[1] : ConcatCube{T,length(cubeaxes)+1}(cubelist,cataxis,cubeaxes,cubeproperties(z))
 end
+
+"""
+    loadCube(name::String)
+Loads a cube that was previously saved with [`saveCube`](@ref). Returns a
+`TempCube` object.
+"""
+function loadCube(name::String)
+  newfolder=joinpath(workdir[1],name)
+  isdir(newfolder) || error("$(name) does not exist")
+  Cube(newfolder)
+end
+
+"""
+    rmCube(name::String)
+
+Deletes a memory-mapped data cube.
+"""
+function rmCube(name::String)
+  newfolder=joinpath(workdir[1],name)
+  isdir(newfolder) && rm(newfolder,recursive=true)
+  nothing
+end
+export rmCube, loadCube
+
 
 end # module

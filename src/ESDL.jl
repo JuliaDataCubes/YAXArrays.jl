@@ -12,7 +12,7 @@ export Cube, getCubeData,readcubedata,CubeMem,CubeAxis, TimeAxis, TimeHAxis, Var
         RangeAxis, CategoricalAxis, MSCAxis, getSingVal, ScaleAxis, QuantileAxis, MethodAxis, RemoteCube, showVarInfo, @caxis_str,
         axVal2Index, mapCubeSimple, concatenateCubes, SliceCube, NetCDFCube, mergeAxes, caxes #From Cube module
 export registerDATFunction, mapCube, reduceCube, getAxis, InDims, OutDims, (..),
-        @CubeTable, AsArray,AsAxisArray,AsDataFrame, cubefittable, TableAggregator, fittable #From DAT module
+        CubeTable, AsArray,AsAxisArray,AsDataFrame, cubefittable, TableAggregator, fittable #From DAT module
 export cubeAnomalies, removeMSC, gapFillMSC, normalizeTS,DATfitOnline,
   sampleLandPoints, toPointAxis, getMSC, filterTSFFT, getNpY,
   getMedSC, extractLonLats,simpleAnomalies,spatialinterp,

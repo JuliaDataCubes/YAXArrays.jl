@@ -4,7 +4,7 @@ using Dates
 import Base.Iterators
 using Distributed
 using Statistics
-addprocs(2)
+#addprocs(2)
 @everywhere using ESDL, Statistics
 
 @everywhere function sub_and_return_mean(xout1,xout2,xin)
@@ -47,23 +47,23 @@ function doTests()
   end
   # Test Mean seasonal cycle retrieval
   @testset "Seasonal cycle statistics and anomalies" begin
-  cdata=getCubeData(c,variable="soil_moisture",longitude=(30,30),latitude=(50.75,50.75))
+  cdata=getCubeData(c,variable="soil_moisture",longitude=30,latitude=50.75)
   d=readcubedata(cdata)
 
   x2=getMSC(d)
 
   x3=getMedSC(d)
 
-  a = d[1,1,:]
+  a = d[:]
   a = a[3:46:end]
-  @test mean(skipmissing(a))==x2[3,1,1]
-  @test median(skipmissing(a))==x3[3,1,1]
+  @test mean(skipmissing(a))==x2[3]
+  @test median(skipmissing(a))==x3[3]
 
   # Test gap filling
   cube_filled=readcubedata(gapFillMSC(d))
   imiss=findfirst(i->ismissing(i),d.data)
   @test !ismissing(cube_filled.data[imiss])
-  its=mod(imiss.I[3]-1,46)+1
+  its=mod(imiss-1,46)+1
   @test cube_filled.data[imiss]≈readcubedata(x2).data[its]
   @test !any(ismissing(cube_filled.data))
 
@@ -74,7 +74,7 @@ function doTests()
 
 
   # Test normalization
-  anom_normalized=normalizeTS(cube_anomalies)[:,:,:]
+  anom_normalized=normalizeTS(cube_anomalies)[:]
   #@show cube_anomalies[:,:,:]
   @test mean(anom_normalized)<1e7
   @test 1.0-1e-6 <= std(anom_normalized) <= 1.0+1e-6
@@ -87,7 +87,7 @@ function doTests()
 
   @testset "Multiple output cubes" begin
   #Test onvolving multiple output cubes
-  c1=getCubeData(c,variable="gross_primary_productivity",longitude=(30,31),latitude=(50,51),time=2001:2010)
+  c1=getCubeData(c,variable="gross_primary_productivity",longitude=(30,31),latitude=(50,51),time=Date(2001)..Date(2010))
 
   c2=readcubedata(c1)
 
@@ -101,7 +101,7 @@ end
 @testset "Parallel processing" begin
 doTests()
 end
-rmprocs(workers())
+#rmprocs(workers())
 
 @testset "Single proc processing" begin
 doTests()
