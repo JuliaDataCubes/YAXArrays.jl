@@ -4,8 +4,9 @@ import Distributed: myid
 import ZarrNative: ZGroup, zopen, ZArray, NoCompressor, zgroup, zcreate, readblock!
 import ESDL.Cubes: cubechunks, iscompressed, AbstractCubeData, getCubeDes,
   caxes,chunkoffset, gethandle, subsetcube, axVal2Index, findAxis, _read,
-  _write, cubeproperties, ConcatCube, concatenateCubes
-import ESDL.Cubes.Axes: axname, CubeAxis, CategoricalAxis, RangeAxis, TimeAxis
+  _write, cubeproperties, ConcatCube, concatenateCubes, _subsetcube
+import ESDL.Cubes.Axes: axname, CubeAxis, CategoricalAxis, RangeAxis, TimeAxis,
+  axVal2Index_lb, axVal2Index_ub, get_step
 import Dates: Day,Hour,Minute,Second,Month,Year, Date
 import IntervalSets: Interval, (..)
 export (..), Cubes, getCubeData
@@ -207,8 +208,9 @@ end
 import DataStructures: counter
 
 Cube(s::String;kwargs...) = Cube(zopen(s);kwargs...)
+Cube(;kwargs...) = Cube(get(ENV,"ESDL_CUBEDIR","/home/jovyan/work/datacube/ESDCv2.0.0/esdc-8d-0.25deg-184x90x90-2.0.0.zarr/");kwargs...)
 
-@deprecate getCubeData(c;kwargs...) subsetcube(c;kwargs...)
+@deprecate getCubeData(c;longitude=lon,latitude=lat,kwargs...) subsetcube(c;lon=longitude,lat=latitude,kwargs...)
 
 function Cube(g::ZGroup;varlist=nothing,joinname="Variable")
 
@@ -245,22 +247,23 @@ sorted(x,y) = x<y ? (x,y) : (y,x)
 interpretsubset(subexpr::Union{CartesianIndices{1},LinearIndices{1}},ax) = subexpr.indices[1]
 interpretsubset(subexpr::CartesianIndex{1},ax)   = subexpr.I[1]
 interpretsubset(subexpr,ax)                      = axVal2Index(ax,subexpr,fuzzy=true)
-interpretsubset(subexpr::NTuple{2,Any},ax)       = Colon()(sorted(axVal2Index(ax,subexpr[1]),axVal2Index(ax,subexpr[2]))...)
-interpretsubset(subexpr::Interval,ax)       = Colon()(sorted(axVal2Index(ax,subexpr.left),axVal2Index(ax,subexpr.right))...)
+function interpretsubset(subexpr::NTuple{2,Any},ax)
+  x, y = sorted(subexpr...)
+  Colon()(sorted(axVal2Index_lb(ax,x),axVal2Index_ub(ax,y))...)
+end
+interpretsubset(subexpr::Interval,ax)       = interpretsubset((subexpr.left,subexpr.right),ax)
 interpretsubset(subexpr::AbstractVector,ax::CategoricalAxis)      = axVal2Index.(Ref(ax),subexpr,fuzzy=true)
 
 axcopy(ax::RangeAxis,vals) = RangeAxis(axname(ax),vals)
 axcopy(ax::CategoricalAxis,vals) = CategoricalAxis(axname(ax),vals)
 
-
-function subsetcube(z::ZArrayCube{T};kwargs...) where T
-  subs = isnothing(z.subset) ? collect(Any,map(Base.OneTo,size(z))) : collect(Any,z.subset)
+function _subsetcube(z::AbstractCubeData, subs;kwargs...)
   newaxes = deepcopy(caxes(z))
   foreach(kwargs) do kw
     axdes,subexpr = kw
     axdes = string(axdes)
     iax = findAxis(axdes,caxes(z))
-    if isnothing(iax)
+    if isa(iax,Nothing)(iax)
       throw(ArgumentError("Axis $axdes not found in cube"))
     else
       oldax = newaxes[iax]
@@ -278,8 +281,16 @@ function subsetcube(z::ZArrayCube{T};kwargs...) where T
   newaxes = newaxes[inewaxes]
   substuple = ntuple(i->subs[i],length(subs))
   @assert length.(newaxes) == map(length,(substuple |> onlyrangetuple)) |> collect
+  newaxes, substuple
+end
+
+function subsetcube(z::ZArrayCube{T};kwargs...) where T
+  subs = isa(z.subset,Nothing) ? collect(Any,map(Base.OneTo,size(z))) : collect(Any,z.subset)
+  newaxes, substuple = _subsetcube(z,subs;kwargs...)
   ZArrayCube{T,length(newaxes),typeof(z.a),typeof(substuple)}(z.a,newaxes,substuple,true)
 end
+
+Base.getindex(a::AbstractCubeData;kwargs...) = subsetcube(a;kwargs...)
 
 function subsetcube(z::ESDL.Cubes.ConcatCube{T,N};kwargs...) where {T,N}
   kwargs = collect(kwargs)
@@ -287,7 +298,7 @@ function subsetcube(z::ESDL.Cubes.ConcatCube{T,N};kwargs...) where {T,N}
     axdes = string(kw[1])
     findAxis(axdes,caxes(z)) == N
   end
-  if isnothing(isplitconcaxis)
+  if isa(isplitconcaxis,Nothing)
     #We only need to subset the inner cubes
     cubelist = map(i->subsetcube(i;kwargs...),z.cubelist)
     cubeaxes = caxes(first(cubelist))
@@ -296,11 +307,11 @@ function subsetcube(z::ESDL.Cubes.ConcatCube{T,N};kwargs...) where {T,N}
     subs = kwargs[isplitconcaxis][2]
     subinds = interpretsubset(subs,z.cataxis)
     cubelist = z.cubelist[subinds]
-    !isa(cubelist,AbstractVector) && (cubelist=[cubelist])
+    isa(cubelist,AbstractCubeData) && (cubelist=[cubelist];subinds=[subinds])
     cataxis  = axcopy(z.cataxis,z.cataxis.values[subinds])
     kwargsrem = (kwargs[(1:isplitconcaxis-1)]...,kwargs[isplitconcaxis+1:end]...)
     if !isempty(kwargsrem)
-      cubelist = CubeAxis[subsetcube(i;kwargsrem...) for i in z.cubelist]
+      cubelist = [subsetcube(i;kwargsrem...) for i in cubelist]
     end
     cubeaxes = deepcopy(caxes(cubelist[1]))
   end

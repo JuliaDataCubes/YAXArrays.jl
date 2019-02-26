@@ -13,7 +13,7 @@ mytable = @CubeTable tair=d axes=(lat,)
 
 
 
-d2=readCubeData(d)
+d2=readcubedata(d)
 
 @test mean(d2.data) ≈ oo.data[1]
 @test mean(d2.data,dims=(1,3))[:] ≈ oo2.data
@@ -22,7 +22,7 @@ d2=readCubeData(d)
 d2 = getCubeData(c,variable=["air_temperature_2m","gross_primary_productivity"],longitude=(30,31),latitude=(50,51),
               time=(Date("2002-01-01"),Date("2008-12-31")))
 
-dm=readCubeData(d2)
+dm=readcubedata(d2)
 xin=permutedims(dm.data,[4,1,2,3])
 xin=reshape(xin,(2,length(xin) ÷ 2))
 startVal=mean(xin,dims=2)[:].+rand(Float32,2,5)
@@ -44,7 +44,7 @@ using DataStructures
 c=Cube()
 d2 = getCubeData(c,variable=["air_temperature_2m","gross_primary_productivity"],longitude=(30,31),latitude=(50,51),
               time=(Date("2002-01-01"),Date("2008-12-31")))
-dm=readCubeData(d2)
+dm=readcubedata(d2)
 
 randmask=CubeMem(dm.axes[1:2],rand(1:2,size(dm)[1:2]),zeros(UInt8,size(dm)[1:2]),
   Dict{String,Any}("labels"=>OrderedDict(1=>"one",2=>"two"),"name"=>"RandMask"))
@@ -69,7 +69,7 @@ rotation_matrix(p)
 transformPCA(p,dm).data
 
 Random.seed!(1)
-d2=readCubeData(d)
+d2=readcubedata(d)
 mask=CubeMem(d2.axes,rand(1:10,size(d2.data)),zeros(UInt8,size(d2.data)),Dict("labels"=>Dict(i=>string(i) for i=1:10)))
 mask2=CubeMem(d2.axes[1:2],rand(1:10,4,4),zeros(UInt8,4,4),Dict("labels"=>Dict(i=>string(i) for i=1:10)))
 

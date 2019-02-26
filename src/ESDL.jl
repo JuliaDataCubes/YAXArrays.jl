@@ -8,7 +8,7 @@ module ESDL
 import Dates: Date
 export Date
 export ESDLdir, getAxis
-export Cube, getCubeData,readCubeData,CubeMem,CubeAxis, TimeAxis, TimeHAxis, VariableAxis, LonAxis, FitAxis, LatAxis, CountryAxis, SpatialPointAxis, saveCube, loadCube,
+export Cube, getCubeData,readcubedata,CubeMem,CubeAxis, TimeAxis, TimeHAxis, VariableAxis, LonAxis, FitAxis, LatAxis, CountryAxis, SpatialPointAxis, saveCube, loadCube,
         RangeAxis, CategoricalAxis, MSCAxis, getSingVal, ScaleAxis, QuantileAxis, MethodAxis, RemoteCube, showVarInfo, @caxis_str,
         axVal2Index, mapCubeSimple, concatenateCubes, SliceCube, NetCDFCube, mergeAxes, caxes #From Cube module
 export registerDATFunction, mapCube, reduceCube, getAxis, InDims, OutDims, (..),

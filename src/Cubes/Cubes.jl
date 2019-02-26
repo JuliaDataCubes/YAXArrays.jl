@@ -3,7 +3,7 @@ The functions provided by ESDL are supposed to work on different types of cubes.
 Data types that
 """
 module Cubes
-export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, TimeHAxis, QuantileAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, caxes,
+export Axes, AbstractCubeData, getSubRange, readcubedata, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, TimeHAxis, QuantileAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, caxes,
        AbstractSubCube, CubeMem, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis, axVal2Index, MSCAxis,
        getSingVal, ScaleAxis, axname, @caxis_str, rmCube, cubeproperties, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
        getOutAxis, Cube, (..), getCubeData
@@ -15,7 +15,7 @@ export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesC
 Supertype of all cubes. `T` is the data type of the cube and `N` the number of
 dimensions. Beware that an `AbstractCubeData` does not implement the `AbstractArray`
 interface. However, the `ESDL` functions [`mapCube`](@ref), [`reduceCube`](@ref),
-[`readCubeData`](@ref), [`plotMAP`](@ref) and [`plotXY`](@ref) will work on any subtype
+[`readcubedata`](@ref), [`plotMAP`](@ref) and [`plotXY`](@ref) will work on any subtype
 of `AbstractCubeData`
 """
 abstract type AbstractCubeData{T,N} end
@@ -29,9 +29,9 @@ Base.eltype(::AbstractCubeData{T}) where T = T
 Base.ndims(::AbstractCubeData{<:Any,N}) where N = N
 
 """
-    readCubeData(cube::AbstractCubeData)
+    readcubedata(cube::AbstractCubeData)
 """
-function readCubeData(x::AbstractCubeData{T,N}) where {T,N}
+function readcubedata(x::AbstractCubeData{T,N}) where {T,N}
   s=size(x)
   aout = zeros(Union{T,Missing},s...)
   r=CartesianIndices(s)
@@ -80,7 +80,7 @@ caxes(c::EmptyCube)=CubeAxis[]
 
 An in-memory data cube. It is returned by applying [mapCube](@ref) when
 the output cube is small enough to fit in memory or by explicitly calling
-`readCubeData` on any type of cube.
+`readcubedata` on any type of cube.
 
 ### Fields
 
@@ -109,13 +109,24 @@ Base.size(c::CubeMem,i)=size(c.data,i)
 Base.similar(c::CubeMem)=CubeMem(c.axes,similar(c.data))
 Base.ndims(c::CubeMem{T,N}) where {T,N}=N
 
-readCubeData(c::CubeMem)=c
+readcubedata(c::CubeMem)=c
 
 function getSubRange(c::AbstractArray,i...;write::Bool=true)
   length(i)==ndims(c) || error("Wrong number of view arguments to getSubRange. Cube is: $c \n indices are $i")
   return view(c,i...)
 end
 getSubRange(c::Tuple{AbstractArray{T,0},AbstractArray{UInt8,0}};write::Bool=true) where {T}=c
+
+function _subsetcube end
+
+function subsetcube(z::CubeMem{T};region=nothing,kwargs...) where T
+  if !isa(region,Nothing)
+
+
+  end
+  newaxes, substuple = _subsetcube(z,collect(Any,map(Base.OneTo,size(z)));kwargs...)
+  CubeMem{T,length(newaxes)}(newaxes,z.data[substuple...],z.properties)
+end
 
 """
     gethandle(c::AbstractCubeData, [block_size])

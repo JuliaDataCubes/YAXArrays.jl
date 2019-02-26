@@ -157,6 +157,15 @@ axname(::Type{T}) where T<:CubeAxis{S,U} where {S,U} = U
 axunits(::CubeAxis)="unknown"
 axunits(::LonAxis)="degrees_east"
 axunits(::LatAxis)="degrees_north"
+
+get_step(r::AbstractRange)=step(r)
+get_step(r::AbstractVector)=length(r)==0 ? zero(eltype(r)) : r[2]-r[1]
+
+axVal2Index_ub(a::RangeAxis, v; fuzzy=false)=axVal2Index(a,v-abs(get_step(a.values)/2),fuzzy=fuzzy)
+axVal2Index_lb(a::RangeAxis, v; fuzzy=false)=axVal2Index(a,v+abs(get_step(a.values)/2),fuzzy=fuzzy)
+
+
+
 function axVal2Index(a::RangeAxis{<:Any,<:Any,<:AbstractRange},v;fuzzy=false)
   dt = v-first(a.values)
   r = round(Int,dt/step(a.values))+1
@@ -205,7 +214,7 @@ end
 axVal2Index(x,v::CartesianIndex{1};fuzzy::Bool=false)=min(max(v.I[1],1),length(x))
 function axVal2Index(x,v;fuzzy::Bool=false)
   i = findfirst(isequal(v),x.values)
-  isnothing(i) && error("Value $v not found in x")
+  isa(i,Nothing) && error("Value $v not found in x")
   return i
 end
 abstract type AxisDescriptor end

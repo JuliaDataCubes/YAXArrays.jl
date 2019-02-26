@@ -10,23 +10,27 @@ c=Cube()
 d = getCubeData(c,variable="air_temperature_2m",longitude=(30,31),latitude=(51,50),
                 time=(Date("2002-01-01"),Date("2008-12-31")))
 
-#@test typeof(c)==RemoteCube
-@test d.variable=="air_temperature_2m"
-@test d.sub_grid==(157,160,841,844)
-@test d.sub_times==(2002,1,2008,46,322,46)
-@test d.lonAxis.values==30.125:0.25:30.875
-@test d.latAxis.values==50.875:-0.25:50.125
+
+@test subset==(841:844, 157:160, 46:368)
+@test d.axes[1].values==30.125:0.25:30.875
+@test d.axes[2].values==50.875:-0.25:50.125
+@test isa(d.axes[1],LonAxis)
+@test isa(d.axes[2],LatAxis)
 end
 
 @testset "Access multiple variables" begin
 d2 = getCubeData(c,variable=["air_temperature_2m","gross_primary_productivity"],longitude=(30,31),latitude=(50,51),
                 time=(Date("2002-01-01"),Date("2008-12-31")))
 
-@test d2.variable==["air_temperature_2m","gross_primary_productivity"]
-@test d2.sub_grid==(157,160,841,844)
-@test d2.sub_times==(2002,1,2008,46,322,46)
-@test d2.lonAxis.values==30.125:0.25:30.875
-@test d2.latAxis.values==50.875:-0.25:50.125
+import Dates
+
+@test d2.cataxis.values == ["air_temperature_2m", "gross_primary_productivity"]
+foreach(d2.cubelist) do cc
+  @test cc.subset ==(841:844, 157:160, 46:368)
+  @test cc.axes[1].values==30.125:0.25:30.875
+  @test cc.axes[2].values==50.875:-0.25:50.125
+  @test first(cc.axes[3].values == Dates.Date(2002)
+  @test last(cc.axes[3].values) == Dates.Date(2008, 12, 30)
 end
 
 @testset "Test values in MemCube" begin
@@ -34,8 +38,8 @@ d = getCubeData(c,variable="air_temperature_2m",longitude=(30,31),latitude=(51,5
                 time=(Date("2002-01-01"),Date("2008-12-31")))
 d2 = getCubeData(c,variable=["air_temperature_2m","gross_primary_productivity"],longitude=(30,31),latitude=(50,51),
                 time=(Date("2002-01-01"),Date("2008-12-31")))
-data1=readCubeData(d)
-data2=readCubeData(d2)
+data1=readcubedata(d)
+data2=readcubedata(d2)
 
 @test size(data1.data)==(4,4,322)
 @test size(data2.data)==(4,4,322,2)
@@ -57,10 +61,10 @@ end
 @testset "Coordinate extraction" begin
 d = getCubeData(c,variable="air_temperature_2m",longitude=(30,31),latitude=(51,50),
                 time=(Date("2002-01-01"),Date("2008-12-31")))
-data1=readCubeData(d)
+data1=readcubedata(d)
 # Test reading of coordinate list
 ll=[30.1 50.2;30.5 51.1;30.8 51.1]
-llcube = readCubeData(extractLonLats(data1,ll))
+llcube = readcubedata(extractLonLats(data1,ll))
 @test llcube.data[1,:]==data1.data[1,4,:]
 @test llcube.data[2,:]==data1.data[3,1,:]
 @test llcube.data[3,:]==data1.data[4,1,:]
@@ -75,12 +79,12 @@ end
 @testset "Saving and loading cubes" begin
 d = getCubeData(c,variable="air_temperature_2m",longitude=(30,31),latitude=(51,50),
                 time=(Date("2002-01-01"),Date("2008-12-31")))
-data1=readCubeData(d)
+data1=readcubedata(d)
 #Test saving cubes
 dire=mktempdir()
 ESDLdir(dire)
 saveCube(data1,"mySavedCube")
-data3=readCubeData(loadCube("mySavedCube"))
+data3=readcubedata(loadCube("mySavedCube"))
 @test data1.axes==data3.axes
 @test data1.data==data3.data
 
