@@ -29,10 +29,12 @@ value(o::WeightOnlineAggregator)=value(o.o)
 function fitrow!(o::WeightOnlineAggregator{T,S},r) where {T<:OnlineStat,S}
     v = getproperty(r,S)
     w = o.w(r)
-    if !ismissing(v) && !ismissing(w)
+    if !checkmiss(v) && !ismissing(w)
       fit!(o.o,v,w)
     end
 end
+checkmiss(v) = ismissing(v)
+checkmiss(v::AbstractVector) = any(ismissing,v)
 struct GroupedOnlineAggregator{O,S,BY,W,C}<:TableAggregator
     d::O
     w::W
