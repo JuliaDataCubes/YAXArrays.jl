@@ -256,27 +256,67 @@ getpostfunction(::Type{<:WeightedHist})=i->hcat(value(i)...)
 getnbins(f::GroupedOnlineAggregator)=f.cloneobj.alg.b
 getnbins(f::TableAggregator)=f.o.alg.b
 
+fitfun(o) = fitfun(typeof(o))
+fitfun(::Type{<:WeightedCovMatrix}) = fittable_vec
+fitfun(::Type{<:Any}) = fittable
+
 function cubefittable(tab,o,fitsym;post=getpostfunction(o),kwargs...)
-  agg=fittable(tab,o,fitsym;showprog=true,kwargs...)
+  agg=fitfun(o)(tab,o,fitsym;showprog=true,kwargs...)
   tooutcube(agg,tab,post)
 end
-function fittable(
-  tab,
-  o::WeightedCovMatrix,
-  fitsym;
-  by=(),
-  weight=nothing,
-  showprog=false
-  )
-  nvars = length(tab.loopaxes[1])
-  tab2 = IterTools.partition(tab, nvars) |>
-  x -> IterTools.imap(a->collectval(a,Val(fitsym)), x)
-  agg = TableAggregator(tab2, o, fitsym, by=by, weight=weight)
-  if showprog
-    p = Progress(length(tab2))
-    foreach(i -> begin fitrow!(agg,i);next!(p) end, tab2)
-  else
-    foreach(i -> fitrow!(agg,i), tab2)
-  end
-  agg
+
+function tupleeltypebyname(::Type{NamedTuple{names,tt}},s::Symbol) where {names, tt}
+    i=findfirst(isequal(s),names)
+    fieldtype(tt,i)
 end
+
+struct CollectedTuple{TT,S,CT}
+    t::TT
+    colcache::Vector{CT}
+end
+Base.getproperty(c::CollectedTuple{<:Any,S},n::Symbol) where S = n == S ? getfield(c,:colcache) : getfield(getfield(c,:t),n)
+
+struct TabPartitioner{T,S,CT}
+    mytable::T
+    colcache::Vector{CT}
+end
+Base.length(t::TabPartitioner) = length(t.mytable) ÷ length(t.colcache)
+Base.IteratorEltype(t::Type{<:TabPartitioner}) = Base.HasEltype()
+Base.eltype(::Type{<:TabPartitioner{<:Any,<:Any,CT}}) where CT = CollectedTuple
+
+import ESDL.DAT.CubeIterator
+function TabPartitioner(t::CubeIterator, splitvar::Symbol,n)
+    tuplet = eltype(t)
+    et = tupleeltypebyname(tuplet,splitvar)
+    v = Vector{et}(undef,n)
+    TabPartitioner{typeof(t),splitvar,et}(t,v)
+end
+
+
+function Base.iterate(t::TabPartitioner)
+    r = iterate(t.mytable)
+    r===nothing && return nothing
+    f,state = r
+    _iterate(t,f,state)
+end
+function Base.iterate(t::TabPartitioner,state)
+    r = iterate(t.mytable,state)
+    r===nothing && return nothing
+    f,state=r
+    _iterate(t,f,state)
+end
+function _iterate(t::TabPartitioner{<:Any,S,CT},f,state) where {S,CT}
+    t.colcache[1] = getfield(f,S)
+    for i=2:length(t.colcache)
+        f,state = iterate(t.mytable,state)
+        t.colcache[i] = getfield(f,S)
+    end
+    CollectedTuple{typeof(f),S,CT}(f,t.colcache),state
+end
+
+function fittable_vec(tab,o,fitsym;kwargs...)
+  nvars = length(tab.loopaxes[1])
+  tab2 = TabPartitioner(tab,fitsym,nvars)
+  fittable(tab2,o,fitsym;kwargs...)
+end
+fittable_vec(tab,o::Type{<:OnlineStat},fitsym;kwargs...)=fittable_vec(tab,o(),fitsym;kwargs...)
