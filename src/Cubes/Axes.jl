@@ -161,10 +161,11 @@ axunits(::LatAxis)="degrees_north"
 get_step(r::AbstractRange)=step(r)
 get_step(r::AbstractVector)=length(r)==0 ? zero(eltype(r)) : r[2]-r[1]
 
-axVal2Index_ub(a::RangeAxis, v; fuzzy=false)=axVal2Index(a,v-abs(get_step(a.values)/2),fuzzy=fuzzy)
-axVal2Index_lb(a::RangeAxis, v; fuzzy=false)=axVal2Index(a,v+abs(get_step(a.values)/2),fuzzy=fuzzy)
+axVal2Index_ub(a::RangeAxis, v; fuzzy=false)=axVal2Index(a,v-abs(half(get_step(a.values))),fuzzy=fuzzy)
+axVal2Index_lb(a::RangeAxis, v; fuzzy=false)=axVal2Index(a,v+abs(half(get_step(a.values))),fuzzy=fuzzy)
 
-
+half(a) = a/2
+half(a::Day) = Millisecond(a)/2
 
 function axVal2Index(a::RangeAxis{<:Any,<:Any,<:AbstractRange},v;fuzzy=false)
   dt = v-first(a.values)
