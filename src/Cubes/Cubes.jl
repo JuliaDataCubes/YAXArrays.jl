@@ -173,11 +173,15 @@ function Base.getindex(c::AbstractCubeData,i::IndR...)
   lall = map((rr,ii)->(length(rr),!isa(ii,Integer)),r.indices,i)
   lshort = filter(ii->ii[2],collect(lall))
   newshape = map(ii->ii[1],lshort)
-  aout = Array{eltype(c)}(undef,size(r))
-  _read(c,aout,r)
-  reshape(aout,newshape...)
+  aout = Array{eltype(c)}(undef,newshape...)
+  if newshape == size(r)
+    _read(c,aout,r)
+  else
+    _read(c,reshape(aout,size(r)),r)
+  end
+  aout
 end
-Base.read(d::AbstractCubeData)=getindex(d,fill(Colon(),ndims(d))...)
+Base.read(d::AbstractCubeData) = getindex(d,fill(Colon(),ndims(d))...)
 
 function formatbytes(x)
   exts=["bytes","KB","MB","GB","TB"]

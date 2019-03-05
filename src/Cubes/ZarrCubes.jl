@@ -260,7 +260,7 @@ axcopy(ax::CategoricalAxis,vals) = CategoricalAxis(axname(ax),vals)
 
 function _subsetcube(z::AbstractCubeData, subs;kwargs...)
   if :region in keys(kwargs)
-    kwargs = collect(kwargs)
+    kwargs = collect(Any,kwargs)
     ireg = findfirst(i->i[1]==:region,kwargs)
     reg = splice!(kwargs,ireg)
     haskey(known_regions,reg[2]) || error("Region $(reg[2]) not known.")

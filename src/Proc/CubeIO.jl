@@ -9,12 +9,6 @@ import StatsBase.Weights
 import StatsBase.sample
 import Base.Iterators
 
-function getSpatiaPointAxis(mask::CubeMem)
-    a=Tuple{Float64,Float64}[]
-    ax=caxes(mask)
-    anew = Iterators.product(ax[1].values,ax[2].values)
-    SpatialPointAxis(a)
-end
 
 function toPointAxis(aout,ain,loninds,latinds)
   iout = 1
@@ -49,41 +43,6 @@ function extractLonLats(c::AbstractCubeData,pl::Matrix;kwargs...)
   y=mapCube(toPointAxis,c,loninds,latinds;indims=incubes,outdims=outcubes,max_cache=1e8,kwargs...)
 end
 export extractLonLats
-
-"""
-    sampleLandPoints(cube, nsample;nomissing=false)
-
-Get an area-weighted sample from all non-ocean grid cells. This will return a new Cube
-where the `LonAxis` and `LatAxis` are condensed into a single `SpatialPointAxis` of
-length `nsample`. If `nomissing=true` only grid cells will be selected which don't contain any missing values.
-This makes sense for gap-filled cubes to make sure that grid cells with systematic seasonal gaps are not selected
-in the sample.
-"""
-function sampleLandPoints(cdata::AbstractCubeData,nsample::Integer,nomissing=false)
-  axlist=caxes(cdata)
-  ilon=findAxis(LonAxis,axlist)
-  ilat=findAxis(LatAxis,axlist)
-  if nomissing
-    remAxes=filter(i->!(isa(i,LonAxis) || isa(i,LatAxis)),axlist)
-    cm=reduceCube(i->any(ismissing,i),cdata,ntuple(i->typeof(remAxes[i]),length(remAxes)),outtype=(Bool,))
-    m=map(i->(i ? OCEAN : VALID),cm.data)
-    cm=CubeMem(CubeAxis[axlist[ilon],axlist[ilat]],m,m)
-  else
-    bs=ntuple(i->in(i,(ilon,ilat)) ? length(axlist[i]) : 1,length(axlist))
-    sargs=ntuple(i->ifelse(in(i,(ilon,ilat)),1:length(axlist[i]),1),length(axlist))
-    mh=getMemHandle(cdata,1,CartesianIndex(bs))
-    a,m=getSubRange(mh,sargs...)
-    m=copy(m)
-    cm=CubeMem(CubeAxis[axlist[ilon],axlist[ilat]],m,m)
-  end
-  sax=getSpatiaPointAxis(cm);
-  isempty(sax.values) && error("Could not find any valid coordinates to extract a sample from. Please check for systematic missing values if you set nomissing=true")
-  w=Weights(map(i->cosd(i[2]),sax.values))
-  sax2=SpatialPointAxis(sample(sax.values,w,nsample,replace=false))
-  y=mapCube(toPointAxis,cdata,axlist[ilon],axlist[ilat],
-   indims=InDims("Lon","Lat"),outdims=OutDims(sax2),max_cache=1e8);
-end
-export sampleLandPoints
 
 using NetCDF
 import Base.Iterators: product
