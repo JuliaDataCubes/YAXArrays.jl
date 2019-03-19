@@ -202,7 +202,7 @@ function filloutar(aout,convdictall,agg::GroupedOnlineAggregator,s,post)
     end
 end
 function filloutar(aout,convdictall,agg,g,post)
-    aout[:]=post(agg.o)
+    aout[:].=post(agg.o)
 end
 """
     fittable(tab,o,fitsym;by=(),weight=nothing)

@@ -847,7 +847,7 @@ function readFromDataYear(cube::Cube,outar::AbstractArray{T,3},variable,y,grid_x
     NetCDF.readvar!(v,view(outar2,:,:,itcur:(itcur+nt-1)),start=[grid_x1,grid_y1,i1cur],count=[nx,ny,nt])
     missval::T=convert(T,ncgetatt(filename,variable,"_FillValue"))
     @inbounds for k=itcur:(itcur+nt-1),j=1:ny,i=1:nx
-      if (outar2[i,j,k] == missval) || isnan(outar2[i,j,k])
+      if isequal(outar2[i,j,k],missval) || isnan(outar2[i,j,k])
         outar[i,j,k]=missing
       else
         outar[i,j,k]=outar2[i,j,k]*scalefac+offset
