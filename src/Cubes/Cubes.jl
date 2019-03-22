@@ -8,7 +8,6 @@ export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesC
        getSingVal, ScaleAxis, axname, @caxis_str, rmCube, cubeproperties, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
        getOutAxis, ByInference
 
-
 """
     AbstractCubeData{T,N}
 
@@ -79,9 +78,9 @@ caxes(c::EmptyCube)=CubeAxis[]
 """
     CubeMem{T,N} <: AbstractCubeMem{T,N}
 
-An in-memory data cube. It is returned by applying [mapCube](@ref) when
+An in-memory data cube. It is returned by applying [`mapCube`](@ref) when
 the output cube is small enough to fit in memory or by explicitly calling
-`readCubeData` on any type of cube.
+[`readCubeData`](@ref) on any type of cube.
 
 ### Fields
 

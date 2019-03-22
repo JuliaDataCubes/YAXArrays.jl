@@ -54,7 +54,7 @@ getprocfilter(pf::ProcFilter) = (pf,)
 getprocfilter(pf::NTuple{N,<:ProcFilter}) where N = pf
 
 """
-    InDims(axisdesc)
+    InDims(axisdesc;...)
 
 Creates a description of an Input Data Cube for cube operations. Takes a single
   or a Vector/Tuple of axes as first argument. Axes can be specified by their
@@ -62,8 +62,8 @@ Creates a description of an Input Data Cube for cube operations. Takes a single
 
 ### Keyword arguments
 
-    * `artype` how shall the array be represented in the inner function. Defaults to `AsArray`, alternatives are `AsDataFrame` or `AsAxisArray`
-    * `filter` define some filter to skip the computation, e.g. when all values are missing. Defaults to
+* `artype` how shall the array be represented in the inner function. Defaults to `AsArray`, alternatives are `AsDataFrame` or `AsAxisArray`
+* `filter` define some filter to skip the computation, e.g. when all values are missing. Defaults to
     `AllMissing()`, possible values are `AnyMissing()`, `AnyOcean()`, `StdZero()`, `NValid(n)`
     (for at least n non-missing elements). It is also possible to provide a custom one-argument function
     that takes the array and returns `true` if the compuation shall be skipped and `false` otherwise.
@@ -87,11 +87,11 @@ Creates a description of an Output Data Cube for cube operations. Takes a single
   or a Vector/Tuple of axes as first argument. Axes can be specified by their
   name (String), through an Axis type, or by passing a concrete axis.
 
-- axisdesc: List of input axis names
-- genOut: function to initialize the values of the output cube given its element type. Defaults to `zero`
-- finalizeOut: function to finalize the values of an output cube, defaults to identity.
-- retCubeType: sepcifies the type of the return cube, can be `CubeMem` to force in-memory, `TempCube` to force disk storage, or `"auto"` to let the system decide.
-- outtype: force the output type to a specific type, defaults to `Any` which means that the element type of the first input cube is used
+- `axisdesc`: List of input axis names
+- `genOut`: function to initialize the values of the output cube given its element type. Defaults to `zero`
+- `finalizeOut`: function to finalize the values of an output cube, defaults to identity.
+- `retCubeType`: sepcifies the type of the return cube, can be `CubeMem` to force in-memory, `TempCube` to force disk storage, or `"auto"` to let the system decide.
+- `outtype`: force the output type to a specific type, defaults to `Any` which means that the element type of the first input cube is used
 """
 struct OutDims
   axisdesc::Tuple

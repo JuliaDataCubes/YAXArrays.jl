@@ -106,14 +106,14 @@ abstract type UCube end
 """
 Represents a data cube accessible though the file system. The default constructor is
 
-Cube(base_dir)
+[`Cube(base_dir)`](@ref)
 
-where `base_dir` is the datacube's base directory.
+where `base_dir` is the data cube's base directory.
 
 ### Fields
 
 * `base_dir` the cube parent directory
-* `config` the cube's static configuration [CubeConfig](@ref)
+* `config` the cube's static configuration [`CubeConfig`](@ref)
 * `dataset_files` a list of datasets in the cube
 * `var_name_to_var_index` basically the inverse of `dataset_files`
 
@@ -125,6 +125,18 @@ mutable struct Cube <: UCube
   var_name_to_var_index::OrderedDict{String,Int}
 end
 
+"""
+    Cube(;resolution="low")
+
+Empty constructor with a default keyword argument for the resolution.
+Attempts to access default data cube locations in the file system. If unsuccessful
+attempts to open a [`RemoteCube`](@ref).
+
+### Keyword argument
+
+* `resolution` Can be "low" or "high". Defaults to "low".
+
+"""
 function Cube(;resolution="low")
   try
     if isdir("/home/jovyan/work/datacube/")
@@ -141,6 +153,15 @@ function Cube(;resolution="low")
   end
 end
 
+"""
+    Cube(base_dir::AbstractString)
+
+Represents a data cube accessible though the file system.
+
+### Argument
+
+* `base_dir` the parent directory of the data cube to be opened.
+"""
 function Cube(base_dir::AbstractString)
   configfile=joinpath(base_dir,"cube.config")
   x=split(readchomp(configfile),"\n")
@@ -156,7 +177,7 @@ end
 """
 Represents a remote data cube accessible through THREDDS. The default constructor is
 
-RemoteCube(base_url)
+[`RemoteCube(;resolution="low",url="http://www.brockmann-consult.de/cablab-thredds/")`](@ref)
 
 where `base_url` is the datacube's base url.
 
@@ -166,12 +187,7 @@ where `base_url` is the datacube's base url.
 * `var_name_to_var_index` basically the inverse of `dataset_files`
 * `dataset_files` a list of datasets in the cube
 * `dataset_paths` a list of urls pointing to the different data sets
-* `config` the cube's static configuration [CubeConfig](@ref)
-
-```@example
-using ESDL
-ds=remoteCube()
-```
+* `config` the cube's static configuration [`CubeConfig`](@ref)
 
 """
 mutable struct RemoteCube <: UCube
@@ -192,7 +208,15 @@ function testDAP()
     return `$(nc_config) --has-dap` |> readstring |> chomp =="yes"
   end
 end
+"""
+    RemoteCube(;resolution="low", url)
 
+### Keyword arguments
+
+* `resolution` Can be "low" or "high". Defaults to "low".
+* `url` A custom URL for the remote connection can be specified here. Defaults to the official remote server.
+
+"""
 function RemoteCube(;resolution="low",url="http://www.brockmann-consult.de/cablab-thredds/")
   testDAP() || error("NetCDF built without DAP support. Accessing remote cubes is not possible.")
   resExt=resolution == "low" ? "fileServer/datacube-low-res/cube.config" : "fileServer/datacube-high-res/cube.config"
@@ -256,13 +280,13 @@ function.
 
 ### Fields
 
-* `cube::C` Parent cube
-* `variable` selected variable
-* `sub_grid` representation of the subgrid indices
-* `sub_times` representation of the selected time steps
-* `lonAxis`
-* `latAxis`
-* `timeAxis`
+* **`cube::C`** Parent cube
+* **`variable`** selected variable
+* **`sub_grid`** representation of the subgrid indices
+* **`sub_times`** representation of the selected time steps
+* **`lonAxis`** `LonAxis` object
+* **`latAxis`** `LatAxis` object
+* **`timeAxis`** `TimeAxis` object
 
 """
 struct SubCube{T,C} <: AbstractSubCube{T,3}
@@ -326,14 +350,14 @@ function.
 
 ### Fields
 
-* `cube::C` Parent cube
-* `variable` list of selected variables
-* `sub_grid` representation of the subgrid indices
-* `sub_times` representation of the selected time steps
-* `lonAxis`
-* `latAxis`
-* `timeAxis`
-* `varAxis`
+* **`cube::C`** Parent cube
+* **`variable`** list of selected variables
+* **`sub_grid`** representation of the subgrid indices
+* **`sub_times`** representation of the selected time steps
+* **`lonAxis`** `LonAxis` object
+* **`latAxis`** `LatAxis` object
+* **`timeAxis`** `TimeAxis` object
+* **`varAxis`** `VariableAxis` object
 
 """
 struct SubCubeV{T,C} <: AbstractSubCube{T,4}
@@ -449,20 +473,15 @@ iscompressed(s::Union{SubCubePerm,SubCubeVPerm,SubCubeStaticPerm}) = iscompresse
 
 
 """
+    getCubeData(cube::Cube; variable, time, latitude, longitude)
 
-getCubeData(cube::Cube;variable,time,latitude,longitude)
+Returns a `SubCube` object which represents a view of the original data cube. The following keyword arguments are accepted:
 
-Returns a view into the data cube. The following keyword arguments are accepted:
-
-- *variable*: an variable index or name or an iterable returning multiple of these (var1, var2, ...)
-- *time*: a single Date object or a 2-element iterable (time_start, time_end)
-- *latitude*: a single latitude value or a 2-element iterable (latitude_start, latitude_end)
-- *longitude*: a single longitude value or a 2-element iterable (longitude_start, longitude_end)
-- *region*: specify a country or SREX region by name or ISO_A3 code. Type `?ESDL.known_regions` to see a list of pre-defined areas
-
-Returns a `SubCube` object which represents a view into the original data cube.
-
-
+- **`variable`** a variable index, variable name string or an iterable returning multiple of these, like: (var1, var2, ...)
+- **`time`** a single Date object or a 2-element iterable of Date objects, like: (start\\_time, end\\_time)
+- **`latitude`** a single latitude value or a 2-element iterable, like: (first\\_latitude, last\\_latitude)
+- **`longitude`** a single longitude value or a 2-element iterable, like (first\\_longitude, last\\_longitude)
+- **`region`** specify a country or SREX region by name or ISO\\_A3 code. Overrides latitude and longitude for AOI selection. Type `?ESDL.known_regions` to see a list of pre-defined areas
 """
 function getCubeData(cube::UCube;variable=Int[],time=[],latitude=[],longitude=[],region=[])
   #First fill empty inputs

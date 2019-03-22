@@ -11,8 +11,8 @@ missval(::Type{T}) where T<: AbstractFloat = convert(T,NaN)
 """
     MmapCube{T,N}
 
-Defines a Memory-Mapped data cube which is stored on disk. Is generally returned
-by mapCube applications.
+Defines a memory-mapped data cube which is stored on disk. Is generally returned
+by [`mapCube`](@ref) applications.
 """
 mutable struct MmapCube{T,N} <: AbstractMmapCube{T,N}
   axes::Vector{CubeAxis}
