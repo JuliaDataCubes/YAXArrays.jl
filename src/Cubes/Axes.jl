@@ -164,6 +164,9 @@ get_step(r::AbstractVector)=length(r)==0 ? zero(eltype(r)) : r[2]-r[1]
 axVal2Index_ub(a::RangeAxis, v; fuzzy=false)=axVal2Index(a,v-abs(half(get_step(a.values))),fuzzy=fuzzy)
 axVal2Index_lb(a::RangeAxis, v; fuzzy=false)=axVal2Index(a,v+abs(half(get_step(a.values))),fuzzy=fuzzy)
 
+axVal2Index_ub(a::RangeAxis{<:Date}, v; fuzzy=false)=axVal2Index(a,DateTime(v)-abs(half(get_step(a.values))),fuzzy=fuzzy)
+axVal2Index_lb(a::RangeAxis{<:Date}, v; fuzzy=false)=axVal2Index(a,DateTime(v)+abs(half(get_step(a.values))),fuzzy=fuzzy)
+
 half(a) = a/2
 half(a::Day) = Millisecond(a)/2
 
@@ -172,25 +175,14 @@ function axVal2Index(a::RangeAxis{<:Any,<:Any,<:AbstractRange},v;fuzzy=false)
   r = round(Int,dt/step(a.values))+1
   return max(1,min(length(a.values),r))
 end
-function axVal2Index(a::RangeAxis{T,S,F},v;fuzzy=false) where {T<:DateTime,S,F<:AbstractRange}
-  dt = v-first(a.values)
-  r = round(Int,dt/Millisecond(step(a.values)))+1
-  return max(1,min(length(a.values),r))
-end
-function axVal2Index(a::RangeAxis{T,S,F},v::Date;fuzzy=false) where {T<:Date,S,F<:YearStepRange}
+function axVal2Index(a::RangeAxis{<:Date,<:Any,<:YearStepRange},v::Date;fuzzy=false)
   y = year(v)
   d = dayofyear(v)
   r = (y-a.values.startyear)*a.values.NPY + d÷a.values.step + 1
   return max(1,min(length(a.values),r))
 end
-function axVal2Index(a::RangeAxis{T,S,F},v::Date;fuzzy=false) where {T<:Date,S,F<:StepRange}
-  dd = map(i->abs((i-v).value),a.values)
-  mi,ind = findmin(dd)
-  return ind
-end
-
-function axVal2Index(a::RangeAxis{T,S,F},v::Date;fuzzy=false) where {T<:Date,S,F}
-  dd = map(i->abs((i-v).value),a.values)
+function axVal2Index(a::RangeAxis{<:Date},v;fuzzy=false)
+  dd = map(i->abs((DateTime(i)-DateTime(v))),a.values)
   mi,ind = findmin(dd)
   return ind
 end
