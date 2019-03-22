@@ -6,7 +6,7 @@ module Cubes
 export Axes, AbstractCubeData, getSubRange, readcubedata, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, TimeHAxis, QuantileAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, caxes,
        AbstractSubCube, CubeMem, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis, axVal2Index, MSCAxis,
        getSingVal, ScaleAxis, axname, @caxis_str, rmCube, cubeproperties, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
-       getOutAxis, Cube, (..), getCubeData
+       getOutAxis, Cube, (..), getCubeData, subsetcube
 
 
 """
