@@ -252,6 +252,7 @@ function interpretsubset(subexpr::NTuple{2,Any},ax)
   Colon()(sorted(axVal2Index_lb(ax,x),axVal2Index_ub(ax,y))...)
 end
 interpretsubset(subexpr::NTuple{2,Int},ax::RangeAxis{Date}) = interpretsubset(map(Date,subexpr),ax)
+interpretsubset(subexpr::UnitRange{Int64},ax::RangeAxis{Date}) = interpretsubset(Date(first(subexpr))..Date(last(subexpr,12,31)),ax)
 interpretsubset(subexpr::Interval,ax)       = interpretsubset((subexpr.left,subexpr.right),ax)
 interpretsubset(subexpr::AbstractVector,ax::CategoricalAxis)      = axVal2Index.(Ref(ax),subexpr,fuzzy=true)
 
