@@ -113,7 +113,7 @@ function ZArrayCube(axlist;
     subs = nothing
   else
     subs = ntuple(length(axlist)) do i
-      (chunkoffset[i]+1):(length(axlist.values[i])+chunkoffset[i])
+      (chunkoffset[i]+1):(length(axlist[i].values)+chunkoffset[i])
     end
   end
   za = zcreate(myar,"layer", T , s...,attrs=attr, fill_value=fillvalue,chunks=chunksize)
