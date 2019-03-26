@@ -128,7 +128,9 @@ function DATConfig(cdata,indims,outdims,inplace,max_cache,fu,outfolder,ispar,inc
   isa(indims,InDims) && (indims=(indims,))
   isa(outdims,OutDims) && (outdims=(outdims,))
   length(cdata)==length(indims) || error("Number of input cubes ($(length(cdata))) differs from registration ($(length(indims)))")
-
+  if max_cache === nothing
+    max_cache = parse(Float64,get(ENV,"ESDL_MAX_CACHE","100")) * 1e6
+  end
   incubes  = totuple([InputCube(o[1],o[2]) for o in zip(cdata,indims)])
   allInAxes = vcat([ic.axesSmall for ic in incubes]...)
   outcubes = totuple(map(1:length(outdims),outdims) do i,desc
@@ -211,7 +213,7 @@ a tuple input cubes if needed.
 """
 function mapCube(fu::Function,
     cdata::Tuple,addargs...;
-    max_cache=1e7,
+    max_cache=nothing,
     indims=InDims(),
     outdims=OutDims(),
     inplace=true,

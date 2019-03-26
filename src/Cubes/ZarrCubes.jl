@@ -119,7 +119,7 @@ function ZArrayCube(axlist;
       (chunkoffset[i]+1):(length(axlist[i].values)+chunkoffset[i])
     end
   end
-  za = zcreate(myar,"layer", T , s...,attrs=attr, fill_value=fillvalue,chunks=chunksize)
+  za = zcreate(myar,"layer", T , s...,attrs=attr, fill_value=fillvalue,chunks=chunksize,compressor=compressor)
   zout = ZArrayCube{T,length(s),typeof(za),typeof(subs)}(za,axlist,subs,persist,propfromattr(attr))
   finalizer(cleanZArrayCube,zout)
   zout
