@@ -4,9 +4,9 @@ import Distributed: myid
 import ZarrNative: ZGroup, zopen, ZArray, NoCompressor, zgroup, zcreate, readblock!
 import ESDL.Cubes: cubechunks, iscompressed, AbstractCubeData, getCubeDes,
   caxes,chunkoffset, gethandle, subsetcube, axVal2Index, findAxis, _read,
-  _write, cubeproperties, ConcatCube, concatenateCubes, _subsetcube, workdir
+  _write, cubeproperties, ConcatCube, concatenateCubes, _subsetcube, workdir, readcubedata
 import ESDL.Cubes.Axes: axname, CubeAxis, CategoricalAxis, RangeAxis, TimeAxis,
-  axVal2Index_lb, axVal2Index_ub, get_step
+  axVal2Index_lb, axVal2Index_ub, get_step, getAxis
 import Dates: Day,Hour,Minute,Second,Month,Year, Date
 import IntervalSets: Interval, (..)
 export (..), Cubes, getCubeData
@@ -17,11 +17,13 @@ mutable struct ZArrayCube{T,M,A<:ZArray{T},S} <: AbstractCubeData{T,M}
   axes::Vector{CubeAxis}
   subset::S
   persist::Bool
+  properties::Dict{String,Any}
 end
 getCubeDes(::ZArrayCube)="ZArray Cube"
 caxes(z::ZArrayCube)=z.axes
 iscompressed(z::ZArrayCube)=!isa(z.a.metadata.compressor,NoCompressor)
 cubechunks(z::ZArrayCube)=z.a.metadata.chunks
+cubeproperties(z::ZArrayCube) = z.properties
 function chunkoffset(z::ZArrayCube)
   cc = cubechunks(z)
   map((s,c)->mod(first(s)-1,c),z.subset,cc)
@@ -107,7 +109,8 @@ function ZArrayCube(axlist;
   foreach(axlist,chunkoffset) do ax,co
     zarrayfromaxis(myar,ax,co)
   end
-  attr = Dict("_ARRAY_DIMENSIONS"=>reverse(map(axname,axlist)))
+  attr = properties
+  attr["_ARRAY_DIMENSIONS"]=reverse(map(axname,axlist))
   s = map(length,axlist) .+ chunkoffset
   if all(iszero,chunkoffset)
     subs = nothing
@@ -117,7 +120,7 @@ function ZArrayCube(axlist;
     end
   end
   za = zcreate(myar,"layer", T , s...,attrs=attr, fill_value=fillvalue,chunks=chunksize)
-  zout = ZArrayCube{T,length(s),typeof(za),typeof(subs)}(za,axlist,subs,persist)
+  zout = ZArrayCube{T,length(s),typeof(za),typeof(subs)}(za,axlist,subs,persist,propfromattr(attr))
   finalizer(cleanZArrayCube,zout)
   zout
 end
@@ -126,7 +129,7 @@ function _read(z::ZArrayCube{<:Any,N,<:Any,<:Nothing},thedata::AbstractArray{<:A
   readblock!(thedata,z.a,r)
 end
 
-
+propfromattr(attr) = filter(i->i[1]!=="_ARRAY_DIMENSIONS",attr)
 
 #Helper functions for subsetting indices
 _getinds(s1,s,i) = s1[firstarg(i...)],Base.tail(i)
@@ -207,12 +210,30 @@ function testrange(x)
 end
 import DataStructures: counter
 
+const static_vars = Set(["water_mask","country_mask","srex_mask"])
+const country_numeric_labels = include("../CubeAPI/countrylabels.jl")
+const country_numeric_alpha_2 = include("../CubeAPI/country_iso_numeric_iso_alpha2.jl")
+const country_numeric_alpha_3 = include("../CubeAPI/country_iso_numeric_iso_alpha3.jl")
+const countrylabels = country_numeric_labels
+const srexlabels = include("../CubeAPI/srexlabels.jl")
+const known_labels = Dict("water_mask"=>Dict(0x01=>"land",0x02=>"water"),"country_mask"=>countrylabels,"srex_mask"=>srexlabels)
+const known_names = Dict("water_mask"=>"Water","country_mask"=>"Country","srex_mask"=>"SREXregion")
+
 Cube(s::String;kwargs...) = Cube(zopen(s);kwargs...)
 Cube(;kwargs...) = Cube(get(ENV,"ESDL_CUBEDIR","/home/jovyan/work/datacube/ESDCv2.0.0/esdc-8d-0.25deg-184x90x90-2.0.0.zarr/");kwargs...)
+function CubeMask(s::String,v::String;kwargs...)
+  vname =  string(v,"_mask")
+  c = Cube(zopen(s);varlist=[vname],static=true,kwargs...)
+  c.properties["labels"] = known_labels[vname]
+  c.properties["name"]   = known_names[vname]
+  readcubedata(c)
+end
+CubeMask(v;kwargs...) = CubeMask(get(ENV,"ESDL_CUBEDIR","/home/jovyan/work/datacube/ESDCv2.0.0/esdc-8d-0.25deg-184x90x90-2.0.0.zarr/"),v;static=true,kwargs...)
+
 
 @deprecate getCubeData(c;longitude=(-180.0,180.0),latitude=(-90.0,90.0),kwargs...) subsetcube(c;lon=longitude,lat=latitude,kwargs...)
 
-function Cube(g::ZGroup;varlist=nothing,joinname="Variable")
+function Cube(g::ZGroup;varlist=nothing,joinname="Variable",static=false)
 
   if varlist===nothing
     varlist = infervarlist(g)
@@ -227,7 +248,7 @@ function Cube(g::ZGroup;varlist=nothing,joinname="Variable")
   allcubes = map(varlist) do iv
     v = g[iv]
     size(v) == s || throw(DimensionMismatch("All variables must have the same shape. $iv does not match $(varlist[1])"))
-    ZArrayCube{eltype(v),ndims(v),typeof(v),Nothing}(v,iax,nothing,true)
+    ZArrayCube{eltype(v),ndims(v),typeof(v),Nothing}(v,iax,nothing,true,propfromattr(v.attrs))
   end
   # Filter out minority element types
   c = counter(eltype(i) for i in allcubes)
@@ -236,9 +257,14 @@ function Cube(g::ZGroup;varlist=nothing,joinname="Variable")
   allcubes = allcubes[indtake]
   varlist  = varlist[indtake]
   if length(allcubes)==1
-    return allcubes[1]
+    cout =  allcubes[1]
   else
-    return concatenateCubes(allcubes,CategoricalAxis(joinname,varlist))
+    cout = concatenateCubes(allcubes,CategoricalAxis(joinname,varlist))
+  end
+  if static
+    return subsetcube(cout,time=first(getAxis("Time",cout).values))
+  else
+    return cout
   end
 end
 
@@ -300,7 +326,7 @@ include(joinpath(@__DIR__,"../CubeAPI/countrydict.jl"))
 function subsetcube(z::ZArrayCube{T};kwargs...) where T
   subs = isa(z.subset,Nothing) ? collect(Any,map(Base.OneTo,size(z))) : collect(Any,z.subset)
   newaxes, substuple = _subsetcube(z,subs;kwargs...)
-  ZArrayCube{T,length(newaxes),typeof(z.a),typeof(substuple)}(z.a,newaxes,substuple,true)
+  ZArrayCube{T,length(newaxes),typeof(z.a),typeof(substuple)}(z.a,newaxes,substuple,true,z.properties)
 end
 
 Base.getindex(a::AbstractCubeData;kwargs...) = subsetcube(a;kwargs...)

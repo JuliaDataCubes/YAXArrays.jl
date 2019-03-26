@@ -199,7 +199,7 @@ function tooutcube(
 end
 function filloutar(aout,convdictall,agg::GroupedOnlineAggregator,s,post)
     for (k,v) in agg.d
-        i = CartesianIndices((s...,map((i,d)->d[i]:d[i],k,convdictall)...))
+        i = CartesianIndices((s...,map((i,d)->d[convert(keytype(d),i)]:d[convert(keytype(d),i)],k,convdictall)...))
         aout[i.indices...].=post(v)
     end
 end

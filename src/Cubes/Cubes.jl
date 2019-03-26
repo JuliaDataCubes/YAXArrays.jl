@@ -36,7 +36,7 @@ function readcubedata(x::AbstractCubeData{T,N}) where {T,N}
   aout = zeros(Union{T,Missing},s...)
   r=CartesianIndices(s)
   _read(x,aout,r)
-  CubeMem(collect(CubeAxis,caxes(x)),aout)
+  CubeMem(collect(CubeAxis,caxes(x)),aout,cubeproperties(x))
 end
 
 """
@@ -119,9 +119,14 @@ getSubRange(c::Tuple{AbstractArray{T,0},AbstractArray{UInt8,0}};write::Bool=true
 
 function _subsetcube end
 
-function subsetcube(z::CubeMem{T};region=nothing,kwargs...) where T
+function subsetcube(z::CubeMem{T};kwargs...) where T
   newaxes, substuple = _subsetcube(z,collect(Any,map(Base.OneTo,size(z)));kwargs...)
-  CubeMem{T,length(newaxes)}(newaxes,z.data[substuple...],z.properties)
+  newdata = z.data[substuple...]
+  if haskey(z.properties,"labels")
+    alll = filter!(!ismissing,unique(newdata))
+    z.properties["labels"] = filter(i->in(i[1],alll),z.properties["labels"])
+  end
+  CubeMem{T,length(newaxes)}(newaxes,newdata,z.properties)
 end
 
 """
@@ -213,7 +218,9 @@ function Base.show(io::IO,c::AbstractCubeData)
     end
 
     foreach(cubeproperties(c)) do p
-      println(io,p[1],": ",p[2])
+      if p[1] in ("labels","name","units")
+        println(io,p[1],": ",p[2])
+      end
     end
     println(io,"Total size: ",formatbytes(cubesize(c)))
 end
