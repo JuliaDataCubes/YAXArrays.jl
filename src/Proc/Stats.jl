@@ -45,7 +45,7 @@ function cquantile(xout,xin,p)
   nonzero = w.>0
   d = xin[nonzero,1]
   w = Float64.(xin[nonzero,2])
-  xout[:] = quantile(d,fweights(w),p)
+  xout[:] = quantile(d,pweights(w),p)
 end
 
 end
