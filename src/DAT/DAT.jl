@@ -16,9 +16,9 @@ import DataFrames: DataFrame, ncol
 import ProgressMeter: Progress, next!, progress_pmap
 using Dates
 import StatsBase.Weights
-global const debugDAT=false
+global const debugDAT=[false]
 macro debug_print(e)
-  debugDAT && return(:(println($e)))
+  debugDAT[1] && return(:(println($e)))
   :()
 end
 
@@ -182,7 +182,7 @@ end
 mapCube(fu::Function,cdata::AbstractCubeData,addargs...;kwargs...)=mapCube(fu,(cdata,),addargs...;kwargs...)
 
 import Base.mapslices
-function mapslices(f,d::AbstractCubeData,dims,addargs...;kwargs...)
+function mapslices(f,d::AbstractCubeData,addargs...;dims,kwargs...)
     isa(dims,String) && (dims=(dims,))
     mapCube(f,d,addargs...;indims = InDims(dims...),outdims = OutDims(ByInference()),inplace=false,kwargs...)
 end
@@ -613,7 +613,7 @@ using Base.Cartesian
   if R
     push!(runBody.args,Expr(:call,callargs...))
   else
-    lhs = NOUT>1 ? Expr(:tuple,[:($(outworksyms[j])[:]) for j=1:NOUT]...) : :($(outworksyms[1])[:])
+    lhs = NOUT>1 ? Expr(:tuple,[:($(outworksyms[j])) for j=1:NOUT]...) : outworksyms[1]
     rhs = Expr(:call,callargs...)
     push!(runBody.args,:($lhs.=$rhs))
   end
@@ -636,7 +636,7 @@ using Base.Cartesian
     $unrollEx
     $loopEx
   end
-  if debugDAT
+  if debugDAT[1]
     b=IOBuffer()
     show(b,loopEx)
     s=String(take!(b))

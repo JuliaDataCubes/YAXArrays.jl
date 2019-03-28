@@ -2,7 +2,7 @@ module Axes
 export CubeAxis, QuantileAxis, TimeAxis, TimeHAxis, VariableAxis, LonAxis, LatAxis, CountryAxis,
 SpatialPointAxis,Axes,YearStepRange,CategoricalAxis,RangeAxis,axVal2Index,MSCAxis,
 ScaleAxis, axname, @caxis_str, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
-getOutAxis, ByInference
+getOutAxis, ByInference, renameaxis!
 import NetCDF.NcDim
 using ..Cubes
 import ..Cubes: caxes
@@ -306,6 +306,21 @@ findAxis(a,axlist)=findAxis(get_descriptor(a),axlist)
 
 getSubRange(x::CubeAxis,i)=x.values[i],nothing
 getSubRange(x::TimeAxis,i)=view(x,i),nothing
+
+renameaxis(r::RangeAxis{T,<:Any,V}, newname) where {T,V} = RangeAxis{T,Symbol(newname),V}(r.values)
+renameaxis(r::CategoricalAxis{T,<:Any,V}, newname) where {T,V} = CategoricalAxis{T,Symbol(newname),V}(r.values)
+function renameaxis!(c::AbstractCubeData,p::Pair)
+  i = findAxis(p[1],c.axes)
+  c.axes[i]=renameaxis(c.axes[i],p[2])
+  c
+end
+function renameaxis!(c::AbstractCubeData,p::Pair{<:Any,<:CubeAxis})
+  i = findAxis(p[1],c.axes)
+  i === nothing && throw(ArgumentError("Axis not found"))
+  length(c.axes[i].values) == length(p[2].values) || throw(ArgumentError("Length of replacement axis must equal length of old axis"))
+  c.axes[i]=p[2]
+  c
+end
 
 macro caxis_str(s)
   :(CategoricalAxis{String,$(QuoteNode(Symbol(s)))})

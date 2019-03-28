@@ -52,6 +52,7 @@ getbytypes(et,by) = Tuple{map(i->unmiss(Base.return_types(i,Tuple{et})[1]),by)..
 cubeeltype(t::GroupedOnlineAggregator{T}) where T=cubeeltype(T)
 cubeeltype(t::Type{<:Dict{<:Any,T}}) where T = cubeeltype(T)
 cubeeltype(t::Type{<:WeightedOnlineStat{T}}) where T = T
+cubeeltype(t::Type{<:OnlineStat{Number}}) = Float64
 cubeeltype(t::Type{<:WeightedCovMatrix{T}}) where T = T
 cubeeltype(t::Type{<:Extrema{T}}) where T = T
 
@@ -97,17 +98,18 @@ function fitrow!(o::GroupedOnlineAggregator{T,S,BY,W},r) where {T,S,BY,W,C}
 end
 export TableAggregator, fittable, cubefittable
 function TableAggregator(iter,O,fitsym;by=(),weight=nothing)
-    if !isempty(by)
-        weight==nothing && (weight=(i->nothing))
-        by = map(i->isa(i,Symbol) ? (SymType(i)) : i,by)
-        GroupedOnlineAggregator(O,fitsym,by,weight,iter)
+  !isa(by,Tuple) && (by=(by,))
+  if !isempty(by)
+    weight==nothing && (weight=(i->nothing))
+    by = map(i->isa(i,Symbol) ? (SymType(i)) : i,by)
+    GroupedOnlineAggregator(O,fitsym,by,weight,iter)
+  else
+    if weight==nothing
+      OnlineAggregator(O,fitsym)
     else
-        if weight==nothing
-            OnlineAggregator(O,fitsym)
-        else
-            WeightOnlineAggregator(O,fitsym,weight)
-        end
+      WeightOnlineAggregator(O,fitsym,weight)
     end
+  end
 end
 
 function tooutaxis(::SymType{s},iter::CubeIterator{<:Any,<:Any,<:Any,<:Any,<:Any,S},k,ibc) where {s,S}

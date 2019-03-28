@@ -9,7 +9,7 @@ import ESDL.Cubes.Axes: axname, CubeAxis, CategoricalAxis, RangeAxis, TimeAxis,
   axVal2Index_lb, axVal2Index_ub, get_step, getAxis
 import Dates: Day,Hour,Minute,Second,Month,Year, Date
 import IntervalSets: Interval, (..)
-export (..), Cubes, getCubeData
+export (..), Cubes, getCubeData, CubeMask
 const spand = Dict("days"=>Day,"months"=>Month,"years"=>Year,"seconds"=>Second,"minutes"=>Minute)
 
 mutable struct ZArrayCube{T,M,A<:ZArray{T},S} <: AbstractCubeData{T,M}
