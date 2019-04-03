@@ -113,7 +113,7 @@ where `base_dir` is the data cube's base directory.
 ### Fields
 
 * `base_dir` the cube parent directory
-* `config` the cube's static configuration [`CubeConfig`](@ref)
+* `config` the cube's static configuration `CubeConfig`
 * `dataset_files` a list of datasets in the cube
 * `var_name_to_var_index` basically the inverse of `dataset_files`
 

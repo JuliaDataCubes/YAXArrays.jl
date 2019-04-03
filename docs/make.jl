@@ -3,7 +3,7 @@ using Documenter, ESDL, ESDLPlots
 makedocs(
     modules = [ESDL, ESDLPlots],
     clean   = false,
-    format   = :html,
+    format   = Documenter.HTML(),
     sitename = "ESDL.jl",
     authors = "Fabian Gans",
     pages    = Any[ # Compat: `Any` for 0.4 compat
@@ -13,7 +13,8 @@ makedocs(
             "analysis.md",
             "plotting.md",
             "iotools.md"
-        ]
+        ],
+        "Other functions" => "./lib/misc.md"
         ]
 )
 

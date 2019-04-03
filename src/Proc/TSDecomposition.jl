@@ -30,12 +30,12 @@ end
 mirror(i,l)=l-i+2
 
 """
-    filterTSFFT
+    filterTSFFT(c::AbstractCubeData)
 
 Filter each time series using a Fourier filter and return the decomposed series
 in 4 time windows (Trend, Long-Term Variability, Annual Cycle, Fast Oscillations)
 
-**Input Axes** `Time`axis
+**Input Axis** `Time`axis
 
 **Output Axes** `Time`axis, `Scale`axis
 
