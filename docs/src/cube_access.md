@@ -49,7 +49,7 @@ Variable            Axis with 2 elements: c_emissions air_temperature_2m
 Total size: 14.38 KB
 ```
 
-This returns a view of the data cube, on which further calculations can be applied. The extents here are all data for the variables "c_emissions" and "air_temperature_2m" between 50° and 51° North and 30° and 32° East for the year 2001. For southern latitudes and western longitudes use negative values.
+This returns a view of the data cube, on which further calculations can be applied. The extents here are all data for the variables "c\_emissions" and "air\_temperature\_2m" between 50° and 51° North and 30° and 32° East for the year 2001. For southern latitudes and western longitudes use negative values.
 All keyword arguments default to the full range, so calling [`getCubeData()`](@ref getCubeData) without
 keyword arguments will return a view of the whole data cube.
 
