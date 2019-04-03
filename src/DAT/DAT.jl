@@ -198,7 +198,7 @@ Map a given function `fun` over slices of the data cube `cube`.
 
 * `max_cache=1e7` maximum size of blocks that are read into memory, defaults to approx 10Mb
 * `outtype::DataType` output data type of the operation
-* `indims::InDims List of input cube descriptors of type [`InDims`](@ref) for each input data cube
+* `indims::InDims` List of input cube descriptors of type [`InDims`](@ref) for each input data cube
 * `outdims::OutDims` List of output cube descriptors of type [`OutDims`](@ref) for each output cube
 * `inplace` does the function write to an output array inplace or return a single value> defaults to `true`
 * `ispar` boolean to determine if parallelisation should be applied, defaults to `true` if workers are available.
@@ -208,8 +208,6 @@ Map a given function `fun` over slices of the data cube `cube`.
 
 The first argument is always the function to be applied, the second is the input cube or
 a tuple input cubes if needed.
-
-
 """
 function mapCube(fu::Function,
     cdata::Tuple,addargs...;

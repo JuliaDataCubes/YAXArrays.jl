@@ -256,6 +256,13 @@ getpostfunction(::Type{<:WeightedHist})=i->hcat(value(i)...)
 getnbins(f::GroupedOnlineAggregator)=f.cloneobj.alg.b
 getnbins(f::TableAggregator)=f.o.alg.b
 
+"""
+    cubefittable(tab,o,fitsym;post=getpostfunction(o),kwargs...)
+
+Executes [`fittable`](@ref) on the [`@CubeTable`](@ref) `tab` with the
+(Weighted-)OnlineStat `o`, looping through the values specified by `fitsym`.
+Finally, writes the results from the `TableAggregator` to an output data cube.
+"""
 function cubefittable(tab,o,fitsym;post=getpostfunction(o),kwargs...)
   agg=fittable(tab,o,fitsym;showprog=true,kwargs...)
   tooutcube(agg,tab,post)
