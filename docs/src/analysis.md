@@ -8,7 +8,7 @@ in the input cube, the function will simply loop over these.
 The function will be applied to the whole cube
 in a memory-efficient way, which means that chunks of data are read, processed and then saved in
 the output cube. Whether the output cube is a [`MmapCube`](@ref ESDL.Cubes.MmapCube) or a [`CubeMem`](@ref) is decided by the system,
-depending on whether the calculation can be parallelized, and the size of the output cube.
+depending on parallelization and the size of the output cube.
 
 Here follows a list of analysis functions included in this package. If you have implemented or wrapped a method,
 that might be of interest to a broader community, please feel free to open a pull request.
@@ -17,18 +17,24 @@ that might be of interest to a broader community, please feel free to open a pul
 
 ### Seasonal cycles
 
+All of these functions take a data cube as an argument, process the **input axis** and replace it with the **output axis**.
+
 ```@autodocs
 Modules = [ESDL.Proc.MSC]
 Private = false
 ```
 
 ### Time series decomposition
+
+This function takes a data cube as an argument. It adds an additional dimension to the cube and returns it. Every variable, time step and location will have a set of four values in the new dimension instead of just one.
+
 ```@autodocs
 Modules = [ESDL.Proc.TSDecomposition]
 Private = false
 ```
 
 ### Cube transformations
+
 ```@autodocs
 Modules = [ESDL.Proc.CubeIO]
 Private = false
@@ -45,13 +51,13 @@ The main difference to the function exported in Base is that the dimensions to b
 mapslices(mean, cube, ("Lon","Lat"))
 ```
 
-will compute the mean over each spatial map contained in the data cube. Please note that that the `mapslices` function will execute the function once with random number input to determine the shape of the returned values and then pre-allocate the output array. Keep this in mind when your function has some side-effects. Although the `mapslices` function should *just work* in most cases, it is advised to read about the [`mapCube`](@ref) function in [Applying custom functions](@ref) which gives you much more detailed control over the mapping operation.
+will compute the mean over each spatial map contained in the data cube. Please note that that the `mapslices` function will execute the function once with random number input to determine the shape of the returned values and then pre-allocate the output array. Keep this in mind when your function has some side-effects. Although the `mapslices` function should *work* in most cases, it is advised to read about the [`mapCube`](@ref) function in [Applying custom functions](@ref) which gives you much more detailed control over the mapping operation.
 
 Applying these basic statistics functions makes sense, if the slices one wants to reduce fit in memory. However,
 if one wants to calculate some statistics on e.g. a *time x lon x lat* cube, one would preferably
 call one of the [(Weighted-)OnlineStats](@ref) methods.  
 
-Additional simple statistics functions are:
+An additional simple statistic function is:
 
 ```@autodocs
 Modules = [ESDL.Proc.Stats]
@@ -69,29 +75,36 @@ cTable = @CubeTable value=cube axes=(lat, lon, time, variable) fastest=variable
 outCube = cubefittable(cTable, o, :value; by=by, weight=weightfun)
 ```
 
-where `o` is a (Weighted-)OnlineStat data type and `cube` is the cube you want to apply the statistics to. `value` and `:value` can be replaced by any symbol name, which is not taken,
-as long as it is the same in the macro and the [`cubefittable`](@ref) function.
+where `o` is a (Weighted-)OnlineStat data type and `cube` is the cube you want to apply the statistics to. The parameter name `value` in the [`@CubeTable`](@ref) macro and the corresponding symobl `:value` in the example above can be chosen arbitrarily,
+as long as they are equal in the macro and the [`cubefittable`](@ref) function.
 By default the [`cubefittable`](@ref) function will reduce all values over all axes of the cube, so if you want to do
 statistics grouped by variables on a certain axis, it has to be specified using the `by` keyword argument.
 `by` accepts a tuple of symbols and/or functions. If the cube supplied to the macro
 has more than one variable, it makes sense to at least supply `by=(:variable,)` to the
-function. The use of WeightedOnlineStats is encouraged to compensate for the increasing number of grid cells per area unit in higher latitudes.
+function or else values of different variables will be mixed during calculation. The use of [WeightedOnlineStats](https://github.com/gdkrmr/WeightedOnlineStats.jl) is encouraged to compensate for the increasing number of grid cells per area unit in higher latitudes.
 
 The following two examples illustrate the use of these functions. Suppose we want to calculate the mean of GPP, NEE and TER
 under the condition that Tair<280K and Tair>280K over all time steps and grid cells. This is achieved through the
 following lines of code:
 
-```julia
-using WeightedOnlineStats
+```@example 1
+using ESDL, WeightedOnlineStats
 lons  = (30,31)
 lats  = (50,51)
 vars  = ["gross_primary_productivity","net_ecosystem_exchange","terrestrial_ecosystem_respiration"]
+c = Cube()
 cube  = getCubeData(c,variable=vars,longitude=lons,latitude=lats)
 t     = getCubeData(c,variable="air_temperature_2m",longitude=lons,latitude=lats)
 
 splitTemp(t) = if !ismissing(t) if t>280 return "T>7C" else return "T<7C" end else return missing end # Define the classification function
 cTable = @CubeTable value=cube axes=(lat,lon,time,variable) temp=t
 cubefittable(cTable, WeightedMean, :value, by=(i->splitTemp(i.temp), :variable), weight=(i->cosd(i.lat)))
+```
+```
+In-Memory data cube with the following dimensions
+Category1           Axis with 2 elements: T<7C T>7C
+Variable            Axis with 3 elements: gross_primary_productivity net_ecosystem_exchange terrestrial_ecosystem_respiration
+Total size: 54.0 bytes
 ```
 ```@eval
 #Load Javascript env
@@ -106,12 +119,13 @@ using Documenter
 lons  = (30,31)
 lats  = (50,51)
 vars  = ["gross_primary_productivity","net_ecosystem_exchange","terrestrial_ecosystem_respiration"]
+c = Cube()
 cube  = getCubeData(c,variable=vars,longitude=lons,latitude=lats)
 t     = getCubeData(c,variable="air_temperature_2m",longitude=lons,latitude=lats)
 
 splitTemp(t) = if !ismissing(t) if t>280 return "T>7C" else return "T<7C" end else return missing end # Define the classification function
 cTable = @CubeTable value=cube axes=(lat,lon,time,variable) temp=t
-cubefittable(cTable, WeightedMean, :value, by=(i->splitTemp(i.temp), :variable), weight=(i->cosd(i.lat)))
+mT = cubefittable(cTable, WeightedMean, :value, by=(i->splitTemp(i.temp), :variable), weight=(i->cosd(i.lat)))
 using ESDLPlots
 gr()
 p=plotXY(mT,xaxis="var",group="tempclass")
@@ -123,16 +137,22 @@ Documenter.Documents.RawHTML(String(take!(b)))
 A second example would be that we want to calculate averages of the fluxes according to
 a country mask.
 
-```julia
-using WeightedOnlineStats
+```@example 1
+using ESDL, WeightedOnlineStats
 vars  = ["gross_primary_productivity","net_ecosystem_exchange","terrestrial_ecosystem_respiration"]
+c     = Cube()
 m     = getCubeData(c,variable="country_mask",longitude=lons,latitude=lats)
 cube  = getCubeData(c,variable=vars,longitude=lons,latitude=lats)
 
 cTable = @CubeTable value=cube axes=(lat,lon,time,variable) country=m
 cubefittable(cTable, WeightedMean, :value, by=(:country, :variable), weight=(i->cosd(i.lat)))
 ```
-
+```
+In-Memory data cube with the following dimensions
+Country             Axis with 1 elements: Ukraine
+Variable            Axis with 3 elements: gross_primary_productivity net_ecosystem_exchange terrestrial_ecosystem_respiration
+Total size: 27.0 bytes
+```
 This will split the cube by country and variable and compute averages over the input variables.
 
 ```@docs
@@ -172,8 +192,7 @@ q.data
  0.169621  -1.75922
  6.04165    0.641276
 ```
-The WeightedHist call in the `cubefittable` function takes an integer argument, which sets the number of adaptive bins per histogram.
-Note that any additional keyword arguments to the call of `quantile`(e.g. a `by` argument) are passed to the respective `mapCube` call.
+The `WeightedHist` call in the `cubefittable` function requires an integer argument, which sets the number of adaptive bins per histogram.
 
 ## Elementwise calculations
 
@@ -192,14 +211,14 @@ Time                Axis with 1702 Elements from 1980-01-01 to 2016-12-26
 Total size: 195.43 MB
 ```
 This will not execute the computation
-immediately but on the fly during the next computation or plotting. Please note that all values in the cube will be subject to the operation. So if the cube has more than one variable, this operation will apply to the values of all variables.
-An example for a function with multiple arguments can also be shown:
+immediately, but on the fly during the next computation or plotting. Please note that all values in the cube will be subject to the operation. So if the cube has more than one variable, this operation will apply to the values of all variables.
+The following is an example for mapping multiple values:
 ```julia
 c=Cube()
 time = (Date("2001-01-01"), Date("2001-12-31"))
 
-firstCube = getCubeData(c, time=time1, variable="precipitation")
-secondCube = getCubeData(c, time=time2, variable="interception_loss")
+firstCube = getCubeData(c, time=time, variable="precipitation")
+secondCube = getCubeData(c, time=time, variable="interception_loss")
 diffcube = map((x,y)->x-y, firstCube, secondCube)
 ```
 ```
@@ -211,17 +230,17 @@ Total size: 227.42 MB
 ```
 This calculates the difference of two data cubes, in this case the difference of precipitation and interception. Note here, that in this case both cubes must have the exact same dimensions and the dimensions must consist of the same elements.
 
-Common operations like the above examples can even be expressed in an easier way:  commonly used operators (+,-,\*,/, max,min) and functions (sin, cos, exp, log, log10) are overloaded  and can be applied on
+Common operations like the above examples can even be expressed in an easier way:  commonly used operators (+, -, \*, /, max, min) and functions (sin, cos, exp, log, log10) are overloaded and can be applied on
 data cubes directly. So `celsiusCube = (kelvinCube - 273.15)` and `diffcube = abs(firstCube - secondCube)` would work as expected.
 
 ## Applying custom functions
 
-The main feature of this package, and probably the one one that is most different to other geospatial frameworks is the `mapCube` function that executes *arbitrary* functions on *arbitrary* slices (and permutations) of one or more input data cubes. The function can be written in Julia or call into C libraries, call other packages, etc. In addition, the computation will be carried out in a memory-efficient manner, such that  data is read only in chunks, processed and then re-written slice-by-slice to allow out-of-core computation. The basic working principles are:
+The main feature of this package, and probably the one one that is most different to other geospatial frameworks is the [`mapCube`](@ref) function that executes *arbitrary* functions on *arbitrary* slices (and permutations) of one or more input data cubes. The function can be written in Julia or call into C libraries, call other packages, etc. In addition, the computation will be carried out in a memory-efficient manner, such that  data is read only in chunks, processed and then re-written slice-by-slice to allow out-of-core computation. The basic working principles are:
 
 1. The user-defined function (UDF) `f` takes a number `N_in` of arrays as input and its output is represented in a number `N_out` of output arrays.
 2. The function `f` has at least `N_out + N_in` arguments, where so its signature is `f(xout1, xout2, .... ,xoutN, xin1, xin2, ... xinN, addargs...; kwargs...)`
-3. Every input array of `f` will be a slice of an input data cube. The user specifies the axes that will be used for slicing by creating an `InDims` object for every input cube object and passing it to the `mapCube` function.
-4. The dimensions of every output array have to be specified by the user by creating an `OutDims` object for every output cube and passing it to the `mapCube` function.
+3. Every input array of `f` will be a slice of an input data cube. The user specifies the axes that will be used for slicing by creating an [`InDims`](@ref) object for every input cube object and passing it to the [`mapCube`](@ref) function.
+4. The dimensions of every output array have to be specified by the user by creating an [`OutDims`](@ref) object for every output cube and passing it to the [`mapCube`](@ref) function.
 5. The input data cubes may have additional dimensions which are not used for slicing, these will be iterated over and the function `f` will be called repeatedly for every slice. If there are multiple input cubes, and contain additional axes of the same name, they are required to have the same axis elements, so that these elements are matched in the loop. If different input cubes have differently named additional axes, their oputer product will be applied and the axes will all be added to the output cubes.
 
 ### A minimal example
@@ -288,7 +307,7 @@ The first example showed how to handle a single input- and a single output- data
 function mynorm_return_stdm(xout_ts, xout_m, xout_s, xin)
   # Check if we have only missing values
   if all(ismissing,xin)
-    xout_ts[:]=missing
+    xout_ts[:].=missing
     xout_m[1]=missing
     xout_s[1]=missing
   else
@@ -297,7 +316,7 @@ function mynorm_return_stdm(xout_ts, xout_m, xout_s, xin)
     if s>0 # See if time series is not constant
       xout_ts[:].=(xin.-m)./s
     else #Time series is probably constant
-      xout_ts[:]=0.0
+      xout_ts[:].=0.0
     end
     # Now write mean and std to output
     xout_s[1]=s
@@ -311,6 +330,25 @@ outdims_m  = OutDims()
 outdims_s  = OutDims()
 
 d_norm, m, s = mapCube(mynorm_return_stdm, d, indims=indims, outdims=(outdims_ts, outdims_m, outdims_s))
+```
+```
+(Memory mapped cube with the following dimensions
+Time                Axis with 506 Elements from 2001-01-01 to 2011-12-27
+Lon                 Axis with 172 Elements from -9.875 to 32.875
+Lat                 Axis with 140 Elements from 69.875 to 35.125
+Variable            Axis with 2 elements: gross_primary_productivity transpiration
+Total size: 116.2 MB
+, In-Memory data cube with the following dimensions
+Lon                 Axis with 172 Elements from -9.875 to 32.875
+Lat                 Axis with 140 Elements from 69.875 to 35.125
+Variable            Axis with 2 elements: gross_primary_productivity transpiration
+Total size: 235.16 KB
+, In-Memory data cube with the following dimensions
+Lon                 Axis with 172 Elements from -9.875 to 32.875
+Lat                 Axis with 140 Elements from 69.875 to 35.125
+Variable            Axis with 2 elements: gross_primary_productivity transpiration
+Total size: 235.16 KB
+)
 ```
 
 First of all lets see what changed. We added two more arguments to the UDF, which are the additional output arrays `xout_m` and `xout_s`. They contain the additional output cubes. Then we added an additional output cube description `OutDims()` for each cube, which has no argument, because these outputs are singular values (mean and standard deviation per location and variable) and don't contain any dimensions. When we apply the function, we simply pass a tuple of output cube descriptions to the `outdims` keyword and the mapCube function returns then three cubes: the full *(time x lon x lat x variable)* cube for the normalized time series and two *(lon x lat x variable)* cubes for mean and standard deviation.   
@@ -333,13 +371,20 @@ end
 
 mapCube(mynorm_given_stdm, (d,m,s), indims = (indims_ts, indims_m, indims_s), outdims = outdims)
 ```
-
+```
+Memory mapped cube with the following dimensions
+Time                Axis with 506 Elements from 2001-01-01 to 2011-12-27
+Lon                 Axis with 172 Elements from -9.875 to 32.875
+Lat                 Axis with 140 Elements from 69.875 to 35.125
+Variable            Axis with 2 elements: gross_primary_productivity transpiration
+Total size: 116.2 MB
+```
 Note that the operation will attempt to match the axes that the cubes contain. Because the cubes `d`,`m` and `s` all contain a `LonAxis`, a `LatAxis` and a `VariableAxis` with the same values, it will loop over these, so at every pixel the corresponding mean and standard deviation values are used.
 
 
 ### Axes are cubes
 
-In some cases one needs to have access to the value of an axis, for example when one wants to calculate a spatial Aggregation, the latitudes
+In some cases one needs to have access to the value of an axis. For example when one wants to calculate a spatial aggregation, the latitudes
 are important to determine grid cell weights. To do this, one can pass a cube axis to mapCube as if it was a cube having only one dimension. The values will then correspond to the axis values (the latitudes in degrees in this case).
 
 ```julia
@@ -352,9 +397,9 @@ end
 latitudecube = ESDL.getAxis("Lat",cube)
 
 indims_map = InDims(LonAxis, LatAxis)
-indims_lat = InDims(LatAxis,miss=ESDL.NoMissing())
+indims_lat = InDims(LatAxis)
 outdims    = OutDims()
-mapCube(spatialAggregation, (cube,lataxis), indims = (indims_map, indims_lat), outdims = outdims);
+mapCube(spatialAggregation, (cube,latitudecube), indims = (indims_map, indims_lat), outdims = outdims);
 ```
 
 Here, the function will operate on a *(lon x lat)* matrix and one has access to the latitude values inside the function.
@@ -414,13 +459,21 @@ ter = getCubeData(c,variable = "terrestrial_ecosystem_respiration",time=(DateTim
 mapCube(fit_npoly,(gpp,ter),2,indims = (indims1,indims2), outdims = outdims)
 ```
 
+```
+In-Memory data cube with the following dimensions
+Coefficients        Axis with 3 elements: Offset 1 2
+Lon                 Axis with 4 Elements from 50.125 to 50.875
+Lat                 Axis with 4 Elements from 30.875 to 30.125
+Total size: 240.0 bytes
+```
+
 Returned is a 3D cube with dimensions *coeff x lon x lat*.
 
 ### Wrapping mapCube calls into user-friendly functions
 
 When a certain function is used more often, it makes sense to wrap it into a single function so that the user does not have to deal with the input and output dimension description. For the polynomial regression example one could, for example, define this convenience wrapper and then call it directly, now for a third-order regression:
 
-```@example 2
+```@example 1
 function fitpoly(cube1, cube2, n)
   polyaxis = CategoricalAxis("Coefficients",["Offset";string.(1:n)])
 
@@ -433,6 +486,14 @@ end
 
 fitpoly(gpp,ter,3)
 ```
+```
+In-Memory data cube with the following dimensions
+Coefficients        Axis with 4 elements: Offset 1 2 3
+Lon                 Axis with 4 Elements from 50.125 to 50.875
+Lat                 Axis with 4 Elements from 30.875 to 30.125
+Total size: 320.0 bytes
+```
+
 
 This is exactly the way the built-in functions in [Analysis](@ref) were generated. So in case you want to contribute some functionality that you feel would benefit this package, please open a pull request at https://github.com/esa-esdl/ESDL.jl
 

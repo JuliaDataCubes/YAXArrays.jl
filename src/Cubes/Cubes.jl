@@ -13,8 +13,8 @@ export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesC
 
 Supertype of all cubes. `T` is the data type of the cube and `N` the number of
 dimensions. Beware that an `AbstractCubeData` does not implement the `AbstractArray`
-interface. However, the `ESDL` functions [`mapCube`](@ref), [`reduceCube`](@ref),
-[`readCubeData`](@ref), [`plotMAP`](@ref) and [`plotXY`](@ref) will work on any subtype
+interface. However, the `ESDL` functions `mapCube`,
+[`readCubeData`](@ref), `plotMAP` and `plotXY` will work on any subtype
 of `AbstractCubeData`
 """
 abstract type AbstractCubeData{T,N} end
@@ -27,6 +27,8 @@ getSingVal(c::AbstractCubeData,a...)=error("getSingVal called in the wrong way w
 
 """
     readCubeData(cube::AbstractCubeData)
+
+Given any type of `AbstractCubeData` returns a [`CubeMem`](@ref) from it.
 """
 function readCubeData(x::AbstractCubeData{T,N}) where {T,N}
   s=size(x)
@@ -78,7 +80,7 @@ caxes(c::EmptyCube)=CubeAxis[]
 """
     CubeMem{T,N} <: AbstractCubeMem{T,N}
 
-An in-memory data cube. It is returned by applying [`mapCube`](@ref) when
+An in-memory data cube. It is returned by applying `mapCube` when
 the output cube is small enough to fit in memory or by explicitly calling
 [`readCubeData`](@ref) on any type of cube.
 
@@ -211,9 +213,9 @@ using NetCDF
 """
     saveCube(cube,name::String)
 
-Save a `MmapCube` or `CubeMem` to the folder `name` in the ESDL working directory.
+Save a [`MmapCube`](@ref) or [`CubeMem`](@ref) to the folder `name` in the ESDL working directory.
 
-See also loadCube, ESDLdir
+See also [`loadCube`](@ref)
 """
 function saveCube(c::CubeMem{T},name::AbstractString) where T
   newfolder=joinpath(workdir[1],name)

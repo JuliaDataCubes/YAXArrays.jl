@@ -12,7 +12,7 @@ missval(::Type{T}) where T<: AbstractFloat = convert(T,NaN)
     MmapCube{T,N}
 
 Defines a memory-mapped data cube which is stored on disk. Is generally returned
-by [`mapCube`](@ref) applications.
+by `mapCube` applications.
 """
 mutable struct MmapCube{T,N} <: AbstractMmapCube{T,N}
   axes::Vector{CubeAxis}
@@ -93,7 +93,7 @@ getCubeDes(v::MmapCube)="Memory mapped cube"
     saveCube(c::AbstractCubeData, name::String)
 
 Permanently saves a data cube to disk by either moving the folder out of the
-tmp directory (for `TempCube`s) or by storing the data to disk (for `CubeMem`s)
+tmp directory (for `TempCube`s) or by storing the data to disk (for [`CubeMem`](@ref))
 """
 function saveCube(c::MmapCube,name::String)
   newfolder=joinpath(workdir[1],name)

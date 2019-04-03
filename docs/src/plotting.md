@@ -8,8 +8,9 @@ Documenter.Documents.RawHTML("<script>$(Patchwork.js_runtime())</script>")
 ```@setup 1
 using ESDL # hide
 using ESDLPlots
+using Dates
 import Documenter
-ds=Cube() # hide
+c=Cube() # hide
 ```
 
 # Plotting
@@ -26,15 +27,12 @@ Map plotting is generally done using the `plotMAP` function:
 plotMAP
 ```
 
-If a dimension is neither longitude or latitude and is not fixed through an additional keyword, a slider or dropdown menu will appear to select the axis value.
-
 Here is an example on how to plot a map. The keyword arguments specify the time
-step (`time=1`) and the variable (`var=1`).
+step (`time=Date(1980,1,1)`) and the variable (`var="air_temperature_2m"`).
 
 ```@example 1
-
-cdata=getCubeData(ds,variable=["air_temperature_2m","gross_primary_productivity"])
-plotMAP(cdata,time=1,var=1)
+cube=getCubeData(c,variable=["air_temperature_2m","gross_primary_productivity"])
+plotMAP(cube,time=Date(1980,1,1), var="air_temperature_2m")
 ```
 
 Inside a Jupyter notebook, the keyword arguments can be omitted and sliders or
@@ -54,13 +52,13 @@ For example, if we want to plot GPP, NEE and TER as an RGB map for South America
 we can do the following:
 
 ```@example 1
-d=getCubeData(ds,variable="Biosphere",region="South America")
+cube=getCubeData(c,variable="Biosphere",region="South America")
 using ColorTypes
-plotMAPRGB(d,c1="gross_primary_productivity",
+plotMAPRGB(cube,c1="gross_primary_productivity",
              c2="net_ecosystem_exchange",
              c3="terrestrial_ecosystem_respiration",
              cType=Lab,
-             time=100)
+             time=Date(2003,2,26))
 ```
 
 ## Other plots
@@ -77,10 +75,9 @@ plotXY
 Here are two examples for using this function:
 
 ```julia
-cdata=getCubeData(ds,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
-longitude=(30.0,30.0),latitude=(50.0,52.0))
-plotXY(cdata,xaxis="time",group="variable",lon=31,lat=51)
-nothing # hide
+cube=getCubeData(c,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
+longitude=(30.0,32.0),latitude=(50.0,52.0))
+plotXY(cube,xaxis="time",group="variable",lon=31,lat=51)
 ```
 
 ````@eval
@@ -88,20 +85,21 @@ using ESDL # hide
 using ESDLPlots
 gr()
 import Documenter # hide
-ds=Cube() # hide
-cdata=getCubeData(ds,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
-longitude=(30.0,30.0),latitude=(50.0,52.0))
-p=plotXY(cdata,xaxis="time",group="variable",lon=31,lat=51)
+c=Cube() # hide
+cube=getCubeData(c,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
+longitude=(30.0,32.0),latitude=(50.0,52.0))
+p=plotXY(cube,xaxis="time",group="variable",lon=31,lat=51)
 b=IOBuffer()
 show(b,MIME"text/html"(),p)
 Documenter.Documents.RawHTML(String(take!(b)))
 ````
 
-This is a time series plot, grouped by variables for a specific longitude/latitude.
+This is a plot showing the mean values of the chosen variables across different latitudes at 30° E
 
 
 ```julia
-m=reduceCube(mean,cdata,TimeAxis)
+cTable = @CubeTable value=cube axes=(lat,lon,time,variable)
+m = cubefittable(cTable, WeightedMean, :value, weight=(i->cosd(i.lat)), by=(:variable, :lat, :lon))
 plotXY(m,xaxis="variable",group="lat",lon=30)
 ```
 
@@ -110,10 +108,11 @@ using ESDL # hide
 using ESDLPlots
 gr()
 import Documenter # hide
-ds=Cube() # hide
-cdata=getCubeData(ds,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
-longitude=(30.0,30.0),latitude=(50.0,52.0))
-m=reduceCube(mean,cdata,TimeAxis, max_cache=1e8)
+c=Cube() # hide
+cube=getCubeData(c,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
+longitude=(30.0,32.0),latitude=(50.0,52.0))
+cTable = @CubeTable value=cube axes=(lat,lon,time,variable)
+m = cubefittable(cTable, WeightedMean, :value, weight=(i->cosd(i.lat)), by=(:variable, :lat, :lon))
 p=plotXY(m,xaxis="variable",group="lat",lon=30)
 b=IOBuffer()
 show(b,MIME"text/html"(),p)
@@ -132,9 +131,9 @@ plotScatter
 A short example is shown here:
 
 ```julia
-cdata=getCubeData(ds,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
-longitude=(30.0,30.0),latitude=(50.0,52.0))
-p=plotScatter(cdata,alongaxis=TimeAxis,xaxis=1,yaxis=2,group="lat",lon=30)
+cube=getCubeData(c,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
+longitude=(30.0,32.0),latitude=(50.0,52.0))
+plotScatter(cube,alongaxis=TimeAxis,xaxis="net_ecosystem_exchange",yaxis="gross_primary_productivity",lat=50, lon=30)
 ```
 
 ````@eval
@@ -142,10 +141,10 @@ using ESDL # hide
 using ESDLPlots
 gr()
 import Documenter # hide
-ds=Cube() # hide
-cdata=getCubeData(ds,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
-longitude=(30.0,30.0),latitude=(50.0,52.0))
-p=plotScatter(cdata,alongaxis=TimeAxis,xaxis="net_ecosystem_exchange",yaxis="gross_primary_productivity",group="lat",lon=30.0)
+c=Cube() # hide
+cube=getCubeData(c,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
+longitude=(30.0,32.0),latitude=(50.0,52.0))
+p=plotScatter(cube,alongaxis=TimeAxis,xaxis="net_ecosystem_exchange",yaxis="gross_primary_productivity",lat=50, lon=30)
 b=IOBuffer()
 show(b,MIME"text/html"(),p)
 Documenter.Documents.RawHTML(String(take!(b)))

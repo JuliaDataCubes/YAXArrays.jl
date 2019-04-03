@@ -70,7 +70,7 @@ end
 
 Supertype of all axes. Every `CubeAxis` is 1D Cube itself and can be passed
 to mapCube operationes. Although all cube axes are instances of the parametric typealias
-[CategoricalAxis](@ref) and [RangeAxis](@ref), there are some typealiases defined
+`CategoricalAxis` and `RangeAxis`, there are some typealiases defined
 to provide shorter and more convenient names for commonly used cube axes. Here is a list
 of the aliases:
 
@@ -294,6 +294,11 @@ function getOutAxis(desc::Tuple{ByInference},axlist,incubes,pargs,f)
   end
   return totuple(outaxes)
 end
+"""
+    getAxis(desc::String, c::AbstractCubeData)
+
+Given the string of an axis name and a cube, returns this axis of the cube.
+"""
 getAxis(desc,c::AbstractCubeData)=getAxis(desc,caxes(c))
 getAxis(desc::ByValue,axlist::Vector{T}) where {T<:CubeAxis}=desc.v
 

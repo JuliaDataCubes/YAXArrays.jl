@@ -12,7 +12,7 @@ import Statistics: quantile
 """
     normalizeTS(c::AbstractCubeData)
 
-Normalize a time series to zeros mean and unit variance
+Normalize a time series to zero mean and unit variance
 
 **Input Axes** `TimeAxis`
 

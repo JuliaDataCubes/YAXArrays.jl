@@ -3,7 +3,7 @@
 ## Open a data cube
 
 Before one can read data from a cube, it has to be opened. To open a data cube,
-which is accessible through the file system, use the [`Cube(base_dir)`](@ref Cube(base_dir::AbstractString)) constructor:
+which is usually accessible through the file system, use the [`Cube(base_dir)`](@ref Cube(base_dir::AbstractString)) constructor:
 
  ```julia
 using ESDL
@@ -17,7 +17,7 @@ Variables:           aerosol_optical_thickness_1610 aerosol_optical_thickness_55
 ```
 
 This returns a [`Cube`](@ref) object and prints some basic information (location, resolutions & variable names) about the cube.
-Using [`Cube()`](@ref Cube(;resolution="low")) without any arguments will attempt to access a data cube at the path specified in the environmental variable `ENV["ESDL_CUBEDIR"]` or else try to [open a remote data cube](@ref open_rdc).
+Using [`Cube()`](@ref Cube(;resolution="low")) without any arguments will attempt to access a data cube at the path specified in the environmental variable `ENV["ESDL_CUBEDIR"]` if applicable or else try to [open a remote data cube](@ref open_rdc).
 
 ```@docs
 ESDL.CubeAPI.Cube
@@ -53,12 +53,12 @@ This returns a view of the data cube, on which further calculations can be appli
 All keyword arguments default to the full range, so calling [`getCubeData()`](@ref getCubeData) without
 keyword arguments will return a view of the whole data cube.
 
-Here you can start to do calculations on your sub-cube, see either
+Here you can start to do calculations on your sub-cube. See either
 [Analysis](@ref) for a list of methods provided by this framework or
 [Applying custom functions](@ref) to apply your own functions on the cube. If you just
-want to visualize the cube see this section [Plotting](@ref).
+want to visualize the cube see the section [Plotting](@ref).
 
-Note that the data wasn't read yet. In case you want to load some data into memory and store it in a Julia array, just use square-bracket indexing. For example, to read the first time step (2001-01-01) of the second variable (air_temperature_2m) as a Lon-Lat array, do
+Note that the data wasn't read yet. In case you want to load some data into memory and store it in a Julia array, just use square-bracket indexing. For example, to read the first time step (2001-01-01) of the second variable (air\_temperature\_2m) as a Lon-Lat array, do
 
 ```@example 1
 cubedata[:,:,1,2]
@@ -91,8 +91,8 @@ RemoteCube()
 
 This will open the remote cube and calling [`getCubeData`](@ref) will return a cube view that you can process.
 
-**Important** In order to avoid unnecessary traffic, be nice to our servers.
-Please use this only for testing the ESDL software for a very limited amount of data (reading maps at single time steps)
+**Important:** Please be nice to our servers.
+Use this only for testing the ESDL software for a limited amount of data (reading maps at single time steps)
 or time series in lon-lat boxes of size 1° x 1°.
 
 ## Cube Types
@@ -125,10 +125,10 @@ ESDL.Cubes.MmapCube
 
 ## Cube Dimensions
 
-Dimensions are an essential part of each Cube in ESDL. Every dimension that a cube has is associated
+Dimensions are an essential part of each Cube in ESDL. Every dimension that a cube has, is associated
 with an axis that stores the values of the dimension. For example, a `LatitudeAxis` will contain a
 field `values` representing the chosen latitudes. Similarly, a `VariableAxis` will contain a list of
-Variable names. Axes types are divided in categorical axes and axes represented by ranges. All of them
+Variable names. Axes types are divided in [`CategoricalAxis`](@ref) and [`RangeAxis`](@ref) types. All of them
 are subtypes of the abstract type [`CubeAxis`](@ref ESDL.Cubes.Axes.CubeAxis).
 
 ```@docs
@@ -136,11 +136,8 @@ ESDL.Cubes.Axes.CubeAxis
 ```
 
 ```@docs
-ESDL.Cubes.Axes.CategoricalAxis
-```
-
-```@docs
-ESDL.Cubes.Axes.RangeAxis
+CategoricalAxis
+RangeAxis
 ```
 
 ## List of known regions
