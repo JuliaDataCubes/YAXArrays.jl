@@ -264,7 +264,7 @@ function getAxis(desc,axlist::Vector{T}) where T<:CubeAxis
     return axlist[i]
   end
 end
-getOutAxis(desc,axlist,incubes,pargs,f) = getAxis(desc,axlist)
+getOutAxis(desc,axlist,incubes,pargs,f) = getAxis(desc,unique(axlist))
 function getOutAxis(desc::ByFunction,axlist,incubes,pargs,f)
   outax = desc.f(incubes,pargs)
   isa(outax,CubeAxis) || error("Axis Generation function $(desc.f) did not return an axis")
@@ -327,7 +327,9 @@ macro caxis_str(s)
 end
 
 import Base.==
+import Base.isequal
 ==(a::CubeAxis,b::CubeAxis)=(a.values==b.values) && (axname(a)==axname(b))
+isequal(a::CubeAxis, b::CubeAxis) = a==b
 
 function NcDim(a::CubeAxis{Date},start::Integer,count::Integer)
   if start + count - 1 > length(a.values)
