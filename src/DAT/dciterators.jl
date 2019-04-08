@@ -245,7 +245,7 @@ function CubeTable(;include_axes=(),fastest="",cubes...)
     end
   end
 
-    configiter = mapCube(identity,c2,debug=true,indims=indims,outdims=());
+    configiter = mapCube(identity,c2,debug=true,indims=indims,outdims=(),ispar=false);
     if inax !== nothing
     linax = length(inax)
     pushfirst!(configiter.LoopAxes,inax)
@@ -263,7 +263,6 @@ function CubeTable(;include_axes=(),fastest="",cubes...)
   r = collect(distributeLoopRanges(totuple(configiter.loopcachesize),totuple(map(length,configiter.LoopAxes)),getchunkoffsets(configiter)))
   ci = CubeIterator(configiter,r,include_loopvars=include_axes,varnames=varnames)
 end
-
 
 import Tables
 Tables.istable(::Type{<:CubeIterator}) = true
