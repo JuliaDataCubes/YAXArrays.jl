@@ -165,19 +165,19 @@ function _write(z::ZArrayCube{<:Any,N,<:Any},thedata::AbstractArray{<:Any,N},r::
   readblock!(thedata,z.a,CartesianIndices(r2),readmode=false)
 end
 
-function infervarlist(g::ZGroup)
-  any(isequal("layer"),keys(g.arrays)) && return ["layer"]
-  dimsdict = Dict{Tuple,Vector{String}}()
-  foreach(g.arrays) do ar
-    k,v = ar
-    vardims = reverse((v.attrs["_ARRAY_DIMENSIONS"]...,))
-    haskey(dimsdict,vardims) ? push!(dimsdict[vardims],k) : dimsdict[vardims] = [k]
-  end
-  filter!(p->!in("bnds",p[1]),dimsdict)
-  llist = Dict(p[1]=>length(p[2]) for p in dimsdict)
-  _,dims = findmax(llist)
-  varlist = dimsdict[dims]
-end
+# function infervarlist(g::ZGroup)
+#   any(isequal("layer"),keys(g.arrays)) && return ["layer"]
+#   dimsdict = Dict{Tuple,Vector{String}}()
+#   foreach(g.arrays) do ar
+#     k,v = ar
+#     vardims = reverse((v.attrs["_ARRAY_DIMENSIONS"]...,))
+#     haskey(dimsdict,vardims) ? push!(dimsdict[vardims],k) : dimsdict[vardims] = [k]
+#   end
+#   filter!(p->!in("bnds",p[1]),dimsdict)
+#   llist = Dict(p[1]=>length(p[2]) for p in dimsdict)
+#   _,dims = findmax(llist)
+#   varlist = dimsdict[dims]
+# end
 
 function parsetimeunits(unitstr)
     re = r"(\w+) since (\d\d\d\d)-(\d\d)-(\d\d)"
@@ -233,40 +233,40 @@ CubeMask(v;kwargs...) = CubeMask(get(ENV,"ESDL_CUBEDIR","/home/jovyan/work/datac
 
 @deprecate getCubeData(c;longitude=(-180.0,180.0),latitude=(-90.0,90.0),kwargs...) subsetcube(c;lon=longitude,lat=latitude,kwargs...)
 
-function Cube(g::ZGroup;varlist=nothing,joinname="Variable",static=false)
-
-  if varlist===nothing
-    varlist = infervarlist(g)
-  end
-  v1 = g[varlist[1]]
-  s = size(v1)
-  vardims = reverse((v1.attrs["_ARRAY_DIMENSIONS"]...,))
-  offsets = map(i->get(g[i].attrs,"_ARRAY_OFFSET",0),vardims)
-  inneraxes = toaxis.(vardims,Ref(g),offsets)
-  iax = collect(CubeAxis,inneraxes)
-  s.-offsets == length.(inneraxes) || throw(DimensionMismatch("Array dimensions do not fit"))
-  allcubes = map(varlist) do iv
-    v = g[iv]
-    size(v) == s || throw(DimensionMismatch("All variables must have the same shape. $iv does not match $(varlist[1])"))
-    ZArrayCube{eltype(v),ndims(v),typeof(v),Nothing}(v,iax,nothing,true,propfromattr(v.attrs))
-  end
-  # Filter out minority element types
-  c = counter(eltype(i) for i in allcubes)
-  _,et = findmax(c)
-  indtake = findall(i->eltype(i)==et,allcubes)
-  allcubes = allcubes[indtake]
-  varlist  = varlist[indtake]
-  if length(allcubes)==1
-    cout =  allcubes[1]
-  else
-    cout = concatenateCubes(allcubes,CategoricalAxis(joinname,varlist))
-  end
-  if static
-    return subsetcube(cout,time=first(getAxis("Time",cout).values))
-  else
-    return cout
-  end
-end
+# function Cube(g::ZGroup;varlist=nothing,joinname="Variable",static=false)
+#
+#   if varlist===nothing
+#     varlist = infervarlist(g)
+#   end
+#   v1 = g[varlist[1]]
+#   s = size(v1)
+#   vardims = reverse((v1.attrs["_ARRAY_DIMENSIONS"]...,))
+#   offsets = map(i->get(g[i].attrs,"_ARRAY_OFFSET",0),vardims)
+#   inneraxes = toaxis.(vardims,Ref(g),offsets)
+#   iax = collect(CubeAxis,inneraxes)
+#   s.-offsets == length.(inneraxes) || throw(DimensionMismatch("Array dimensions do not fit"))
+#   allcubes = map(varlist) do iv
+#     v = g[iv]
+#     size(v) == s || throw(DimensionMismatch("All variables must have the same shape. $iv does not match $(varlist[1])"))
+#     ZArrayCube{eltype(v),ndims(v),typeof(v),Nothing}(v,iax,nothing,true,propfromattr(v.attrs))
+#   end
+#   # Filter out minority element types
+#   c = counter(eltype(i) for i in allcubes)
+#   _,et = findmax(c)
+#   indtake = findall(i->eltype(i)==et,allcubes)
+#   allcubes = allcubes[indtake]
+#   varlist  = varlist[indtake]
+#   if length(allcubes)==1
+#     cout =  allcubes[1]
+#   else
+#     cout = concatenateCubes(allcubes,CategoricalAxis(joinname,varlist))
+#   end
+#   if static
+#     return subsetcube(cout,time=first(getAxis("Time",cout).values))
+#   else
+#     return cout
+#   end
+# end
 
 sorted(x,y) = x<y ? (x,y) : (y,x)
 

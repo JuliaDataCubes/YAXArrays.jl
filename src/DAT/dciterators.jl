@@ -46,7 +46,7 @@ Base.eltype(i::Type{<:CubeIterator{A,B,C,D,E,F}}) where {A,B,C,D,E,F} = F
 getrownames(t::Type{<:CubeIterator}) = fieldnames(t)
 getncubes(::Type{<:CubeIterator{A,B}}) where {A,B} = tuplelen(B)
 tuplelen(::Type{<:NTuple{N,<:Any}}) where N=N
-axsym(ax::CubeAxis{<:Any,S}) where S = S
+
 
 lift64(::Type{Float32})=Float64
 lift64(::Type{Int32})=Int64

@@ -5,8 +5,8 @@ using ..ESDLTools
 import Distributed: pmap, @everywhere, workers
 import ..Cubes: getAxis, getOutAxis, getAxis, cubechunks, iscompressed, chunkoffset, _write,
   CubeAxis, RangeAxis, CategoricalAxis, AbstractCubeData, MmapCube, CubeMem, AbstractCubeMem,
-  caxes, findAxis, _read, _write
-import ..Cubes.Axes: AxisDescriptor, axname, ByInference
+  caxes, findAxis, _read, _write, Dataset
+import ..Cubes.Axes: AxisDescriptor, axname, ByInference, axsym
 import ...ESDL
 import ..Cubes.ESDLZarr: ZArrayCube
 import ...ESDL.workdir
@@ -181,8 +181,42 @@ end
 
 mapCube(fu::Function,cdata::AbstractCubeData,addargs...;kwargs...)=mapCube(fu,(cdata,),addargs...;kwargs...)
 
-import Base.mapslices
-function mapslices(f,d::AbstractCubeData,addargs...;dims,kwargs...)
+function mapCube(f, in_ds::Dataset, addargs...; indims=InDims(), outdims=OutDims(), inplace=true, kwargs...)
+    allars = values(in_ds.cubes)
+    allaxes = collect(values(in_ds.axes))
+    arnames = keys(in_ds.cubes)
+    sarnames = (arnames...,)
+    any(ad->findAxis(ad,allaxes)===nothing,indims.axisdesc) && error("One of the Dimensions does not exist in Dataset")
+
+    idar = collect(indims.axisdesc)
+    allindims = map(allars) do c
+        idshort = filter(idar) do ad
+            findAxis(ad,c)!==nothing
+        end
+        InDims((idshort...,), indims.artype, indims.procfilter)
+    end
+    isa(outdims, OutDims) || error("Only one output cube currently supported for datasets")
+    isempty(addargs) || error("Additional arguments currently not supported for datasets, use kwargs instead")
+    if inplace
+        fnew = let arnames=collect(arnames), f=f
+            function dsfun(xout,xin...; kwargs...)
+                incubes = NamedTuple{sarnames, typeof(xin)}(xin)
+                f(xout,incubes; kwargs...)
+            end
+        end
+    else
+        fnew = let arnames=collect(arnames), f=f
+            function dsfun(xin...; kwargs...)
+                incubes = NamedTuple{sarnames, typeof(xin)}(xin)
+                f(incubes; kwargs...)
+            end
+        end
+    end
+    allcubes = collect(values(in_ds.cubes))
+    mapCube(fnew,(allcubes...,);indims=allindims,outdims=outdims, inplace=inplace, kwargs...)
+end
+
+function mapslices(f,d::Union{AbstractCubeData, Dataset},addargs...;dims,kwargs...)
     isa(dims,String) && (dims=(dims,))
     mapCube(f,d,addargs...;indims = InDims(dims...),outdims = OutDims(ByInference()),inplace=false,kwargs...)
 end

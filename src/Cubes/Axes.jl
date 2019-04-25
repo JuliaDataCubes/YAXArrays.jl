@@ -2,7 +2,7 @@ module Axes
 export CubeAxis, QuantileAxis, TimeAxis, TimeHAxis, VariableAxis, LonAxis, LatAxis, CountryAxis,
 SpatialPointAxis,Axes,YearStepRange,CategoricalAxis,RangeAxis,axVal2Index,MSCAxis,
 ScaleAxis, axname, @caxis_str, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
-getOutAxis, ByInference, renameaxis!
+getOutAxis, ByInference, renameaxis!, axsym
 import NetCDF.NcDim
 using ..Cubes
 import ..Cubes: caxes
@@ -154,6 +154,7 @@ caxes(x::CubeAxis)=CubeAxis[x]
 axname(::CategoricalAxis{T,S}) where {T,S}=string(S)
 axname(::RangeAxis{T,S}) where {T,S}=string(S)
 axname(::Type{T}) where T<:CubeAxis{S,U} where {S,U} = U
+axsym(ax::CubeAxis{<:Any,S}) where S = S
 axunits(::CubeAxis)="unknown"
 axunits(::LonAxis)="degrees_east"
 axunits(::LatAxis)="degrees_north"
