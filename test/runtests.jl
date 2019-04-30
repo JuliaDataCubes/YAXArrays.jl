@@ -1,6 +1,7 @@
 using ESDL
 using Test
-
+#Make sure S3 cube is always accessed for tests
+delete!(ENV,"ESDL_CUBEDIR")
 
 include("access.jl")
 include("axes.jl")

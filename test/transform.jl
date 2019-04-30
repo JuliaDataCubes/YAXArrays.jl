@@ -25,9 +25,9 @@ ddconc = readcubedata(conccube)
 @test ddconc.data[:,:,:,1] == dd1.data
 @test ddconc.data[:,:,:,2] == dd2.data
 #@test isa(ESDL.Cubes.gethandle(conccube,(2,2,2,2)),ESDL.CubeAPI.CachedArrays.CachedArray)
-@test mean(ddconc.data,dims=1)[1,:,:,:]==mapslices(mean∘skipmissing,conccube,"Lon").data
+@test mean(ddconc.data,dims=1)[1,:,:,:]==mapslices(mean∘skipmissing,conccube,dims="Lon").data
 conccube2 = concatenateCubes([dd1,dd2],CategoricalAxis("NewAxis",["v1","v2"]))
 #@test isa(ESDL.Cubes.gethandle(conccube2,(2,2,2,2)),Tuple{AbstractArray,AbstractArray})
-@test mean(ddconc.data,dims=1)[1,:,:,:]==mapslices(mean∘skipmissing,conccube2,"Lon").data
+@test mean(ddconc.data,dims=1)[1,:,:,:]==mapslices(mean∘skipmissing,conccube2,dims="Lon").data
 end
 end

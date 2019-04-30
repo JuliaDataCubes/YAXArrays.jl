@@ -4,7 +4,7 @@ using Dates
 import Base.Iterators
 using Distributed
 using Statistics
-#addprocs(2)
+addprocs(2)
 @everywhere using ESDL, Statistics
 
 @everywhere function sub_and_return_mean(xout1,xout2,xin)
@@ -24,30 +24,30 @@ function doTests()
   # Test simple Stats first
   c=Cube()
 
-  d = getCubeData(c,variable="air_temperature_2m",longitude=(30,31),latitude=(50,51),
+  d = subsetcube(c,variable="air_temperature_2m",lon=(30,31),lat=(50,51),
                 time=(Date("2002-01-01"),Date("2008-12-31")))
 
   dmem=readcubedata(d)
 
   @testset "Simple statistics using mapslices" begin
   # Basic statistics
-  m=mapslices(mean∘skipmissing,d,"Time")
+  m=mapslices(mean∘skipmissing,d,dims = "Time")
 
-  @test isapprox(readcubedata(m).data,[281.922  282.038  282.168  282.288;
-                281.936  282.062  282.202  282.331;
-                281.949  282.086  282.236  282.375;
-                281.963  282.109  282.271  282.418])
+  @test isapprox(readcubedata(m).data,[281.598 281.657 281.595 281.639;
+   281.687 281.731 281.692 281.722;
+   281.734 281.779 281.787 281.816;
+   281.694 281.775 281.879 281.933])
 
   #Test Spatial meann along laitutde axis
-  d1=getCubeData(c,variable="gross_primary_productivity",time=(Date("2002-01-01"),Date("2002-01-01")),longitude=(30,30))
+  d1=subsetcube(c,variable="gross_primary_productivity",time=(Date("2002-01-01"),Date("2002-01-01")),lon=(30,30))
 
   dmem=readcubedata(d1)
-  mtime=mapslices(mean∘skipmissing,dmem,("lon","lat"))
+  mtime=mapslices(mean∘skipmissing,dmem,dims = ("lon","lat"))
 
   end
   # Test Mean seasonal cycle retrieval
   @testset "Seasonal cycle statistics and anomalies" begin
-  cdata=getCubeData(c,variable="soil_moisture",longitude=30,latitude=50.75)
+  cdata=subsetcube(c,variable="soil_moisture",lon=30,lat=50.75)
   d=readcubedata(cdata)
 
   x2=getMSC(d)
@@ -56,8 +56,8 @@ function doTests()
 
   a = d[:]
   a = a[3:46:end]
-  @test mean(skipmissing(a))==x2[3]
-  @test median(skipmissing(a))==x3[3]
+  @test isapprox(mean(skipmissing(a)),x2[3])
+  @test isapprox(median(skipmissing(a)),x3[3])
 
   # Test gap filling
   cube_filled=readcubedata(gapFillMSC(d))
@@ -81,13 +81,13 @@ function doTests()
   end
 
 
-  d1=getCubeData(c,variable=["gross_primary_productivity","net_ecosystem_exchange"],longitude=(30,30),latitude=(50,50))
-  d2=getCubeData(c,variable=["gross_primary_productivity","air_temperature_2m"],longitude=(30,30),latitude=(50,50))
+  d1=subsetcube(c,variable=["gross_primary_productivity","net_ecosystem_exchange"],lon=(30,30),lat=(50,50))
+  d2=subsetcube(c,variable=["gross_primary_productivity","air_temperature_2m"],lon=(30,30),lat=(50,50))
 
 
   @testset "Multiple output cubes" begin
   #Test onvolving multiple output cubes
-  c1=getCubeData(c,variable="gross_primary_productivity",longitude=(30,31),latitude=(50,51),time=Date(2001)..Date(2010))
+  c1=subsetcube(c,variable="gross_primary_productivity",lon=(30,31),lat=(50,51),time=Date(2001)..Date(2010))
 
   c2=readcubedata(c1)
 

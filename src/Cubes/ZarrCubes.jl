@@ -3,7 +3,7 @@ import ...ESDL
 import Distributed: myid
 import ZarrNative: ZGroup, zopen, ZArray, NoCompressor, zgroup, zcreate, readblock!
 import ESDL.Cubes: cubechunks, iscompressed, AbstractCubeData, getCubeDes,
-  caxes,chunkoffset, gethandle, subsetcube, axVal2Index, findAxis, _read,
+  caxes,chunkoffset, gethandle, subsetcube, axVal2Index, findAxis, _read, S3Cube,
   _write, cubeproperties, ConcatCube, concatenateCubes, _subsetcube, workdir, readcubedata
 import ESDL.Cubes.Axes: axname, CubeAxis, CategoricalAxis, RangeAxis, TimeAxis,
   axVal2Index_lb, axVal2Index_ub, get_step, getAxis
@@ -220,7 +220,15 @@ const known_labels = Dict("water_mask"=>Dict(0x01=>"land",0x02=>"water"),"countr
 const known_names = Dict("water_mask"=>"Water","country_mask"=>"Country","srex_mask"=>"SREXregion")
 
 Cube(s::String;kwargs...) = Cube(zopen(s);kwargs...)
-Cube(;kwargs...) = Cube(get(ENV,"ESDL_CUBEDIR","/home/jovyan/work/datacube/ESDCv2.0.0/esdc-8d-0.25deg-184x90x90-2.0.0.zarr/");kwargs...)
+function Cube(;kwargs...)
+  if haskey(ENV,"ESDL_CUBEDIR")
+    Cube(ENV["ESDL_CUBEDIR"];kwargs...)
+  elseif isdir("/home/jovyan/work/datacube/ESDCv2.0.0/esdc-8d-0.25deg-184x90x90-2.0.0.zarr/")
+    Cube("/home/jovyan/work/datacube/ESDCv2.0.0/esdc-8d-0.25deg-184x90x90-2.0.0.zarr/";kwargs...)
+  else
+    S3Cube(;kwargs...)
+  end
+end
 function CubeMask(s::String,v::String;kwargs...)
   vname =  string(v,"_mask")
   c = Cube(zopen(s);varlist=[vname],static=true,kwargs...)

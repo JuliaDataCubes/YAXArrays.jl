@@ -1,6 +1,6 @@
 module Datasets
 import ..Cubes.ESDLZarr: toaxis, axname, AbstractCubeData, ZArrayCube, propfromattr, subsetcube, caxes, concatenateCubes
-import ZarrNative: ZGroup
+import ZarrNative: ZGroup, zopen
 import ..Cubes.Axes: axsym, CubeAxis, findAxis, CategoricalAxis
 import ..Cubes: AbstractCubeData, Cube
 struct Dataset
@@ -114,7 +114,7 @@ function Dataset(g::ZGroup)
 end
 Base.getindex(x::Dataset;kwargs...) = subsetcube(x;kwargs...)
 Dataset(s::String;kwargs...) = Dataset(zopen(s);kwargs...)
-Dataset(;kwargs...) = Dataset(get(ENV,"ESDL_CUBEDIR","/home/jovyan/work/datacube/ESDCv2.0.0/esdc-8d-0.25deg-184x90x90-2.0.0.zarr/");kwargs...)
+ESDLDataset(;kwargs...) = Dataset(get(ENV,"ESDL_CUBEDIR","/home/jovyan/work/datacube/ESDCv2.0.0/esdc-8d-0.25deg-184x90x90-2.0.0.zarr/");kwargs...)
 
 
 function Cube(ds::Dataset; joinname="Variable")
@@ -127,8 +127,12 @@ function Cube(ds::Dataset; joinname="Variable")
       findAxis(axn,c)!==nothing
     end
   end |> collect
-  varax = CategoricalAxis(joinname, string.(newkeys))
-  concatenateCubes([ds.cubes[k] for k in newkeys], varax)
+  if length(newkeys)==1
+    ds.cubes[first(newkeys)]
+  else
+    varax = CategoricalAxis(joinname, string.(newkeys))
+    concatenateCubes([ds.cubes[k] for k in newkeys], varax)
+  end
 end
 
 Cube(z::ZGroup;joinname="Variable") = Cube(Dataset(z),joinname=joinname)

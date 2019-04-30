@@ -216,6 +216,7 @@ function mapCube(f, in_ds::Dataset, addargs...; indims=InDims(), outdims=OutDims
     mapCube(fnew,(allcubes...,);indims=allindims,outdims=outdims, inplace=inplace, kwargs...)
 end
 
+import Base.mapslices
 function mapslices(f,d::Union{AbstractCubeData, Dataset},addargs...;dims,kwargs...)
     isa(dims,String) && (dims=(dims,))
     mapCube(f,d,addargs...;indims = InDims(dims...),outdims = OutDims(ByInference()),inplace=false,kwargs...)
