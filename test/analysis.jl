@@ -101,7 +101,7 @@ end
 @testset "Parallel processing" begin
 doTests()
 end
-#rmprocs(workers())
+rmprocs(workers())
 
 @testset "Single proc processing" begin
 doTests()

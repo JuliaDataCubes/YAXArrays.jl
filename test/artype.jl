@@ -2,6 +2,7 @@ using ESDL
 using Test
 import DataFrames: DataFrame,aggregate
 import Dates: year
+import Statistics: cor, mean
 
 @testset "Dataframe representation" begin
 c=Cube()
