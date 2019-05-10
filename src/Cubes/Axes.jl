@@ -182,7 +182,7 @@ function axVal2Index(a::RangeAxis{<:Date,<:Any,<:YearStepRange},v::Date;fuzzy=fa
   r = (y-a.values.startyear)*a.values.NPY + d÷a.values.step + 1
   return max(1,min(length(a.values),r))
 end
-function axVal2Index(a::RangeAxis{<:Date},v;fuzzy=false)
+function axVal2Index(a::RangeAxis{<:TimeType},v;fuzzy=false)
   dd = map(i->abs((DateTime(i)-DateTime(v))),a.values)
   mi,ind = findmin(dd)
   return ind

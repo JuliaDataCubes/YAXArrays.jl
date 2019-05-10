@@ -142,13 +142,10 @@ gethandle(c,block_size)=gethandle(c)
 import ..ESDLTools.toRange
 #Generic fallback method for _read
 function _read(c::CubeMem,thedata::AbstractArray,r::CartesianIndices)
-  N=ndims(r)
-  cubeview = view(c.data,r.indices...)
-  copyto!(thedata,cubeview)
+  thedata .= view(c.data,r.indices...)
 end
 
 function _write(c::CubeMem,thedata::AbstractArray,r::CartesianIndices)
-  N=ndims(r)
   cubeview = getSubRange(c.data,r.indices...)
   copyto!(cubeview,thedata)
 end

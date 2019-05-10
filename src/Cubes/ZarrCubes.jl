@@ -7,10 +7,10 @@ import ESDL.Cubes: cubechunks, iscompressed, AbstractCubeData, getCubeDes,
   _write, cubeproperties, ConcatCube, concatenateCubes, _subsetcube, workdir, readcubedata
 import ESDL.Cubes.Axes: axname, CubeAxis, CategoricalAxis, RangeAxis, TimeAxis,
   axVal2Index_lb, axVal2Index_ub, get_step, getAxis
-import Dates: Day,Hour,Minute,Second,Month,Year, Date
+import Dates: Day,Hour,Minute,Second,Month,Year, Date, DateTime
 import IntervalSets: Interval, (..)
 export (..), Cubes, getCubeData, CubeMask
-const spand = Dict("days"=>Day,"months"=>Month,"years"=>Year,"seconds"=>Second,"minutes"=>Minute)
+const spand = Dict("days"=>Day,"months"=>Month,"years"=>Year,"hours"=>Hour,"seconds"=>Second,"minutes"=>Minute)
 
 mutable struct ZArrayCube{T,M,A<:ZArray{T},S} <: AbstractCubeData{T,M}
   a::A
@@ -34,6 +34,7 @@ Base.size(z::ZArrayCube,i::Int) = length(onlyrangetuple(z.subset)[i])
 @inline onlyrangetuple(x::Integer,r...) = onlyrangetuple(r...)
 @inline onlyrangetuple(x,r...) = (x,onlyrangetuple(r...)...)
 @inline onlyrangetuple(x::Integer) = ()
+@inline onlyrangetuple() = ()
 @inline onlyrangetuple(x) = (x,)
 @inline onlyrangetuple(x::Tuple)=onlyrangetuple(x...)
 Base.size(z::ZArrayCube{<:Any,<:Any,<:ZArray,Nothing}) = size(z.a)
@@ -187,11 +188,17 @@ function parsetimeunits(unitstr)
     refdate = Date(map(i->parse(Int,m[i]),2:4)...)
     refdate,spand[m[1]]
 end
-function toaxis(dimname,g,offs)
+function toaxis(dimname,g,offs,len)
     axname = dimname in ("lon","lat","time") ? uppercasefirst(dimname) : dimname
+    if !haskey(g,dimname)
+      return RangeAxis(dimname, 1:len)
+    end
     ar = g[dimname]
     if axname=="Time" && haskey(ar.attrs,"units")
         refdate,span = parsetimeunits(ar.attrs["units"])
+        if span in (Hour, Minute, Second)
+          refdate = DateTime(refdate)
+        end
         tsteps = refdate.+span.(ar[offs+1:end])
         TimeAxis(tsteps)
     elseif haskey(ar.attrs,"_ARRAYVALUES")

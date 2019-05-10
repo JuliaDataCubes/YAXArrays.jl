@@ -68,7 +68,7 @@ Base.getindex(x::Dataset,i::String)=getproperty(x,Symbol(i))
 function subsetcube(x::Dataset; var=nothing, kwargs...)
     if var ===nothing
         cc = x.cubes
-        Dataset(;map(ds->ds=>subsetcube(cc[ds];kwargs...),keys(cc))...)
+        Dataset(;map(ds->ds=>subsetcube(cc[ds];kwargs...),collect(keys(cc)))...)
     elseif isa(var,String) || isa(var, Symbol)
         subsetcube(getproperty(x,Symbol(var));kwargs...)
     else
@@ -77,17 +77,17 @@ function subsetcube(x::Dataset; var=nothing, kwargs...)
     end
 end
 function collectdims(g::ZGroup)
-  dlist = Set{Tuple{String,Int}}()
+  dlist = Set{Tuple{String,Int,Int}}()
   foreach(g.arrays) do ar
     k,v = ar
-    for dname in v.attrs["_ARRAY_DIMENSIONS"]
+    for (len,dname) in zip(size(v),reverse(v.attrs["_ARRAY_DIMENSIONS"]))
       if !occursin("bnds",dname)
         offs = get(v.attrs,"_ARRAY_OFFSET",0)
-        push!(dlist,(dname,offs))
+        push!(dlist,(dname,offs,len))
       end
     end
   end
-  outd = Dict(d[1]=>toaxis(d[1],g,d[2]) for d in dlist)
+  outd = Dict(d[1] => toaxis(d[1],g,d[2],d[3]) for d in dlist)
   length(outd)==length(dlist) || throw(ArgumentError("All Arrays must have the same offset"))
   outd
 end
@@ -99,7 +99,7 @@ function Dataset(g::ZGroup)
   dnames  = string.(keys(dimlist))
   varlist = filter(g.arrays) do ar
     upname = uppercase(ar[1])
-    !occursin("BNDS",upname) && !any(i->isequal(upname,uppercase(i)),dnames)
+    !occursin("BNDS",upname) && !occursin("BOUNDS",upname) && !any(i->isequal(upname,uppercase(i)),dnames)
   end
   allcubes = Dict{Symbol,AbstractCubeData}()
   for iv in  varlist

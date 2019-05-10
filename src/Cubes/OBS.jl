@@ -21,19 +21,17 @@ function AWSCore.service_url(aws, request)
     if endpoint == "iam" || (endpoint == "sdb" && region == ".us-east-1")
         region = ""
     end
-    if endpoint == "obs"
-        string("https://", endpoint, region, ".otc.t-systems.com",
-           request[:resource])
-    else
-        string("https://", endpoint, region, ".amazonaws.com",
-           request[:resource])
-    end
+    url_ext = get(aws, :url_ext, "amazonaws.com")
+    region=="." || (url_ext="." * url_ext)
+    r = string("https://", endpoint, region, url_ext,
+        request[:resource])
+    r
 end
 global aws, cubesdict
 
 function __init__()
   global aws, cubesdict
-  aws = aws_config(creds=nothing, region="eu-de", provider="obs")
+  aws = aws_config(creds=nothing, region="eu-de", provider="obs", url_ext="otc.t-systems.com")
   cubesdict = Dict(
     ("low","ts","global") => ("obs-esdc-v2.0.0","esdc-8d-0.25deg-184x90x90-2.0.0.zarr"),
     ("low","map","global") => ("obs-esdc-v2.0.0","esdc-8d-0.25deg-1x720x1440-2.0.0.zarr"),
