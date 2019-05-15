@@ -71,7 +71,7 @@ function zarrayfromaxis(p::ZGroup,ax::CubeAxis,offs)
     data, attr = dataattfromaxis(ax,offs)
     attr["_ARRAY_DIMENSIONS"]=[axname(ax)]
     attr["_ARRAY_OFFSET"]=offs
-    za = zcreate(p,axname(ax), eltype(data),length(data),attrs=attr)
+    za = zcreate(eltype(data),p,axname(ax), length(data),attrs=attr)
     za[:] = data
     za
 end
@@ -120,7 +120,7 @@ function ZArrayCube(axlist;
       (chunkoffset[i]+1):(length(axlist[i].values)+chunkoffset[i])
     end
   end
-  za = zcreate(myar,"layer", T , s...,attrs=attr, fill_value=fillvalue,chunks=chunksize,compressor=compressor)
+  za = zcreate(T, myar,"layer", s...,attrs=attr, fill_value=fillvalue,chunks=chunksize,compressor=compressor)
   zout = ZArrayCube{T,length(s),typeof(za),typeof(subs)}(za,axlist,subs,persist,propfromattr(attr))
   finalizer(cleanZArrayCube,zout)
   zout
