@@ -1,7 +1,7 @@
 module ESDLZarr
 import ...ESDL
 import Distributed: myid
-import ZarrNative: ZGroup, zopen, ZArray, NoCompressor, zgroup, zcreate, readblock!
+import Zarr: ZGroup, zopen, ZArray, NoCompressor, zgroup, zcreate, readblock!
 import ESDL.Cubes: cubechunks, iscompressed, AbstractCubeData, getCubeDes,
   caxes,chunkoffset, gethandle, subsetcube, axVal2Index, findAxis, _read, S3Cube,
   _write, cubeproperties, ConcatCube, concatenateCubes, _subsetcube, workdir, readcubedata

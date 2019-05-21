@@ -1,6 +1,6 @@
 module Datasets
 import ..Cubes.ESDLZarr: toaxis, axname, AbstractCubeData, ZArrayCube, propfromattr, subsetcube, caxes, concatenateCubes
-import ZarrNative: ZGroup, zopen
+import Zarr: ZGroup, zopen
 import ..Cubes.Axes: axsym, CubeAxis, findAxis, CategoricalAxis
 import ..Cubes: AbstractCubeData, Cube
 struct Dataset
