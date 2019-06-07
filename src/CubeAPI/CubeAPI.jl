@@ -1,12 +1,12 @@
 module CubeAPI
-import ..Cubes: caxes, AbstractSubCube, AbstractCubeData, AbstractCubeMem, gethandle, readCubeData, CubeMem,
+import ..Cubes: caxes, AbstractSubCube, AbstractCubeData, AbstractCubeMem, gethandle, readcubedata, CubeMem,
   _read, cubeproperties, cubechunks, iscompressed, chunkoffset
 using ..Cubes.Axes
 using ..ESDLTools
 import ..ESDLTools: getiperm
 using Pkg
 import Markdown.@md_str
-export Cube, getCubeData,getTimeRanges,readCubeData, getMemHandle, RemoteCube, known_regions
+export Cube, getCubeData,getTimeRanges,readcubedata, getMemHandle, RemoteCube, known_regions
 export showVarInfo
 
 include("countrydict.jl")
@@ -607,7 +607,7 @@ function getCubeData(cube::UCube,
                 LonAxis(x2lon(grid_x1,config):config.spatial_res:x2lon(grid_x2,config)+0.1*config.spatial_res),
                 LatAxis(y2lat(grid_y1,config):-config.spatial_res:y2lat(grid_y2,config)-0.1*config.spatial_res),
         properties)
-      d=readCubeData(c)
+      d=readcubedata(c)
       if haskey(known_labels,variable[1])
         rem_keys = unique(d.data)
         all_labels = known_labels[variable[1]]
@@ -637,7 +637,7 @@ function getCubeData(cube::UCube,
   end
 end
 
-function readCubeData(s::SubCube{T}) where T
+function readcubedata(s::SubCube{T}) where T
   grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid
   y1,i1,y2,i2,ntime,NpY           = s.sub_times
   outar=Array{T}(undef,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime)
@@ -645,7 +645,7 @@ function readCubeData(s::SubCube{T}) where T
   return CubeMem(CubeAxis[s.lonAxis,s.latAxis,s.timeAxis],outar)
 end
 
-function readCubeData(s::SubCubeV{T}) where T
+function readcubedata(s::SubCubeV{T}) where T
   grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid
   y1,i1,y2,i2,ntime,NpY           = s.sub_times
   outar=Array{T}(undef,grid_x2-grid_x1+1,grid_y2-grid_y1+1,ntime,length(s.varAxis))
@@ -653,7 +653,7 @@ function readCubeData(s::SubCubeV{T}) where T
   return CubeMem(CubeAxis[s.lonAxis,s.latAxis,s.timeAxis,s.varAxis],outar)
 end
 
-function readCubeData(s::SubCubeStatic{T}) where T
+function readcubedata(s::SubCubeStatic{T}) where T
   grid_y1,grid_y2,grid_x1,grid_x2 = s.sub_grid
   y1,i1,y2,i2,ntime,NpY           = s.sub_times
   outar=Array{T}(undef,grid_x2-grid_x1+1,grid_y2-grid_y1+1)

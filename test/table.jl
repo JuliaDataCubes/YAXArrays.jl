@@ -5,8 +5,10 @@ using Test
 using DataFrames
 using CSV
 using StatsBase
+using RDatasets
+using Statistics
 
-iris = CSV.read(joinpath(dirname(pathof(DataFrames)), "../test/data/iris.csv"));
+iris = dataset("datasets", "iris")
 
 @testset "TableAggregator functions" begin
     fitMean = fittable(DataFrames.eachrow(iris), Mean, :SepalWidth)
@@ -24,9 +26,10 @@ iris = CSV.read(joinpath(dirname(pathof(DataFrames)), "../test/data/iris.csv"));
     @test value(fitMeanWeight) ≈ mean(iris[:SepalWidth], weights(weightVector))
 
     meanBy = by(iris, :Species, :SepalWidth => mean)
+    cn = names(meanBy)[2]
     fitMeanBy = fittable(DataFrames.eachrow(iris), Mean, :SepalWidth, by=(:Species,))
     for (key, value) in value(fitMeanBy)
-        @test value ≈ meanBy[meanBy[:Species] .== key, :SepalWidth_mean][1]
+        @test value ≈ meanBy[meanBy[:Species] .== key, cn][1]
     end
 
     meanByWeight = by(iris, :Species,

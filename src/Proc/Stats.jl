@@ -2,12 +2,13 @@ module Stats
 export normalizeTS, timeVariance, timeMean, spatialMean
 import ..DAT: NValid
 using ..DAT
-using ..CubeAPI
 using ..Proc
 using ..Cubes
 using StatsBase
 using Statistics
 import Statistics: quantile
+import ..Cubes: findAxis, axname
+
 
 """
     normalizeTS(c::AbstractCubeData)
@@ -28,7 +29,9 @@ function normalizeTS(xout::AbstractVector,xin::AbstractVector)
   map!(x->(x-m)/s,xout,xin)
 end
 
-function quantile(c::AbstractCubeData,p=[0.25,0.5,0.75];by=())
+import WeightedOnlineStats: WeightedHist
+
+function quantile(c::AbstractCubeData,p=[0.25,0.5,0.75];by=(),nbins=100)
   if any(i->isa(i,CategoricalAxis{<:Any,:Hist}),caxes(c)) && any(i->isa(i,RangeAxis{<:Any,:Bin}),caxes(c))
     if isa(p,Number)
       od = OutDims()
@@ -37,7 +40,10 @@ function quantile(c::AbstractCubeData,p=[0.25,0.5,0.75];by=())
     end
     mapCube(cquantile,c,p,indims=InDims("Bin","Hist"),outdims=od)
   else
-    error("Please generate a cubetable and use fittable to fit a Histogram first")
+    tfull = CubeTable(data = c,include_axes=(map(axname,caxes(c))...,))
+    weights = findAxis("Lat",c) === nothing ? nothing : i->cosd(i.Lat)
+    histcube = cubefittable(tfull, WeightedHist(nbins), :data, by=by, weight=weights)
+    quantile(histcube,p)
   end
 end
 
@@ -46,7 +52,7 @@ function cquantile(xout,xin,p)
   nonzero = w.>0
   d = xin[nonzero,1]
   w = Float64.(xin[nonzero,2])
-  xout[:] = quantile(d,fweights(w),p)
+  xout[:] = quantile(d,pweights(w),p)
 end
 
 end

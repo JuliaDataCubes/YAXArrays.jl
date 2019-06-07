@@ -1,11 +1,14 @@
 module DAT
 export mapCube, getInAxes, getOutAxes, findAxis, reduceCube, getAxis, InputCube, OutputCube
-using ..Cubes
-using ..CubeAPI
+import ..Cubes
 using ..ESDLTools
-using Distributed
-import ..Cubes: getAxis, getOutAxis, getAxis, cubechunks, iscompressed, chunkoffset, _write
+import Distributed: pmap, @everywhere, workers
+import ..Cubes: getAxis, getOutAxis, getAxis, cubechunks, iscompressed, chunkoffset, _write,
+  CubeAxis, RangeAxis, CategoricalAxis, AbstractCubeData, MmapCube, CubeMem, AbstractCubeMem,
+  caxes, findAxis, _read, _write, Dataset
+import ..Cubes.Axes: AxisDescriptor, axname, ByInference, axsym
 import ...ESDL
+import ..Cubes.ESDLZarr: ZArrayCube
 import ...ESDL.workdir
 import DataFrames
 import Distributed: nprocs
@@ -13,19 +16,14 @@ import DataFrames: DataFrame, ncol
 import ProgressMeter: Progress, next!, progress_pmap
 using Dates
 import StatsBase.Weights
-global const debugDAT=false
+global const debugDAT=[false]
 macro debug_print(e)
-  debugDAT && return(:(println($e)))
+  debugDAT[1] && return(:(println($e)))
   :()
 end
 
-using Requires
-
 const hasparprogress=[false]
 const progresscolor=[:cyan]
-function __init__()
-  @require IJulia = "7073ff75-c697-5162-941a-fcdaad2a7d2a" begin progresscolor[1] = :blue end
-end
 
 include("registration.jl")
 
@@ -117,7 +115,7 @@ mutable struct DATConfig{NIN,NOUT}
   allInAxes     :: Vector
   LoopAxes      :: Vector
   ispar         :: Bool
-  loopCacheSize :: Vector{Int}
+  loopcachesize :: Vector{Int}
   max_cache
   fu
   inplace      :: Bool
@@ -130,7 +128,9 @@ function DATConfig(cdata,indims,outdims,inplace,max_cache,fu,outfolder,ispar,inc
   isa(indims,InDims) && (indims=(indims,))
   isa(outdims,OutDims) && (outdims=(outdims,))
   length(cdata)==length(indims) || error("Number of input cubes ($(length(cdata))) differs from registration ($(length(indims)))")
-
+  if max_cache === nothing
+    max_cache = parse(Float64,get(ENV,"ESDL_MAX_CACHE","100")) * 1e6
+  end
   incubes  = totuple([InputCube(o[1],o[2]) for o in zip(cdata,indims)])
   allInAxes = vcat([ic.axesSmall for ic in incubes]...)
   outcubes = totuple(map(1:length(outdims),outdims) do i,desc
@@ -146,7 +146,7 @@ function DATConfig(cdata,indims,outdims,inplace,max_cache,fu,outfolder,ispar,inc
     ispar,
     Int[],
     max_cache,                                  # max_cache
-    fu,                                         # fu                                      # loopCacheSize
+    fu,                                         # fu                                      # loopcachesize
     inplace,                                    # inplace
     include_loopvars,
     addargs,                                    # addargs
@@ -181,8 +181,43 @@ end
 
 mapCube(fu::Function,cdata::AbstractCubeData,addargs...;kwargs...)=mapCube(fu,(cdata,),addargs...;kwargs...)
 
+function mapCube(f, in_ds::Dataset, addargs...; indims=InDims(), outdims=OutDims(), inplace=true, kwargs...)
+    allars = values(in_ds.cubes)
+    allaxes = collect(values(in_ds.axes))
+    arnames = keys(in_ds.cubes)
+    sarnames = (arnames...,)
+    any(ad->findAxis(ad,allaxes)===nothing,indims.axisdesc) && error("One of the Dimensions does not exist in Dataset")
+
+    idar = collect(indims.axisdesc)
+    allindims = map(allars) do c
+        idshort = filter(idar) do ad
+            findAxis(ad,c)!==nothing
+        end
+        InDims((idshort...,), indims.artype, indims.procfilter)
+    end
+    isa(outdims, OutDims) || error("Only one output cube currently supported for datasets")
+    isempty(addargs) || error("Additional arguments currently not supported for datasets, use kwargs instead")
+    if inplace
+        fnew = let arnames=collect(arnames), f=f
+            function dsfun(xout,xin...; kwargs...)
+                incubes = NamedTuple{sarnames, typeof(xin)}(xin)
+                f(xout,incubes; kwargs...)
+            end
+        end
+    else
+        fnew = let arnames=collect(arnames), f=f
+            function dsfun(xin...; kwargs...)
+                incubes = NamedTuple{sarnames, typeof(xin)}(xin)
+                f(incubes; kwargs...)
+            end
+        end
+    end
+    allcubes = collect(values(in_ds.cubes))
+    mapCube(fnew,(allcubes...,);indims=allindims,outdims=outdims, inplace=inplace, kwargs...)
+end
+
 import Base.mapslices
-function mapslices(f,d::AbstractCubeData,dims,addargs...;kwargs...)
+function mapslices(f,d::Union{AbstractCubeData, Dataset},addargs...;dims,kwargs...)
     isa(dims,String) && (dims=(dims,))
     mapCube(f,d,addargs...;indims = InDims(dims...),outdims = OutDims(ByInference()),inplace=false,kwargs...)
 end
@@ -213,7 +248,7 @@ a tuple input cubes if needed.
 """
 function mapCube(fu::Function,
     cdata::Tuple,addargs...;
-    max_cache=1e7,
+    max_cache=nothing,
     indims=InDims(),
     outdims=OutDims(),
     inplace=true,
@@ -272,11 +307,12 @@ end
 
 function getchunkoffsets(dc::DATConfig)
   co = zeros(Int,length(dc.LoopAxes))
+  lc = dc.loopcachesize
   for ic in dc.incubes
     #@show chunkoffset
-    for (ax,cocur) in zip(caxes(ic.cube),chunkoffset(ic.cube))
+    for (ax,cocur,cs) in zip(caxes(ic.cube),chunkoffset(ic.cube),cubechunks(ic.cube))
       ii = findAxis(ax,dc.LoopAxes)
-      if !isa(ii,Nothing) && iszero(co[ii]) && cocur>0
+      if !isa(ii,Nothing) && iszero(co[ii]) && cocur>0 && mod(lc[ii],cs)==0
         co[ii]=cocur
       end
     end
@@ -300,7 +336,7 @@ updateinars(dc,r)=updatears(dc,dc.incubes,r,_read)
 writeoutars(dc,r)=updatears(dc,dc.outcubes,r,_write)
 
 function runLoop(dc::DATConfig,showprog)
-  allRanges=distributeLoopRanges(totuple(dc.loopCacheSize),totuple(map(length,dc.LoopAxes)),getchunkoffsets(dc))
+  allRanges=distributeLoopRanges(totuple(dc.loopcachesize),totuple(map(length,dc.LoopAxes)),getchunkoffsets(dc))
   #@show collect(allRanges)
   if dc.ispar
     pmapfun = showprog ? progress_pmap : pmap
@@ -351,7 +387,7 @@ function getRetCubeType(oc,ispar,max_cache)
   outsize=sizeof(eltype)*(length(oc.allAxes)>0 ? prod(map(length,oc.allAxes)) : 1)
   if string(oc.desc.retCubeType)=="auto"
     if ispar || outsize>max_cache
-      cubetype = MmapCube
+      cubetype = ZArrayCube
     else
       cubetype = CubeMem
     end
@@ -361,10 +397,14 @@ function getRetCubeType(oc,ispar,max_cache)
   eltype,cubetype
 end
 
-function generateOutCube(::Type{T},eltype,oc::OutputCube,loopCacheSize) where T<:MmapCube
+function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co) where T<:MmapCube
   oc.cube=MmapCube(oc.allAxes,folder=oc.folder,T=eltype,persist=false)
 end
-function generateOutCube(::Type{T},eltype,oc::OutputCube,loopCacheSize) where T<:CubeMem
+function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co) where T<:ZArrayCube
+  cs = (map(length,oc.axesSmall)...,loopcachesize...)
+  oc.cube=ZArrayCube(oc.allAxes,folder=oc.folder,T=eltype,persist=false,chunksize=cs,chunkoffset=co)
+end
+function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co) where T<:CubeMem
   newsize=map(length,oc.allAxes)
   outar=Array{eltype}(undef,newsize...)
   genFun=oc.desc.genOut
@@ -372,12 +412,16 @@ function generateOutCube(::Type{T},eltype,oc::OutputCube,loopCacheSize) where T<
   oc.cube = Cubes.CubeMem(oc.allAxes,outar)
 end
 
-generateOutCubes(dc::DATConfig)=foreach(dc.outcubes) do c
-  generateOutCube(c,dc.ispar,dc.max_cache,dc.loopCacheSize)
+function generateOutCubes(dc::DATConfig)
+  co = getchunkoffsets(dc)
+  foreach(dc.outcubes) do c
+    co2 = (zeros(Int,length(c.axesSmall))...,co...)
+    generateOutCube(c,dc.ispar,dc.max_cache,dc.loopcachesize,co2)
+  end
 end
-function generateOutCube(oc::OutputCube,ispar::Bool,max_cache,loopCacheSize)
+function generateOutCube(oc::OutputCube,ispar::Bool,max_cache,loopcachesize,co)
   eltype,cubetype = getRetCubeType(oc,ispar,max_cache)
-  generateOutCube(cubetype,eltype,oc,loopCacheSize)
+  generateOutCube(cubetype,eltype,oc,loopcachesize,co)
 end
 
 dcg=nothing
@@ -388,17 +432,17 @@ function getCubeHandles(dc::DATConfig)
     passobj(1, workers(), [:dcg],from_mod=ESDL.DAT,to_mod=Main.PMDATMODULE)
     @everywhereelsem begin
       dc=Main.PMDATMODULE.dcg
-      foreach(i->ESDL.DAT.allocatecachebuf(i,dc.loopCacheSize),dc.outcubes)
-      foreach(i->ESDL.DAT.allocatecachebuf(i,dc.loopCacheSize),dc.incubes)
+      foreach(i->ESDL.DAT.allocatecachebuf(i,dc.loopcachesize),dc.outcubes)
+      foreach(i->ESDL.DAT.allocatecachebuf(i,dc.loopcachesize),dc.incubes)
     end
   else
-    foreach(i->allocatecachebuf(i,dc.loopCacheSize),dc.outcubes)
-    foreach(i->allocatecachebuf(i,dc.loopCacheSize),dc.incubes)
+    foreach(i->allocatecachebuf(i,dc.loopcachesize),dc.outcubes)
+    foreach(i->allocatecachebuf(i,dc.loopcachesize),dc.incubes)
   end
 end
 
 function allocatecachebuf(ic::Union{InputCube,OutputCube},loopcachesize) where N
-  sl = ntuple(i->loopcachesize[i],length(ic.loopinds))
+  sl = ntuple(i->loopcachesize[ic.loopinds[i]],length(ic.loopinds))
   s = (map(length,ic.axesSmall)...,sl...)
   ic.handle = zeros(eltype(ic.cube),s...)
 end
@@ -454,7 +498,7 @@ end
 function getCacheSizes(dc::DATConfig)
 
   if all(i->i.isMem,dc.incubes)
-    dc.loopCacheSize=Int[length(x) for x in dc.LoopAxes]
+    dc.loopcachesize=Int[length(x) for x in dc.LoopAxes]
     return dc
   end
   inAxlengths      = Vector{Int}[Int.(length.(cube.axesSmall)) for cube in dc.incubes]
@@ -475,16 +519,16 @@ function getCacheSizes(dc::DATConfig)
   end
   sort!(cmisses,lt=cmpcachmisses)
   #@show cmisses
-  loopCacheSize    = getLoopCacheSize(max(inblocksize,outblocksize),map(length,dc.LoopAxes),dc.max_cache, cmisses)
+  loopcachesize    = getLoopCacheSize(max(inblocksize,outblocksize),map(length,dc.LoopAxes),dc.max_cache, cmisses)
   for cube in dc.incubes
     if !cube.isMem
       cube.cachesize = map(length,cube.axesSmall)
-      for (cs,loopAx) in zip(loopCacheSize,dc.LoopAxes)
+      for (cs,loopAx) in zip(loopcachesize,dc.LoopAxes)
         in(typeof(loopAx),map(typeof,caxes(cube.cube))) && push!(cube.cachesize,cs)
       end
     end
   end
-  dc.loopCacheSize=loopCacheSize
+  dc.loopcachesize=loopcachesize
   return dc
 end
 
@@ -496,23 +540,23 @@ function getLoopCacheSize(preblocksize,loopaxlengths,max_cache,cmisses)
 
   incfac=totcachesize/preblocksize
   incfac<1 && error("The requested slices do not fit into the specified cache. Please consider increasing max_cache")
-  loopCacheSize = ones(Int,length(loopaxlengths))
+  loopcachesize = ones(Int,length(loopaxlengths))
   # Go through list of cache misses first and decide
   imiss = 1
   while imiss<=length(cmisses)
     il = cmisses[imiss].iloopax
-    s = min(cmisses[imiss].cs,loopaxlengths[il])/loopCacheSize[il]
+    s = min(cmisses[imiss].cs,loopaxlengths[il])/loopcachesize[il]
     #Check if cache size is already set for this axis
-    if loopCacheSize[il]==1
+    if loopcachesize[il]==1
       if s<incfac
-        loopCacheSize[il]=min(cmisses[imiss].cs,loopaxlengths[il])
-        incfac=totcachesize/preblocksize/prod(loopCacheSize)
+        loopcachesize[il]=min(cmisses[imiss].cs,loopaxlengths[il])
+        incfac=totcachesize/preblocksize/prod(loopcachesize)
       else
         ii=floor(Int,incfac)
         while ii>1 && rem(s,ii)!=0
           ii=ii-1
         end
-        loopCacheSize[il]=ii
+        loopcachesize[il]=ii
         break
       end
     end
@@ -524,7 +568,7 @@ function getLoopCacheSize(preblocksize,loopaxlengths,max_cache,cmisses)
   else
     #TODO continue increasing cache sizes on by one...
   end
-  return loopCacheSize
+  return loopcachesize
 end
 
 function distributeLoopRanges(block_size::NTuple{N,Int},loopR::NTuple{N,Int},co) where N
@@ -604,7 +648,7 @@ using Base.Cartesian
   if R
     push!(runBody.args,Expr(:call,callargs...))
   else
-    lhs = NOUT>1 ? Expr(:tuple,[:($(outworksyms[j])[:]) for j=1:NOUT]...) : :($(outworksyms[1])[:])
+    lhs = NOUT>1 ? Expr(:tuple,[:($(outworksyms[j])) for j=1:NOUT]...) : outworksyms[1]
     rhs = Expr(:call,callargs...)
     push!(runBody.args,:($lhs.=$rhs))
   end
@@ -627,7 +671,7 @@ using Base.Cartesian
     $unrollEx
     $loopEx
   end
-  if debugDAT
+  if debugDAT[1]
     b=IOBuffer()
     show(b,loopEx)
     s=String(take!(b))

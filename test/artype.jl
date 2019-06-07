@@ -1,7 +1,8 @@
 using ESDL
 using Test
-import DataFrames: DataFrame,aggregate,skipmissing
+import DataFrames: DataFrame,aggregate
 import Dates: year
+import Statistics: cor, mean
 
 @testset "Dataframe representation" begin
 c=Cube()
@@ -9,7 +10,7 @@ c=Cube()
 d = getCubeData(c,variable=["air_temperature_2m","gross_primary_productivity"],longitude=(30,31),latitude=(50,51),
                 time=(Date("2002-01-01"),Date("2008-12-31")))
 
-dmem=readCubeData(d)
+dmem=readcubedata(d)
 
 function docor(xout,xin)
     #Inside this function, xin is now a data frame

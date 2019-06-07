@@ -2,7 +2,6 @@ module TSDecomposition
 export filterTSFFT
 using ..Cubes
 using ..DAT
-using ..CubeAPI
 using ..Proc
 using FFTW
 using Statistics

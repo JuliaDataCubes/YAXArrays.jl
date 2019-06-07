@@ -3,10 +3,10 @@ The functions provided by ESDL are supposed to work on different types of cubes.
 Data types that
 """
 module Cubes
-export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, TimeHAxis, QuantileAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, caxes,
+export Axes, AbstractCubeData, getSubRange, readcubedata, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, TimeHAxis, QuantileAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, caxes,
        AbstractSubCube, CubeMem, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis, axVal2Index, MSCAxis,
        getSingVal, ScaleAxis, axname, @caxis_str, rmCube, cubeproperties, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
-       getOutAxis, ByInference
+       getOutAxis, Cube, (..), getCubeData, subsetcube, CubeMask, renameaxis!, Dataset, S3Cube
 
 
 """
@@ -15,7 +15,7 @@ export Axes, AbstractCubeData, getSubRange, readCubeData, AbstractCubeMem, axesC
 Supertype of all cubes. `T` is the data type of the cube and `N` the number of
 dimensions. Beware that an `AbstractCubeData` does not implement the `AbstractArray`
 interface. However, the `ESDL` functions [`mapCube`](@ref), [`reduceCube`](@ref),
-[`readCubeData`](@ref), [`plotMAP`](@ref) and [`plotXY`](@ref) will work on any subtype
+[`readcubedata`](@ref), [`plotMAP`](@ref) and [`plotXY`](@ref) will work on any subtype
 of `AbstractCubeData`
 """
 abstract type AbstractCubeData{T,N} end
@@ -25,22 +25,24 @@ getSingVal reads a single point from the cube's data
 """
 getSingVal(c::AbstractCubeData,a...)=error("getSingVal called in the wrong way with argument types $(typeof(c)), $(map(typeof,a))")
 
+Base.eltype(::AbstractCubeData{T}) where T = T
+Base.ndims(::AbstractCubeData{<:Any,N}) where N = N
 
 """
-    readCubeData(cube::AbstractCubeData)
+    readcubedata(cube::AbstractCubeData)
 """
-function readCubeData(x::AbstractCubeData{T,N}) where {T,N}
+function readcubedata(x::AbstractCubeData{T,N}) where {T,N}
   s=size(x)
   aout = zeros(Union{T,Missing},s...)
   r=CartesianIndices(s)
   _read(x,aout,r)
-  CubeMem(collect(CubeAxis,caxes(x)),aout)
+  CubeMem(collect(CubeAxis,caxes(x)),aout,cubeproperties(x))
 end
 
 """
 This function calculates a subset of a cube's data
 """
-function subsetCube end
+function subsetcube end
 
 #"""
 #Internal function to read a range from a datacube
@@ -49,9 +51,6 @@ function subsetCube end
 
 "Returns the axes of a Cube"
 caxes(c::AbstractCubeData)=error("Axes function not implemented for $(typeof(c))")
-
-"Number of dimensions"
-Base.ndims(::AbstractCubeData{T,N}) where {T,N}=N
 
 cubeproperties(::AbstractCubeData)=Dict{String,Any}()
 
@@ -81,7 +80,7 @@ caxes(c::EmptyCube)=CubeAxis[]
 
 An in-memory data cube. It is returned by applying [mapCube](@ref) when
 the output cube is small enough to fit in memory or by explicitly calling
-`readCubeData` on any type of cube.
+`readcubedata` on any type of cube.
 
 ### Fields
 
@@ -110,13 +109,25 @@ Base.size(c::CubeMem,i)=size(c.data,i)
 Base.similar(c::CubeMem)=CubeMem(c.axes,similar(c.data))
 Base.ndims(c::CubeMem{T,N}) where {T,N}=N
 
-readCubeData(c::CubeMem)=c
+readcubedata(c::CubeMem)=c
 
 function getSubRange(c::AbstractArray,i...;write::Bool=true)
   length(i)==ndims(c) || error("Wrong number of view arguments to getSubRange. Cube is: $c \n indices are $i")
   return view(c,i...)
 end
 getSubRange(c::Tuple{AbstractArray{T,0},AbstractArray{UInt8,0}};write::Bool=true) where {T}=c
+
+function _subsetcube end
+
+function subsetcube(z::CubeMem{T};kwargs...) where T
+  newaxes, substuple = _subsetcube(z,collect(Any,map(Base.OneTo,size(z)));kwargs...)
+  newdata = z.data[substuple...]
+  if haskey(z.properties,"labels")
+    alll = filter!(!ismissing,unique(newdata))
+    z.properties["labels"] = filter(i->in(i[1],alll),z.properties["labels"])
+  end
+  CubeMem{T,length(newaxes)}(newaxes,newdata,z.properties)
+end
 
 """
     gethandle(c::AbstractCubeData, [block_size])
@@ -131,13 +142,10 @@ gethandle(c,block_size)=gethandle(c)
 import ..ESDLTools.toRange
 #Generic fallback method for _read
 function _read(c::CubeMem,thedata::AbstractArray,r::CartesianIndices)
-  N=ndims(r)
-  cubeview = view(c.data,r.indices...)
-  copyto!(thedata,cubeview)
+  thedata .= view(c.data,r.indices...)
 end
 
 function _write(c::CubeMem,thedata::AbstractArray,r::CartesianIndices)
-  N=ndims(r)
   cubeview = getSubRange(c.data,r.indices...)
   copyto!(cubeview,thedata)
 end
@@ -167,11 +175,15 @@ function Base.getindex(c::AbstractCubeData,i::IndR...)
   lall = map((rr,ii)->(length(rr),!isa(ii,Integer)),r.indices,i)
   lshort = filter(ii->ii[2],collect(lall))
   newshape = map(ii->ii[1],lshort)
-  aout = Array{eltype(c)}(undef,size(r))
-  _read(c,aout,r)
-  reshape(aout,newshape...)
+  aout = Array{eltype(c)}(undef,newshape...)
+  if newshape == size(r)
+    _read(c,aout,r)
+  else
+    _read(c,reshape(aout,size(r)),r)
+  end
+  aout
 end
-Base.read(d::AbstractCubeData)=getindex(d,fill(Colon(),ndims(d))...)
+Base.read(d::AbstractCubeData) = getindex(d,fill(Colon(),ndims(d))...)
 
 function formatbytes(x)
   exts=["bytes","KB","MB","GB","TB"]
@@ -201,8 +213,11 @@ function Base.show(io::IO,c::AbstractCubeData)
     for a in caxes(c)
         println(io,a)
     end
+
     foreach(cubeproperties(c)) do p
-      println(io,p[1],": ",p[2])
+      if p[1] in ("labels","name","units")
+        println(io,p[1],": ",p[2])
+      end
     end
     println(io,"Total size: ",formatbytes(cubesize(c)))
 end
@@ -219,10 +234,8 @@ See also loadCube, ESDLdir
 function saveCube(c::CubeMem{T},name::AbstractString) where T
   newfolder=joinpath(workdir[1],name)
   isdir(newfolder) && error("$(name) alreaday exists, please pick another name")
-  mkpath(newfolder)
-  tc=Cubes.MmapCube(c.axes,folder=newfolder,T=T)
-  handle = Cubes.getmmaphandles(tc,mode="r+")
-  copyto!(handle,c.data)
+  tc=Cubes.ESDLZarr.ZArrayCube(c.axes,folder=newfolder,T=T)
+  _write(tc,c.data,CartesianIndices(c.data))
 end
 
 import Base.Iterators: take, drop
@@ -247,6 +260,10 @@ Base.show(io::IO,a::SpatialPointAxis)=print(io,"Spatial points axis with ",lengt
 
 
 include("TransformedCubes.jl")
-
-
+function S3Cube end
+include("ZarrCubes.jl")
+import .ESDLZarr: (..), Cube, getCubeData, loadCube, rmCube, CubeMask
+include("Datasets.jl")
+import .Datasets: Dataset, ESDLDataset
+include("OBS.jl")
 end

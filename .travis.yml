@@ -1,20 +1,20 @@
-# Documentation: http://docs.travis-ci.com/user/languages/julia/
 language: julia
 os:
-  - linux
+    - osx
+    - linux
 julia:
-  - 0.6
+    - 1.0
+    - 1.1
 notifications:
-  email: false
-before_install:
-  - sudo apt-get install -y libnetcdf-dev libhdf5-dev netcdf-bin
-# uncomment the following lines to override the default test script
-script:
-  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-  - julia -e 'Pkg.clone(pwd()); Pkg.build("ESDL")'
-  - julia -e 'Pkg.test("ESDL"; coverage=true)'
+    email: false
+jobs:
+  include:
+    - stage: "Documentation"
+      julia: 1.1
+      os: linux
+      script:
+        - julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate()'
+        - julia --project=docs docs/make.jl
+      after_success: skip
 after_success:
-  - julia -e 'Pkg.add("Documenter")'
-  - julia -e 'Pkg.clone("https://github.com/esa-esdl/ESDLPlots.jl");Pkg.add("GR")'
-  - julia -e 'using Compose'
-  - julia -e 'cd(Pkg.dir("ESDL")); include(joinpath("docs", "make.jl"))'
+- julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'

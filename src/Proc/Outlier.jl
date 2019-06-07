@@ -1,7 +1,6 @@
 module Outlier
 export cubeAnomalies, simpleAnomalies
 using ..DAT
-using ..CubeAPI
 using ..Cubes
 import ..Proc
 using MultivariateAnomalies

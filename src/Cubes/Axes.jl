@@ -2,7 +2,7 @@ module Axes
 export CubeAxis, QuantileAxis, TimeAxis, TimeHAxis, VariableAxis, LonAxis, LatAxis, CountryAxis,
 SpatialPointAxis,Axes,YearStepRange,CategoricalAxis,RangeAxis,axVal2Index,MSCAxis,
 ScaleAxis, axname, @caxis_str, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
-getOutAxis, ByInference
+getOutAxis, ByInference, renameaxis!, axsym
 import NetCDF.NcDim
 using ..Cubes
 import ..Cubes: caxes
@@ -154,42 +154,46 @@ caxes(x::CubeAxis)=CubeAxis[x]
 axname(::CategoricalAxis{T,S}) where {T,S}=string(S)
 axname(::RangeAxis{T,S}) where {T,S}=string(S)
 axname(::Type{T}) where T<:CubeAxis{S,U} where {S,U} = U
+axsym(ax::CubeAxis{<:Any,S}) where S = S
 axunits(::CubeAxis)="unknown"
 axunits(::LonAxis)="degrees_east"
 axunits(::LatAxis)="degrees_north"
-function axVal2Index(a::RangeAxis{T,S,F},v;fuzzy=false) where {T,S,F<:StepRange}
+
+get_step(r::AbstractRange)=step(r)
+get_step(r::AbstractVector)=length(r)==0 ? zero(eltype(r)) : r[2]-r[1]
+
+axVal2Index_ub(a::RangeAxis, v; fuzzy=false)=axVal2Index(a,v-abs(half(get_step(a.values))),fuzzy=fuzzy)
+axVal2Index_lb(a::RangeAxis, v; fuzzy=false)=axVal2Index(a,v+abs(half(get_step(a.values))),fuzzy=fuzzy)
+
+axVal2Index_ub(a::RangeAxis{<:Date}, v; fuzzy=false)=axVal2Index(a,DateTime(v)-abs(half(get_step(a.values))),fuzzy=fuzzy)
+axVal2Index_lb(a::RangeAxis{<:Date}, v; fuzzy=false)=axVal2Index(a,DateTime(v)+abs(half(get_step(a.values))),fuzzy=fuzzy)
+
+half(a) = a/2
+half(a::Day) = Millisecond(a)/2
+
+function axVal2Index(a::RangeAxis{<:Any,<:Any,<:AbstractRange},v;fuzzy=false)
   dt = v-first(a.values)
   r = round(Int,dt/step(a.values))+1
   return max(1,min(length(a.values),r))
 end
-function axVal2Index(a::RangeAxis{T,S,F},v;fuzzy=false) where {T<:DateTime,S,F<:AbstractRange}
-  dt = v-first(a.values)
-  r = round(Int,dt/Millisecond(step(a.values)))+1
-  return max(1,min(length(a.values),r))
-end
-function axVal2Index(a::RangeAxis{T,S,F},v::Date;fuzzy=false) where {T<:Date,S,F<:YearStepRange}
+function axVal2Index(a::RangeAxis{<:Date,<:Any,<:YearStepRange},v::Date;fuzzy=false)
   y = year(v)
   d = dayofyear(v)
   r = (y-a.values.startyear)*a.values.NPY + d÷a.values.step + 1
   return max(1,min(length(a.values),r))
 end
-function axVal2Index(a::RangeAxis{T,S,F},v::Date;fuzzy=false) where {T<:Date,S,F<:StepRange}
-  dd = map(i->abs((i-v).value),a.values)
+function axVal2Index(a::RangeAxis{<:TimeType},v;fuzzy=false)
+  dd = map(i->abs((DateTime(i)-DateTime(v))),a.values)
   mi,ind = findmin(dd)
   return ind
 end
-
-function axVal2Index(a::RangeAxis{T,S,F},v::Date;fuzzy=false) where {T<:Date,S,F}
-  dd = map(i->abs((i-v).value),a.values)
-  mi,ind = findmin(dd)
-  return ind
-end
-axVal2Index(axis::RangeAxis{T,S,F},v;fuzzy::Bool=false) where {T,S,F<:StepRangeLen}=min(max(round(Int,(v-first(axis.values))/step(axis.values))+1,1),length(axis))
 function axVal2Index(axis::CategoricalAxis{String},v::String;fuzzy::Bool=false)
   r=findfirst(isequal(v),axis.values)
   if r==nothing
     if fuzzy
-      r=findall(i->startswith(lowercase(i),lowercase(v)),axis.values)
+      r=findall(axis.values) do i
+        startswith(lowercase(i),lowercase(v[1:min(length(i),length(v))]))
+      end
       if length(r)==1
         return(r[1])
       else
@@ -204,7 +208,7 @@ end
 axVal2Index(x,v::CartesianIndex{1};fuzzy::Bool=false)=min(max(v.I[1],1),length(x))
 function axVal2Index(x,v;fuzzy::Bool=false)
   i = findfirst(isequal(v),x.values)
-  isnothing(i) && error("Value $v not found in x")
+  isa(i,Nothing) && error("Value $v not found in x")
   return i
 end
 abstract type AxisDescriptor end
@@ -231,16 +235,17 @@ get_descriptor(a::Function)=ByFunction(a)
 get_descriptor(a)=error("$a is not a valid axis description")
 get_descriptor(a::AxisDescriptor)=a
 
+const VecOrTuple{S} = Union{Vector{<:S},NTuple{<:Any,S}} where S
 
 "Find a certain axis type in a vector of Cube axes and returns the index"
-function findAxis(bt::ByType,v::Vector{S}) where S<:CubeAxis
+function findAxis(bt::ByType,v::VecOrTuple{S}) where S<:CubeAxis
   a=bt.t
   for i=1:length(v)
     isa(v[i],a) && return i
   end
   return nothing
 end
-function findAxis(bs::ByName,axlist::Vector{T}) where T<:CubeAxis
+function findAxis(bs::ByName,axlist::VecOrTuple{T}) where T<:CubeAxis
   matchstr=bs.name
   ism=map(i->startswith(lowercase(axname(i)),lowercase(matchstr)),axlist)
   sism=sum(ism)
@@ -248,7 +253,7 @@ function findAxis(bs::ByName,axlist::Vector{T}) where T<:CubeAxis
   sism>1 && error("Multiple axes found matching string $matchstr")
   i=findfirst(ism)
 end
-function findAxis(bv::ByValue,axlist::Vector{T}) where T<:CubeAxis
+function findAxis(bv::ByValue,axlist::VecOrTuple{T}) where T<:CubeAxis
   v=bv.v
   return findfirst(i->i==v,axlist)
 end
@@ -260,7 +265,7 @@ function getAxis(desc,axlist::Vector{T}) where T<:CubeAxis
     return axlist[i]
   end
 end
-getOutAxis(desc,axlist,incubes,pargs,f) = getAxis(desc,axlist)
+getOutAxis(desc,axlist,incubes,pargs,f) = getAxis(desc,unique(axlist))
 function getOutAxis(desc::ByFunction,axlist,incubes,pargs,f)
   outax = desc.f(incubes,pargs)
   isa(outax,CubeAxis) || error("Axis Generation function $(desc.f) did not return an axis")
@@ -303,20 +308,37 @@ findAxis(a,axlist)=findAxis(get_descriptor(a),axlist)
 getSubRange(x::CubeAxis,i)=x.values[i],nothing
 getSubRange(x::TimeAxis,i)=view(x,i),nothing
 
+renameaxis(r::RangeAxis{T,<:Any,V}, newname) where {T,V} = RangeAxis{T,Symbol(newname),V}(r.values)
+renameaxis(r::CategoricalAxis{T,<:Any,V}, newname) where {T,V} = CategoricalAxis{T,Symbol(newname),V}(r.values)
+function renameaxis!(c::AbstractCubeData,p::Pair)
+  i = findAxis(p[1],c.axes)
+  c.axes[i]=renameaxis(c.axes[i],p[2])
+  c
+end
+function renameaxis!(c::AbstractCubeData,p::Pair{<:Any,<:CubeAxis})
+  i = findAxis(p[1],c.axes)
+  i === nothing && throw(ArgumentError("Axis not found"))
+  length(c.axes[i].values) == length(p[2].values) || throw(ArgumentError("Length of replacement axis must equal length of old axis"))
+  c.axes[i]=p[2]
+  c
+end
+
 macro caxis_str(s)
   :(CategoricalAxis{String,$(QuoteNode(Symbol(s)))})
 end
 
 import Base.==
+import Base.isequal
 ==(a::CubeAxis,b::CubeAxis)=(a.values==b.values) && (axname(a)==axname(b))
+isequal(a::CubeAxis, b::CubeAxis) = a==b
 
 function NcDim(a::CubeAxis{Date},start::Integer,count::Integer)
   if start + count - 1 > length(a.values)
     count = oftype(count,length(a.values) - start + 1)
   end
   tv=a.values[start:(start+count-1)]
-  starttime=a.values[1]
-  startyear=Dates.year(starttime)
+  startyear=Dates.year(first(a.values))
+  starttime=Date(startyear)
   atts=Dict{Any,Any}("units"=>"days since $startyear-01-01")
   d=map(x->Float64(convert(Day,(x-starttime)).value),tv)
   NcDim(axname(a),length(d),values=d,atts=atts)

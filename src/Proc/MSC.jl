@@ -2,7 +2,6 @@ module MSC
 export removeMSC, gapFillMSC, getMSC, getMedSC
 using ..Cubes
 using ..DAT
-using ..CubeAPI
 using ..Proc
 import Statistics: quantile!
 
@@ -30,8 +29,8 @@ function removeMSC(c::AbstractCubeData;kwargs...)
         NpY,
         zeros(Union{Missing,Float64},NpY),
         zeros(Int,NpY);
-        indims  = InDims( "Time" ),
-        outdims = OutDims("Time" ),
+        indims  = InDims("Time"),
+        outdims = OutDims("Time"),
         kwargs...
     )
 end

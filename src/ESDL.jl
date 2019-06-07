@@ -8,11 +8,11 @@ module ESDL
 import Dates: Date
 export Date
 export ESDLdir, getAxis
-export Cube, getCubeData,readCubeData,CubeMem,CubeAxis, TimeAxis, TimeHAxis, VariableAxis, LonAxis, FitAxis, LatAxis, CountryAxis, SpatialPointAxis, saveCube, loadCube,
-        RangeAxis, CategoricalAxis, MSCAxis, getSingVal, ScaleAxis, QuantileAxis, MethodAxis, RemoteCube, showVarInfo, @caxis_str,
-        axVal2Index, mapCubeSimple, concatenateCubes, SliceCube, NetCDFCube, mergeAxes, caxes #From Cube module
-export registerDATFunction, mapCube, reduceCube, getAxis, InDims, OutDims,
-        @CubeTable, AsArray,AsAxisArray,AsDataFrame, cubefittable, TableAggregator, fittable #From DAT module
+export Cube, getCubeData,readcubedata,CubeMem,CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, SpatialPointAxis, saveCube, loadCube,
+        RangeAxis, CategoricalAxis, MSCAxis, ScaleAxis, QuantileAxis, MethodAxis, showVarInfo, @caxis_str,
+        axVal2Index, mapCubeSimple, concatenateCubes, NetCDFCube, mergeAxes, caxes, subsetcube, CubeMask, renameaxis! #From Cube module
+export registerDATFunction, mapCube, reduceCube, getAxis, InDims, OutDims, (..), Dataset, ESDLDataset,S3Cube,
+        CubeTable, AsArray,AsAxisArray,AsDataFrame, cubefittable, TableAggregator, fittable #From DAT module
 export cubeAnomalies, removeMSC, gapFillMSC, normalizeTS,DATfitOnline,
   sampleLandPoints, toPointAxis, getMSC, filterTSFFT, getNpY,
   getMedSC, extractLonLats,simpleAnomalies,spatialinterp,
@@ -31,11 +31,11 @@ export ESDLdir
 
 include("ESDLTools.jl")
 include("Cubes/Cubes.jl")
-include("CubeAPI/CubeAPI.jl")
+#include("CubeAPI/CubeAPI.jl")
 include("DAT/DAT.jl")
 include("Proc/Proc.jl")
 
-using .Cubes, .CubeAPI, .DAT, .Proc, .ESDLTools
+using .Cubes, .DAT, .Proc, .ESDLTools
 
 #include("precompile.jl")
 #_precompile_()

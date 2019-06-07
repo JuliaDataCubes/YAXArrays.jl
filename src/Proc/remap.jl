@@ -31,6 +31,6 @@ function spatialinterp(c::AbstractCubeData,newlons::AbstractRange,newlats::Abstr
 end
 spatialinterp(c::AbstractCubeData,newlons::CubeAxis,newlats::CubeAxis;kwargs...)=
   spatialinterp(c,newlons.values,newlats.values)
-spatialinterp(c::AbstractCubeData,target_cube::AbstractCubeData)=
-  spatialinterp(c,getAxis("Lon",))
+# spatialinterp(c::AbstractCubeData,target_cube::AbstractCubeData)=
+#   spatialinterp(c,getAxis("Lon",))
 end #module

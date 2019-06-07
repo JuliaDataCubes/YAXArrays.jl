@@ -24,76 +24,76 @@ function doTests()
   # Test simple Stats first
   c=Cube()
 
-  d = getCubeData(c,variable="air_temperature_2m",longitude=(30,31),latitude=(50,51),
+  d = subsetcube(c,variable="air_temperature_2m",lon=(30,31),lat=(50,51),
                 time=(Date("2002-01-01"),Date("2008-12-31")))
 
-  dmem=readCubeData(d)
+  dmem=readcubedata(d)
 
   @testset "Simple statistics using mapslices" begin
   # Basic statistics
-  m=mapslices(mean∘skipmissing,d,"Time")
+  m=mapslices(mean∘skipmissing,d,dims = "Time")
 
-  @test isapprox(readCubeData(m).data,[281.922  282.038  282.168  282.288;
-                281.936  282.062  282.202  282.331;
-                281.949  282.086  282.236  282.375;
-                281.963  282.109  282.271  282.418])
+  @test isapprox(readcubedata(m).data,[281.598 281.657 281.595 281.639;
+   281.687 281.731 281.692 281.722;
+   281.734 281.779 281.787 281.816;
+   281.694 281.775 281.879 281.933])
 
   #Test Spatial meann along laitutde axis
-  d1=getCubeData(c,variable="gross_primary_productivity",time=(Date("2002-01-01"),Date("2002-01-01")),longitude=(30,30))
+  d1=subsetcube(c,variable="gross_primary_productivity",time=(Date("2002-01-01"),Date("2002-01-01")),lon=(30,30))
 
-  dmem=readCubeData(d1)
-  mtime=mapslices(mean∘skipmissing,dmem,("lon","lat"))
+  dmem=readcubedata(d1)
+  mtime=mapslices(mean∘skipmissing,dmem,dims = ("lon","lat"))
 
   end
   # Test Mean seasonal cycle retrieval
   @testset "Seasonal cycle statistics and anomalies" begin
-  cdata=getCubeData(c,variable="soil_moisture",longitude=(30,30),latitude=(50.75,50.75))
-  d=readCubeData(cdata)
+  cdata=subsetcube(c,variable="soil_moisture",lon=30,lat=50.75)
+  d=readcubedata(cdata)
 
   x2=getMSC(d)
 
   x3=getMedSC(d)
 
-  a = d[1,1,:]
+  a = d[:]
   a = a[3:46:end]
-  @test mean(skipmissing(a))==x2[3,1,1]
-  @test median(skipmissing(a))==x3[3,1,1]
+  @test isapprox(mean(skipmissing(a)),x2[3])
+  @test isapprox(median(skipmissing(a)),x3[3])
 
   # Test gap filling
-  cube_filled=readCubeData(gapFillMSC(d))
+  cube_filled=readcubedata(gapFillMSC(d))
   imiss=findfirst(i->ismissing(i),d.data)
   @test !ismissing(cube_filled.data[imiss])
-  its=mod(imiss.I[3]-1,46)+1
-  @test cube_filled.data[imiss]≈readCubeData(x2).data[its]
+  its=mod(imiss-1,46)+1
+  @test cube_filled.data[imiss]≈readcubedata(x2).data[its]
   @test !any(ismissing(cube_filled.data))
 
   # Test removal of MSC
 
-  cube_anomalies=readCubeData(removeMSC(cube_filled))
-  @test isapprox(cube_anomalies.data[47:92],(cube_filled.data[47:92].-readCubeData(x2).data[1:46]))
+  cube_anomalies=readcubedata(removeMSC(cube_filled))
+  @test isapprox(cube_anomalies.data[47:92],(cube_filled.data[47:92].-readcubedata(x2).data[1:46]))
 
 
   # Test normalization
-  anom_normalized=normalizeTS(cube_anomalies)[:,:,:]
+  anom_normalized=normalizeTS(cube_anomalies)[:]
   #@show cube_anomalies[:,:,:]
   @test mean(anom_normalized)<1e7
   @test 1.0-1e-6 <= std(anom_normalized) <= 1.0+1e-6
   end
 
 
-  d1=getCubeData(c,variable=["gross_primary_productivity","net_ecosystem_exchange"],longitude=(30,30),latitude=(50,50))
-  d2=getCubeData(c,variable=["gross_primary_productivity","air_temperature_2m"],longitude=(30,30),latitude=(50,50))
+  d1=subsetcube(c,variable=["gross_primary_productivity","net_ecosystem_exchange"],lon=(30,30),lat=(50,50))
+  d2=subsetcube(c,variable=["gross_primary_productivity","air_temperature_2m"],lon=(30,30),lat=(50,50))
 
 
   @testset "Multiple output cubes" begin
   #Test onvolving multiple output cubes
-  c1=getCubeData(c,variable="gross_primary_productivity",longitude=(30,31),latitude=(50,51),time=2001:2010)
+  c1=subsetcube(c,variable="gross_primary_productivity",lon=(30,31),lat=(50,51),time=Date(2001)..Date(2010))
 
-  c2=readCubeData(c1)
+  c2=readcubedata(c1)
 
   cube_wo_mean,cube_means=sub_and_return_mean(c2)
 
-  @test isapprox(permutedims(c2[:,:,:].-mean(c2[:,:,:],dims=3),(3,1,2)),readCubeData(cube_wo_mean)[:,:,:])
+  @test isapprox(permutedims(c2[:,:,:].-mean(c2[:,:,:],dims=3),(3,1,2)),readcubedata(cube_wo_mean)[:,:,:])
   @test isapprox(mean(c2[:,:,:],dims=3)[:,:,1],cube_means[:,:])
   end
 end
