@@ -135,20 +135,15 @@ These names can be imported by `using ESDL.Mask`. The user can decide if he want
 the masks in his analyses or rather wants to refer to a different representation with
  missings with `NaN`s. See [`mapCube`](@ref) for details.
 
-## Opening Remote Data Cubes
+## Opening cloud-hosted Data Cubes
 
-If you just want to try the ESDL data cube and don't have access to the full data set, you can open a remote cube through
-a THREDDS server. All you need is a working internet connection to do this:
+When you are working on the official cloud instance
 
 ```@docs
-RemoteCube
+S3Cube
 ```
 
-This will open the remote cube and calling `getCubeData` will return a cube view that you can process.
 
-**Important** In order to avoid unnecessary traffic, be nice to our servers.
-Please use this only for testing the cube software for very limited amount of data (reading maps at single time steps)
-or time series in lon-lat boxes of size 1degx1deg.
 
 ## Point-wise access
 

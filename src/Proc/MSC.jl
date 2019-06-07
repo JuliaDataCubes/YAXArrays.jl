@@ -17,9 +17,9 @@ end
 
 Removes the mean annual cycle from each time series of a data cube.
 
-**Input Axes** `Time`axis
+**Input Axis** `Time`axis
 
-**Output Axes** `Time`axis
+**Output Axis** `Time`axis
 """
 function removeMSC(c::AbstractCubeData;kwargs...)
     NpY = getNpY(c)
@@ -36,13 +36,13 @@ function removeMSC(c::AbstractCubeData;kwargs...)
 end
 
 """
-    gapFillMSC
+    gapFillMSC(c::AbstractCubeData)
 
 Fills missing values of each time series in a cube with the mean annual cycle.
 
-**Input Axes** `Time`axis
+**Input Axis** `Time`axis
 
-**Output Axes** `Time`axis
+**Output Axis** `Time`axis
 """
 function gapFillMSC(c::AbstractCubeData;kwargs...)
   NpY=getNpY(c)
@@ -56,13 +56,13 @@ end
 
 
 """
-    getMSC
+    getMSC(c::AbstractCubeData)
 
 Returns the mean annual cycle from each time series.
 
-**Input Axes** `Time`axis
+**Input Axis** `Time`axis
 
-**Output Axes** `MSC`axis
+**Output Axis** `MSC`axis
 
 """
 function getMSC(c::AbstractCubeData;kwargs...)
@@ -107,9 +107,9 @@ end
 
 Returns the median annual cycle from each time series.
 
-**Input Axes** `Time`axis
+**Input Axis** `Time`axis
 
-**Output Axes** `MSC`axis
+**Output Axis** `MSC`axis
 """
 function getMedSC(c::AbstractCubeData;kwargs...)
   outdims = OutDims(MSCAxis(getNpY(c)))

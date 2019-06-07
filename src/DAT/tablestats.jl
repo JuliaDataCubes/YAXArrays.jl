@@ -217,7 +217,7 @@ Any groupby specifier can either be a symbol denoting the entry to group by or a
 function calculating the group from a table row.
 
 For example the following would caluclate a weighted mean over a cube weighted by grid cell
-area and grouped by country and month
+area and grouped by country and month:
 
 ````julia
 fittable(iter,WeightedMean,:tair,weight=(i->abs(cosd(i.lat))),by=(i->month(i.time),:country))
@@ -260,10 +260,13 @@ getpostfunction(::Type{<:WeightedHist})=i->hcat(value(i)...)
 getnbins(f::GroupedOnlineAggregator)=f.cloneobj.alg.b
 getnbins(f::TableAggregator)=f.o.alg.b
 
-fitfun(o) = fitfun(typeof(o))
-fitfun(::Type{<:WeightedCovMatrix}) = fittable_vec
-fitfun(::Type{<:Any}) = fittable
+"""
+    cubefittable(tab,o,fitsym;post=getpostfunction(o),kwargs...)
 
+Executes [`fittable`](@ref) on the [`@CubeTable`](@ref) `tab` with the
+(Weighted-)OnlineStat `o`, looping through the values specified by `fitsym`.
+Finally, writes the results from the `TableAggregator` to an output data cube.
+"""
 function cubefittable(tab,o,fitsym;post=getpostfunction(o),kwargs...)
   agg=fitfun(o)(tab,o,fitsym;showprog=true,kwargs...)
   tooutcube(agg,tab,post)

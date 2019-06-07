@@ -3,19 +3,18 @@ using Documenter, ESDL, ESDLPlots
 makedocs(
     modules = [ESDL, ESDLPlots],
     clean   = false,
-    format   = :html,
+    format   = Documenter.HTML(),
     sitename = "ESDL.jl",
     authors = "Fabian Gans",
     pages    = Any[ # Compat: `Any` for 0.4 compat
         "Home" => "index.md",
         "Manual" => Any[
-            "thecube.md",
             "cube_access.md",
             "analysis.md",
             "plotting.md",
-            "adding_new.md",
             "iotools.md"
-        ]
+        ],
+        "Other functions" => "./lib/misc.md"
         ]
 )
 

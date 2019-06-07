@@ -8,7 +8,6 @@ export Axes, AbstractCubeData, getSubRange, readcubedata, AbstractCubeMem, axesC
        getSingVal, ScaleAxis, axname, @caxis_str, rmCube, cubeproperties, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
        getOutAxis, Cube, (..), getCubeData, subsetcube, CubeMask, renameaxis!, Dataset, S3Cube
 
-
 """
     AbstractCubeData{T,N}
 
@@ -29,7 +28,9 @@ Base.eltype(::AbstractCubeData{T}) where T = T
 Base.ndims(::AbstractCubeData{<:Any,N}) where N = N
 
 """
-    readcubedata(cube::AbstractCubeData)
+    readCubeData(cube::AbstractCubeData)
+
+Given any type of `AbstractCubeData` returns a [`CubeMem`](@ref) from it.
 """
 function readcubedata(x::AbstractCubeData{T,N}) where {T,N}
   s=size(x)
@@ -78,9 +79,9 @@ caxes(c::EmptyCube)=CubeAxis[]
 """
     CubeMem{T,N} <: AbstractCubeMem{T,N}
 
-An in-memory data cube. It is returned by applying [mapCube](@ref) when
+An in-memory data cube. It is returned by applying `mapCube` when
 the output cube is small enough to fit in memory or by explicitly calling
-`readcubedata` on any type of cube.
+[`readCubeData`](@ref) on any type of cube.
 
 ### Fields
 
@@ -227,9 +228,9 @@ using NetCDF
 """
     saveCube(cube,name::String)
 
-Save a `MmapCube` or `CubeMem` to the folder `name` in the ESDL working directory.
+Save a [`MmapCube`](@ref) or [`CubeMem`](@ref) to the folder `name` in the ESDL working directory.
 
-See also loadCube, ESDLdir
+See also [`loadCube`](@ref)
 """
 function saveCube(c::CubeMem{T},name::AbstractString) where T
   newfolder=joinpath(workdir[1],name)
