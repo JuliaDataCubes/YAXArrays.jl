@@ -37,10 +37,10 @@ function __init__()
     ("low","map","global") => ("obs-esdc-v2.0.0","esdc-8d-0.25deg-1x720x1440-2.0.0.zarr"),
     ("high","ts","global") => ("obs-esdc-v2.0.0","esdc-8d-0.083deg-184x270x270-2.0.0.zarr"),
     ("high","map","global") => ("obs-esdc-v2.0.0","esdc-8d-0.083deg-1x2160x4320-2.0.0.zarr"),
-    ("low","ts","Colombia") => ("obs-esdc-v2.0.1","esdc-8d-0.25deg-184x90x90-2.0.0.zarr"),
-    ("low","map","Colombia") => ("obs-esdc-v2.0.1","esdc-8d-0.25deg-184x90x90-2.0.0.zarr"),
-    ("high","ts","Colombia") => ("obs-esdc-v2.0.1","esdc-8d-0.25deg-184x90x90-2.0.0.zarr"),
-    ("high","map","Colombia") => ("obs-esdc-v2.0.1","esdc-8d-0.25deg-184x90x90-2.0.0.zarr"),
+    ("low","ts","Colombia") => ("obs-esdc-v2.0.1","Cube_2019lowColombiaCube_184x60x60.zarr"),
+    ("low","map","Colombia") => ("obs-esdc-v2.0.1","Cube_2019lowColombiaCube_1x336x276.zarr/"),
+    ("high","ts","Colombia") => ("obs-esdc-v2.0.1","Cube_2019highColombiaCube_184x120x120.zarr"),
+    ("high","map","Colombia") => ("obs-esdc-v2.0.1","Cube_2019highColombiaCube_1x3360x2760.zarr"),
   )
 end
 
@@ -48,7 +48,7 @@ function S3Dataset(;bucket=nothing, store="", res="low", chunks="ts", region="gl
   if bucket==nothing
     bucket, store = cubesdict[(res,chunks,region)]
   end
-  Dataset(zopen(S3Store("obs-esdc-v2.0.0","esdc-8d-0.25deg-184x90x90-2.0.0.zarr","eu-de",aws)))
+  Dataset(zopen(S3Store(bucket,store,"eu-de",aws)))
 end
 S3Cube(;kwargs...) = Cube(S3Dataset(;kwargs...))
 end
