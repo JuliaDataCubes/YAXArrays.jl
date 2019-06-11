@@ -206,7 +206,7 @@ function filloutar(aout,convdictall,agg::GroupedOnlineAggregator,s,post)
     end
 end
 function filloutar(aout,convdictall,agg,g,post)
-    aout[:].=post(agg.o)
+    copyto!(aout,post(agg.o))
 end
 """
     fittable(tab,o,fitsym;by=(),weight=nothing)
@@ -259,6 +259,10 @@ getpostfunction(::Type{<:OnlineStat})=value
 getpostfunction(::Type{<:WeightedHist})=i->hcat(value(i)...)
 getnbins(f::GroupedOnlineAggregator)=f.cloneobj.alg.b
 getnbins(f::TableAggregator)=f.o.alg.b
+
+fitfun(o) = fitfun(typeof(o))
+fitfun(::Type{<:WeightedCovMatrix}) = fittable_vec
+fitfun(::Type{<:Any}) = fittable
 
 """
     cubefittable(tab,o,fitsym;post=getpostfunction(o),kwargs...)
