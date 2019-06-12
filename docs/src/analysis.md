@@ -7,7 +7,7 @@ in the input cube, the function will simply loop over these.
 
 The function will be applied to the whole cube
 in a memory-efficient way, which means that chunks of data are read, processed and then saved in
-the output cube. Whether the output cube is a [`MmapCube`](@ref ESDL.Cubes.MmapCube) or a [`CubeMem`](@ref) is decided by the system,
+the output cube. Whether the output cube is a [`ZarrCube`](@ref ESDL.Cubes.ZarrCube) or a [`CubeMem`](@ref) is decided by the system,
 depending on parallelization and the size of the output cube.
 
 Here follows a list of analysis functions included in this package. If you have implemented or wrapped a method,

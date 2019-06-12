@@ -198,14 +198,9 @@ end
 cubesize(c::AbstractCubeData{T}) where {T}=(sizeof(T)+1)*prod(map(length,caxes(c)))
 cubesize(c::AbstractCubeData{T,0}) where {T}=sizeof(T)+1
 
-#include("MmapCubes.jl")
-#include("TempCubes.jl")
 include("NetCDFCubes.jl")
-#using .TempCubes
-#handletype(::Union{AbstractTempCube,AbstractSubCube})=CacheHandle()
 
 getCubeDes(c::AbstractSubCube)="Data Cube view"
-#getCubeDes(c::TempCube)="Temporary Data Cube"
 getCubeDes(::CubeAxis)="Cube axis"
 getCubeDes(c::CubeMem)="In-Memory data cube"
 getCubeDes(c::EmptyCube)="Empty Data Cube (placeholder)"
