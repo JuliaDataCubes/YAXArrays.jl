@@ -214,7 +214,7 @@ time steps of the same location.
 """
 function CubeTable(;include_axes=(),fastest="",cubes...)
   inax=nothing
-  c = totuple(map((k,v)->v,keys(cubes),values(cubes)))
+  c = (map((k,v)->v,keys(cubes),values(cubes))...,)
   all(i->isa(i,AbstractCubeData),c) || throw(ArgumentError("All inputs must be DataCubes"))
   varnames = map(string,keys(cubes))
   if isempty(string(fastest))
@@ -262,7 +262,7 @@ function CubeTable(;include_axes=(),fastest="",cubes...)
       end
     end
   end
-  r = collect(distributeLoopRanges(totuple(configiter.loopcachesize),totuple(map(length,configiter.LoopAxes)),getchunkoffsets(configiter)))
+  r = collect(distributeLoopRanges((configiter.loopcachesize...,),(map(length,configiter.LoopAxes)...,),getchunkoffsets(configiter)))
   ci = CubeIterator(configiter,r,include_loopvars=include_axes,varnames=varnames)
 end
 

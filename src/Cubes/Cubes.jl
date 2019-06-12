@@ -171,7 +171,7 @@ end
 
 function Base.getindex(c::AbstractCubeData,i::IndR...)
   length(i)==ndims(c) || error("You must provide $(ndims(c)) indices")
-  ax = totuple(caxes(c))
+  ax = (caxes(c)...,)
   r = CartesianIndices(map((ii,iax)->getfirst(ii,iax):getlast(ii,iax),i,ax))
   lall = map((rr,ii)->(length(rr),!isa(ii,Integer)),r.indices,i)
   lshort = filter(ii->ii[2],collect(lall))

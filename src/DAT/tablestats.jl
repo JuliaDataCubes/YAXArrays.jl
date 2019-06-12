@@ -42,13 +42,11 @@ struct GroupedOnlineAggregator{O,S,BY,W,C}<:TableAggregator
     cloneobj::C
 end
 value(o::GroupedOnlineAggregator)=Dict(zip(keys(o.d),map(value,(values(o.d)))))
-unmiss(::Type{Union{T,Missing}}) where T = T
-unmiss(T)=T
 struct SymType{S}
 end
 SymType(s::Symbol)=SymType{s}()
 (f::SymType{S})(x) where S=getproperty(x,S)
-getbytypes(et,by) = Tuple{map(i->unmiss(Base.return_types(i,Tuple{et})[1]),by)...}
+getbytypes(et,by) = Tuple{map(i->Base.nonmissingtype(Base.return_types(i,Tuple{et})[1]),by)...}
 cubeeltype(t::GroupedOnlineAggregator{T}) where T=cubeeltype(T)
 cubeeltype(t::Type{<:Dict{<:Any,T}}) where T = cubeeltype(T)
 cubeeltype(t::Type{<:WeightedOnlineStat{T}}) where T = T
@@ -60,7 +58,7 @@ cubeeltype(t::Type{<:Extrema{T}}) where T = T
 function GroupedOnlineAggregator(O::OnlineStat,s::Symbol,by,w,iter) where N
     ost = typeof(O)
     et = eltype(iter)
-    bytypes = Tuple{map(i->unmiss(Base.return_types(i,Tuple{et})[1]),by)...}
+    bytypes = Tuple{map(i->Base.nonmissingtype(Base.return_types(i,Tuple{et})[1]),by)...}
     d = Dict{bytypes,ost}()
     GroupedOnlineAggregator{typeof(d),s,typeof(by),typeof(w),ost}(d,w,by,O)
 end

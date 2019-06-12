@@ -3,7 +3,6 @@ using ..Cubes
 using ..DAT
 using ..Proc
 
-import ...ESDLTools: unmiss
 import NetCDF.ncread, NetCDF.ncclose
 import StatsBase.Weights
 import StatsBase.sample
@@ -87,7 +86,7 @@ function exportcube(r::AbstractCubeData,filename::String;priorities = Dict("LON"
   dims = map(NcDim,ax_cont)
   isempty(ax_cat) && (ax_cat=[VariableAxis(["layer"])])
   it = map(i->i.values,ax_cat)
-  elt = unmiss(eltype(r))
+  elt = Base.nonmissingtype(eltype(r))
   vars = NcVar[NcVar(join(collect(string.(a)),"_"),dims,t=elt,atts=Dict("missing_value"=>convert(elt,-9999.0))) for a in product(it...)]
   file = NetCDF.create(filename,vars)
   for d in dims

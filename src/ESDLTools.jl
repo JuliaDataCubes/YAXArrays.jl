@@ -1,14 +1,8 @@
 module ESDLTools
 using Distributed
 import ..ESDL: ESDLdir
-export mypermutedims!, totuple, freshworkermodule, passobj, @everywhereelsem,
-toRange, getiperm, CItimes, CIdiv, @loadOrGenerate, expandTuple
-# SOme global function definitions
-expandTuple(x,nin)=ntuple(i->x,nin)
-expandTuple(x::Tuple,nin)=x
-
-unmiss(::Type{Union{T,Missing}}) where T = T
-unmiss(::Type{T}) where T = T
+export mypermutedims!, freshworkermodule, passobj, @everywhereelsem,
+toRange, getiperm, CItimes, CIdiv, @loadOrGenerate
 
 function getiperm(perm)
     iperm = Array{Int}(undef,length(perm))
@@ -41,9 +35,6 @@ end
     args = [:(.*(index1[$d],index2[$d])) for d = 1:N]
     :($I($(args...)))
 end
-
-totuple(x::AbstractArray)=ntuple(i->x[i],length(x))
-totuple(x::Tuple)=x
 
 @generated function Base.getindex(t::NTuple{N},p::NTuple{N,Int}) where N
     :(@ntuple $N d->t[p[d]])
@@ -104,7 +95,6 @@ function freshworkermodule()
           r1=remotecall(()->(Core.eval(Main,:(using ESDL));nothing),pid)
           r2=remotecall(()->(Core.eval(Main,:(module PMDATMODULE
           using ESDL
-          import ESDL.ESDLTools.totuple
         end));nothing),pid)
           push!(rs,r1)
           push!(rs,r2)

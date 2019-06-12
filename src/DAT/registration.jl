@@ -113,7 +113,7 @@ function OutDims(axisdesc...;
            artype::ArTypeRepr=AsArray(),
            outtype=1)
   descs = map(get_descriptor,axisdesc)
-  bcdescs = totuple(map(get_descriptor,bcaxisdesc))
+  bcdescs = (map(get_descriptor,bcaxisdesc)...,)
   isa(artype,AsDataFrame) && length(descs)!=2 && error("DataFrame representation only possible if for 2D inner arrays")
   OutDims(descs,bcdescs,genOut,finalizeOut,retCubeType,update,artype,outtype)
 end

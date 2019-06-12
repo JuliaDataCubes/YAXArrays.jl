@@ -6,7 +6,6 @@ getOutAxis, ByInference, renameaxis!, axsym
 import NetCDF.NcDim
 using ..Cubes
 import ..Cubes: caxes
-import ...ESDLTools: totuple
 using Dates
 
 struct YearStepRange <: AbstractRange{Date}
@@ -275,7 +274,7 @@ import DataStructures: counter
 function getOutAxis(desc::Tuple{ByInference},axlist,incubes,pargs,f)
   inAxes = map(caxes,incubes)
   inAxSmall = map(i->filter(j->in(j,axlist),i) |>collect,inAxes)
-  inSizes = map(i->totuple(map(length,i)),inAxSmall)
+  inSizes = map(i->(map(length,i)...,),inAxSmall)
   testars = map(randn,inSizes)
 
   resu = f(testars...,pargs...)
@@ -297,7 +296,7 @@ function getOutAxis(desc::Tuple{ByInference},axlist,incubes,pargs,f)
     #TODO: fallback with axis renaming in this case
     error("Could not determine unique output axes from output shape")
   end
-  return totuple(outaxes)
+  return (outaxes...,)
 end
 """
     getAxis(desc::String, c::AbstractCubeData)
