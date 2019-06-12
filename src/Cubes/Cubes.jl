@@ -198,7 +198,7 @@ end
 cubesize(c::AbstractCubeData{T}) where {T}=(sizeof(T)+1)*prod(map(length,caxes(c)))
 cubesize(c::AbstractCubeData{T,0}) where {T}=sizeof(T)+1
 
-include("MmapCubes.jl")
+#include("MmapCubes.jl")
 #include("TempCubes.jl")
 include("NetCDFCubes.jl")
 #using .TempCubes
