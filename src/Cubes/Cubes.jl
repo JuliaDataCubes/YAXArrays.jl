@@ -228,7 +228,7 @@ using NetCDF
 """
     saveCube(cube,name::String)
 
-Save a [`MmapCube`](@ref) or [`CubeMem`](@ref) to the folder `name` in the ESDL working directory.
+Save a [`ZarrCube`](@ref) or [`CubeMem`](@ref) to the folder `name` in the ESDL working directory.
 
 See also [`loadCube`](@ref)
 """

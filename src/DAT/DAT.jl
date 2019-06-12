@@ -4,7 +4,7 @@ import ..Cubes
 using ..ESDLTools
 import Distributed: pmap, @everywhere, workers
 import ..Cubes: getAxis, getOutAxis, getAxis, cubechunks, iscompressed, chunkoffset, _write,
-  CubeAxis, RangeAxis, CategoricalAxis, AbstractCubeData, MmapCube, CubeMem, AbstractCubeMem,
+  CubeAxis, RangeAxis, CategoricalAxis, AbstractCubeData, CubeMem, AbstractCubeMem,
   caxes, findAxis, _read, _write, Dataset
 import ..Cubes.Axes: AxisDescriptor, axname, ByInference, axsym
 import ...ESDL
@@ -297,11 +297,6 @@ function reOrderInCubes(dc::DATConfig)
     end
   end
 end
-using Mmap
-function synccube(x::Tuple{Array,Array})
-  Mmap.sync!(x[1])
-  Mmap.sync!(x[2])
-end
 
 function getchunkoffsets(dc::DATConfig)
   co = zeros(Int,length(dc.LoopAxes))
@@ -395,9 +390,6 @@ function getRetCubeType(oc,ispar,max_cache)
   eltype,cubetype
 end
 
-function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co) where T<:MmapCube
-  oc.cube=MmapCube(oc.allAxes,folder=oc.folder,T=eltype,persist=false)
-end
 function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co) where T<:ZArrayCube
   cs = (map(length,oc.axesSmall)...,loopcachesize...)
   oc.cube=ZArrayCube(oc.allAxes,folder=oc.folder,T=eltype,persist=false,chunksize=cs,chunkoffset=co)
