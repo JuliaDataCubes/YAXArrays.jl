@@ -5,6 +5,17 @@ using AWSCore, AWSSDK.S3
 
 #Patch s3 function to work on OBS as well
 import AWSCore.AWSConfig
+function AWSCore.sign!(r::AWSRequest, t = now(Dates.UTC))
+
+    if r[:creds] === nothing
+      return nothing
+    end
+    if r[:service] in ["sdb", "importexport"]
+        sign_aws2!(r, t)
+    else
+        sign_aws4!(r, t)
+    end
+end
 function AWSCore.Services.s3(aws::AWSConfig, verb, resource, args=[])
 
     AWSCore.service_rest_xml(
