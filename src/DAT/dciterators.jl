@@ -30,7 +30,9 @@ function Base.getindex(a::PickAxisArray{P,N},i::NTuple{N,Int}) where {P,N}
     a.parent[ilin]
 end
 Base.getindex(a::PickAxisArray,i::CartesianIndex) = a[i.I]
-import SentinelMissings
+
+include("SentinelMissings.jl")
+import .SentinelMissings
 import ESDL.DAT: DATConfig
 struct CubeIterator{R,ART,ARTBC,LAX,ILAX,S}
     dc::DATConfig
