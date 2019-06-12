@@ -1,6 +1,8 @@
 module OBS
 import ..Cubes: S3Cube, Dataset, Cube
 import Zarr: S3Store, zopen
+import Dates
+import Dates: now
 using AWSCore, AWSSDK.S3
 
 #Patch s3 function to work on OBS as well
