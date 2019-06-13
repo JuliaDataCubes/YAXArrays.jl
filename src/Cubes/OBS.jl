@@ -38,6 +38,8 @@ function AWSCore.service_url(aws, request)
     region=="." || (url_ext="." * url_ext)
     r = string("https://", endpoint, region, url_ext,
         request[:resource])
+    #Quick fix to solve DNS error
+    r = replace(r,"obs.eu-de.otc.t-systems.com"=>"80.158.25.140")
     r
 end
 global aws, cubesdict
