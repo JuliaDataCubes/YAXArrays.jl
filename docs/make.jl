@@ -1,4 +1,4 @@
-using Documenter, ESDL, ESDLPlots
+using ImageMagick, Documenter, ESDL, ESDLPlots
 
 makedocs(
     modules = [ESDL, ESDLPlots],
