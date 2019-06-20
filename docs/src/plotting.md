@@ -78,7 +78,6 @@ using ESDLPlots
 gr()
 import Documenter # hide
 c=Cube() # hide
-cube=subsetcube(c,variable=["air_temperature_2m","gross_primary_productivity"])
 using ColorTypes
 p = plotMAPRGB(cube,c1="gross_primary_productivity",
              c2="net_ecosystem_exchange",
