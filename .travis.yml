@@ -18,4 +18,4 @@ jobs:
         - julia --project=docs docs/make.jl
       after_success: skip
 after_success:
-- julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
+- travis_wait 30 julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
