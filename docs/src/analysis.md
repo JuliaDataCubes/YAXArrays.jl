@@ -68,14 +68,14 @@ Private = false
 
 It is possible to directly apply statistics included in the [OnlineStats.jl package](https://github.com/joshday/OnlineStats.jl), as well as the [WeightedOnlineStats.jl package](https://github.com/gdkrmr/WeightedOnlineStats.jl)
 on the data cube. Thus, statistical operations on data too big to fit into memory can be handled. The way to do this, is to first create a table interface to the cube,
-using the [`@CubeTable`](@ref) macro and then applying the required type of statistic using the [`cubefittable`](@ref) function:
+using the [`CubeTable`](@ref) function and then applying the required type of statistic using the [`cubefittable`](@ref) function:
 
 ```julia
-cTable = @CubeTable value=cube axes=(lat, lon, time, variable) fastest=variable
+cTable = CubeTable(value=cube,include_axes=("lat", "lon", "time", "variable"),fastest="variable")
 outCube = cubefittable(cTable, o, :value; by=by, weight=weightfun)
 ```
 
-where `o` is a (Weighted-)OnlineStat data type and `cube` is the cube you want to apply the statistics to. The parameter name `value` in the [`@CubeTable`](@ref) macro and the corresponding symobl `:value` in the example above can be chosen arbitrarily,
+where `o` is a (Weighted-)OnlineStat data type and `cube` is the cube you want to apply the statistics to. The parameter name `value` in the [`CubeTable`](@ref) function and the corresponding symobl `:value` in the example above can be chosen arbitrarily,
 as long as they are equal in the macro and the [`cubefittable`](@ref) function.
 By default the [`cubefittable`](@ref) function will reduce all values over all axes of the cube, so if you want to do
 statistics grouped by variables on a certain axis, it has to be specified using the `by` keyword argument.
@@ -93,11 +93,11 @@ lons  = (30,31)
 lats  = (50,51)
 vars  = ["gross_primary_productivity","net_ecosystem_exchange","terrestrial_ecosystem_respiration"]
 c = Cube()
-cube  = getCubeData(c,variable=vars,longitude=lons,latitude=lats)
-t     = getCubeData(c,variable="air_temperature_2m",longitude=lons,latitude=lats)
+cube  = subsetcube(c,variable=vars,lon=lons,lat=lats, time=2001:2005)
+t     = subsetcube(c,variable="air_temperature_2m",lon=lons,lat=lats, time=2001:2005)
 
 splitTemp(t) = if !ismissing(t) if t>280 return "T>7C" else return "T<7C" end else return missing end # Define the classification function
-cTable = @CubeTable value=cube axes=(lat,lon,time,variable) temp=t
+cTable = CubeTable(value=cube,include_axes=("lat","lon","time","variable"),temp=t)
 cubefittable(cTable, WeightedMean, :value, by=(i->splitTemp(i.temp), :variable), weight=(i->cosd(i.lat)))
 ```
 ```
@@ -108,9 +108,7 @@ Total size: 54.0 bytes
 ```
 ```@eval
 #Load Javascript env
-import Patchwork
 import Documenter
-Documenter.Documents.RawHTML("<script>$(Patchwork.js_runtime())</script>")
 ```
 ```@eval
 using ESDL
@@ -120,11 +118,11 @@ lons  = (30,31)
 lats  = (50,51)
 vars  = ["gross_primary_productivity","net_ecosystem_exchange","terrestrial_ecosystem_respiration"]
 c = Cube()
-cube  = getCubeData(c,variable=vars,longitude=lons,latitude=lats)
-t     = getCubeData(c,variable="air_temperature_2m",longitude=lons,latitude=lats)
+cube  = subsetcube(c,variable=vars,lon=lons,lat=lats, time=2001:2005)
+t     = subsetcube(c,variable="air_temperature_2m",lon=lons,lat=lats, time=2001:2005)
 
 splitTemp(t) = if !ismissing(t) if t>280 return "T>7C" else return "T<7C" end else return missing end # Define the classification function
-cTable = @CubeTable value=cube axes=(lat,lon,time,variable) temp=t
+cTable = CubeTable(value=cube,include_axes=("lat","lon","time","variable"),temp=t)
 mT = cubefittable(cTable, WeightedMean, :value, by=(i->splitTemp(i.temp), :variable), weight=(i->cosd(i.lat)))
 using ESDLPlots
 gr()
@@ -141,10 +139,10 @@ a country mask.
 using ESDL, WeightedOnlineStats
 vars  = ["gross_primary_productivity","net_ecosystem_exchange","terrestrial_ecosystem_respiration"]
 c     = Cube()
-m     = getCubeData(c,variable="country_mask",longitude=lons,latitude=lats)
-cube  = getCubeData(c,variable=vars,longitude=lons,latitude=lats)
+m     = subsetcube(c,variable="country_mask",lon=lons,lat=lats)
+cube  = subsetcube(c,variable=vars,lon=lons,lat=lats, time=2001:2005)
 
-cTable = @CubeTable value=cube axes=(lat,lon,time,variable) country=m
+cTable = CubeTable(value=cube,axes=("lat","lon","time","variable"),country=m)
 cubefittable(cTable, WeightedMean, :value, by=(:country, :variable), weight=(i->cosd(i.lat)))
 ```
 ```
@@ -156,7 +154,7 @@ Total size: 27.0 bytes
 This will split the cube by country and variable and compute averages over the input variables.
 
 ```@docs
-ESDL.DAT.@CubeTable
+ESDL.DAT.CubeTable
 ESDL.DAT.fittable
 ESDL.DAT.cubefittable
 ```
@@ -168,8 +166,8 @@ It is possible to estimate histograms and quantiles of larger-than-memory datase
 ```julia
 using WeightedOnlineStats
 c=Cube()
-d=getCubeData(c,variable=["gross_primary_productivity","net_ecosystem_exchange"], region="Europe")
-cTable = @CubeTable value=d axes=(lat,lon,time,variable)
+d=subsetcube(c,variable=["gross_primary_productivity","net_ecosystem_exchange"], region="Europe")
+cTable = CubeTable(value=d,axes=("lat","lon","time","variable"))
 
 fitCube=cubefittable(cTable, WeightedHist(20), :value, by=(:variable,), weight=(i->cosd(i.lat)))
 
@@ -199,7 +197,7 @@ The `WeightedHist` call in the `cubefittable` function requires an integer argum
 Doing elementwise calculations on the cube is generally done using the `map` function. A simple example is the conversion of degree Kelvin to degree Celsius. To subtract from each element of a data cube with 273.15, you can call
 ```julia
 c=Cube()
-kelvinCube = getCubeData(c, variable="air_temperature_2m", region="Europe")
+kelvinCube = subsetcube(c, variable="air_temperature_2m", region="Europe")
 celsiusCube = map(x -> x-273.15, kelvinCube)
 ```
 
@@ -217,8 +215,8 @@ The following is an example for mapping multiple values:
 c=Cube()
 time = (Date("2001-01-01"), Date("2001-12-31"))
 
-firstCube = getCubeData(c, time=time, variable="precipitation")
-secondCube = getCubeData(c, time=time, variable="interception_loss")
+firstCube = subsetcube(c, time=time, variable="precipitation")
+secondCube = subsetcube(c, time=time, variable="interception_loss")
 diffcube = map((x,y)->x-y, firstCube, secondCube)
 ```
 ```
@@ -253,9 +251,7 @@ In order to understand how these principles are applied, let us walk through a v
 using ESDL
 
 function mynorm(xout, xin)
-    # if all values in the current input slice are missing, return all missings in the output slice
-    all(ismissing, xin) && return xout[:]=missing
-    # else calculate the mean and std of the current slice (time series of 1 variable at one location (lat/lon))
+
     m = mean(skipmissing(xin))
     s = std(skipmissing(xin))
 
@@ -285,7 +281,7 @@ Having defined these objects, we can finally load a data cube handle and apply t
 
 ```@example 1
 c = Cube()
-d = getCubeData(c,variable = ["gross_primary_productivity", "net_ecosystem_exchange"],time=(DateTime(2001),DateTime(2002,12,31)), longitude = (50,51), latitude=(30,31))
+d = subsetcube(c,variable = ["gross_primary_productivity", "net_ecosystem_exchange"],time=(Date(2001),Date(2002,12,31)), lon = (50,51), lat=(30,31))
 d_norm = mapCube(mynorm, d, indims=indims, outdims=outdims)
 ```
 ```
@@ -453,8 +449,8 @@ So here we don't describe the output axis through a type or name, but by passing
 
 ```@example 2
 c   = Cube()
-gpp = getCubeData(c,variable = "gross_primary_productivity",time=(DateTime(2001),DateTime(2002,12,31)), longitude = (50,51), latitude=(30,31))
-ter = getCubeData(c,variable = "terrestrial_ecosystem_respiration",time=(DateTime(2001),DateTime(2002,12,31)), longitude = (50,51), latitude=(30,31))
+gpp = subsetcube(c,variable = "gross_primary_productivity",time=(Date(2001),Date(2002,12,31)), lon = (50,51), lat=(30,31))
+ter = subsetcube(c,variable = "terrestrial_ecosystem_respiration",time=(Date(2001),Date(2002,12,31)), lon = (50,51), lat=(30,31))
 
 mapCube(fit_npoly,(gpp,ter),2,indims = (indims1,indims2), outdims = outdims)
 ```
@@ -473,7 +469,7 @@ Returned is a 3D cube with dimensions *coeff x lon x lat*.
 
 When a certain function is used more often, it makes sense to wrap it into a single function so that the user does not have to deal with the input and output dimension description. For the polynomial regression example one could, for example, define this convenience wrapper and then call it directly, now for a third-order regression:
 
-```@example 1
+```@example 2
 function fitpoly(cube1, cube2, n)
   polyaxis = CategoricalAxis("Coefficients",["Offset";string.(1:n)])
 

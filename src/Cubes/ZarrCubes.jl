@@ -12,6 +12,7 @@ import IntervalSets: Interval, (..)
 export (..), Cubes, getCubeData, CubeMask
 const spand = Dict("days"=>Day,"months"=>Month,"years"=>Year,"hours"=>Hour,"seconds"=>Second,"minutes"=>Minute)
 
+
 mutable struct ZArrayCube{T,M,A<:ZArray{T},S} <: AbstractCubeData{T,M}
   a::A
   axes::Vector{CubeAxis}
@@ -87,6 +88,26 @@ defaultfillval(T::Type{<:AbstractFloat}) = convert(T,1e32)
 defaultfillval(::Type{Float16}) = Float16(3.2e4)
 defaultfillval(T::Type{<:Integer}) = typemax(T)
 
+"""
+    function ZArrayCube(axlist; kwargs...)
+
+Creates a new datacube with axes specified in `axlist`. Each axis must be a subtype
+of `CubeAxis`. A new empty Zarr array will be created and can serve as a sink for
+`mapCube` operations.
+
+### Keyword arguments
+
+* `folder=tempname()` location where the new cube is stored
+* `T=Union{Float32,Missing}` data type of the target cube
+* `chunksize = ntuple(i->length(axlist[i]),length(axlist))` chunk sizes of the array
+* `chunkoffset = ntuple(i->0,length(axlist))` offsets of the chunks
+* `compressor = NoCompressor()` compression type
+* `persist::Bool=true` shall the disk data be garbage-collected when the cube goes out of scope?
+* `overwrite::Bool=false` overwrite cube if it already exists
+* `properties=Dict{String,Any}()` additional cube properties
+* `fillvalue= T>:Missing ? defaultfillval(Base.nonmissingtype(T)) : nothing` fill value
+
+"""
 function ZArrayCube(axlist;
   folder=tempname(),
   T=Union{Float32,Missing},
@@ -97,7 +118,6 @@ function ZArrayCube(axlist;
   overwrite::Bool=false,
   properties=Dict{String,Any}(),
   fillvalue= T>:Missing ? defaultfillval(Base.nonmissingtype(T)) : nothing,
-  compression = NoCompressor(),
   )
   if isdir(folder)
     if overwrite

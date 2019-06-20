@@ -1,8 +1,6 @@
 ```@eval
 #Load Javascript env
-import Patchwork
 import Documenter
-Documenter.Documents.RawHTML("<script>$(Patchwork.js_runtime())</script>")
 ```
 
 ```@setup 1
@@ -30,9 +28,22 @@ plotMAP
 Here is an example on how to plot a map. The keyword arguments specify the time
 step (`time=Date(1980,1,1)`) and the variable (`var="air_temperature_2m"`).
 
-```@example 1
-cube=getCubeData(c,variable=["air_temperature_2m","gross_primary_productivity"])
-plotMAP(cube,time=Date(1980,1,1), var="air_temperature_2m")
+```julia
+cube=subsetcube(c,variable=["air_temperature_2m","gross_primary_productivity"])
+plotMAP(cube,time=Date(2001,1,1), var="air_temperature_2m")
+```
+
+```@eval
+using ESDL # hide
+using ESDLPlots
+gr()
+import Documenter # hide
+c=Cube() # hide
+cube=subsetcube(c,variable=["air_temperature_2m","gross_primary_productivity"])
+p = plotMAP(cube,time=Date(2001,1,1), var="air_temperature_2m")
+b=IOBuffer()
+show(b,MIME"text/html"(),p)
+Documenter.Documents.RawHTML(String(take!(b)))
 ```
 
 Inside a Jupyter notebook, the keyword arguments can be omitted and sliders or
@@ -51,14 +62,32 @@ plotMAPRGB
 For example, if we want to plot GPP, NEE and TER as an RGB map for South America,
 we can do the following:
 
-```@example 1
-cube=getCubeData(c,variable="Biosphere",region="South America")
+```julia
+cube=subsetcube(c,variable="Biosphere",region="South America")
 using ColorTypes
 plotMAPRGB(cube,c1="gross_primary_productivity",
              c2="net_ecosystem_exchange",
              c3="terrestrial_ecosystem_respiration",
              cType=Lab,
              time=Date(2003,2,26))
+```
+
+```@eval
+using ESDL # hide
+using ESDLPlots
+gr()
+import Documenter # hide
+c=Cube() # hide
+cube=subsetcube(c,variable=["air_temperature_2m","gross_primary_productivity"])
+using ColorTypes
+p = plotMAPRGB(cube,c1="gross_primary_productivity",
+             c2="net_ecosystem_exchange",
+             c3="terrestrial_ecosystem_respiration",
+             cType=Lab,
+             time=Date(2003,2,26))
+b=IOBuffer()
+show(b,MIME"text/html"(),p)
+Documenter.Documents.RawHTML(String(take!(b)))
 ```
 
 ## Other plots
@@ -75,7 +104,7 @@ plotXY
 Here are two examples for using this function:
 
 ```julia
-cube=getCubeData(c,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
+cube=subsetcube(c,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
 longitude=(30.0,32.0),latitude=(50.0,52.0))
 plotXY(cube,xaxis="time",group="variable",lon=31,lat=51)
 ```
@@ -86,8 +115,8 @@ using ESDLPlots
 gr()
 import Documenter # hide
 c=Cube() # hide
-cube=getCubeData(c,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
-longitude=(30.0,32.0),latitude=(50.0,52.0))
+cube=subsetcube(c,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
+lon=(30.0,32.0),lat=(50.0,52.0))
 p=plotXY(cube,xaxis="time",group="variable",lon=31,lat=51)
 b=IOBuffer()
 show(b,MIME"text/html"(),p)
@@ -98,7 +127,7 @@ This is a plot showing the mean values of the chosen variables across different 
 
 
 ```julia
-cTable = @CubeTable value=cube axes=(lat,lon,time,variable)
+cTable = CubeTable(value=cube,include_axes=("lat","lon","time","variable"))
 m = cubefittable(cTable, WeightedMean, :value, weight=(i->cosd(i.lat)), by=(:variable, :lat, :lon))
 plotXY(m,xaxis="variable",group="lat",lon=30)
 ```
@@ -106,12 +135,13 @@ plotXY(m,xaxis="variable",group="lat",lon=30)
 ````@eval
 using ESDL # hide
 using ESDLPlots
+using WeightedOnlineStats
 gr()
 import Documenter # hide
 c=Cube() # hide
-cube=getCubeData(c,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
-longitude=(30.0,32.0),latitude=(50.0,52.0))
-cTable = @CubeTable value=cube axes=(lat,lon,time,variable)
+cube=subsetcube(c,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
+lon=(30.0,32.0),lat=(50.0,52.0), time=2001:2004)
+cTable = CubeTable(value=cube,include_axes=("lat","lon","time","variable"))
 m = cubefittable(cTable, WeightedMean, :value, weight=(i->cosd(i.lat)), by=(:variable, :lat, :lon))
 p=plotXY(m,xaxis="variable",group="lat",lon=30)
 b=IOBuffer()
@@ -131,8 +161,8 @@ plotScatter
 A short example is shown here:
 
 ```julia
-cube=getCubeData(c,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
-longitude=(30.0,32.0),latitude=(50.0,52.0))
+cube=subsetcube(c,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
+lon=(30.0,32.0),lat=(50.0,52.0))
 plotScatter(cube,alongaxis=TimeAxis,xaxis="net_ecosystem_exchange",yaxis="gross_primary_productivity",lat=50, lon=30)
 ```
 
@@ -142,8 +172,8 @@ using ESDLPlots
 gr()
 import Documenter # hide
 c=Cube() # hide
-cube=getCubeData(c,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
-longitude=(30.0,32.0),latitude=(50.0,52.0))
+cube=subsetcube(c,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
+lon=(30.0,32.0),lat=(50.0,52.0))
 p=plotScatter(cube,alongaxis=TimeAxis,xaxis="net_ecosystem_exchange",yaxis="gross_primary_productivity",lat=50, lon=30)
 b=IOBuffer()
 show(b,MIME"text/html"(),p)

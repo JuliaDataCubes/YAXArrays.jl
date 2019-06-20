@@ -28,15 +28,15 @@ c=Cube()
 ```@example 1
 var=["c_emissions","air_temperature_2m"]
 time=(Date("2001-01-01"),Date("2001-12-31"))
-cubedata = getCubeData(c,longitude=(30,31),latitude=(50,51),time=time,variable=var)
+cubedata = subsetcube(c,lon=(30,31),lat=(50,51),time=time,variable=var)
 ```
 
 This returns a view into the Data Cube, on which further calculations can be applied.
-All keyword arguments default to the full range, so calling `getCubeData` without
+All keyword arguments default to the full range, so calling `subsetcube` without
 keyword arguments will return a view into the whole data cube.
 
 ```@docs
-ESDL.CubeAPI.getCubeData
+ESDL.Cubes.subsetcube
 ```
 
 
@@ -64,7 +64,7 @@ ESDL.Proc.CubeIO.extractLonLats
 Here is an example how to apply the function:
 
 ```@example 1
-cubedata = getCubeData(c,longitude=(30,31),latitude=(50,51),time=time,variable=var)
+cubedata = subsetcube(c,lon=(30,31),lat=(50,51),time=time,variable=var)
 ll       = [30.1 50.2;
             30.5 51.1;
             30.7 51.1] #Lon/Lats to be extracted
@@ -73,8 +73,8 @@ cubenew  = extractLonLats(cubedata,ll)
 
 ## Cube Types
 
-While the `getCubeData` command returns an object of type `SubCube`, which represents a view into the ESDC, other cube operations will return different types of data cubes.
-The returned type will depend on the size of the returned cube. If it is small enough to fit into memory, it will be a `CubeMem`, otherwise a `ZarrCube`. All these types of data cubes share the same interface defined by [`ESDL.AbstractCubeData`](@ref), which means you can index them, do calculation using `mapCube` or plot them using the commands described in [Plotting](@ref).
+While the `subsetcube` command returns an object of type `ZarrCube`, which represents a view into the ESDC, other cube operations will return different types of data cubes.
+The returned type will depend on the size of the returned cube. If it is small enough to fit into memory, it will be a `CubeMem`, otherwise a `ZArrayCube`. All these types of data cubes share the same interface defined by [`ESDL.AbstractCubeData`](@ref), which means you can index them, do calculation using `mapCube` or plot them using the commands described in [Plotting](@ref).
 
 ```@docs
 ESDL.Cubes.AbstractCubeData
@@ -84,25 +84,19 @@ ESDL.Cubes.AbstractCubeData
 ESDL.Cubes.CubeMem
 ```
 
-
 ```@docs
-ESDL.CubeAPI.SubCube
+ESDL.Cubes.ESDLZarr.ZArrayCube
 ```
 
 ```@docs
-ESDL.CubeAPI.SubCubeV
-```
-
-
-```@docs
-ESDL.Cubes.ESDLZarr.ZarrCube
+ESDL.Cubes.OBS.S3Cube
 ```
 
 
 ## Cube Dimensions
 
 Dimensions are an essential part of each Cube in ESDL. Every dimension that a cube has is associated
-with an axis that stores the values of the dimension. For example, a `LatitudeAxis` will contains a
+with an axis that stores the values of the dimension. For example, a `LatAxis` will contain a
 field `values` representing the chosen latitudes. Similarly, a `VariableAxis` will contain a list of
 Variable names. Axes types are divided in categorical axes and axes represented by ranges. All of them
 are subtypes of the abstract type `CubeAxis`.
@@ -119,40 +113,18 @@ ESDL.Cubes.Axes.CategoricalAxis
 ESDL.Cubes.Axes.RangeAxis
 ```
 
-## Cube Masks
-
-Every data cube type in ESDL contains has a representation for the mask, which
-has the primary purpose of describing missing values and the reason for missingness.
-ESDL masks are represented as `UInt8`-arrays, where each value can be one of the following:
-
-* `VALID` a regular data entry
-* `MISSING` classical missing value
-* `OCEAN` masked out by the land-sea mask
-* `OUTOFPERIOD` current time step is not inside the measurement period
-* `FILLED` does not count as missing, but still denotes that the value is gap filled and not measured
-
-These names can be imported by `using ESDL.Mask`. The user can decide if he wants to use
-the masks in his analyses or rather wants to refer to a different representation with
- missings with `NaN`s. See [`mapCube`](@ref) for details.
 
 ## Opening cloud-hosted Data Cubes
 
-When you are working on the official cloud instance
+When you
 
 ```@docs
 S3Cube
 ```
 
 
-
-## Point-wise access
-
-```@docs
-sampleLandPoints
-```
-
 ## List of known regions
 
 ```@docs
-ESDL.CubeAPI.known_regions
+ESDL.Cubes.ESDLZarr.known_regions
 ```
