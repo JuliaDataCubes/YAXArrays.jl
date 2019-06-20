@@ -1,4 +1,4 @@
-using ImageMagick, Documenter, ESDL, ESDLPlots, Cairo, Fontconfig, WebIO
+using ImageMagick, Documenter, ESDL, ESDLPlots, Cairo, Fontconfig
 
 makedocs(
     modules = [ESDL, ESDLPlots],
