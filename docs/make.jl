@@ -21,8 +21,4 @@ makedocs(
 deploydocs(
     #deps   = Deps.pip("mkdocs", "python-markdown-math"),
     repo   = "github.com/esa-esdl/ESDL.jl.git",
-    julia  = "1.1",
-    deps   = nothing,
-    make   = nothing,
-    target = "build"
 )
