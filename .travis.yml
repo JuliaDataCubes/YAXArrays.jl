@@ -16,6 +16,7 @@ jobs:
         - julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate(); Pkg.add(PackageSpec(url="https://github.com/esa-esdl/ESDLPlots.jl"))'
         - julia --project=docs -e 'using Pkg; Pkg.add(PackageSpec(name="Compose", rev="master"))'
         - julia --project=docs docs/make.jl
+      name: "HTML"
       after_success: skip
 after_success:
-- travis_wait 30 julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
+    - julia -e 'using Pkg; Pkg.add("Coverage"); using Coverage; Codecov.submit(process_folder())'
