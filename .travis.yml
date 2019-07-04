@@ -4,7 +4,7 @@ os:
     - linux
 julia:
     - 1.1
-    - nightly
+    - 1.2
 notifications:
     email: false
 jobs:
