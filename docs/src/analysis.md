@@ -106,7 +106,7 @@ Category1           Axis with 2 elements: T<7C T>7C
 Variable            Axis with 3 elements: gross_primary_productivity net_ecosystem_exchange terrestrial_ecosystem_respiration
 Total size: 54.0 bytes
 ```
-```@eval
+<!-- ```@eval
 #Load Javascript env
 import Documenter
 ```
@@ -130,7 +130,7 @@ p=plotXY(mT,xaxis="var",group="tempclass")
 b=IOBuffer()
 show(b,MIME"text/html"(),p)
 Documenter.Documents.RawHTML(String(take!(b)))
-```
+``` -->
 
 A second example would be that we want to calculate averages of the fluxes according to
 a country mask.

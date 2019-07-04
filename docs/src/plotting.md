@@ -3,13 +3,13 @@
 import Documenter
 ```
 
-```@setup 1
+<!-- ```@setup 1
 using ESDL # hide
 using ESDLPlots
 using Dates
 import Documenter
 c=Cube() # hide
-```
+``` -->
 
 # Plotting
 
@@ -33,7 +33,7 @@ cube=subsetcube(c,variable=["air_temperature_2m","gross_primary_productivity"])
 plotMAP(cube,time=Date(2001,1,1), var="air_temperature_2m")
 ```
 
-```@eval
+<!-- ```@eval
 using ESDL # hide
 using ESDLPlots
 gr()
@@ -44,7 +44,7 @@ p = plotMAP(cube,time=Date(2001,1,1), var="air_temperature_2m")
 b=IOBuffer()
 show(b,MIME"text/html"(),p)
 Documenter.Documents.RawHTML(String(take!(b)))
-```
+``` -->
 
 Inside a Jupyter notebook, the keyword arguments can be omitted and sliders or
 dropdown menus will be shown to select the desired values.
@@ -72,12 +72,13 @@ plotMAPRGB(cube,c1="gross_primary_productivity",
              time=Date(2003,2,26))
 ```
 
-```@eval
+<!-- ```@eval
 using ESDL # hide
 using ESDLPlots
 gr()
 import Documenter # hide
 c=Cube() # hide
+cube = subsetcube(region="South America") #hide
 using ColorTypes
 p = plotMAPRGB(cube,c1="gross_primary_productivity",
              c2="net_ecosystem_exchange",
@@ -87,7 +88,7 @@ p = plotMAPRGB(cube,c1="gross_primary_productivity",
 b=IOBuffer()
 show(b,MIME"text/html"(),p)
 Documenter.Documents.RawHTML(String(take!(b)))
-```
+``` -->
 
 ## Other plots
 
@@ -108,7 +109,7 @@ longitude=(30.0,32.0),latitude=(50.0,52.0))
 plotXY(cube,xaxis="time",group="variable",lon=31,lat=51)
 ```
 
-````@eval
+<!-- ````@eval
 using ESDL # hide
 using ESDLPlots
 gr()
@@ -120,7 +121,7 @@ p=plotXY(cube,xaxis="time",group="variable",lon=31,lat=51)
 b=IOBuffer()
 show(b,MIME"text/html"(),p)
 Documenter.Documents.RawHTML(String(take!(b)))
-````
+```` -->
 
 This is a plot showing the mean values of the chosen variables across different latitudes at 30° E
 
@@ -131,7 +132,7 @@ m = cubefittable(cTable, WeightedMean, :value, weight=(i->cosd(i.lat)), by=(:var
 plotXY(m,xaxis="variable",group="lat",lon=30)
 ```
 
-````@eval
+<!-- ````@eval
 using ESDL # hide
 using ESDLPlots
 using WeightedOnlineStats
@@ -146,7 +147,7 @@ p=plotXY(m,xaxis="variable",group="lat",lon=30)
 b=IOBuffer()
 show(b,MIME"text/html"(),p)
 Documenter.Documents.RawHTML(String(take!(b)))
-````
+```` -->
 
 ### Scatter plots
 
@@ -165,7 +166,7 @@ lon=(30.0,32.0),lat=(50.0,52.0))
 plotScatter(cube,alongaxis=TimeAxis,xaxis="net_ecosystem_exchange",yaxis="gross_primary_productivity",lat=50, lon=30)
 ```
 
-````@eval
+<!-- ````@eval
 using ESDL # hide
 using ESDLPlots
 gr()
@@ -177,4 +178,4 @@ p=plotScatter(cube,alongaxis=TimeAxis,xaxis="net_ecosystem_exchange",yaxis="gros
 b=IOBuffer()
 show(b,MIME"text/html"(),p)
 Documenter.Documents.RawHTML(String(take!(b)))
-````
+```` -->
