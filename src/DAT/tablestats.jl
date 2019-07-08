@@ -164,7 +164,7 @@ function getStatOutAxes(tab,agg,::Type{<:WeightedCovMatrix})
     a2 = axtype(coname,copy(v))
     (a1,a2)
 end
-function getStatOutAxes(tab,agg,::Type{<:WeightedHist})
+function getStatOutAxes(tab,agg,::Type{<:WeightedAdaptiveHist})
     nbin = getnbins(agg)
     a1 = RangeAxis("Bin",1:nbin)
     a2 = CategoricalAxis("Hist",["MidPoints","Frequency"])
@@ -254,7 +254,7 @@ end
 
 getpostfunction(s::OnlineStat)=getpostfunction(typeof(s))
 getpostfunction(::Type{<:OnlineStat})=value
-getpostfunction(::Type{<:WeightedHist})=i->hcat(value(i)...)
+getpostfunction(::Type{<:WeightedAdaptiveHist})=i->hcat(value(i)...)
 getnbins(f::GroupedOnlineAggregator)=f.cloneobj.alg.b
 getnbins(f::TableAggregator)=f.o.alg.b
 

@@ -29,7 +29,7 @@ function normalizeTS(xout::AbstractVector,xin::AbstractVector)
   map!(x->(x-m)/s,xout,xin)
 end
 
-import WeightedOnlineStats: WeightedHist
+import WeightedOnlineStats: WeightedAdaptiveHist
 
 function quantile(c::AbstractCubeData,p=[0.25,0.5,0.75];by=(),nbins=100)
   if any(i->isa(i,CategoricalAxis{<:Any,:Hist}),caxes(c)) && any(i->isa(i,RangeAxis{<:Any,:Bin}),caxes(c))
@@ -42,7 +42,7 @@ function quantile(c::AbstractCubeData,p=[0.25,0.5,0.75];by=(),nbins=100)
   else
     tfull = CubeTable(data = c,include_axes=(map(axname,caxes(c))...,))
     weights = findAxis("Lat",c) === nothing ? nothing : i->cosd(i.Lat)
-    histcube = cubefittable(tfull, WeightedHist(nbins), :data, by=by, weight=weights)
+    histcube = cubefittable(tfull, WeightedAdaptiveHist(nbins), :data, by=by, weight=weights)
     quantile(histcube,p)
   end
 end
