@@ -6,7 +6,7 @@ module Cubes
 export Axes, AbstractCubeData, getSubRange, readcubedata, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, TimeHAxis, QuantileAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, caxes,
        AbstractSubCube, CubeMem, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis, axVal2Index, MSCAxis,
        getSingVal, ScaleAxis, axname, @caxis_str, rmCube, cubeproperties, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
-       getOutAxis, Cube, (..), getCubeData, subsetcube, CubeMask, renameaxis!, Dataset, S3Cube
+       getOutAxis, Cube, (..), getCubeData, subsetcube, CubeMask, renameaxis!, Dataset, S3Cube, cubeinfo
 
 """
     AbstractCubeData{T,N}
@@ -258,7 +258,7 @@ Base.show(io::IO,a::SpatialPointAxis)=print(io,"Spatial points axis with ",lengt
 include("TransformedCubes.jl")
 function S3Cube end
 include("ZarrCubes.jl")
-import .ESDLZarr: (..), Cube, getCubeData, loadCube, rmCube, CubeMask
+import .ESDLZarr: (..), Cube, getCubeData, loadCube, rmCube, CubeMask, cubeinfo
 include("Datasets.jl")
 import .Datasets: Dataset, ESDLDataset
 include("OBS.jl")

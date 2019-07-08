@@ -9,9 +9,8 @@ import ESDL.Cubes.Axes: axname, CubeAxis, CategoricalAxis, RangeAxis, TimeAxis,
   axVal2Index_lb, axVal2Index_ub, get_step, getAxis
 import Dates: Day,Hour,Minute,Second,Month,Year, Date, DateTime
 import IntervalSets: Interval, (..)
-export (..), Cubes, getCubeData, CubeMask
+export (..), Cubes, getCubeData, CubeMask, cubeinfo
 const spand = Dict("days"=>Day,"months"=>Month,"years"=>Year,"hours"=>Hour,"seconds"=>Second,"minutes"=>Minute)
-
 
 mutable struct ZArrayCube{T,M,A<:ZArray{T},S} <: AbstractCubeData{T,M}
   a::A
@@ -414,6 +413,65 @@ function rmCube(name::String)
   nothing
 end
 export rmCube, loadCube
+
+
+using Markdown
+struct ESDLVarInfo
+  project::String
+  longname::String
+  units::String
+  url::String
+  comment::String
+  reference::String
+end
+Base.isless(a::ESDLVarInfo, b::ESDLVarInfo) = isless(string(a.project, a.longname),string(b.project, b.longname))
+
+import Base.show
+function show(io::IO,::MIME"text/markdown",v::ESDLVarInfo)
+    un=v.units
+    url=v.url
+    re=v.reference
+    pr = v.project
+    ln = v.longname
+    co = v.comment
+    mdt=md"""
+### $ln
+*$(co)*
+
+* **Project** $(pr)
+* **units** $(un)
+* **Link** $(url)
+* **Reference** $(re)
+"""
+    mdt[3].items[1][1].content[3]=[" $pr"]
+    mdt[3].items[2][1].content[3]=[" $un"]
+    mdt[3].items[3][1].content[3]=[" $url"]
+    mdt[3].items[4][1].content[3]=[" $re"]
+    show(io,MIME"text/markdown"(),mdt)
+end
+show(io::IO,::MIME"text/markdown",v::Vector{ESDLVarInfo})=foreach(x->show(io,MIME"text/markdown"(),x),v)
+import Zarr: zname
+
+"""
+    cubeinfo(cube)
+
+Shows the metadata and citation information on variables contained in a cube.
+"""
+function cubeinfo(cube::ZArrayCube)
+    p = cube.properties
+    variable = zname(cube.a)
+    vi=ESDLVarInfo(
+      get(p,"project_name", "unknown"),
+      get(p,"long_name",variable),
+      get(p,"units","unknown"),
+      get(p,"url","no link"),
+      get(p,"comment",variable),
+      get(p,"references","no reference")
+    )
+end
+function cubeinfo(cube::ConcatCube)
+  allinfos = sort([cubeinfo(c) for c in cube.cubelist])
+end
 
 
 end # module
