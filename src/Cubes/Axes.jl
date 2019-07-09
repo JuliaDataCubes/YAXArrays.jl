@@ -8,46 +8,6 @@ using ..Cubes
 import ..Cubes: caxes
 using Dates
 
-struct YearStepRange <: AbstractRange{Date}
-    startyear::Int
-    startst::Int
-    stopyear::Int
-    stopst::Int
-    step::Int
-    NPY::Int
-end
-
-function YearStepRange(start::Date,stop::Date,step::Day)
-    startyear=year(start)
-    startday=dayofyear(start)
-    startst=ceil(Int,startday/Dates.value(step))
-    stopyear=year(stop)
-    stopday=dayofyear(stop)
-    stopst=ceil(Int,stopday/Dates.value(step))
-    NPY=ceil(Int,366/Dates.value(step))
-    YearStepRange(startyear,startst,stopyear,stopst,Dates.value(step),NPY)
-end
-Base.in(d1::Date,av::YearStepRange) = any(isequal(d1),av)
-function Base.length(x::YearStepRange)
-    (-x.startst+1+x.stopst+(x.stopyear-x.startyear)*x.NPY)
-end
-Base.size(x::YearStepRange)=(length(x),)
-function Base.iterate(x::YearStepRange,st=(x.startyear,x.startst))
-  lastyear,laststep = st
-  if (lastyear==x.stopyear && laststep==x.stopst+1) || (lastyear==x.stopyear+1 && laststep==1)
-    return nothing
-  else
-    return (Date(lastyear)+Day((laststep-1)*x.step),laststep==x.NPY ? (lastyear+1,1) : (lastyear,laststep+1))
-  end
-end
-Base.step(x::YearStepRange)=Day(x.step)
-Base.first(x::YearStepRange)=Date(x.startyear)+Day((x.startst-1)*x.step)
-Base.last(x::YearStepRange)=Date(x.stopyear)+Day((x.stopst-1)*x.step)
-function Base.getindex(x::YearStepRange,ind::Integer)
-    y,d=divrem(ind-1+x.startst-1,x.NPY)
-    Date(y+x.startyear)+Day(d)*x.step
-end
-
 macro defineCatAxis(axname,eltype)
   newname=esc(Symbol(string(axname,"Axis")))
   quote
@@ -146,7 +106,7 @@ RangeAxis(s::AbstractString,v)=RangeAxis(Symbol(s),v)
 
 Base.length(a::CubeAxis)=length(a.values)
 
-MSCAxis(n::Int)=MSCAxis(YearStepRange(1900,1,1900,n,ceil(Int,366/n),n))
+MSCAxis(n::Int)=MSCAxis(DateTime(1900):Day(ceil(Int,366/n)):DateTime(1900,12,31,23,59,59))
 
 caxes(x::CubeAxis)=CubeAxis[x]
 
@@ -164,8 +124,8 @@ get_step(r::AbstractVector)=length(r)==0 ? zero(eltype(r)) : r[2]-r[1]
 axVal2Index_ub(a::RangeAxis, v; fuzzy=false)=axVal2Index(a,v-abs(half(get_step(a.values))),fuzzy=fuzzy)
 axVal2Index_lb(a::RangeAxis, v; fuzzy=false)=axVal2Index(a,v+abs(half(get_step(a.values))),fuzzy=fuzzy)
 
-axVal2Index_ub(a::RangeAxis{<:Date}, v; fuzzy=false)=axVal2Index(a,DateTime(v)-abs(half(get_step(a.values))),fuzzy=fuzzy)
-axVal2Index_lb(a::RangeAxis{<:Date}, v; fuzzy=false)=axVal2Index(a,DateTime(v)+abs(half(get_step(a.values))),fuzzy=fuzzy)
+axVal2Index_ub(a::RangeAxis, v::Date; fuzzy=false)=axVal2Index(a,DateTime(v)-abs(half(get_step(a.values))),fuzzy=fuzzy)
+axVal2Index_lb(a::RangeAxis, v::Date; fuzzy=false)=axVal2Index(a,DateTime(v)+abs(half(get_step(a.values))),fuzzy=fuzzy)
 
 half(a) = a/2
 half(a::Day) = Millisecond(a)/2
@@ -173,12 +133,6 @@ half(a::Day) = Millisecond(a)/2
 function axVal2Index(a::RangeAxis{<:Any,<:Any,<:AbstractRange},v;fuzzy=false)
   dt = v-first(a.values)
   r = round(Int,dt/step(a.values))+1
-  return max(1,min(length(a.values),r))
-end
-function axVal2Index(a::RangeAxis{<:Date,<:Any,<:YearStepRange},v::Date;fuzzy=false)
-  y = year(v)
-  d = dayofyear(v)
-  r = (y-a.values.startyear)*a.values.NPY + d÷a.values.step + 1
   return max(1,min(length(a.values),r))
 end
 function axVal2Index(a::RangeAxis{<:TimeType},v;fuzzy=false)
@@ -336,13 +290,13 @@ import Base.isequal
 ==(a::CubeAxis,b::CubeAxis)=(a.values==b.values) && (axname(a)==axname(b))
 isequal(a::CubeAxis, b::CubeAxis) = a==b
 
-function NcDim(a::CubeAxis{Date},start::Integer,count::Integer)
+function NcDim(a::CubeAxis{T},start::Integer,count::Integer) where T<:TimeType
   if start + count - 1 > length(a.values)
     count = oftype(count,length(a.values) - start + 1)
   end
   tv=a.values[start:(start+count-1)]
   startyear=Dates.year(first(a.values))
-  starttime=Date(startyear)
+  starttime=T(startyear)
   atts=Dict{Any,Any}("units"=>"days since $startyear-01-01")
   d=map(x->Float64(convert(Day,(x-starttime)).value),tv)
   NcDim(axname(a),length(d),values=d,atts=atts)

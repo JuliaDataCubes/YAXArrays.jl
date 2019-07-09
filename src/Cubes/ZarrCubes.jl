@@ -7,8 +7,9 @@ import ESDL.Cubes: cubechunks, iscompressed, AbstractCubeData, getCubeDes,
   _write, cubeproperties, ConcatCube, concatenateCubes, _subsetcube, workdir, readcubedata
 import ESDL.Cubes.Axes: axname, CubeAxis, CategoricalAxis, RangeAxis, TimeAxis,
   axVal2Index_lb, axVal2Index_ub, get_step, getAxis
-import Dates: Day,Hour,Minute,Second,Month,Year, Date, DateTime
+import Dates: Day,Hour,Minute,Second,Month,Year, Date, DateTime, TimeType
 import IntervalSets: Interval, (..)
+import CFTime: timedecode, timeencode
 export (..), Cubes, getCubeData, CubeMask, cubeinfo
 const spand = Dict("days"=>Day,"months"=>Month,"years"=>Year,"hours"=>Hour,"seconds"=>Second,"minutes"=>Minute)
 
@@ -61,10 +62,10 @@ end
 function dataattfromaxis(ax::CubeAxis{<:String},n)
     prependrange(1:length(ax.values),n), Dict{String,Any}("_ARRAYVALUES"=>collect(ax.values))
 end
-function dataattfromaxis(ax::CubeAxis{<:Date},n)
+function dataattfromaxis(ax::CubeAxis{<:TimeType},n)
     refdate = Date(1980)
-    vals = map(i->(i-refdate)/oneunit(Day),ax.values)
-    prependrange(vals,n), Dict{String,Any}("units"=>"days since 1980-01-01")
+    data = timeencode(ax.values,"days since 1980-01-01")
+    prependrange(data,n), Dict{String,Any}("units"=>"days since 1980-01-01")
 end
 
 function zarrayfromaxis(p::ZGroup,ax::CubeAxis,offs)
@@ -185,28 +186,6 @@ function _write(z::ZArrayCube{<:Any,N,<:Any},thedata::AbstractArray{<:Any,N},r::
   readblock!(thedata,z.a,CartesianIndices(r2),readmode=false)
 end
 
-# function infervarlist(g::ZGroup)
-#   any(isequal("layer"),keys(g.arrays)) && return ["layer"]
-#   dimsdict = Dict{Tuple,Vector{String}}()
-#   foreach(g.arrays) do ar
-#     k,v = ar
-#     vardims = reverse((v.attrs["_ARRAY_DIMENSIONS"]...,))
-#     haskey(dimsdict,vardims) ? push!(dimsdict[vardims],k) : dimsdict[vardims] = [k]
-#   end
-#   filter!(p->!in("bnds",p[1]),dimsdict)
-#   llist = Dict(p[1]=>length(p[2]) for p in dimsdict)
-#   _,dims = findmax(llist)
-#   varlist = dimsdict[dims]
-# end
-
-function parsetimeunits(unitstr)
-    re = r"(\w+) since (\d\d\d\d)-(\d\d)-(\d\d)"
-
-    m = match(re,unitstr)
-
-    refdate = Date(map(i->parse(Int,m[i]),2:4)...)
-    refdate,spand[m[1]]
-end
 function toaxis(dimname,g,offs,len)
     axname = dimname in ("lon","lat","time") ? uppercasefirst(dimname) : dimname
     if !haskey(g,dimname)
@@ -214,11 +193,7 @@ function toaxis(dimname,g,offs,len)
     end
     ar = g[dimname]
     if axname=="Time" && haskey(ar.attrs,"units")
-        refdate,span = parsetimeunits(ar.attrs["units"])
-        if span in (Hour, Minute, Second)
-          refdate = DateTime(refdate)
-        end
-        tsteps = refdate.+span.(ar[offs+1:end])
+        tsteps = timedecode(ar[:],ar.attrs["units"],get(ar.attrs,"calendar","standard"))
         TimeAxis(tsteps)
     elseif haskey(ar.attrs,"_ARRAYVALUES")
       vals = ar.attrs["_ARRAYVALUES"]
@@ -311,8 +286,8 @@ function interpretsubset(subexpr::NTuple{2,Any},ax)
   x, y = sorted(subexpr...)
   Colon()(sorted(axVal2Index_lb(ax,x),axVal2Index_ub(ax,y))...)
 end
-interpretsubset(subexpr::NTuple{2,Int},ax::RangeAxis{Date}) = interpretsubset(map(Date,subexpr),ax)
-interpretsubset(subexpr::UnitRange{Int64},ax::RangeAxis{Date}) = interpretsubset(Date(first(subexpr))..Date(last(subexpr),12,31),ax)
+interpretsubset(subexpr::NTuple{2,Int},ax::RangeAxis{T}) where T<:TimeType = interpretsubset(map(T,subexpr),ax)
+interpretsubset(subexpr::UnitRange{Int64},ax::RangeAxis{T}) where T<:TimeType = interpretsubset(T(first(subexpr))..T(last(subexpr)+1),ax)
 interpretsubset(subexpr::Interval,ax)       = interpretsubset((subexpr.left,subexpr.right),ax)
 interpretsubset(subexpr::AbstractVector,ax::CategoricalAxis)      = axVal2Index.(Ref(ax),subexpr,fuzzy=true)
 

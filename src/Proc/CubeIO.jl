@@ -97,9 +97,8 @@ function exportcube(r::AbstractCubeData,filename::String;priorities = Dict("LON"
   isplit isa Nothing && (isplit=length(dl)+1)
   incubes = InDims(ax_cont[1:(isplit-1)]...)
   cont_loop = Dict(ii=>axname(ax_cont[ii]) for ii in isplit:length(ax_cont))
-
   mapCube(writefun,r,length(ax_cont),cont_loop,filename,indims=incubes,include_loopvars=true,ispar=false,max_cache=5e7)
-  ncclose(filename)
+  NetCDF.close(file)
   nothing
 end
 export exportcube

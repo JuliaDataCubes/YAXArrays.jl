@@ -26,6 +26,7 @@ include("Stats.jl")
 include("CubeIO.jl")
 include("TSDecomposition.jl")
 include("remap.jl")
+include("Shapes.jl")
 using .ReSample, .MSC, .Stats, .CubeIO,
   .TSDecomposition
 
