@@ -23,7 +23,7 @@
 
 import Shapefile
 import GeoInterface: AbstractMultiPolygon, AbstractPoint
-
+export cubefromshape
 import ..Cubes.Axes: get_bb
 import DBFTables
 

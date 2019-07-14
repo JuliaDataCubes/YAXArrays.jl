@@ -15,8 +15,8 @@ export registerDATFunction, mapCube, reduceCube, getAxis, InDims, OutDims, (..),
         CubeTable, AsArray,AsAxisArray,AsDataFrame, cubefittable, TableAggregator, fittable #From DAT module
 export cubeAnomalies, removeMSC, gapFillMSC, normalizeTS,DATfitOnline,
   sampleLandPoints, toPointAxis, getMSC, filterTSFFT, getNpY,
-  getMedSC, extractLonLats,simpleAnomalies,spatialinterp,
-  cubePCA, rotation_matrix, transformPCA, explained_variance, exportcube #From Proc module
+  getMedSC, extractLonLats,simpleAnomalies,spatialinterp,cubefromshape
+  exportcube #From Proc module
 export rmCube # From CachedArrays
 export @loadOrGenerate # from ESDL Tools
 
