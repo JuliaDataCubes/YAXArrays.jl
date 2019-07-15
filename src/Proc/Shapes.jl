@@ -24,36 +24,89 @@
 import Shapefile
 import GeoInterface: AbstractMultiPolygon, AbstractPoint
 export cubefromshape
-import ..Cubes.Axes: get_bb
+import ..Cubes.Axes: get_bb, axisfrombb
 import DBFTables
+import WeightedOnlineStats: WeightedMean
+import Dates: Day
 
-function cubefromshape(shapepath, lonaxis, lataxis; labelsym = nothing, T=Int32)
-    s = (length(lonaxis), length(lataxis))
-    outmat = zeros(T,s...)
-    lon1,lon2 = get_bb(lonaxis)
-    lat1,lat2 = get_bb(lataxis)
-    rasterize!(outmat, shapepath, bb = (left = lon1, right=lon2, top=lat1, bottom=lat2))
-    if labelsym !==nothing
-      dbfname = string(splitext(shapepath)[1],".dbf")
-      dbf = open(dbfname) do f
-        DBFTables.read_dbf(f)
+function getlabeldict(shapepath,labelsym,T,labelsleft)
+  dbfname = string(splitext(shapepath)[1],".dbf")
+  dbf = open(dbfname) do f
+    DBFTables.read_dbf(f)
+  end
+  labels = dbf[labelsym]
+  labeldict = Dict(T(i)=>stripc0x(labels[i]) for i in 1:length(labels) if T(i) in labelsleft)
+  properties = Dict("labels"=>labeldict)
+end
+getlabeldict(shapepath, ::Nothing,T)=Dict{String,Any}()
+
+function aggregate_out(allout, highmat, labelsleft,n)
+  dsort = Dict(i[2]=>i[1] for i in enumerate(labelsleft))
+  for jout in 1:size(allout,2)
+    for iout in 1:size(allout,1)
+      v = view(highmat,(iout*n-9):iout*n,(jout*n-9):jout*n,:)
+      for value in skipmissing(v)
+        allout[iout,jout,dsort[value]]+=1
       end
-        labels = dbf[labelsym]
-        labeldict = Dict(T(i)=>stripc0x(labels[i]) for i in 1:length(labels))
-        properties = Dict("labels"=>labeldict)
-    else
-        properties = Dict{String,Any}()
     end
-    prune_labels!(CubeMem(CubeAxis[lonaxis, lataxis], outmat,properties))
+  end
+  map!(i->i/(n*n),allout,allout)
+end
+
+function cubefromshape_fraction(shapepath,lonaxis,lataxis;labelsym=nothing, T=Float64, nincrease=10)
+  s = (length(lonaxis), length(lataxis))
+  outmat = zeros(T,map(i->i*nincrease,s)...)
+  lon1,lon2 = get_bb(lonaxis)
+  lat1,lat2 = get_bb(lataxis)
+  rasterize!(outmat, shapepath, bb = (left = lon1, right=lon2, top=lat1, bottom=lat2))
+
+  outmat = replace(outmat,zero(T)=>missing)
+  labelsleft = collect(skipmissing(unique(outmat)))
+  pp = getlabeldict(shapepath,labelsym,T,Set(labelsleft))["labels"]
+
+  allout = zeros(T,s...,length(labelsleft))
+  aggregate_out(allout,outmat,labelsleft,nincrease)
+
+  if labelsym===nothing
+    newax = CategoricalAxis("Label", labelsleft)
+  else
+    newax = CategoricalAxis(labelsym,[pp[l] for l in labelsleft])
+  end
+
+  return CubeMem(CubeAxis[lonaxis, lataxis, newax], allout)
+
+
+end
+function cubefromshape_single(shapepath, lonaxis, lataxis; labelsym = nothing, T=Int32)
+  s = (length(lonaxis), length(lataxis))
+  outmat = zeros(T,s...)
+  lon1,lon2 = get_bb(lonaxis)
+  lat1,lat2 = get_bb(lataxis)
+  rasterize!(outmat, shapepath, bb = (left = lon1, right=lon2, top=lat1, bottom=lat2))
+
+  outmat = replace(outmat,zero(T)=>missing)
+  labelsleft = collect(skipmissing(unique(outmat)))
+  properties = getlabeldict(shapepath,labelsym,T,labelsleft)
+
+  return CubeMem(CubeAxis[lonaxis, lataxis], outmat,properties)
 end
 cubefromshape(shapepath, c::AbstractCubeData; kwargs...) = cubefromshape(shapepath, getAxis("Lon",c), getAxis("Lat",c);kwargs...)
+function cubefromshape(args...; samplefactor=nothing, kwargs...)
+  if samplefactor===nothing
+    cubefromshape_single(args...; kwargs...)
+  else
+    cubefromshape_fraction(args...; nincrease = samplefactor, kwargs...)
+  end
+end
 
 function prune_labels!(c::CubeMem)
+  if haskey(c.properties,"labels")
     labelsleft = Set(skipmissing(unique(c.data)))
     dold = c.properties["labels"]
     dnew = Dict(k=>dold[k] for k in filter(i->in(i,labelsleft),keys(dold)))
     c.properties["labels"] = dnew
-    c
+  end
+  c
 end
 stripc0x(a) = replace(a, r"[^\x20-\x7e]"=> "")
 
@@ -129,7 +182,7 @@ end
 function getboundingbox(data)
   defaultval = (CartesianIndex(size(data)),CartesianIndex{ndims(data)}())
   r1, r2 = mapreduce(
-    i->data[i]==-3.4f38 ? defaultval : (i,i),
+    i->ismissing(data[i]) ? defaultval : (i,i),
     (x,y)->(min(x[1],y[1]),max(x[2],y[2])),
     CartesianIndices(data),
     init = defaultval
@@ -143,22 +196,30 @@ end
 
 Calculates spatially aggregated statistics
 """
-function aggstats(shp,csubvar,refdate;npast=10,nfuture=3)
-  lonax,latax = getAxis("lon",csubvar), getAxis("lat",csubvar)
-  data  = zeros(length(lonax.values),length(latax.values))
-  rasterize!(shp,data)
-  bspace = getboundingbox(data)
+function aggstats(shp,csubvar,refdate;npast=3,nfuture=10)
+
+  craster = cubefromshape(shp, csubvar)
+  bspace = getboundingbox(craster.data)
   blon,blat = map(i->CartesianIndices((i,)),bspace.indices)
   taxall = getAxis("Time",csubvar)
   itime = axVal2Index(taxall,refdate)
   refdate = taxall.values[itime]
   btime = LinearIndices((itime-npast:itime+nfuture,))
   csmallbox = csubvar[lon=blon,lat=blat,time=btime]
-  maskcube = CubeMem(CubeAxis[getAxis("Lon",csmallbox),getAxis("Lat",csmallbox)],replace(data[bspace],0.0=>missing))
-  ct = CubeTable(cdata = csmallbox, cmask = maskcube, include_axes=("lat","var","time"))
-  fitres = cubefittable(ct,WeightedMean,:cdata,by=(:var,i->ismissing(i.cmask),i->Int((i.time-refdate)/Day(1))),weight=i->cosd(i.lat),showprog=false)
+  maskcube = craster[lon=blon,lat=blat]
+  if findAxis("Variable",csubvar)===nothing
+    by = ()
+    incax = ("lat","time")
+  else
+    by = (:var,)
+    incax = ("lat","var","time")
+  end
+  ct = CubeTable(cdata = csmallbox, cmask = maskcube, include_axes=incax)
 
-  fr = fitres[Category2=false]
+  by = (i->iszero(i.cmask),by...,i->Int((i.time-refdate)/Day(1)))
+  fitres = cubefittable(ct,WeightedMean,:cdata,by=by,weight=i->cosd(i.lat),showprog=false)
+
+  fr = fitres[Category1=false]
   renameaxis!(fr,"Category"=>RangeAxis("Time",(-npast:nfuture)*8))
   fr
 end

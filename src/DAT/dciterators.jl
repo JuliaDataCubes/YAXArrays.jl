@@ -55,8 +55,8 @@ lift64(::Type{Int32})=Int64
 lift64(T)=T
 
 defaultval(t::Type{<:AbstractFloat})=convert(t,NaN)
-defaultval(t::Signed)=typemin(t)+1
-defaultval(t::Unsigned)=typemax(t)-1
+defaultval(t::Type{<:Signed})=typemin(t)+1
+defaultval(t::Type{<:Unsigned})=typemax(t)-1
 
 function CubeIterator(dc,r;varnames::Tuple=ntuple(i->Symbol("x$i"),length(dc.incubes)),include_loopvars=())
     loopaxes = ntuple(i->dc.LoopAxes[i],length(dc.LoopAxes))
