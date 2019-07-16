@@ -115,6 +115,16 @@ end
   end;
   @test danom isa ESDL.Cubes.ESDLZarr.ZArrayCube
 
+  saveCube(danom, "mySavedZArrayCube")
+
+  @test danom isa ESDL.Cubes.ESDLZarr.ZArrayCube
+
+  danom=readcubedata(danom)
+  danom2=readcubedata(loadCube("mySavedZArrayCube"))
+
+  @test danom.axes==danom2.axes
+  @test danom.data==danom2.data
+
   ncf = tempname()
   exportcube(danom,ncf)
 

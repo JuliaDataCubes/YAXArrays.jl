@@ -1,10 +1,10 @@
 module ESDLZarr
 import ...ESDL
 import Distributed: myid
-import Zarr: ZGroup, zopen, ZArray, NoCompressor, zgroup, zcreate, readblock!
+import Zarr: ZGroup, zopen, ZArray, NoCompressor, zgroup, zcreate, readblock!, S3Store, DirectoryStore
 import ESDL.Cubes: cubechunks, iscompressed, AbstractCubeData, getCubeDes,
   caxes,chunkoffset, gethandle, subsetcube, axVal2Index, findAxis, _read, S3Cube,
-  _write, cubeproperties, ConcatCube, concatenateCubes, _subsetcube, workdir, readcubedata
+  _write, cubeproperties, ConcatCube, concatenateCubes, _subsetcube, workdir, readcubedata, saveCube
 import ESDL.Cubes.Axes: axname, CubeAxis, CategoricalAxis, RangeAxis, TimeAxis,
   axVal2Index_lb, axVal2Index_ub, get_step, getAxis
 import Dates: Day,Hour,Minute,Second,Month,Year, Date, DateTime, TimeType
@@ -364,6 +364,24 @@ function subsetcube(z::ESDL.Cubes.ConcatCube{T,N};kwargs...) where {T,N}
     cubeaxes = deepcopy(caxes(cubelist[1]))
   end
   return length(cubelist)==1 ? cubelist[1] : ConcatCube{T,length(cubeaxes)+1}(cubelist,cataxis,cubeaxes,cubeproperties(z))
+end
+
+function saveCube(z::ZArrayCube, name::AbstractString)
+  newfolder = joinpath(workdir[1], name)
+  isdir(newfolder) && error("$(name) already exists, please pick another name")
+  # the julia cp implentation currently can only deal with files <2GB
+  # the issue is:
+  # https://github.com/JuliaLang/julia/issues/14574
+  # mv(c.folder,newfolder)
+  if z.a.storage isa DirectoryStore
+    folder = splitdir(z.a.storage.folder)
+    run(`mv $(folder[1]) $(newfolder)`)
+    z.a = zopen(newfolder * "/layer")
+  elseif z.a.storage isa S3Store
+    error("Saving a cube based on a $(z.a.storage) not implemented yet")
+  else
+    error("Unknown store-type")
+  end
 end
 
 """
