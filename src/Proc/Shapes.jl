@@ -38,7 +38,7 @@ function getlabeldict(shapepath,labelsym,T,labelsleft)
   labeldict = Dict(T(i)=>stripc0x(labels[i]) for i in 1:length(labels) if T(i) in labelsleft)
   properties = Dict("labels"=>labeldict)
 end
-getlabeldict(shapepath, ::Nothing,T)=Dict{String,Any}()
+getlabeldict(shapepath, ::Nothing,T, labelsleft)=Dict{String,Any}()
 
 function aggregate_out(allout, highmat, labelsleft,n)
   dsort = Dict(i[2]=>i[1] for i in enumerate(labelsleft))
