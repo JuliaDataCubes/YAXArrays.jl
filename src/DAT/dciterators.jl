@@ -1,35 +1,22 @@
-struct PickAxisArray{P,N}
-  parent::P
-  stride::NTuple{N,Int}
+struct PickAxisArray{T,N,AT<:AbstractArray,P}
+    parent::AT
 end
-function PickAxisArray(p,indmask)
-  #@show indmask
-  #@show ndims(p)
-  @assert sum(indmask) == ndims(p)
-  strides = zeros(Int,length(indmask))
-  s = 1
-  j = 1
-  for i=1:length(indmask)
-    if indmask[i]
-      strides[i]=s
-      s = s * size(p,j)
-      j=j+1
-    else
-      strides[i]=0
-    end
-  end
-  pstrides = ntuple(i->strides[i],length(strides))
-  PickAxisArray{typeof(p),length(strides)}(p,pstrides)
+
+function PickAxisArray(parent, indmask)
+    @assert sum(indmask)==ndims(parent)
+    f  = findall(indmask)
+    PickAxisArray{eltype(parent),length(indmask),typeof(parent),(f...,)}(parent)
 end
-function Base.getindex(a::PickAxisArray{P,N},i::Vararg{Int,N}) where {P,N}
-    ilin = sum(map((i,s)->(i-1)*s,i,a.stride))+1
-    a.parent[ilin]
+indmask(p::PickAxisArray{<:Any,<:Any,<:Any,i}) where i = i
+function Base.view(p::PickAxisArray, i...)
+    inew = map(j->i[j],indmask(p))
+    view(p.parent,inew...)
 end
-function Base.getindex(a::PickAxisArray{P,N},i::NTuple{N,Int}) where {P,N}
-    ilin = sum(map((i,s)->(i-1)*s,i,a.stride))+1
-    a.parent[ilin]
+function Base.getindex(p::PickAxisArray, i...)
+    inew = map(j->i[j],indmask(p))
+    getindex(p.parent,inew...)
 end
-Base.getindex(a::PickAxisArray,i::CartesianIndex) = a[i.I]
+Base.getindex(p::PickAxisArray,i::CartesianIndex) = p[i.I...]
 
 include("SentinelMissings.jl")
 import .SentinelMissings
