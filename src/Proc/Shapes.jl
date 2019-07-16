@@ -90,6 +90,16 @@ function cubefromshape_single(shapepath, lonaxis, lataxis; labelsym = nothing, T
 
   return CubeMem(CubeAxis[lonaxis, lataxis], outmat,properties)
 end
+
+"""
+    cubefromshape_single(shapepath, refcube; samplefactor=nothing, labelsym = nothing, T=Int32)
+
+This function will read the shapefile at `shapepath` (path to the file with .shp extension), which is required to contain
+a list of polygons. The polygons will be *rasterized* to the same grid and bounding box as the reference data cube `refcube`.
+If the shapefile comes with additional labels in a .dbf file, the labels can be mapped to the respective field codes by
+providing the label to choose as a symbol. If a `samplefactor` is supplied, the polygons will be rasterized on an n-times higher
+resolution and the fraction of area within each polygon will be returned.
+"""
 cubefromshape(shapepath, c::AbstractCubeData; kwargs...) = cubefromshape(shapepath, getAxis("Lon",c), getAxis("Lat",c);kwargs...)
 function cubefromshape(args...; samplefactor=nothing, kwargs...)
   if samplefactor===nothing
@@ -192,9 +202,11 @@ end
 
 
 """
-    aggregate_shapefile(shp,cube,refdate)
+    aggregate_shapefile(shp,cube,refdate; npast=3, nfuture=10)
 
-Calculates spatially aggregated statistics
+Calculates spatially aggregated statistics over a shapefile specified by `shp`.
+Returns a time series cube for variables in `cube` that contains `npast` time steps
+prior to and `nfuture` time steps after the event. 
 """
 function aggstats(shp,csubvar,refdate;npast=3,nfuture=10)
 
