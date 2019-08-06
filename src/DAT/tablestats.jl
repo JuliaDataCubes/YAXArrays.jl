@@ -65,12 +65,14 @@ end
 
 dicteltype(::Type{<:Dict{K,V}}) where {K,V} = V
 dictktype(::Type{<:Dict{K,V}}) where {K,V} = K
+actval(v) = v
+actval(v::SentinelMissings.SentinelMissing) = v[]
 function fitrow!(o::GroupedOnlineAggregator{T,S,BY,W},r) where {T,S,BY,W,C}
     v = getproperty(r,S)
     if !ismissing(v)
         w = o.w(r)
         if w==nothing
-            bykey = map(i->i(r),o.by)
+            bykey = map(i->actval(i(r)),o.by)
             if !any(ismissing,bykey)
                 if haskey(o.d,bykey)
                     fit!(o.d[bykey],v)
@@ -81,7 +83,7 @@ function fitrow!(o::GroupedOnlineAggregator{T,S,BY,W},r) where {T,S,BY,W,C}
             end
         else
            if !ismissing(w)
-                bykey = map(i->i(r),o.by)
+                bykey = map(i->actval(i(r)),o.by)
                 if !any(ismissing,bykey)
                     if haskey(o.d,bykey)
                         fit!(o.d[bykey],v,w)
