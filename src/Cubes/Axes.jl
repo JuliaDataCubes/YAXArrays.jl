@@ -141,8 +141,15 @@ function axVal2Index(a::RangeAxis{<:Any,<:Any,<:AbstractRange},v;fuzzy=false)
   r = round(Int,dt/step(a.values))+1
   return max(1,min(length(a.values),r))
 end
-function axVal2Index(a::RangeAxis{<:TimeType},v;fuzzy=false)
-  dd = map(i->abs((DateTime(i)-DateTime(v))),a.values)
+
+convert_time(T::Type{<:TimeType}, v::TimeType) = T(year(v), month(v), day(v), hour(v), minute(v), second(v))
+convert_time(T::Type{<:TimeType}, v::Date) = T(year(v), month(v), day(v), 0, 0, 0)
+convert_time(::Type{Date},v::TimeType) = Date(year(v),month(v),day(v))
+convert_time(::Type{Date},v::Date) = Date(year(v),month(v),day(v))
+
+function axVal2Index(a::RangeAxis{T},v;fuzzy=false) where T<:TimeType
+  vconverted = convert_time(T,v)
+  dd = map(i->abs((i-vconverted)),a.values)
   mi,ind = findmin(dd)
   return ind
 end
