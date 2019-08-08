@@ -198,8 +198,6 @@ end
 cubesize(c::AbstractCubeData{T}) where {T}=(sizeof(T)+1)*prod(map(length,caxes(c)))
 cubesize(c::AbstractCubeData{T,0}) where {T}=sizeof(T)+1
 
-include("NetCDFCubes.jl")
-
 getCubeDes(c::AbstractSubCube)="Data Cube view"
 getCubeDes(::CubeAxis)="Cube axis"
 getCubeDes(c::CubeMem)="In-Memory data cube"
@@ -258,7 +256,8 @@ Base.show(io::IO,a::SpatialPointAxis)=print(io,"Spatial points axis with ",lengt
 include("TransformedCubes.jl")
 function S3Cube end
 include("ZarrCubes.jl")
-import .ESDLZarr: (..), Cube, getCubeData, loadCube, rmCube, CubeMask, cubeinfo
+import .ESDLZarr: (..), Cube, getCubeData, loadCube, rmCube, CubeMask, cubeinfo, getsubinds
+include("NetCDFCubes.jl")
 include("Datasets.jl")
 import .Datasets: Dataset, ESDLDataset
 include("OBS.jl")
