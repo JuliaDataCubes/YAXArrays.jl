@@ -7,6 +7,8 @@ import NetCDF.ncread, NetCDF.ncclose
 import StatsBase.Weights
 import StatsBase.sample
 import Base.Iterators
+import ..Cubes: saveCube
+import ..Cubes.ESDLZarr: ZArrayCube
 
 
 function toPointAxis(aout,ain,loninds,latinds)
@@ -101,5 +103,17 @@ function exportcube(r::AbstractCubeData,filename::String;priorities = Dict("LON"
   NetCDF.close(file)
   nothing
 end
+
+function saveCube(c::AbstractCubeData, name::AbstractString)
+    dl = length.(caxes(c))
+    isplit = findfirst(i->i>5e7,dl)
+    isplit isa Nothing && (isplit=length(dl)+1)
+    axn = axname.(caxes(c)[1:isplit-1])
+    indims = InDims(axn...)
+    outdims = OutDims(axn..., retcubetype=ZArrayCube)
+    o = mapCube(copyto!,c,indims=indims, outdims=outdims)
+    saveCube(o,name)
+end
+
 export exportcube
 end

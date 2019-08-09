@@ -66,9 +66,11 @@ defaultcal(::Type{<:TimeType}) = "standard"
 defaultcal(::Type{<:DateTimeNoLeap}) = "noleap"
 defaultcal(::Type{<:DateTimeAllLeap}) = "allleap"
 defaultcal(::Type{<:DateTime360Day}) = "360_day"
-
+datetodatetime(vals::AbstractArray{<:Date}) = DateTime.(vals)
+datetodatetime(vals) = vals
 function dataattfromaxis(ax::CubeAxis{T},n) where T<:TimeType
-    data = timeencode(ax.values,"days since 1980-01-01",defaultcal(T))
+
+    data = timeencode(datetodatetime(ax.values),"days since 1980-01-01",defaultcal(T))
     prependrange(data,n), Dict{String,Any}("units"=>"days since 1980-01-01","calendar"=>defaultcal(T))
 end
 
@@ -84,6 +86,7 @@ end
 
 function cleanZArrayCube(y::ZArrayCube)
   if !y.persist && myid()==1
+    println("Cleaning ", y.a.storage.folder)
     rm(y.a.storage.folder,recursive=true)
   end
 end
@@ -224,7 +227,7 @@ const srexlabels = include("../CubeAPI/srexlabels.jl")
 const known_labels = Dict("water_mask"=>Dict(0x01=>"land",0x02=>"water"),"country_mask"=>countrylabels,"srex_mask"=>srexlabels)
 const known_names = Dict("water_mask"=>"Water","country_mask"=>"Country","srex_mask"=>"SREXregion")
 
-Cube(s::String;kwargs...) = Cube(zopen(s);kwargs...)
+Cube(s::String;kwargs...) = Cube(zopen(s,"r");kwargs...)
 function Cube(;kwargs...)
   if haskey(ENV,"ESDL_CUBEDIR")
     Cube(ENV["ESDL_CUBEDIR"];kwargs...)
@@ -380,6 +383,7 @@ function saveCube(z::ZArrayCube, name::AbstractString)
   if z.a.storage isa DirectoryStore
     folder = splitdir(z.a.storage.folder)
     run(`mv $(folder[1]) $(newfolder)`)
+    z.persist = true
     z.a = zopen(newfolder * "/layer")
   elseif z.a.storage isa S3Store
     error("Saving a cube based on a $(z.a.storage) not implemented yet")

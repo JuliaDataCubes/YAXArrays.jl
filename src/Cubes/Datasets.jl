@@ -120,6 +120,7 @@ ESDLDataset(;kwargs...) = Dataset(get(ENV,"ESDL_CUBEDIR","/home/jovyan/work/data
 function Cube(ds::Dataset; joinname="Variable")
   dl = collect(keys(ds.axes))
   dls = string.(dl)
+  length(ds.cubes)==1 && return first(values(ds.cubes))
   newkeys = filter(keys(ds.cubes)) do k
     c = ds.cubes[k]
     (eltype(c)<:Union{Float32,Missing}) || return false
