@@ -108,14 +108,14 @@ function OutDims(axisdesc...;
            bcaxisdesc=(),
            genOut=zero,
            finalizeOut=identity,
-           retCubeType=:auto,
+           retcubetype=:auto,
            update=false,
            artype::ArTypeRepr=AsArray(),
            outtype=1)
   descs = map(get_descriptor,axisdesc)
   bcdescs = (map(get_descriptor,bcaxisdesc)...,)
   isa(artype,AsDataFrame) && length(descs)!=2 && error("DataFrame representation only possible if for 2D inner arrays")
-  OutDims(descs,bcdescs,genOut,finalizeOut,retCubeType,update,artype,outtype)
+  OutDims(descs,bcdescs,genOut,finalizeOut,retcubetype,update,artype,outtype)
 end
 
 registerDATFunction(a...;kwargs...)=@warn("Registration does not exist anymore, ignoring....")

@@ -153,6 +153,12 @@ function axVal2Index(a::RangeAxis{T},v;fuzzy=false) where T<:TimeType
   mi,ind = findmin(dd)
   return ind
 end
+function axVal2Index(a::RangeAxis{T,<:Any,<:AbstractRange},v;fuzzy=false) where T<:TimeType
+  vconverted = convert_time(T,v)
+  dd = map(i->abs((i-vconverted)),a.values)
+  mi,ind = findmin(dd)
+  return ind
+end
 function axVal2Index(axis::CategoricalAxis{String},v::String;fuzzy::Bool=false)
   r=findfirst(isequal(v),axis.values)
   if r==nothing

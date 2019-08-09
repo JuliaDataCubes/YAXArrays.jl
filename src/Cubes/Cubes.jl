@@ -45,6 +45,8 @@ This function calculates a subset of a cube's data
 """
 function subsetcube end
 
+
+getsubset(x::AbstractCubeData) = x.subset === nothing ? ntuple(i->Colon(),ndims(x)) : x.subset
 #"""
 #Internal function to read a range from a datacube
 #"""

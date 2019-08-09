@@ -9,7 +9,7 @@ import ESDL.Cubes.Axes: axname, CubeAxis, CategoricalAxis, RangeAxis, TimeAxis,
   axVal2Index_lb, axVal2Index_ub, get_step, getAxis
 import Dates: Day,Hour,Minute,Second,Month,Year, Date, DateTime, TimeType
 import IntervalSets: Interval, (..)
-import CFTime: timedecode, timeencode
+import CFTime: timedecode, timeencode, DateTimeNoLeap, DateTime360Day, DateTimeAllLeap
 export (..), Cubes, getCubeData, CubeMask, cubeinfo
 const spand = Dict("days"=>Day,"months"=>Month,"years"=>Year,"hours"=>Hour,"seconds"=>Second,"minutes"=>Minute)
 
@@ -62,10 +62,14 @@ end
 function dataattfromaxis(ax::CubeAxis{<:String},n)
     prependrange(1:length(ax.values),n), Dict{String,Any}("_ARRAYVALUES"=>collect(ax.values))
 end
-function dataattfromaxis(ax::CubeAxis{<:TimeType},n)
-    refdate = Date(1980)
-    data = timeencode(ax.values,"days since 1980-01-01")
-    prependrange(data,n), Dict{String,Any}("units"=>"days since 1980-01-01")
+defaultcal(::Type{<:TimeType}) = "standard"
+defaultcal(::Type{<:DateTimeNoLeap}) = "noleap"
+defaultcal(::Type{<:DateTimeAllLeap}) = "allleap"
+defaultcal(::Type{<:DateTime360Day}) = "360_day"
+
+function dataattfromaxis(ax::CubeAxis{T},n) where T<:TimeType
+    data = timeencode(ax.values,"days since 1980-01-01",defaultcal(T))
+    prependrange(data,n), Dict{String,Any}("units"=>"days since 1980-01-01","calendar"=>defaultcal(T))
 end
 
 function zarrayfromaxis(p::ZGroup,ax::CubeAxis,offs)

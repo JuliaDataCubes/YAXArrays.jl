@@ -59,7 +59,7 @@ function _read(x::NetCDFCube{T,N},thedata::AbstractArray,r::CartesianIndices{N})
   allinds = NetCDF.open(x.file,x.varname) do v
     (map(i->Base.OneTo(i.dimlen),v.dim)...,)
   end |> CartesianIndices
-  subinds = map(getindex,allinds.indices,x.subset)
+  subinds = map(getindex,allinds.indices,getsubset(x))
   r2 = getsubinds(subinds,r.indices)
   sta = map(first,r2) |> collect
   cou = map(length,r2) |> collect
