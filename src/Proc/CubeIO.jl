@@ -78,7 +78,7 @@ inside the resulting file. Dimensions will be ordered according to the
 `priorities` keyword argument, which defaults to `Dict("LON"=>1,"LAT"=>2,"TIME"=>3)`,
 which means that the file will be stored with longitudes varying fastest.
 """
-function exportcube(r::AbstractCubeData,filename::String;priorities = Dict("LON"=>1,"LAT"=>2,"TIME"=>3))
+function exportcube(r::AbstractCubeData,filename::String;priorities = Dict("LON"=>1,"LAT"=>2,"TIME"=>3), proj=epsg4326)
 
   ax = caxes(r)
   ax_cont = collect(filter(i->isa(i,RangeAxis),ax))
@@ -89,14 +89,13 @@ function exportcube(r::AbstractCubeData,filename::String;priorities = Dict("LON"
   isempty(ax_cat) && (ax_cat=[VariableAxis(["layer"])])
   it = map(i->i.values,ax_cat)
   elt = Base.nonmissingtype(eltype(r))
-  vars = NcVar[NcVar(join(collect(string.(a)),"_"),dims,t=elt,atts=Dict("missing_value"=>convert(elt,-9999.0))) for a in product(it...)]
+  vars = NcVar[NcVar(join(collect(string.(a)),"_"),dims,t=elt,atts=Dict("missing_value"=>convert(elt,-9999.0), "grid_mapping" => proj["grid_mapping_name"])) for a in product(it...)]
   file = NetCDF.create(filename,vars)
   for d in dims
     ncwrite(d.vals,filename,d.name)
-    ncputatt(filename, d.name, Dict("grid_mapping" => "transverse_mercator"))
   end
-  ncputatt(filename, "transverse_mercator", projection)
-  println("CRS added")
+  nccreate(filename, proj["grid_mapping_name"])
+  ncputatt(filename, proj["grid_mapping_name"], proj)
   dl = map(i->i.dimlen,dims) |> cumprod
   isplit = findfirst(i->i>5e7,dl)
   isplit isa Nothing && (isplit=length(dl)+1)
