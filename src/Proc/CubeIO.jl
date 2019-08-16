@@ -148,4 +148,15 @@ AXIS[\"Easting\",EAST],
 AXIS[\"Northing\",NORTH],
 AUTHORITY[\"EPSG\",\"32629\"]]",
 "GeoTransform" => "722576.2320803495 20 0 4115483.464603715 0 -20 ")
+
+global const epsg4326=Dict(
+  "grid_mapping_name" => "latitude_longitude",
+  "long_name" => "CRS definition",
+  "longitude_of_prime_meridian" => 0.,
+  "semi_major_axis" => 6378137.,
+  "inverse_flattening" => 298.257223563,
+  "spatial_ref" => "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433],AUTHORITY[\"EPSG\",\"4326\"]]",
+  "GeoTransform" => "-98.68712696894481 0.0001796630568239077 0 20.69179551612753 0 -0.0001796630568239077 "
+)
+
 end
