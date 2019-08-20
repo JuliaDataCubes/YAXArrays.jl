@@ -59,7 +59,7 @@ end
 function dataattfromaxis(ax::CubeAxis{<:Number},n)
     prependrange(ax.values,n), Dict{String,Any}()
 end
-function dataattfromaxis(ax::CubeAxis{<:String},n)
+function dataattfromaxis(ax::CubeAxis,n)
     prependrange(1:length(ax.values),n), Dict{String,Any}("_ARRAYVALUES"=>collect(ax.values))
 end
 defaultcal(::Type{<:TimeType}) = "standard"
@@ -86,7 +86,6 @@ end
 
 function cleanZArrayCube(y::ZArrayCube)
   if !y.persist && myid()==1
-    println("Cleaning ", y.a.storage.folder)
     rm(y.a.storage.folder,recursive=true)
   end
 end

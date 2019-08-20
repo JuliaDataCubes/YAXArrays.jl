@@ -44,7 +44,7 @@ function aggregate_out(allout, highmat, labelsleft,n)
   dsort = Dict(i[2]=>i[1] for i in enumerate(labelsleft))
   for jout in 1:size(allout,2)
     for iout in 1:size(allout,1)
-      v = view(highmat,(iout*n-9):iout*n,(jout*n-9):jout*n,:)
+      v = view(highmat,(iout*n-(n-1)):iout*n,(jout*n-(n-1)):jout*n,:)
       for value in skipmissing(v)
         allout[iout,jout,dsort[value]]+=1
       end
@@ -206,7 +206,7 @@ end
 
 Calculates spatially aggregated statistics over a shapefile specified by `shp`.
 Returns a time series cube for variables in `cube` that contains `npast` time steps
-prior to and `nfuture` time steps after the event. 
+prior to and `nfuture` time steps after the event.
 """
 function aggstats(shp,csubvar,refdate;npast=3,nfuture=10)
 
