@@ -1,6 +1,9 @@
 export InDims, OutDims,AsArray,AsDataFrame,AsAxisArray
 const AxisDescriptorAll = Union{AxisDescriptor,String,Type{T},CubeAxis,Function} where T<:CubeAxis
 import ..Cubes.Axes: get_descriptor, ByFunction
+import ..Cubes: getsavefolder
+import Zarr: Compressor, NoCompressor
+import ...ESDL: workdir
 
 abstract type ArTypeRepr end
 struct AsArray <: ArTypeRepr end
@@ -102,6 +105,10 @@ struct OutDims
   retCubeType::Any
   update::Bool
   artype::ArTypeRepr
+  chunksize::Union{Tuple,Nothing}
+  compressor::Compressor
+  path::String
+  persist::Bool
   outtype::Union{Int,DataType}
 end
 function OutDims(axisdesc...;
@@ -111,11 +118,21 @@ function OutDims(axisdesc...;
            retcubetype=:auto,
            update=false,
            artype::ArTypeRepr=AsArray(),
+           chunksize=nothing,
+           compressor=NoCompressor(),
+           path=nothing,
            outtype=1)
   descs = map(get_descriptor,axisdesc)
   bcdescs = (map(get_descriptor,bcaxisdesc)...,)
   isa(artype,AsDataFrame) && length(descs)!=2 && error("DataFrame representation only possible if for 2D inner arrays")
-  OutDims(descs,bcdescs,genOut,finalizeOut,retcubetype,update,artype,outtype)
+  if path === nothing
+    path = tempname()[2:end]
+    persist = false
+  else
+    persist = true
+  end
+  path = getsavefolder(path)
+  OutDims(descs,bcdescs,genOut,finalizeOut,retcubetype,update,artype,chunksize,compressor,path,persist,outtype)
 end
 
 registerDATFunction(a...;kwargs...)=@warn("Registration does not exist anymore, ignoring....")

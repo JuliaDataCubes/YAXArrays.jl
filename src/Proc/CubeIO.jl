@@ -7,7 +7,7 @@ import NetCDF.ncread, NetCDF.ncclose
 import StatsBase.Weights
 import StatsBase.sample
 import Base.Iterators
-import ..Cubes: saveCube
+import ..Cubes: saveCube, check_overwrite, getsavefolder
 import ..Cubes.ESDLZarr: ZArrayCube
 
 
@@ -104,15 +104,28 @@ function exportcube(r::AbstractCubeData,filename::String;priorities = Dict("LON"
   nothing
 end
 
-function saveCube(c::AbstractCubeData, name::AbstractString)
-    dl = length.(caxes(c))
-    isplit = findfirst(i->i>5e7,dl)
-    isplit isa Nothing && (isplit=length(dl)+1)
-    axn = axname.(caxes(c)[1:isplit-1])
-    indims = InDims(axn...)
-    outdims = OutDims(axn..., retcubetype=ZArrayCube)
-    o = mapCube(copyto!,c,indims=indims, outdims=outdims)
-    saveCube(o,name)
+import Zarr: NoCompressor
+
+function saveCube(c::AbstractCubeData, name::AbstractString; overwrite = false, chunksize = nothing, compressor=NoCompressor())
+  allax = caxes(c)
+  if chunksize !== nothing
+    firstaxes = findall(i->i>1,chunksize)
+    lastaxes = setdiff(1:length(allax),firstaxes)
+  else
+    firstaxes = Int[]
+    lastaxes = 1:length(allax)
+  end
+  allax = allax[[firstaxes;lastaxes]]
+  dl = cumprod(length.(caxes(c)))
+  isplit = findfirst(i->i>5e7,dl)
+  isplit isa Nothing && (isplit=length(dl)+1)
+  forcesingle = (isplit+1)<length(firstaxes)
+  axn = axname.(allax[1:isplit-1])
+  indims = InDims(axn...)
+  path = getsavefolder(name)
+  check_overwrite(path,overwrite)
+  outdims = OutDims(axn..., retcubetype=ZArrayCube,chunksize=chunksize, compressor=compressor, path = path)
+  o = mapCube(copyto!,c,indims=indims, outdims=outdims)
 end
 
 export exportcube

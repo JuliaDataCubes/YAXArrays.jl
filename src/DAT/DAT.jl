@@ -14,6 +14,7 @@ import DataFrames
 import Distributed: nprocs
 import DataFrames: DataFrame, ncol
 import ProgressMeter: Progress, next!, progress_pmap
+import Zarr: NoCompressor
 using Dates
 import StatsBase.Weights
 global const debugDAT=[false]
@@ -70,7 +71,6 @@ mutable struct OutputCube
   isMem::Bool                      #Shall the output cube be in memory
   workarray::Any
   handle::Any                       #Cache to write the output to
-  folder::String                   #Folder to store the cube to
   outtype
 end
 getcube(c::OutputCube)      = c.cube
@@ -83,11 +83,11 @@ function setworkarray(c::OutputCube)
 end
 
 getOutAxis(desc::Tuple,inAxes,incubes,pargs,f)=map(i->getOutAxis(i,inAxes,incubes,pargs,f),desc)
-function OutputCube(outfolder,desc::OutDims,inAxes::Vector{CubeAxis},incubes,pargs,f)
+function OutputCube(desc::OutDims,inAxes::Vector{CubeAxis},incubes,pargs,f)
   axesSmall     = getOutAxis(desc.axisdesc,inAxes,incubes,pargs,f)
   broadcastAxes = getOutAxis(desc.bcaxisdesc,inAxes,incubes,pargs,f)
   outtype       = getOuttype(desc.outtype,incubes)
-  OutputCube(nothing,desc,collect(CubeAxis,axesSmall),CubeAxis[],collect(CubeAxis,broadcastAxes),Int[],false,nothing,nothing,outfolder,outtype)
+  OutputCube(nothing,desc,collect(CubeAxis,axesSmall),CubeAxis[],collect(CubeAxis,broadcastAxes),Int[],false,nothing,nothing,outtype)
 end
 
 """
@@ -123,7 +123,7 @@ mutable struct DATConfig{NIN,NOUT}
   addargs
   kwargs
 end
-function DATConfig(cdata,indims,outdims,inplace,max_cache,fu,outfolder,ispar,include_loopvars,addargs,kwargs)
+function DATConfig(cdata,indims,outdims,inplace,max_cache,fu,ispar,include_loopvars,addargs,kwargs)
 
   isa(indims,InDims) && (indims=(indims,))
   isa(outdims,OutDims) && (outdims=(outdims,))
@@ -134,9 +134,8 @@ function DATConfig(cdata,indims,outdims,inplace,max_cache,fu,outfolder,ispar,inc
   incubes  = ([InputCube(o[1],o[2]) for o in zip(cdata,indims)]...,)
   allInAxes = vcat([ic.axesSmall for ic in incubes]...)
   outcubes = ((map(1:length(outdims),outdims) do i,desc
-     OutputCube(string(outfolder,"_",i),desc,allInAxes,cdata,addargs,fu)
-   end)...,)
-
+     OutputCube(desc,allInAxes,cdata,addargs,fu)
+  end)...,)
 
   DATConfig(
     incubes,
@@ -232,13 +231,12 @@ Map a given function `fun` over slices of the data cube `cube`.
 ### Keyword arguments
 
 * `max_cache=1e7` maximum size of blocks that are read into memory, defaults to approx 10Mb
-* `outtype::DataType` output data type of the operation
 * `indims::InDims` List of input cube descriptors of type [`InDims`](@ref) for each input data cube
 * `outdims::OutDims` List of output cube descriptors of type [`OutDims`](@ref) for each output cube
 * `inplace` does the function write to an output array inplace or return a single value> defaults to `true`
 * `ispar` boolean to determine if parallelisation should be applied, defaults to `true` if workers are available.
-* `outfolder` a folder where the output cube is stroed, defaults to the result of `ESDLdir()`
 * `showprog` boolean indicating if a ProgressMeter shall be shown
+* `include_loopvars` boolean to indicate if the varoables looped over should be added as function arguments
 * `kwargs` additional keyword arguments passed to the inner function
 
 The first argument is always the function to be applied, the second is the input cube or
@@ -250,7 +248,6 @@ function mapCube(fu::Function,
     indims=InDims(),
     outdims=OutDims(),
     inplace=true,
-    outfolder=joinpath(workdir[1],string(tempname()[2:end],fu)),
     ispar=nprocs()>1,
     debug=false,
     include_loopvars=false,
@@ -259,7 +256,7 @@ function mapCube(fu::Function,
   @debug_print "Check if function is registered"
   @debug_print "Generating DATConfig"
   dc=DATConfig(cdata,indims,outdims,inplace,
-    max_cache,fu,outfolder,ispar,include_loopvars,addargs,kwargs)
+    max_cache,fu,ispar,include_loopvars,addargs,kwargs)
   @debug_print "Reordering Cubes"
   reOrderInCubes(dc)
   @debug_print "Analysing Axes"
@@ -391,8 +388,8 @@ function getRetCubeType(oc,ispar,max_cache)
 end
 
 function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co) where T<:ZArrayCube
-  cs = (map(length,oc.axesSmall)...,loopcachesize...)
-  oc.cube=ZArrayCube(oc.allAxes,folder=oc.folder,T=eltype,persist=false,chunksize=cs,chunkoffset=co)
+  cs = oc.desc.chunksize ===nothing ? (map(length,oc.axesSmall)...,loopcachesize...) : oc.desc.chunksize
+  oc.cube=ZArrayCube(oc.allAxes,folder=oc.desc.path,T=eltype,persist=oc.desc.persist,chunksize=cs,chunkoffset=co)
 end
 function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co) where T<:CubeMem
   newsize=map(length,oc.allAxes)
@@ -506,8 +503,19 @@ function getCacheSizes(dc::DATConfig)
         push!(cmisses,(iloopax = ilax,cs = cubechunks(ic.cube)[ii],iscompressed = iscompressed(ic.cube), innerleap=inax))
       end
     end
+    for oc in dc.outcubes
+      cs = oc.desc.chunksize
+      if cs !== nothing
+        ii = findAxis(lax,oc.allaxes)
+        if !isa(ii,Nothing)
+          innerleap = prod(cs)
+          push!(cmisses,(iloopax = ilax,cs = cs[ii],iscompressed = isa(oc.compressor,NoCompressor), innerleap=innerleap))
+        end
+      end
+    end
   end
   sort!(cmisses,lt=cmpcachmisses)
+  @show cmisses
   #@show cmisses
   loopcachesize    = getLoopCacheSize(max(inblocksize,outblocksize),map(length,dc.LoopAxes),dc.max_cache, cmisses)
   for cube in dc.incubes
@@ -519,6 +527,7 @@ function getCacheSizes(dc::DATConfig)
     end
   end
   dc.loopcachesize=loopcachesize
+  @show loopcachesize
   return dc
 end
 
