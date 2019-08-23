@@ -7,7 +7,7 @@ import NetCDF.ncread, NetCDF.ncclose
 import StatsBase.Weights
 import StatsBase.sample
 import Base.Iterators
-import ..Cubes: saveCube, check_overwrite, getsavefolder
+import ..Cubes: saveCube, check_overwrite, getsavefolder, cubechunks
 import ..Cubes.ESDLZarr: ZArrayCube
 
 
@@ -106,15 +106,10 @@ end
 
 import Zarr: NoCompressor
 
-function saveCube(c::AbstractCubeData, name::AbstractString; overwrite = false, chunksize = nothing, compressor=NoCompressor())
+function saveCube(c::AbstractCubeData, name::AbstractString; overwrite = false, chunksize = cubechunks(c), compressor=NoCompressor())
   allax = caxes(c)
-  if chunksize !== nothing
-    firstaxes = findall(i->i>1,chunksize)
-    lastaxes = setdiff(1:length(allax),firstaxes)
-  else
-    firstaxes = Int[]
-    lastaxes = 1:length(allax)
-  end
+  firstaxes = findall(i->i>1,chunksize)
+  lastaxes = setdiff(1:length(allax),firstaxes)
   allax = allax[[firstaxes;lastaxes]]
   dl = cumprod(length.(caxes(c)))
   isplit = findfirst(i->i>5e7,dl)
@@ -125,7 +120,12 @@ function saveCube(c::AbstractCubeData, name::AbstractString; overwrite = false, 
   path = getsavefolder(name)
   check_overwrite(path,overwrite)
   outdims = OutDims(axn..., retcubetype=ZArrayCube,chunksize=chunksize, compressor=compressor, path = path)
-  o = mapCube(copyto!,c,indims=indims, outdims=outdims)
+  if forcesingle
+    nprocs()>1 && println("Forcing single core processing because of bad chunk size")
+    o = mapCube(copyto!,c,indims=indims, outdims=outdims,ispar=false)
+  else
+    o = mapCube(copyto!,c,indims=indims, outdims=outdims)
+  end
 end
 
 export exportcube

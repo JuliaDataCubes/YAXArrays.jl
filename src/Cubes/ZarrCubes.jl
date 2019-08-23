@@ -113,8 +113,9 @@ of `CubeAxis`. A new empty Zarr array will be created and can serve as a sink fo
 * `overwrite::Bool=false` overwrite cube if it already exists
 * `properties=Dict{String,Any}()` additional cube properties
 * `fillvalue= T>:Missing ? defaultfillval(Base.nonmissingtype(T)) : nothing` fill value
-
+* `datasetaxis="Variable"` special treatment of a categorical axis that gets written into separate xarrays
 """
+
 function ZArrayCube(axlist;
   folder=tempname(),
   T=Union{Float32,Missing},
@@ -125,6 +126,7 @@ function ZArrayCube(axlist;
   overwrite::Bool=false,
   properties=Dict{String,Any}(),
   fillvalue= T>:Missing ? defaultfillval(Base.nonmissingtype(T)) : nothing,
+  datasetaxis = "Variable"
   )
   if isdir(folder)
     if overwrite
@@ -133,7 +135,17 @@ function ZArrayCube(axlist;
       error("Folder $folder is not empty, set overwrite=true to overwrite.")
     end
   end
+  splice_generic(x::AbstractArray,i) = [x[1:(i-1)];x[(i+1:end)]]
+  splice_generic(x::Tuple,i)         = (x[1:(i-1)]...,x[(i+1:end)]...)
   myar = zgroup(folder)
+  if (iax = findAxis(datasetaxis,axlist)) !== nothing
+    groupaxis = axlist[iax]
+    axlist = splice_generic(axlist,iax)
+    chunksize = splice_generic(chunksize,iax)
+    chunkoffset = splice_generic(chunkoffset,iax)
+  else
+    groupaxis = nothing
+  end
   foreach(axlist,chunkoffset) do ax,co
     zarrayfromaxis(myar,ax,co)
   end
@@ -147,10 +159,22 @@ function ZArrayCube(axlist;
       (chunkoffset[i]+1):(length(axlist[i].values)+chunkoffset[i])
     end
   end
-  za = zcreate(T, myar,"layer", s...,attrs=attr, fill_value=fillvalue,chunks=chunksize,compressor=compressor)
-  zout = ZArrayCube{T,length(s),typeof(za),typeof(subs)}(za,axlist,subs,persist,propfromattr(attr))
-  finalizer(cleanZArrayCube,zout)
-  zout
+  if groupaxis===nothing
+    cubenames = ["layer"]
+  else
+    cubenames = groupaxis.values
+  end
+  allcubes = map(cubenames) do cn
+    za = zcreate(T, myar,cn, s...,attrs=attr, fill_value=fillvalue,chunks=chunksize,compressor=compressor)
+    zout = ZArrayCube{T,length(s),typeof(za),typeof(subs)}(za,axlist,subs,persist,propfromattr(attr))
+    finalizer(cleanZArrayCube,zout)
+    zout
+  end
+  if groupaxis===nothing
+    return allcubes[1]
+  else
+    return concatenateCubes(allcubes,groupaxis)
+  end
 end
 
 function _read(z::ZArrayCube{<:Any,N,<:Any,<:Nothing},thedata::AbstractArray{<:Any,N},r::CartesianIndices{N}) where N
@@ -331,7 +355,7 @@ function _subsetcube(z::AbstractCubeData, subs;kwargs...)
     end
   end
   substuple = ntuple(i->subs[i],length(subs))
-  inewaxes = findall(i->isa(i,AbstractRange),substuple)
+  inewaxes = findall(i->isa(i,AbstractVector),substuple)
   newaxes = newaxes[inewaxes]
   @assert length.(newaxes) == map(length,(substuple |> onlyrangetuple)) |> collect
   newaxes, substuple

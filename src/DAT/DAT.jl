@@ -515,7 +515,6 @@ function getCacheSizes(dc::DATConfig)
     end
   end
   sort!(cmisses,lt=cmpcachmisses)
-  @show cmisses
   #@show cmisses
   loopcachesize    = getLoopCacheSize(max(inblocksize,outblocksize),map(length,dc.LoopAxes),dc.max_cache, cmisses)
   for cube in dc.incubes
@@ -527,7 +526,6 @@ function getCacheSizes(dc::DATConfig)
     end
   end
   dc.loopcachesize=loopcachesize
-  @show loopcachesize
   return dc
 end
 
