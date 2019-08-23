@@ -78,7 +78,7 @@ inside the resulting file. Dimensions will be ordered according to the
 `priorities` keyword argument, which defaults to `Dict("LON"=>1,"LAT"=>2,"TIME"=>3)`,
 which means that the file will be stored with longitudes varying fastest.
 """
-function exportcube(r::AbstractCubeData,filename::String;priorities = Dict("LON"=>1,"LAT"=>2,"TIME"=>3))
+function exportcube(r::AbstractCubeData,filename::String;priorities = Dict("LON"=>1,"LAT"=>2,"TIME"=>3), proj=epsg4326)
 
   ax = caxes(r)
   ax_cont = collect(filter(i->isa(i,RangeAxis),ax))
@@ -89,17 +89,19 @@ function exportcube(r::AbstractCubeData,filename::String;priorities = Dict("LON"
   isempty(ax_cat) && (ax_cat=[VariableAxis(["layer"])])
   it = map(i->i.values,ax_cat)
   elt = Base.nonmissingtype(eltype(r))
-  vars = NcVar[NcVar(join(collect(string.(a)),"_"),dims,t=elt,atts=Dict("missing_value"=>convert(elt,-9999.0))) for a in product(it...)]
+  vars = NcVar[NcVar(join(collect(string.(a)),"_"),dims,t=elt,atts=Dict("missing_value"=>convert(elt,-9999.0), "grid_mapping" => proj["grid_mapping_name"])) for a in product(it...)]
   file = NetCDF.create(filename,vars)
   for d in dims
     ncwrite(d.vals,filename,d.name)
   end
+  nccreate(filename, proj["grid_mapping_name"])
+  ncputatt(filename, proj["grid_mapping_name"], proj)
   dl = map(i->i.dimlen,dims) |> cumprod
   isplit = findfirst(i->i>5e7,dl)
   isplit isa Nothing && (isplit=length(dl)+1)
   incubes = InDims(ax_cont[1:(isplit-1)]...)
   cont_loop = Dict(ii=>axname(ax_cont[ii]) for ii in isplit:length(ax_cont))
-  mapCube(writefun,r,length(ax_cont),cont_loop,filename,indims=incubes,include_loopvars=true,ispar=false,max_cache=5e7)
+  mapCube(writefun,r,length(ax_cont),cont_loop,filename,indims=incubes,include_loopvars=true,ispar=false,max_cache=5e8)
   NetCDF.close(file)
   nothing
 end
@@ -116,4 +118,44 @@ function saveCube(c::AbstractCubeData, name::AbstractString)
 end
 
 export exportcube
+
+global const projection = Dict(
+"grid_mapping_name" => "transverse_mercator",
+"longitude_of_central_meridian" => -9. ,
+"false_easting" => 500000. ,
+"false_northing" => 0. ,
+"latitude_of_projection_origin" => 0. ,
+"scale_factor_at_central_meridian" => 0.9996,
+"long_name" => "CRS definition",
+"longitude_of_prime_meridian" => 0.,
+"semi_major_axis" => 6378137.,
+"inverse_flattening" => 298.257223563 ,
+"spatial_ref" => "PROJCS[\"WGS 84 / UTM zone 29N\",GEOGCS[\"WGS 84\",
+DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,
+AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],
+PRIMEM[\"Greenwich\",0,AUTHORITY[\"EPSG\",\"8901\"]],
+UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]],
+AUTHORITY[\"EPSG\",\"4326\"]],
+PROJECTION[\"Transverse_Mercator\"],
+PARAMETER[\"latitude_of_origin\",0],
+PARAMETER[\"central_meridian\",-9],
+PARAMETER[\"scale_factor\",0.9996],
+PARAMETER[\"false_easting\",500000],
+PARAMETER[\"false_northing\",0],
+UNIT[\"metre\",1,AUTHORITY[\"EPSG\",\"9001\"]],
+AXIS[\"Easting\",EAST],
+AXIS[\"Northing\",NORTH],
+AUTHORITY[\"EPSG\",\"32629\"]]",
+"GeoTransform" => "722576.2320803495 20 0 4115483.464603715 0 -20 ")
+
+global const epsg4326=Dict(
+  "grid_mapping_name" => "latitude_longitude",
+  "long_name" => "CRS definition",
+  "longitude_of_prime_meridian" => 0.,
+  "semi_major_axis" => 6378137.,
+  "inverse_flattening" => 298.257223563,
+  "spatial_ref" => "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433],AUTHORITY[\"EPSG\",\"4326\"]]",
+  "GeoTransform" => "-98.68712696894481 0.0001796630568239077 0 20.69179551612753 0 -0.0001796630568239077 "
+)
+
 end
