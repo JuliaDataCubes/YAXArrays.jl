@@ -410,7 +410,7 @@ function saveCube(z::ZArrayCube, name::AbstractString; overwrite=false, chunksiz
     z.persist = true
     z.a = zopen(newfolder * "/layer")
   else
-    invoke(saveCube,Tuple{AbstractCubeData, AbstractString},z,name;overwrite=overwrite, chunksize=chunksize, compressor=compressor)
+    invoke(saveCube,Tuple{AbstractCubeData, AbstractString},z,name;overwrite=overwrite, chunksize=chunksize===nothing ? cubechunks(z) : chunksize, compressor=compressor)
   end
 end
 
