@@ -509,7 +509,7 @@ function getCacheSizes(dc::DATConfig)
         ii = findAxis(lax,oc.allAxes)
         if !isa(ii,Nothing)
           innerleap = prod(cs)
-          push!(cmisses,(iloopax = ilax,cs = cs[ii],iscompressed = isa(oc.compressor,NoCompressor), innerleap=innerleap))
+          push!(cmisses,(iloopax = ilax,cs = cs[ii],iscompressed = isa(oc.desc.compressor,NoCompressor), innerleap=innerleap))
         end
       end
     end
