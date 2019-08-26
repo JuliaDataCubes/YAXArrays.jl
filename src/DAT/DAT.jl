@@ -506,7 +506,7 @@ function getCacheSizes(dc::DATConfig)
     for oc in dc.outcubes
       cs = oc.desc.chunksize
       if cs !== nothing
-        ii = findAxis(lax,oc.allaxes)
+        ii = findAxis(lax,oc.allAxes)
         if !isa(ii,Nothing)
           innerleap = prod(cs)
           push!(cmisses,(iloopax = ilax,cs = cs[ii],iscompressed = isa(oc.compressor,NoCompressor), innerleap=innerleap))
