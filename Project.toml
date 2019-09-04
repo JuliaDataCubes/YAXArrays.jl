@@ -39,6 +39,7 @@ WeightedOnlineStats = "0.3"
 [extras]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+RDatasets = "ce6b1742-4840-55fa-b093-852dadbb1d8b"
 
 [targets]
-test = ["Test", "CSV"]
+test = ["Test", "CSV", "RDatasets"]
