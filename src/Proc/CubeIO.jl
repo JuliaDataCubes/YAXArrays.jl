@@ -106,13 +106,13 @@ end
 
 import Zarr: NoCompressor
 
-function saveCube(c::AbstractCubeData, name::AbstractString; overwrite = false, chunksize = cubechunks(c), compressor=NoCompressor())
+function saveCube(c::AbstractCubeData, name::AbstractString; overwrite = false, chunksize = cubechunks(c), compressor=NoCompressor(), max_cache=1e8)
   allax = caxes(c)
   firstaxes = findall(i->i>1,chunksize)
   lastaxes = setdiff(1:length(allax),firstaxes)
   allax = allax[[firstaxes;lastaxes]]
   dl = cumprod(length.(caxes(c)))
-  isplit = findfirst(i->i>5e7,dl)
+  isplit = findfirst(i->i>max_cache/sizeof(eltype(c)),dl)
   isplit isa Nothing && (isplit=length(dl)+1)
   forcesingle = (isplit+1)<length(firstaxes)
   axn = axname.(allax[1:isplit-1])
@@ -122,9 +122,9 @@ function saveCube(c::AbstractCubeData, name::AbstractString; overwrite = false, 
   outdims = OutDims(axn..., retcubetype=ZArrayCube,chunksize=chunksize, compressor=compressor, path = path)
   if forcesingle
     nprocs()>1 && println("Forcing single core processing because of bad chunk size")
-    o = mapCube(copyto!,c,indims=indims, outdims=outdims,ispar=false)
+    o = mapCube(copyto!,c,indims=indims, outdims=outdims,ispar=false,max_cache=max_cache)
   else
-    o = mapCube(copyto!,c,indims=indims, outdims=outdims)
+    o = mapCube(copyto!,c,indims=indims, outdims=outdims,max_cache=max_cache)
   end
 end
 

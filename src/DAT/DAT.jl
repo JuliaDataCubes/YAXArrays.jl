@@ -389,7 +389,7 @@ end
 
 function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co) where T<:ZArrayCube
   cs = oc.desc.chunksize ===nothing ? (map(length,oc.axesSmall)...,loopcachesize...) : oc.desc.chunksize
-  oc.cube=ZArrayCube(oc.allAxes,folder=oc.desc.path,T=eltype,persist=oc.desc.persist,chunksize=cs,chunkoffset=co)
+  oc.cube=ZArrayCube(oc.allAxes,folder=oc.desc.path,T=eltype,persist=oc.desc.persist,chunksize=cs,chunkoffset=co,compressor=oc.desc.compressor)
 end
 function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co) where T<:CubeMem
   newsize=map(length,oc.allAxes)
