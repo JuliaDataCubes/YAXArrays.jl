@@ -1,7 +1,17 @@
 using ESDL
 using Test
-#Make sure S3 cube is always accessed for tests
-delete!(ENV,"ESDL_CUBEDIR")
+
+newcubedir = mktempdir()
+ESDLdir(newcubedir)
+# Download Cube subset
+c = S3Cube()
+cgermany = c[
+  region = "Germany",
+  var = ["gross", "net_ecosystem", "air_temperature_2m", "terrestrial_ecosystem", "soil_moisture"],
+  time = 2000:2010
+]
+saveCube(cgermany,"germanycube", chunksize=(20,20,92,1))
+ENV["ESDL_CUBEDIR"] = joinpath(newcubedir,"germanycube")
 
 include("access.jl")
 include("axes.jl")

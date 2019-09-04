@@ -12,18 +12,18 @@ iris = dataset("datasets", "iris")
 
 @testset "TableAggregator functions" begin
     fitMean = fittable(DataFrames.eachrow(iris), Mean, :SepalWidth)
-    @test value(fitMean) ≈ mean(iris[:SepalWidth])
+    @test value(fitMean) ≈ mean(iris[!,:SepalWidth])
 
-    minSepalLength, maxSepalLength = extrema(iris[:SepalLength])
+    minSepalLength, maxSepalLength = extrema(iris[!,:SepalLength])
     weightVector = map(x -> (x - minSepalLength) /
-                    (maxSepalLength - minSepalLength), iris[:SepalLength]
+                    (maxSepalLength - minSepalLength), iris[!,:SepalLength]
                     )
     fitMeanWeight = fittable(DataFrames.eachrow(iris), WeightedMean, :SepalWidth,
                     weight=(x -> (x.SepalLength - minSepalLength) /
                         (maxSepalLength - minSepalLength)
                         )
                     )
-    @test value(fitMeanWeight) ≈ mean(iris[:SepalWidth], weights(weightVector))
+    @test value(fitMeanWeight) ≈ mean(iris[!,:SepalWidth], weights(weightVector))
 
     meanBy = by(iris, :Species, :SepalWidth => mean)
     cn = names(meanBy)[2]
@@ -49,6 +49,6 @@ iris = dataset("datasets", "iris")
                                         )
                                 )
     for (key, value) in value(fitMeanByWeight)
-        @test value ≈ meanByWeight[meanByWeight[:Species] .== key, :SepalWidth_mean][1]
+        @test value ≈ meanByWeight[meanByWeight[!,:Species] .== key, :SepalWidth_mean][1]
     end
 end

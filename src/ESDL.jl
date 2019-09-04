@@ -21,7 +21,9 @@ export @loadOrGenerate # from ESDL Tools
 
 global const workdir=String["./"]
 global const recal=Bool[false]
-haskey(ENV,"ESDL_WORKDIR") && (workdir[1]=ENV["ESDL_WORKDIR"])
+function __init__()
+  haskey(ENV,"ESDL_WORKDIR") && (workdir[1]=ENV["ESDL_WORKDIR"])
+end
 ESDLdir(x::String)=workdir[1]=x
 recalculate(x::Bool)=recal[1]=x
 recalculate()=recal[1]

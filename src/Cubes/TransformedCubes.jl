@@ -126,17 +126,21 @@ cubechunks(x::ConcatCube)=(cubechunks(x.cubelist[1])...,1)
 chunkoffset(x::ConcatCube)=(chunkoffset(x.cubelist[1])...,0)
 getCubeDes(v::ConcatCube)="Collection of $(getCubeDes(v.cubelist[1]))"
 using Base.Cartesian
-@generated function _read(x::ConcatCube{T,N},thedata::AbstractArray,r::CartesianIndices{N}) where {T,N}
-  viewEx1=Expr(:call,:view,:aout,fill(Colon(),N-1)...,:j)
-  quote
-    aout=thedata
-    rnew = CartesianIndices(r.indices[1:end-1])
-    for (j,i)=enumerate(r.indices[end])
-      a=$viewEx1
-      _read(x.cubelist[i],a,rnew)
-    end
-    return aout
+function _read(x::ConcatCube{T,N},thedata::AbstractArray,r::CartesianIndices{N}) where {T,N}
+  rnew = CartesianIndices(r.indices[1:end-1])
+  for (j,i)=enumerate(r.indices[end])
+    a=selectdim(thedata,N,j)
+    _read(x.cubelist[i],a,rnew)
   end
+  return thedata
+end
+function _write(x::ConcatCube{T,N},thedata::AbstractArray,r::CartesianIndices{N}) where {T,N}
+  rnew = CartesianIndices(r.indices[1:end-1])
+  for (j,i)=enumerate(r.indices[end])
+    a=selectdim(thedata,N,j)
+    _write(x.cubelist[i],a,rnew)
+  end
+  return nothing
 end
 
 using RecursiveArrayTools

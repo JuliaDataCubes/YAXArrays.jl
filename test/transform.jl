@@ -6,11 +6,11 @@ using Statistics
 c=Cube()
 
 @testset "ConcatCubes" begin
-d1 = getCubeData(c,variable="air_temperature_2m",longitude=(30,31),latitude=(50,51),
+d1 = getCubeData(c,variable="air_temperature_2m",longitude=(10,11),latitude=(50,51),
                 time=(Date("2002-01-01"),Date("2008-12-31")))
-d2 = getCubeData(c,variable="gross_primary_productivity",longitude=(30,31),latitude=(50,51),
+d2 = getCubeData(c,variable="gross_primary_productivity",longitude=(10,11),latitude=(50,51),
                 time=(Date("2002-01-01"),Date("2008-12-31")))
-d3 = getCubeData(c,variable="net_ecosystem_exchange",longitude=(30,31),latitude=(50,51),
+d3 = getCubeData(c,variable="net_ecosystem_exchange",longitude=(10,11),latitude=(50,51),
                 time=(Date("2002-01-01"),Date("2007-12-31")))
 conccube = concatenateCubes([d1,d2],CategoricalAxis("NewAxis",["v1","v2"]))
 @test size(conccube)==(4,4,322,2)

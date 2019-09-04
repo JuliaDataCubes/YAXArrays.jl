@@ -220,6 +220,18 @@ end
 
 import ..ESDL.workdir
 using NetCDF
+
+function check_overwrite(newfolder, overwrite)
+  if isdir(newfolder)
+    if overwrite
+      rm(newfolder, recursive=true)
+    else
+      error("$(newfolder) already exists, please pick another name or use `overwrite=true`")
+    end
+  end
+end
+getsavefolder(name) = isabspath(name) ? name : joinpath(workdir[1],name)
+
 """
     saveCube(cube,name::String)
 
@@ -227,12 +239,15 @@ Save a [`ZarrCube`](@ref) or [`CubeMem`](@ref) to the folder `name` in the ESDL 
 
 See also [`loadCube`](@ref)
 """
-function saveCube(c::CubeMem{T},name::AbstractString) where T
-  newfolder=joinpath(workdir[1],name)
-  isdir(newfolder) && error("$(name) alreaday exists, please pick another name")
-  tc=Cubes.ESDLZarr.ZArrayCube(c.axes,folder=newfolder,T=T)
-  _write(tc,c.data,CartesianIndices(c.data))
-end
+function saveCube end
+
+
+# function saveCube(c::CubeMem{T},name::AbstractString; overwrite=true) where T
+#   newfolder=getsavefolder(name)
+#   check_overwrite(newfolder, overwrite)
+#   tc=Cubes.ESDLZarr.ZArrayCube(c.axes,folder=newfolder,T=T)
+#   _write(tc,c.data,CartesianIndices(c.data))
+# end
 
 import Base.Iterators: take, drop
 Base.show(io::IO,a::RangeAxis)=print(io,rpad(Axes.axname(a),20," "),"Axis with ",length(a)," Elements from ",first(a.values)," to ",last(a.values))

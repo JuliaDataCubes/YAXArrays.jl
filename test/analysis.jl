@@ -24,7 +24,7 @@ function doTests()
   # Test simple Stats first
   c=Cube()
 
-  d = subsetcube(c,variable="air_temperature_2m",lon=(30,31),lat=(50,51),
+  d = subsetcube(c,variable="air_temperature_2m",lon=(10,11),lat=(50,51),
                 time=(Date("2002-01-01"),Date("2008-12-31")))
 
   dmem=readcubedata(d)
@@ -33,10 +33,10 @@ function doTests()
   # Basic statistics
   m=mapslices(mean∘skipmissing,d,dims = "Time")
 
-  @test isapprox(readcubedata(m).data,[281.598 281.657 281.595 281.639;
-   281.687 281.731 281.692 281.722;
-   281.734 281.779 281.787 281.816;
-   281.694 281.775 281.879 281.933])
+  @test isapprox(readcubedata(m).data,[282.04703 281.84494 281.65927 282.2035;
+    281.90726 281.59995 281.69135 282.38644;
+    281.84158 281.35898 281.66083 282.49042; 
+    281.92462 281.12613 281.50513 282.4352])
 
   #Test Spatial meann along laitutde axis
   d1=subsetcube(c,variable="gross_primary_productivity",time=(Date("2002-01-01"),Date("2002-01-01")),lon=(30,30))
@@ -47,7 +47,7 @@ function doTests()
   end
   # Test Mean seasonal cycle retrieval
   @testset "Seasonal cycle statistics and anomalies" begin
-  cdata=subsetcube(c,variable="soil_moisture",lon=30,lat=50.75)
+  cdata=subsetcube(c,variable="soil_moisture",lon=10,lat=50.75)
   d=readcubedata(cdata)
 
   x2=getMSC(d)
@@ -81,13 +81,13 @@ function doTests()
   end
 
 
-  d1=subsetcube(c,variable=["gross_primary_productivity","net_ecosystem_exchange"],lon=(30,30),lat=(50,50))
-  d2=subsetcube(c,variable=["gross_primary_productivity","air_temperature_2m"],lon=(30,30),lat=(50,50))
+  d1=subsetcube(c,variable=["gross_primary_productivity","net_ecosystem_exchange"],lon=(10,10),lat=(50,50))
+  d2=subsetcube(c,variable=["gross_primary_productivity","air_temperature_2m"],lon=(10,10),lat=(50,50))
 
 
   @testset "Multiple output cubes" begin
   #Test onvolving multiple output cubes
-  c1=subsetcube(c,variable="gross_primary_productivity",lon=(30,31),lat=(50,51),time=Date(2001)..Date(2010))
+  c1=subsetcube(c,variable="gross_primary_productivity",lon=(10,11),lat=(50,51),time=Date(2001)..Date(2010))
 
   c2=readcubedata(c1)
 
