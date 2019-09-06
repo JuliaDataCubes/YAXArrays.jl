@@ -3,7 +3,7 @@ import ..Cubes.ESDLZarr: toaxis, axname, AbstractCubeData, ZArrayCube, propfroma
 import Zarr: ZGroup, zopen
 import ..Cubes.Axes: axsym, CubeAxis, findAxis, CategoricalAxis
 import ..Cubes: AbstractCubeData, Cube
-import DataStructures: OrderedDict
+import DataStructures: OrderedDict, counter
 struct Dataset
     cubes::OrderedDict{Symbol,AbstractCubeData}
     axes::Dict{Symbol,CubeAxis}
@@ -119,22 +119,26 @@ ESDLDataset(;kwargs...) = Dataset(get(ENV,"ESDL_CUBEDIR","/home/jovyan/work/data
 
 
 function Cube(ds::Dataset; joinname="Variable")
+
   dl = collect(keys(ds.axes))
   dls = string.(dl)
   length(ds.cubes)==1 && return first(values(ds.cubes))
+  #TODO This is an ugly workaround to merge cubes with different element types,
+  # There should bde a more generic solution
+  eltypes = map(eltype,values(ds.cubes))
+  majtype = findmax(counter(eltypes))[2]
   newkeys = Symbol[]
   for k in keys(ds.cubes)
     c = ds.cubes[k]
-    (eltype(c)<:Union{Float32,Missing}) || return false
-    if all(axn->findAxis(axn,c)!==nothing,dls)
+    if all(axn->findAxis(axn,c)!==nothing,dls) && eltype(c)==majtype
       push!(newkeys,k)
     end
   end
   if length(newkeys)==1
-    ds.cubes[first(newkeys)]
+    return ds.cubes[first(newkeys)]
   else
     varax = CategoricalAxis(joinname, string.(newkeys))
-    concatenateCubes([ds.cubes[k] for k in newkeys], varax)
+    return concatenateCubes([ds.cubes[k] for k in newkeys], varax)
   end
 end
 
