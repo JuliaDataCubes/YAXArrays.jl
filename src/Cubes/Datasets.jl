@@ -3,8 +3,9 @@ import ..Cubes.ESDLZarr: toaxis, axname, AbstractCubeData, ZArrayCube, propfroma
 import Zarr: ZGroup, zopen
 import ..Cubes.Axes: axsym, CubeAxis, findAxis, CategoricalAxis
 import ..Cubes: AbstractCubeData, Cube
+import DataStructures: OrderedDict
 struct Dataset
-    cubes::Dict{Symbol,AbstractCubeData}
+    cubes::OrderedDict{Symbol,AbstractCubeData}
     axes::Dict{Symbol,CubeAxis}
 end
 function Dataset(;cubesnew...)
@@ -16,7 +17,7 @@ function Dataset(;cubesnew...)
     axesall = collect(axesall)
     axnameall = [axsym(a) in (:Lon, :Lat, :Time) ? Symbol(lowercase(string(axsym(a)))) : axsym(a) for a in axesall]
     axesnew = Dict{Symbol,CubeAxis}(axnameall[i]=>axesall[i] for i in 1:length(axesall))
-    Dataset(cubesnew, axesnew)
+    Dataset(OrderedDict(cubesnew), axesnew)
 end
 
 function Base.show(io::IO,ds::Dataset)
@@ -101,7 +102,7 @@ function Dataset(g::ZGroup)
     upname = uppercase(ar[1])
     !occursin("BNDS",upname) && !occursin("BOUNDS",upname) && !any(i->isequal(upname,uppercase(i)),dnames)
   end
-  allcubes = Dict{Symbol,AbstractCubeData}()
+  allcubes = OrderedDict{Symbol,AbstractCubeData}()
   for iv in  varlist
     vname, zarray = iv
     s = size(zarray)
@@ -121,13 +122,14 @@ function Cube(ds::Dataset; joinname="Variable")
   dl = collect(keys(ds.axes))
   dls = string.(dl)
   length(ds.cubes)==1 && return first(values(ds.cubes))
-  newkeys = filter(keys(ds.cubes)) do k
+  newkeys = Symbol[]
+  for k in keys(ds.cubes)
     c = ds.cubes[k]
     (eltype(c)<:Union{Float32,Missing}) || return false
-    all(dls) do axn
-      findAxis(axn,c)!==nothing
+    if all(axn->findAxis(axn,c)!==nothing,dls)
+      push!(newkeys,k)
     end
-  end |> collect
+  end
   if length(newkeys)==1
     ds.cubes[first(newkeys)]
   else

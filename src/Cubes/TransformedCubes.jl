@@ -118,6 +118,15 @@ function concatenateCubes(cl,cataxis::CubeAxis)
   props=merge(cubeproperties.(cl)...)
   ConcatCube{T,N+1}(cl,cataxis,axlist,props)
 end
+function concatenateCubes(;kwargs...)
+  cubenames = String[]
+  for (n,c) in kwargs
+    push!(cubenames,string(n))
+  end
+  cubes = map(i->i[2],collect(kwargs))
+  findAxis("Variable",cubes[1]) === nothing || error("Input cubes must not contain a variable kwarg concatenation")
+  concatenateCubes(cubes, CategoricalAxis("Variable",cubenames))
+end
 Base.size(x::ConcatCube)=(size(x.cubelist[1])...,length(x.cataxis))
 Base.size(x::ConcatCube{T,N},i) where {T,N}=i==N ? length(x.cataxis) : size(x.cubelist[1],i)
 caxes(v::ConcatCube)=[v.cubeaxes;v.cataxis]

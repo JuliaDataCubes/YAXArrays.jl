@@ -106,7 +106,7 @@ struct OutDims
   update::Bool
   artype::ArTypeRepr
   chunksize::Union{Tuple,Nothing}
-  compressor::Compressor
+  compressor::Any
   path::String
   persist::Bool
   outtype::Union{Int,DataType}
@@ -120,18 +120,16 @@ function OutDims(axisdesc...;
            artype::ArTypeRepr=AsArray(),
            chunksize=nothing,
            compressor=NoCompressor(),
-           path=nothing,
+           path="",
            outtype=1)
   descs = map(get_descriptor,axisdesc)
   bcdescs = (map(get_descriptor,bcaxisdesc)...,)
   isa(artype,AsDataFrame) && length(descs)!=2 && error("DataFrame representation only possible if for 2D inner arrays")
-  if path === nothing
-    path = tempname()[2:end]
+  if path == ""
     persist = false
   else
     persist = true
   end
-  path = getsavefolder(path)
   OutDims(descs,bcdescs,genOut,finalizeOut,retcubetype,update,artype,chunksize,compressor,path,persist,outtype)
 end
 

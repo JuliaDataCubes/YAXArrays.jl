@@ -5,7 +5,7 @@ using ..ESDLTools
 import Distributed: pmap, @everywhere, workers
 import ..Cubes: getAxis, getOutAxis, getAxis, cubechunks, iscompressed, chunkoffset, _write,
   CubeAxis, RangeAxis, CategoricalAxis, AbstractCubeData, CubeMem, AbstractCubeMem,
-  caxes, findAxis, _read, _write, Dataset
+  caxes, findAxis, _read, _write, Dataset, getsavefolder
 import ..Cubes.Axes: AxisDescriptor, axname, ByInference, axsym
 import ...ESDL
 import ..Cubes.ESDLZarr: ZArrayCube
@@ -45,6 +45,7 @@ end
 function InputCube(c::AbstractCubeData, desc::InDims)
   axesSmall = getAxis.(desc.axisdesc,Ref(c))
   isMem = isa(c,AbstractCubeMem)
+  any(isequal(nothing),axesSmall) && error("One of the input axes not found in put cubes")
   InputCube(c,desc,collect(CubeAxis,axesSmall),Int[],Int[],isMem,nothing,nothing)
 end
 getcube(c::InputCube)=c.cube
@@ -389,7 +390,8 @@ end
 
 function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co) where T<:ZArrayCube
   cs = oc.desc.chunksize ===nothing ? (map(length,oc.axesSmall)...,loopcachesize...) : oc.desc.chunksize
-  oc.cube=ZArrayCube(oc.allAxes,folder=oc.desc.path,T=eltype,persist=oc.desc.persist,chunksize=cs,chunkoffset=co,compressor=oc.desc.compressor)
+  folder = getsavefolder(oc.desc.path)
+  oc.cube=ZArrayCube(oc.allAxes,folder=folder,T=eltype,persist=oc.desc.persist,chunksize=cs,chunkoffset=co,compressor=oc.desc.compressor)
 end
 function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co) where T<:CubeMem
   newsize=map(length,oc.allAxes)

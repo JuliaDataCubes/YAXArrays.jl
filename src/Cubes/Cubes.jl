@@ -125,6 +125,7 @@ function _subsetcube end
 function subsetcube(z::CubeMem{T};kwargs...) where T
   newaxes, substuple = _subsetcube(z,collect(Any,map(Base.OneTo,size(z)));kwargs...)
   newdata = z.data[substuple...]
+  !isa(newdata,AbstractArray) && (newdata = fill(newdata))
   if haskey(z.properties,"labels")
     alll = filter!(!ismissing,unique(newdata))
     z.properties["labels"] = filter(i->in(i[1],alll),z.properties["labels"])
@@ -230,7 +231,12 @@ function check_overwrite(newfolder, overwrite)
     end
   end
 end
-getsavefolder(name) = isabspath(name) ? name : joinpath(workdir[1],name)
+function getsavefolder(name)
+  if isempty(name)
+    name = tempname()[2:end]
+  end
+  isabspath(name) ? name : joinpath(workdir[1],name)
+end
 
 """
     saveCube(cube,name::String)
