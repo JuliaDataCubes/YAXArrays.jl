@@ -225,7 +225,7 @@ function toaxis(dimname,g,offs,len)
     ar = g[dimname]
     if axname=="Time" && haskey(ar.attrs,"units")
         tsteps = timedecode(ar[:],ar.attrs["units"],get(ar.attrs,"calendar","standard"))
-        TimeAxis(tsteps)
+        TimeAxis(tsteps[offs+1:end])
     elseif haskey(ar.attrs,"_ARRAYVALUES")
       vals = ar.attrs["_ARRAYVALUES"]
       CategoricalAxis(axname,vals)

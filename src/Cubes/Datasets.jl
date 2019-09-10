@@ -83,12 +83,12 @@ function collectdims(g::ZGroup)
     k,v = ar
     for (len,dname) in zip(size(v),reverse(v.attrs["_ARRAY_DIMENSIONS"]))
       if !occursin("bnds",dname)
-        offs = get(v.attrs,"_ARRAY_OFFSET",0)
+        offs = get(g.arrays[dname].attrs,"_ARRAY_OFFSET",0)
         push!(dlist,(dname,offs,len))
       end
     end
   end
-  outd = Dict(d[1] => toaxis(d[1],g,d[2],d[3]) for d in dlist)
+  outd = Dict(d[1] => (ax = toaxis(d[1],g,d[2],d[3]), offs = d[2]) for d in dlist)
   length(outd)==length(dlist) || throw(ArgumentError("All Arrays must have the same offset"))
   outd
 end
@@ -105,12 +105,17 @@ function Dataset(g::ZGroup)
   allcubes = OrderedDict{Symbol,AbstractCubeData}()
   for iv in  varlist
     vname, zarray = iv
-    s = size(zarray)
     vardims = reverse((zarray.attrs["_ARRAY_DIMENSIONS"]...,))
-    iax = [dimlist[vd] for vd in vardims]
-    allcubes[Symbol(vname)] = ZArrayCube{eltype(zarray),ndims(zarray),typeof(zarray),Nothing}(zarray,iax,nothing,true,propfromattr(zarray.attrs))
+    iax = [dimlist[vd].ax for vd in vardims]
+    offs = [dimlist[vd].offs for vd in vardims]
+    subs = if all(iszero,offs)
+      nothing
+    else
+      ntuple(i->(offs[i]+1):(offs[i]+length(iax[i])),length(offs))
+    end
+    allcubes[Symbol(vname)] = ZArrayCube{eltype(zarray),ndims(zarray),typeof(zarray),typeof(subs)}(zarray,iax,subs,true,propfromattr(zarray.attrs))
   end
-  sdimlist = Dict(Symbol(k)=>v for (k,v) in dimlist)
+  sdimlist = Dict(Symbol(k)=>v.ax for (k,v) in dimlist)
   Dataset(allcubes,sdimlist)
 end
 Base.getindex(x::Dataset;kwargs...) = subsetcube(x;kwargs...)
