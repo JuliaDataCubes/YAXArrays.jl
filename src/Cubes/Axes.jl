@@ -121,16 +121,17 @@ axunits(::LatAxis)="degrees_north"
 get_step(r::AbstractRange)=step(r)
 get_step(r::AbstractVector)=length(r)==0 ? zero(eltype(r)) : r[2]-r[1]
 
-axVal2Index_ub(a::RangeAxis, v; fuzzy=false)=axVal2Index(a,v-abs(half(get_step(a.values))),fuzzy=fuzzy)
-axVal2Index_lb(a::RangeAxis, v; fuzzy=false)=axVal2Index(a,v+abs(half(get_step(a.values))),fuzzy=fuzzy)
+axVal2Index_ub(a::RangeAxis, v; fuzzy=false)=axVal2Index(a,v-abshalf(get_step(a.values)),fuzzy=fuzzy)
+axVal2Index_lb(a::RangeAxis, v; fuzzy=false)=axVal2Index(a,v+abshalf(get_step(a.values)),fuzzy=fuzzy)
 
-axVal2Index_ub(a::RangeAxis, v::Date; fuzzy=false)=axVal2Index(a,DateTime(v)-abs(half(get_step(a.values))),fuzzy=fuzzy)
-axVal2Index_lb(a::RangeAxis, v::Date; fuzzy=false)=axVal2Index(a,DateTime(v)+abs(half(get_step(a.values))),fuzzy=fuzzy)
+axVal2Index_ub(a::RangeAxis, v::Date; fuzzy=false)=axVal2Index(a,DateTime(v)-abshalf(get_step(a.values)),fuzzy=fuzzy)
+axVal2Index_lb(a::RangeAxis, v::Date; fuzzy=false)=axVal2Index(a,DateTime(v)+abshalf(get_step(a.values)),fuzzy=fuzzy)
 
-half(a) = a/2
-half(a::Day) = Millisecond(a)/2
+abshalf(a) = abs(a/2)
+abshalf(a::Day) = abs(Millisecond(a)/2)
+abshalf(a::Month) = iseven(Dates.value(a)) ? a/2 : Month(a÷2) + Day(15)
 
-get_bb(ax::RangeAxis) = first(ax.values)-half(get_step(ax.values)), last(ax.values)+half(get_step(ax.values))
+get_bb(ax::RangeAxis) = first(ax.values)-abshalf(get_step(ax.values)), last(ax.values)+abshalf(get_step(ax.values))
 function axisfrombb(name,bb,n)
   offs = (bb[2]-bb[1])/(2*n)
   RangeAxis(name,range(bb[1]+offs,bb[2]-offs,length=n))
