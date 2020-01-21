@@ -1,13 +1,36 @@
-using ImageMagick, Documenter, ESDL, ESDLPlots, Cairo, Fontconfig
+using ImageMagick, Documenter, ESDL, ESDLPlots, Cairo
+
+
+newcubedir = mktempdir()
+ESDLdir(newcubedir)
+# Download Cube subset
+if !isempty(ESDL.ESDLDefaults.cubedir[])
+  c = S3Cube()
+  csa = c[
+    region = "South America",
+    var = ["country_mask","c_emissions","gross", "net_ecosystem", "air_temperature_2m", "terrestrial_ecosystem", "soil_moisture"],
+    time = 2003:2006
+  ]
+  saveCube(csa,"southamericacube", chunksize=(90,90,92,1))
+  ESDL.ESDLDefaults.cubedir[] = joinpath(newcubedir,"southamericacube")
+end
+
+exampledir = joinpath(@__DIR__,"src","examples")
+allex = map(readdir(exampledir)) do fname
+  n = splitext(fname)[1]
+  n => joinpath("examples",fname)
+end
+
 
 makedocs(
     modules = [ESDL, ESDLPlots],
-    clean   = false,
+    clean   = true,
     format   = Documenter.HTML(),
     sitename = "ESDL.jl",
     authors = "Fabian Gans",
-    pages    = Any[ # Compat: `Any` for 0.4 compat
+    pages    = [ # Compat: `Any` for 0.4 compat
         "Home" => "index.md",
+        "Examples" => allex,
         "Manual" => Any[
             "cube_access.md",
             "analysis.md",

@@ -45,6 +45,7 @@ This function calculates a subset of a cube's data
 """
 function subsetcube end
 
+function _read end
 
 getsubset(x::AbstractCubeData) = x.subset === nothing ? ntuple(i->Colon(),ndims(x)) : x.subset
 #"""
@@ -235,7 +236,7 @@ function getsavefolder(name)
   if isempty(name)
     name = tempname()[2:end]
   end
-  isabspath(name) ? name : joinpath(workdir[1],name)
+  isabspath(name) ? name : joinpath(workdir[],name)
 end
 
 """

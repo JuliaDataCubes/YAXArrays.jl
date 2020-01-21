@@ -27,7 +27,7 @@ c=Cube()
 
 ```@example 1
 var=["c_emissions","air_temperature_2m"]
-time=(Date("2001-01-01"),Date("2001-12-31"))
+time=(Date("2003-01-01"),Date("2003-12-31"))
 cubedata = subsetcube(c,lon=(30,31),lat=(50,51),time=time,variable=var)
 ```
 

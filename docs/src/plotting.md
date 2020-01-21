@@ -3,13 +3,13 @@
 import Documenter
 ```
 
-<!-- ```@setup 1
+```@setup 1
 using ESDL # hide
 using ESDLPlots
 using Dates
 import Documenter
 c=Cube() # hide
-``` -->
+```
 
 # Plotting
 
@@ -28,23 +28,18 @@ plotMAP
 Here is an example on how to plot a map. The keyword arguments specify the time
 step (`time=Date(1980,1,1)`) and the variable (`var="air_temperature_2m"`).
 
-```julia
-cube=subsetcube(c,variable=["air_temperature_2m","gross_primary_productivity"])
-plotMAP(cube,time=Date(2001,1,1), var="air_temperature_2m")
-```
-
-<!-- ```@eval
-using ESDL # hide
+```@example 1
+using ESDL, Compose # hide
 using ESDLPlots
 gr()
 import Documenter # hide
 c=Cube() # hide
 cube=subsetcube(c,variable=["air_temperature_2m","gross_primary_productivity"])
-p = plotMAP(cube,time=Date(2001,1,1), var="air_temperature_2m")
-b=IOBuffer()
-show(b,MIME"text/html"(),p)
-Documenter.Documents.RawHTML(String(take!(b)))
-``` -->
+p = plotMAP(cube,time=Date(2003,1,1), var="air_temperature_2m")
+draw(SVG("p1.svg", 16cm, 10cm), p) #hide
+nothing #hide
+```
+![](p1.svg)
 
 Inside a Jupyter notebook, the keyword arguments can be omitted and sliders or
 dropdown menus will be shown to select the desired values.
@@ -62,33 +57,23 @@ plotMAPRGB
 For example, if we want to plot GPP, NEE and TER as an RGB map for South America,
 we can do the following:
 
-```julia
-cube=subsetcube(c,variable="Biosphere",region="South America")
-using ColorTypes
-plotMAPRGB(cube,c1="gross_primary_productivity",
-             c2="net_ecosystem_exchange",
-             c3="terrestrial_ecosystem_respiration",
-             cType=Lab,
-             time=Date(2003,2,26))
-```
 
-<!-- ```@eval
-using ESDL # hide
+```@example 1
+using ESDL, Compose # hide
 using ESDLPlots
 gr()
 import Documenter # hide
 c=Cube() # hide
-cube = subsetcube(region="South America") #hide
 using ColorTypes
-p = plotMAPRGB(cube,c1="gross_primary_productivity",
+p = plotMAPRGB(c,c1="gross_primary_productivity",
              c2="net_ecosystem_exchange",
              c3="terrestrial_ecosystem_respiration",
              cType=Lab,
              time=Date(2003,2,26))
-b=IOBuffer()
-show(b,MIME"text/html"(),p)
-Documenter.Documents.RawHTML(String(take!(b)))
-``` -->
+draw(SVG("p2.svg", 16cm, 10cm), p) #hide
+nothing #hide
+```
+![](p2.svg)
 
 ## Other plots
 
@@ -103,51 +88,27 @@ plotXY
 
 Here are two examples for using this function:
 
-```julia
-cube=subsetcube(c,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
-longitude=(30.0,32.0),latitude=(50.0,52.0))
-plotXY(cube,xaxis="time",group="variable",lon=31,lat=51)
-```
-
-<!-- ````@eval
+````@example 1
 using ESDL # hide
 using ESDLPlots
 gr()
 import Documenter # hide
 c=Cube() # hide
 cube=subsetcube(c,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
-lon=(30.0,32.0),lat=(50.0,52.0))
+lon=-70,lat=-51)
 p=plotXY(cube,xaxis="time",group="variable",lon=31,lat=51)
-b=IOBuffer()
-show(b,MIME"text/html"(),p)
-Documenter.Documents.RawHTML(String(take!(b)))
-```` -->
+````
 
 This is a plot showing the mean values of the chosen variables across different latitudes at 30° E
 
 
-```julia
-cTable = CubeTable(value=cube,include_axes=("lat","lon","time","variable"))
-m = cubefittable(cTable, WeightedMean, :value, weight=(i->cosd(i.lat)), by=(:variable, :lat, :lon))
-plotXY(m,xaxis="variable",group="lat",lon=30)
-```
-
-<!-- ````@eval
-using ESDL # hide
-using ESDLPlots
-using WeightedOnlineStats
-gr()
-import Documenter # hide
-c=Cube() # hide
-cube=subsetcube(c,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
-lon=(30.0,32.0),lat=(50.0,52.0), time=2001:2004)
-cTable = CubeTable(value=cube,include_axes=("lat","lon","time","variable"))
-m = cubefittable(cTable, WeightedMean, :value, weight=(i->cosd(i.lat)), by=(:variable, :lat, :lon))
-p=plotXY(m,xaxis="variable",group="lat",lon=30)
-b=IOBuffer()
-show(b,MIME"text/html"(),p)
-Documenter.Documents.RawHTML(String(take!(b)))
-```` -->
+````@example 1
+using ESDL, ESDLPlots
+using Statistics
+cube=subsetcube(c,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"], lon = -70, lat=(-51,-49))
+m = mapslices(mean ∘ skipmissing, cube, dims="time")
+p=plotXY(m,xaxis="var",group="lat")
+````
 
 ### Scatter plots
 
@@ -160,22 +121,8 @@ plotScatter
 
 A short example is shown here:
 
-```julia
-cube=subsetcube(c,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
-lon=(30.0,32.0),lat=(50.0,52.0))
-plotScatter(cube,alongaxis=TimeAxis,xaxis="net_ecosystem_exchange",yaxis="gross_primary_productivity",lat=50, lon=30)
-```
 
-<!-- ````@eval
-using ESDL # hide
-using ESDLPlots
-gr()
-import Documenter # hide
-c=Cube() # hide
-cube=subsetcube(c,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"],
-lon=(30.0,32.0),lat=(50.0,52.0))
-p=plotScatter(cube,alongaxis=TimeAxis,xaxis="net_ecosystem_exchange",yaxis="gross_primary_productivity",lat=50, lon=30)
-b=IOBuffer()
-show(b,MIME"text/html"(),p)
-Documenter.Documents.RawHTML(String(take!(b)))
-```` -->
+````@example 1
+cube=subsetcube(c,variable=["net_ecosystem_exchange","gross_primary_productivity","terrestrial_ecosystem_respiration"])
+p=plotScatter(cube,alongaxis=TimeAxis,xaxis="net_ecosystem_exchange",yaxis="gross_primary_productivity",lat=-50, lon=-70)
+````

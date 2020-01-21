@@ -42,10 +42,15 @@ in 4 time windows (Trend, Long-Term Variability, Annual Cycle, Fast Oscillations
 function filterTSFFT(c::AbstractCubeData;kwargs...)
   indims = InDims(TimeAxis,filter=AnyMissing())
   outdims = OutDims(TimeAxis,(c,p)->ScaleAxis(["Trend", "Long-Term Variability", "Annual Cycle", "Fast Oscillations"]))
-  mapCube(filterTSFFT,c,getNpY(c);indims=indims,outdims=outdims,kwargs...)
+  ntime = length(getAxis("Time",c))
+  testar = zeros(Complex{Base.nonmissingtype(eltype(c))},ntime)
+  fftplan = plan_fft!(testar)
+  ifftplan = inv(fftplan)
+  mapCube(filterTSFFT,c,getNpY(c),fftplan,ifftplan;indims=indims,outdims=outdims,kwargs...)
 end
 
-function filterTSFFT(outar::AbstractMatrix,y::AbstractVector, annfreq::Number;nharm::Int=3)
+function filterTSFFT(outar::AbstractMatrix,y::AbstractVector, annfreq::Number,
+  fftplan, ifftplan; nharm::Int=3)
 
   any(ismissing,y) && return outar[:].=missing
 
@@ -55,7 +60,7 @@ function filterTSFFT(outar::AbstractMatrix,y::AbstractVector, annfreq::Number;nh
     l        = length(y)
 
     fy       = Complex{Base.nonmissingtype(eltype(y))}[y[i]-outar[i,1] for i=1:l]
-    fft!(fy)
+    fftplan * fy
     fyout    = similar(fy)
     czero    = zero(eltype(fy))
 
@@ -76,7 +81,7 @@ function filterTSFFT(outar::AbstractMatrix,y::AbstractVector, annfreq::Number;nh
         end
     end
 
-    ifft!(fyout)
+    ifftplan * fyout
     for i=1:l
         outar[i,3]=real(fyout[i])
     end
@@ -92,8 +97,8 @@ function filterTSFFT(outar::AbstractMatrix,y::AbstractVector, annfreq::Number;nh
         fy[i]     = czero
         fy[i2]    = czero
     end
-    ifft!(fyout)
-    ifft!(fy)
+    ifftplan * fyout
+    ifftplan * fy
 
     for i=1:l
         outar[i,2]=real(fyout[i])

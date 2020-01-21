@@ -3,22 +3,22 @@ const AxisDescriptorAll = Union{AxisDescriptor,String,Type{T},CubeAxis,Function}
 import ..Cubes.Axes: get_descriptor, ByFunction
 import ..Cubes: getsavefolder
 import Zarr: Compressor, NoCompressor
-import ...ESDL: workdir
+import ...ESDL: workdir, ESDLDefaults
 
 abstract type ArTypeRepr end
 struct AsArray <: ArTypeRepr end
-struct AsAxisArray <: ArTypeRepr end
+#struct AsAxisArray <: ArTypeRepr end
 struct AsDataFrame <: ArTypeRepr
   dimcol::Bool
 end
 AsDataFrame()=AsDataFrame(false)
 wrapWorkArray(::AsArray,a,axes) = a
-function wrapWorkArray(::AsAxisArray,a,cablabaxes)
-  newaxes = map(cablabaxes) do ax
-    AxisArrays.Axis{Symbol(axname(ax))}(ax.values)
-  end
-  AxisArrays.AxisArray(a,newaxes...)
-end
+# function wrapWorkArray(::AsAxisArray,a,cablabaxes)
+#   newaxes = map(cablabaxes) do ax
+#     AxisArrays.Axis{Symbol(axname(ax))}(ax.values)
+#   end
+#   AxisArrays.AxisArray(a,newaxes...)
+# end
 import DataFrames
 function wrapWorkArray(t::AsDataFrame,a,cablabaxes)
   colnames = map(Symbol,cablabaxes[2].values)
@@ -95,17 +95,20 @@ Creates a description of an Output Data Cube for cube operations. Takes a single
 - `genOut`: function to initialize the values of the output cube given its element type. Defaults to `zero`
 - `finalizeOut`: function to finalize the values of an output cube, defaults to identity.
 - `retCubeType`: sepcifies the type of the return cube, can be `CubeMem` to force in-memory, `TempCube` to force disk storage, or `"auto"` to let the system decide.
+- `chunksize`: Chunk size for the inner dimensions, a tuple of the same length as `axisdesc`, or `:input` to copy chunksizes from input cube axes or `:max` to not chunk the inner dimensions
+- `compressor`: A Zarr compressor for the specified output cube
+- `retCubeType`: sepcifies the type of the return cube, can be `CubeMem` to force in-memory, `ZArrayCube` to force disk storage, or `"auto"` to let the system decide.
 - `outtype`: force the output type to a specific type, defaults to `Any` which means that the element type of the first input cube is used
 """
 struct OutDims
-  axisdesc::Tuple
-  bcaxisdesc::Tuple
-  genOut::Function
-  finalizeOut::Function
+  axisdesc
+  bcaxisdesc
+  genOut::Any
+  finalizeOut::Any
   retCubeType::Any
   update::Bool
   artype::ArTypeRepr
-  chunksize::Union{Tuple,Nothing}
+  chunksize::Any
   compressor::Any
   path::String
   persist::Bool
@@ -118,13 +121,16 @@ function OutDims(axisdesc...;
            retcubetype=:auto,
            update=false,
            artype::ArTypeRepr=AsArray(),
-           chunksize=nothing,
-           compressor=NoCompressor(),
+           chunksize=ESDLDefaults.chunksize[],
+           compressor=ESDLDefaults.compressor[],
            path="",
            outtype=1)
   descs = map(get_descriptor,axisdesc)
   bcdescs = (map(get_descriptor,bcaxisdesc)...,)
   isa(artype,AsDataFrame) && length(descs)!=2 && error("DataFrame representation only possible if for 2D inner arrays")
+  if !in(chunksize,(:input, :max)) && length(chunksize)!=length(axisdesc)
+    error("Length of chunk sizes must equal number of inner Axes")
+  end
   if path == ""
     persist = false
   else

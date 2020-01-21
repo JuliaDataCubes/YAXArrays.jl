@@ -5,7 +5,7 @@ ScaleAxis, axname, @caxis_str, findAxis, AxisDescriptor, get_descriptor, ByName,
 getOutAxis, ByInference, renameaxis!, axsym
 import NetCDF.NcDim
 using ..Cubes
-import ..Cubes: caxes
+import ..Cubes: caxes, _read
 using Dates
 
 macro defineCatAxis(axname,eltype)
@@ -249,8 +249,16 @@ function getOutAxis(desc::Tuple{ByInference},axlist,incubes,pargs,f)
   inAxes = map(caxes,incubes)
   inAxSmall = map(i->filter(j->in(j,axlist),i) |>collect,inAxes)
   inSizes = map(i->(map(length,i)...,),inAxSmall)
-  testars = map(randn,inSizes)
-
+  intypes = map(eltype, incubes)
+  testars = map((s,it)->zeros(it,s...),inSizes, intypes)
+  map(testars) do ta
+    ta .= rand(Base.nonmissingtype(eltype(ta)),size(ta)...)
+    if eltype(ta) >: Missing
+      # Add some missings
+      randind = rand(1:length(ta),length(ta)÷10)
+      ta[randind] .= missing
+    end
+  end
   resu = f(testars...,pargs...)
   isa(resu,AbstractArray) || isa(resu,Number) || error("Function must return an array or a number")
   isa(resu,Number) && return ()
@@ -301,6 +309,10 @@ function renameaxis!(c::AbstractCubeData,p::Pair{<:Any,<:CubeAxis})
   c
 end
 
+function _read(ax::CubeAxis, ar::AbstractArray, I::CartesianIndices)
+  ar[:] .= ax.values[I.indices[1]]
+end
+
 macro caxis_str(s)
   :(CategoricalAxis{String,$(QuoteNode(Symbol(s)))})
 end
@@ -310,6 +322,7 @@ import Base.isequal
 ==(a::CubeAxis,b::CubeAxis)=(a.values==b.values) && (axname(a)==axname(b))
 isequal(a::CubeAxis, b::CubeAxis) = a==b
 
+import CFTime: timeencode
 function NcDim(a::CubeAxis{T},start::Integer,count::Integer) where T<:TimeType
   if start + count - 1 > length(a.values)
     count = oftype(count,length(a.values) - start + 1)
@@ -317,10 +330,12 @@ function NcDim(a::CubeAxis{T},start::Integer,count::Integer) where T<:TimeType
   tv=a.values[start:(start+count-1)]
   startyear=Dates.year(first(a.values))
   starttime=T(startyear)
-  atts=Dict{Any,Any}("units"=>"days since $startyear-01-01")
-  d=map(x->Float64(convert(Day,(x-starttime)).value),tv)
+  timeunits = "days since $startyear-01-01"
+  atts=Dict{Any,Any}("units"=>timeunits, "calendar"=>"standard")
+  d = timeencode(tv, timeunits)
   NcDim(axname(a),length(d),values=d,atts=atts)
 end
+
 #Default constructor
 NcDim(a::CubeAxis{T},start::Integer,count::Integer) where {T<:Real}=NcDim(axname(a),count,values=collect(a.values[start:(start+count-1)]),atts=Dict{Any,Any}("units"=>axunits(a)))
 NcDim(a::CubeAxis,start::Integer,count::Integer)=NcDim(axname(a),count,values=Float64[start:(start+count-1);],atts=Dict{Any,Any}("units"=>axunits(a)))

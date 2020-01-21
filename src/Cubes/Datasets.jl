@@ -82,7 +82,7 @@ function collectdims(g::ZGroup)
   foreach(g.arrays) do ar
     k,v = ar
     for (len,dname) in zip(size(v),reverse(v.attrs["_ARRAY_DIMENSIONS"]))
-      if !occursin("bnds",dname)
+      if !occursin("bnd",dname) && !occursin("bounds",dname) 
         offs = get(g.arrays[dname].attrs,"_ARRAY_OFFSET",0)
         push!(dlist,(dname,offs,len))
       end
@@ -120,7 +120,7 @@ function Dataset(g::ZGroup)
 end
 Base.getindex(x::Dataset;kwargs...) = subsetcube(x;kwargs...)
 Dataset(s::String;kwargs...) = Dataset(zopen(s);kwargs...)
-ESDLDataset(;kwargs...) = Dataset(get(ENV,"ESDL_CUBEDIR","/home/jovyan/work/datacube/ESDCv2.0.0/esdc-8d-0.25deg-184x90x90-2.0.0.zarr/");kwargs...)
+ESDLDataset(;kwargs...) = Dataset(ESDL.ESDLDefaults.cubedir[];kwargs...)
 
 
 function Cube(ds::Dataset; joinname="Variable")

@@ -67,7 +67,7 @@ dicteltype(::Type{<:Dict{K,V}}) where {K,V} = V
 dictktype(::Type{<:Dict{K,V}}) where {K,V} = K
 actval(v) = v
 actval(v::SentinelMissings.SentinelMissing) = v[]
-function fitrow!(o::GroupedOnlineAggregator{T,S,BY,W},r) where {T,S,BY,W,C}
+function fitrow!(o::GroupedOnlineAggregator{T,S,BY,W},r) where {T,S,BY,W}
     v = getproperty(r,S)
     if !ismissing(v)
         w = o.w(r)
@@ -226,14 +226,26 @@ fittable(iter,WeightedMean,:tair,weight=(i->abs(cosd(i.lat))),by=(i->month(i.tim
 function fittable(tab,o,fitsym;by=(),weight=nothing,showprog=false)
   agg = TableAggregator(tab,o,fitsym,by=by,weight=weight)
   if showprog
-    p=Progress(length(tab),1)
-    foreach(i->begin fitrow!(agg,i); next!(p) end,tab)
+    runfitrows_progress(agg,tab)
   else
     foreach(i->fitrow!(agg,i),tab)
   end
   agg
 end
 fittable(tab,o::Type{<:OnlineStat},fitsym;kwargs...)=fittable(tab,o(),fitsym;kwargs...)
+
+@noinline function runfitrows_progress(agg,tab)
+  p = Progress(length(tab)÷100,1)
+  every = 0
+  for row in tab
+    fitrow!(agg,row)
+    every += 1
+    if every == 100
+      next!(p)
+      every=0
+    end
+  end
+end
 
 struct collectedValue{V,S,SY}
     value::V
@@ -256,7 +268,16 @@ end
 
 getpostfunction(s::OnlineStat)=getpostfunction(typeof(s))
 getpostfunction(::Type{<:OnlineStat})=value
-getpostfunction(::Type{<:WeightedAdaptiveHist})=i->hcat(value(i)...)
+function getpostfunction(w::WeightedAdaptiveHist)
+  nb = w.alg.b
+  i->begin
+    r = hcat(value(i)...)
+    if size(r,1)<nb
+      r = vcat(r,zeros(eltype(r),nb-size(r,1),2))
+    end
+    r
+end
+end
 getnbins(f::GroupedOnlineAggregator)=f.cloneobj.alg.b
 getnbins(f::TableAggregator)=f.o.alg.b
 

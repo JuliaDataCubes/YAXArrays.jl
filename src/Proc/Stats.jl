@@ -4,8 +4,8 @@ import ..DAT: NValid
 using ..DAT
 using ..Proc
 using ..Cubes
-using StatsBase
 using Statistics
+import StatsBase: pweights
 import Statistics: quantile
 import ..Cubes: findAxis, axname
 
@@ -31,6 +31,12 @@ end
 
 import WeightedOnlineStats: WeightedAdaptiveHist
 
+"""
+    quantile(c::AbstractCubeData,p=[0.25,0.5,0.75];by=(),nbins=100)
+
+Computes the quantile of a data cube based on fitting a Histogram on the data
+using an Online statistic.
+"""
 function quantile(c::AbstractCubeData,p=[0.25,0.5,0.75];by=(),nbins=100)
   if any(i->isa(i,CategoricalAxis{<:Any,:Hist}),caxes(c)) && any(i->isa(i,RangeAxis{<:Any,:Bin}),caxes(c))
     if isa(p,Number)

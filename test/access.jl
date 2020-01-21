@@ -123,7 +123,7 @@ end
   danom2=readcubedata(loadCube("mySavedZArrayCube"))
 
   @test danom.axes==danom2.axes
-  @test danom.data==danom2.data
+  @test all(map(isequal,danom.data,danom2.data))
 
   ncf = tempname()
   exportcube(danom,ncf)
@@ -135,8 +135,8 @@ end
   @test ncgetatt(ncf,"Time","units") == "days since 2001-01-01"
   @test getAxis("Time",danom).values .- DateTime(2001) == Millisecond.(Day.(ncread(ncf,"Time")))
 
-
-  @test ncread(ncf,"gross_primary_productivity")[:,:,:] == permutedims(danom[:,:,:,1],(2,3,1))
+  anc = replace(ncread(ncf,"gross_primary_productivity")[:,:,:],-9999.0=>missing)
+  @test all(isequal.(anc, permutedims(danom[:,:,:,1],(2,3,1))))
   neear = replace(danom[:,:,:,2],missing=>-9999.0)
   @test all(isequal.(ncread(ncf,"net_ecosystem_exchange")[:,:,:],permutedims(neear,(2,3,1))))
 end

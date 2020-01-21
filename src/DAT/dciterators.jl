@@ -1,26 +1,8 @@
-struct PickAxisArray{T,N,AT<:AbstractArray,P}
-    parent::AT
-end
-
-function PickAxisArray(parent, indmask)
-    @assert sum(indmask)==ndims(parent)
-    f  = findall(indmask)
-    PickAxisArray{eltype(parent),length(indmask),typeof(parent),(f...,)}(parent)
-end
-indmask(p::PickAxisArray{<:Any,<:Any,<:Any,i}) where i = i
-function Base.view(p::PickAxisArray, i...)
-    inew = map(j->i[j],indmask(p))
-    view(p.parent,inew...)
-end
-function Base.getindex(p::PickAxisArray, i...)
-    inew = map(j->i[j],indmask(p))
-    getindex(p.parent,inew...)
-end
-Base.getindex(p::PickAxisArray,i::CartesianIndex) = p[i.I...]
-
 include("SentinelMissings.jl")
 import .SentinelMissings
 import ESDL.DAT: DATConfig
+import ESDL.ESDLTools: PickAxisArray
+
 struct CubeIterator{R,ART,ARTBC,LAX,ILAX,S}
     dc::DATConfig
     r::R
@@ -32,10 +14,7 @@ Base.IteratorSize(::Type{<:CubeIterator})=Base.HasLength()
 Base.IteratorEltype(::Type{<:CubeIterator})=Base.HasEltype()
 Base.eltype(i::Type{<:CubeIterator{A,B,C,D,E,F}}) where {A,B,C,D,E,F} = F
 
-getrownames(t::Type{<:CubeIterator}) = fieldnames(t)
-getncubes(::Type{<:CubeIterator{A,B}}) where {A,B} = tuplelen(B)
 tuplelen(::Type{<:NTuple{N,<:Any}}) where N=N
-
 
 lift64(::Type{Float32})=Float64
 lift64(::Type{Int32})=Int64
@@ -56,6 +35,9 @@ function CubeIterator(dc,r;varnames::Tuple=ntuple(i->Symbol("x$i"),length(dc.inc
       PickAxisArray(ic.handle,allax)
     end
     et = map(i->SentinelMissings.SentinelMissing{eltype(i[1]),defaultval(eltype(i[1]))},inars)
+    if include_loopvars == true
+      include_loopvars = map(axname,(loopaxes...,))
+    end
     if !isempty(include_loopvars)
       ilax = map(i->findAxis(i,collect(loopaxes)),include_loopvars)
       any(isequal(nothing),ilax) && error("Axis not found in cubes")
@@ -67,13 +49,14 @@ function CubeIterator(dc,r;varnames::Tuple=ntuple(i->Symbol("x$i"),length(dc.inc
     elt = NamedTuple{(map(Symbol,varnames)...,map(Symbol,include_loopvars)...),Tuple{et...}}
     CubeIterator{typeof(r),typeof(inars),typeof(inarsbc),typeof(loopaxes),ilax,elt}(dc,r,inars,inarsbc,loopaxes)
 end
+tuplenames(t::Type{<:NamedTuple{N}}) where N = string.(N)
 function Base.show(io::IO,ci::CubeIterator{<:Any,<:Any,<:Any,<:Any,<:Any,E}) where E
-  print(io,"Datacube iterator with ", length(ci), " elements with fields: ",E)
+  print(io,"Datacube iterator with ", length(ci), " elements with fields: ",tuplenames(E))
 end
 Base.length(ci::CubeIterator)=prod(length.(ci.loopaxes))
 function Base.iterate(ci::CubeIterator)
     rnow,blockstate = iterate(ci.r)
-    updateinars(ci.dc,rnow)
+    updatears(ci.dc.incubes,rnow,ESDL.Cubes._read)
     innerinds = CartesianIndices(length.(rnow))
     indnow, innerstate = iterate(innerinds)
     offs = map(i->first(i)-1,rnow)
@@ -89,7 +72,7 @@ function Base.iterate(ci::CubeIterator,s)
         else
             rnow = t2[1]
             blockstate = t2[2]
-            updateinars(ci.dc,rnow)
+            updatears(ci.dc.incubes,rnow,_read)
             innerinds = CartesianIndices(length.(rnow))
             indnow,innerstate = iterate(innerinds)
 
@@ -107,30 +90,10 @@ function Base.iterate(ci::CubeIterator,s)
 end
 abstract type CubeRow
 end
-#Base.getproperty(s::CubeRow,v::Symbol)=Base.getfield(s,v)
 abstract type CubeRowAx<:CubeRow
 end
-# function Base.getproperty(s::T,v::Symbol) where T<:CubeRowAx
-#   if v in fieldnames(T)
-#     getfield(s,v)
-#   else
-#     ax = getfield(s,:axes)
-#     ind = getfield(s,:i)
-#     i = findfirst(i->axsym(i)==v,ax)
-#     ax[i].values[ind.I[i]]
-#   end
-# end
 
-# @noinline function getrow(ci::CubeIterator{R,ART,ARTBC,LAX,ILAX,RN,RT},inarsBC,indnow)::NamedTuple{RN,RT} where {R,ART,ARTBC,LAX,ILAX,RN,RT}
-#   axvals = map(i->ci.loopaxes[i].values[indnow.I[i]],ILAX)
-#   cvals  = map(i->i[indnow],inarsBC)
-#   allvals::RT = (axvals...,cvals...)
-#   #NamedTuple{RN,RT}(axvals...,cvals...)
-#   NamedTuple{RN,RT}(allvals)
-# end
 function getrow(ci::CubeIterator{<:Any,<:Any,<:Any,<:Any,ILAX,S},inarsBC,indnow,offs) where {ILAX,S}
-   #inds = map(i->indnow.I[i],ILAX)
-   #axvals = map((i,indnow)->ci.loopaxes[i][indnow],ILAX,inds)
    axvalsall = map((ax,i,o)->ax.values[i+o],ci.loopaxes,indnow.I,offs)
    axvals = map(i->axvalsall[i],ILAX)
    cvals  = map(i->i[indnow],inarsBC)
@@ -138,19 +101,8 @@ function getrow(ci::CubeIterator{<:Any,<:Any,<:Any,<:Any,ILAX,S},inarsBC,indnow,
 end
 function getrow(ci::CubeIterator{<:Any,<:Any,<:Any,<:Any,(),S},inarsBC,indnow,offs) where S
    cvals  = map(i->i[indnow],inarsBC)
-   S(cvals...)
+   S(cvals)
 end
-
-# @generated function getrow(ci::CI,inarsBC,indnow) where CI
-#     rn = getrownames(CI)
-#     nc = getncubes(CI)
-#     exlist = [:($(rn[i]) = inarsBC[$ir][indnow]) for (ir,i) = enumerate((length(rn)-nc+1):length(rn))]
-#     if length(rn)>nc
-#       exlist2 = [:($(rn[i]) = ci.loopaxes[$i].values[indnow.I[$i]]) for i=1:(length(rn)-nc)]
-#       exlist = [exlist2;exlist]
-#     end
-#     Expr(:(::),Expr(:tuple,exlist...),eltype(ci))
-# end
 
 function Base.show(io::IO,s::CubeRow)
   print(io,"Cube Row: ")
@@ -259,3 +211,8 @@ Tables.rowaccess(::Type{<:CubeIterator}) = true
 Tables.rows(x::CubeIterator) = x
 Tables.schema(x::CubeIterator) = Tables.schema(typeof(x))
 Tables.schema(x::Type{<:CubeIterator}) = Tables.Schema(fieldnames(eltype(x)),map(s->fieldtype(eltype(x),s),fieldnames(eltype(x))))
+
+Tables.istable(::Type{<:AbstractCubeData}) = true
+Tables.rowaccess(::Type{<:AbstractCubeData}) = true
+Tables.rows(x::AbstractCubeData) = CubeTable(value = x, include_axes=true)
+Tables.schema(x::AbstractCubeData) = Tables.schema(Tables.rows(x))
