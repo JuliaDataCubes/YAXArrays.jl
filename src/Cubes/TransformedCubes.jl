@@ -129,8 +129,8 @@ function concatenateCubes(cl,cataxis::CubeAxis)
     eltype(cl[i])==T || error("All cubes must have the same element type, cube number $i does not match")
     ndims(cl[i])==N || error("All cubes must have the same dimension")
   end
-  props=merge(cubeproperties.(cl)...)
-  ConcatCube{T,N+1}(cl,cataxis,axlist,props)
+  props=mapreduce(cubeproperties,merge,cl,init=Dict())
+  ConcatCube{T,N+1}(collect(cl),cataxis,axlist,props)
 end
 function concatenateCubes(;kwargs...)
   cubenames = String[]
