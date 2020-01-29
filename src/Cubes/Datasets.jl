@@ -82,7 +82,7 @@ function collectdims(g::ZGroup)
   foreach(g.arrays) do ar
     k,v = ar
     for (len,dname) in zip(size(v),reverse(v.attrs["_ARRAY_DIMENSIONS"]))
-      if !occursin("bnd",dname) && !occursin("bounds",dname) 
+      if !occursin("bnd",dname) && !occursin("bounds",dname)
         offs = get(g.arrays[dname].attrs,"_ARRAY_OFFSET",0)
         push!(dlist,(dname,offs,len))
       end
@@ -119,8 +119,8 @@ function Dataset(g::ZGroup)
   Dataset(allcubes,sdimlist)
 end
 Base.getindex(x::Dataset;kwargs...) = subsetcube(x;kwargs...)
-Dataset(s::String;kwargs...) = Dataset(zopen(s);kwargs...)
-ESDLDataset(;kwargs...) = Dataset(ESDL.ESDLDefaults.cubedir[];kwargs...)
+Dataset(s::String;consolidated=false,kwargs...) = Dataset(zopen(s,consolidated=consolidated);kwargs...)
+ESDLDataset(;kwargs...) = Dataset(ESDL.ESDLDefaults.cubedir[];consolidated=true,kwargs...)
 
 
 function Cube(ds::Dataset; joinname="Variable")

@@ -1,6 +1,6 @@
 module OBS
 import ..Cubes: S3Cube, Dataset, Cube
-import Zarr: S3Store, zopen, aws_config
+import Zarr: S3Store, zopen, aws_config, ConsolidatedStore
 import Dates
 import Dates: now
 
@@ -42,6 +42,7 @@ function S3Dataset(;bucket=nothing, store="", res="low", chunks="ts", region="gl
     bucket, store = cubesdict[(res,chunks,region)]
   end
   Dataset(zopen(S3Store(bucket,store,2,aws)))
+  #Dataset(zopen(ConsolidatedStore(S3Store(bucket,store,2,aws))))
 end
 
 """

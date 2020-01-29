@@ -13,7 +13,6 @@ jobs:
       os: linux
       script:
         - julia --project=docs -e 'using Pkg; Pkg.develop(PackageSpec(path=pwd())); Pkg.instantiate(); Pkg.add(PackageSpec(url="https://github.com/esa-esdl/ESDLPlots.jl"))'
-        - julia --project=docs -e 'using Pkg; Pkg.add(PackageSpec(name="Compose", rev="master"))'
         - travis_wait 30 julia --project=docs docs/make.jl
       name: "HTML"
       after_success: skip

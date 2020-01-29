@@ -256,7 +256,7 @@ const srexlabels = include("../CubeAPI/srexlabels.jl")
 const known_labels = Dict("water_mask"=>Dict(0x01=>"land",0x02=>"water"),"country_mask"=>countrylabels,"srex_mask"=>srexlabels)
 const known_names = Dict("water_mask"=>"Water","country_mask"=>"Country","srex_mask"=>"SREXregion")
 
-Cube(s::String;kwargs...) = Cube(zopen(s,"r");kwargs...)
+Cube(s::String;consolidated=false, kwargs...) = Cube(zopen(s,"r", consolidated=consolidated);kwargs...)
 function Cube(;kwargs...)
   if !isempty(ESDL.ESDLDefaults.cubedir[])
     Cube(ESDL.ESDLDefaults.cubedir[];kwargs...)
