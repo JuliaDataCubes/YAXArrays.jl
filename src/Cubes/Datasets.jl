@@ -119,8 +119,8 @@ function Dataset(g::ZGroup)
   Dataset(allcubes,sdimlist)
 end
 Base.getindex(x::Dataset;kwargs...) = subsetcube(x;kwargs...)
-Dataset(s::String;consolidated=false,kwargs...) = Dataset(zopen(s,consolidated=consolidated);kwargs...)
-ESDLDataset(;kwargs...) = Dataset(ESDL.ESDLDefaults.cubedir[];consolidated=true,kwargs...)
+Dataset(s::String;kwargs...) = Dataset(zopen(s);kwargs...)
+ESDLDataset(;kwargs...) = Dataset(ESDL.ESDLDefaults.cubedir[];kwargs...)
 
 
 function Cube(ds::Dataset; joinname="Variable")
