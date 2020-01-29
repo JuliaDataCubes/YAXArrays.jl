@@ -1,6 +1,6 @@
 module OBS
 import ..Cubes: S3Cube, Dataset, Cube
-import Zarr: S3Store, zopen, aws_config, ConsolidatedStore
+import Zarr: S3Store, zopen, aws_config
 import Dates
 import Dates: now
 
