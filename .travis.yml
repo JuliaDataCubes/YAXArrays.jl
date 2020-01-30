@@ -12,6 +12,7 @@ jobs:
       julia: 1.3
       os: linux
       script:
+        - julia -e 'using Pkg; Pkg.develop(PackageSpec(url="https://github.com/esa-esdl/ESDLPlots.jl"));'
         - julia --project=docs -e 'using Pkg;Pkg.develop(PackageSpec(path=pwd()));Pkg.add(PackageSpec(name="Compose",version="0.8"));Pkg.develop(PackageSpec(url="https://github.com/esa-esdl/ESDLPlots.jl"));'
         - julia --project=docs docs/make.jl
       name: "HTML"
