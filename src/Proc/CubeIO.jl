@@ -120,7 +120,7 @@ function saveCube(c::AbstractCubeData, name::AbstractString; overwrite = false, 
   indims = InDims(axn...)
   path = getsavefolder(name)
   check_overwrite(path,overwrite)
-  outdims = OutDims(axn..., retcubetype=ZArrayCube,chunksize=chunksize, compressor=compressor, path = path)
+  outdims = OutDims(axn..., retcubetype=ZArrayCube,chunksize=chunksize[1:length(axn)], compressor=compressor, path = path)
   if forcesingle
     nprocs()>1 && println("Forcing single core processing because of bad chunk size")
     o = mapCube(copyto!,c,indims=indims, outdims=outdims,ispar=false,max_cache=max_cache)
