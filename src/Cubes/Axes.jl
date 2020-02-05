@@ -27,8 +27,8 @@ end
 """
     abstract CubeAxis{T} <: AbstractCubeData{T,1}
 
-Supertype of all axes. Every `CubeAxis` is 1D Cube itself and can be passed
-to mapCube operationes. Although all cube axes are instances of the parametric typealias
+Supertype of all axes. Every `CubeAxis` is an 1D Cube itself and can be passed
+to mapCube operations. Although all cube axes are instances of the parametric typealias
 `CategoricalAxis` and `RangeAxis`, there are some typealiases defined
 to provide shorter and more convenient names for commonly used cube axes. Here is a list
 of the aliases:
