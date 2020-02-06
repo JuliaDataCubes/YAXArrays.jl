@@ -27,8 +27,8 @@ end
 """
     abstract CubeAxis{T} <: AbstractCubeData{T,1}
 
-Supertype of all axes. Every `CubeAxis` is 1D Cube itself and can be passed
-to mapCube operationes. Although all cube axes are instances of the parametric typealias
+Supertype of all axes. Every `CubeAxis` is an 1D Cube itself and can be passed
+to mapCube operations. Although all cube axes are instances of the parametric typealias
 `CategoricalAxis` and `RangeAxis`, there are some typealiases defined
 to provide shorter and more convenient names for commonly used cube axes. Here is a list
 of the aliases:
@@ -220,11 +220,15 @@ function findAxis(bt::ByType,v::VecOrTuple{S}) where S<:CubeAxis
 end
 function findAxis(bs::ByName,axlist::VecOrTuple{T}) where T<:CubeAxis
   matchstr=bs.name
-  ism=map(i->startswith(lowercase(axname(i)),lowercase(matchstr)),axlist)
-  sism=sum(ism)
-  sism==0 && return nothing
-  sism>1 && error("Multiple axes found matching string $matchstr")
-  i=findfirst(ism)
+  ism=findall(i->startswith(lowercase(axname(i)),lowercase(matchstr)),axlist)
+  isempty(ism) && return nothing
+  if length(ism)>1
+    f = axlist[ism[1]]
+    all(i->i==f,ism) || error("Multiple axes found matching string $matchstr")
+    return f
+  else
+    return ism[1]
+  end
 end
 function findAxis(bv::ByValue,axlist::VecOrTuple{T}) where T<:CubeAxis
   v=bv.v

@@ -5,8 +5,9 @@ using ..DAT
 using ..Proc
 import Statistics: quantile!
 
-function removeMSC(aout,ain,NpY::Integer,tmsc,tnmsc)
+function removeMSC(aout,ain,NpY::Integer)
     #Start loop through all other variables
+    tmsc, tnmsc = zeros(Union{Float64,Missing},NpY),zeros(Int,NpY)
     fillmsc(1,tmsc,tnmsc,ain,NpY)
     subtractMSC(tmsc,ain,aout,NpY)
     nothing
@@ -26,9 +27,7 @@ function removeMSC(c::AbstractCubeData;kwargs...)
     mapCube(
         removeMSC,
         c,
-        NpY,
-        zeros(Union{Missing,Float64},NpY),
-        zeros(Int,NpY);
+        NpY;
         indims  = InDims("Time"),
         outdims = OutDims("Time"),
         kwargs...
@@ -46,10 +45,11 @@ Fills missing values of each time series in a cube with the mean annual cycle.
 """
 function gapFillMSC(c::AbstractCubeData;kwargs...)
   NpY=getNpY(c)
-  mapCube(gapFillMSC,c,NpY,zeros(Union{Float64,Missing},NpY),zeros(Int,NpY);indims=InDims("Time"),outdims=OutDims("Time"),kwargs...)
+  mapCube(gapFillMSC,c,NpY;indims=InDims("Time"),outdims=OutDims("Time"),kwargs...)
 end
 
-function gapFillMSC(aout::AbstractVector,ain::AbstractVector,NpY::Integer,tmsc,tnmsc)
+function gapFillMSC(aout::AbstractVector,ain::AbstractVector,NpY::Integer)
+  tmsc, tnmsc = zeros(Union{Float64,Missing},NpY),zeros(Int,NpY)
   fillmsc(1,tmsc,tnmsc,ain,NpY)
   replaceMisswithMSC(tmsc,ain,aout,NpY)
 end
@@ -68,13 +68,12 @@ Returns the mean annual cycle from each time series.
 function getMSC(c::AbstractCubeData;kwargs...)
   outdims = OutDims(MSCAxis(getNpY(c)))
   indims = InDims(TimeAxis)
-  mapCube(getMSC,c,zeros(Int,getNpY(c)),zeros(Union{Float64,Missing},getNpY(c));indims=indims,outdims=outdims,kwargs...)
+  mapCube(getMSC,c,getNpY(c);indims=indims,outdims=outdims,kwargs...)
 end
 
-function getMSC(aout::AbstractVector,ain::AbstractVector,nmsc,fmsc;imscstart::Int=1,NpY=length(aout))
-    NpY=length(aout)
-    fillmsc(imscstart,fmsc,nmsc,ain,NpY)
-    copyto!(aout,fmsc)
+function getMSC(aout::AbstractVector,ain::AbstractVector,NpY;imscstart::Int=1)
+    nmsc = zeros(Int,NpY)
+    fillmsc(imscstart,aout,nmsc,ain,NpY)
 end
 
 

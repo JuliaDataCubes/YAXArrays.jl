@@ -6,6 +6,7 @@ using ..Proc
 using FFTW
 using Statistics
 import ..DAT: AnyMissing
+import Distributed: workers, remotecall, fetch, myid
 
 #Looks like linreg is broken in 0.7, here is a custom version, this should be replaced soon:
 function linreg(x,y)
@@ -43,17 +44,24 @@ function filterTSFFT(c::AbstractCubeData;kwargs...)
   indims = InDims(TimeAxis,filter=AnyMissing())
   outdims = OutDims(TimeAxis,(c,p)->ScaleAxis(["Trend", "Long-Term Variability", "Annual Cycle", "Fast Oscillations"]))
   ntime = length(getAxis("Time",c))
-  testar = zeros(Complex{Base.nonmissingtype(eltype(c))},ntime)
-  fftplan = plan_fft!(testar)
-  ifftplan = inv(fftplan)
-  mapCube(filterTSFFT,c,getNpY(c),fftplan,ifftplan;indims=indims,outdims=outdims,kwargs...)
+  plans = map(workers()) do id
+    remotecall(id,ntime,eltype(c)) do nt,et
+      testar = zeros(Complex{Base.nonmissingtype(et)},nt)
+      fftplan = plan_fft!(testar)
+      ifftplan = inv(fftplan)
+      fftplan, ifftplan
+    end
+  end
+  plandict = Dict(zip(workers(), plans))
+  mapCube(filterTSFFT,c,getNpY(c),plandict;indims=indims,outdims=outdims,kwargs...)
 end
 
 function filterTSFFT(outar::AbstractMatrix,y::AbstractVector, annfreq::Number,
-  fftplan, ifftplan; nharm::Int=3)
+  plandict; nharm::Int=3)
 
   any(ismissing,y) && return outar[:].=missing
 
+  fftplan, ifftplan = fetch(plandict[myid()])
     size(outar) == (length(y),4) || error("Wrong size of output array")
 
     detrendTS!(outar,y)
