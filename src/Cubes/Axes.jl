@@ -260,8 +260,8 @@ function getOutAxis(desc::Tuple{ByInference},axlist,incubes,pargs,f)
     end
   end
   resu = f(testars...,pargs...)
-  isa(resu,AbstractArray) || isa(resu,Number) || error("Function must return an array or a number")
-  isa(resu,Number) && return ()
+  isa(resu,AbstractArray) || isa(resu,Number) || isa(resu,Missing) || error("Function must return an array or a number")
+  (isa(resu,Number) || isa(resu,Missing)) && return ()
   outsizes = size(resu)
   outaxes = map(outsizes,1:length(outsizes)) do s,il
     if s>2
