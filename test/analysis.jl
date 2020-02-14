@@ -78,6 +78,14 @@ function doTests()
   #@show cube_anomalies[:,:,:]
   @test mean(anom_normalized)<1e7
   @test 1.0-1e-6 <= std(anom_normalized) <= 1.0+1e-6
+
+  #Test Polynomial fitting
+  d = c[var = "soil_moisture"]
+  dshort = d[time=2001:2003,lon=10.375,lat=51.125]
+  dfill = gapFillMSC(dshort,complete_msc=true)
+  @test all(!ismissing,dfill[:])
+  @test dfill[1:10] == [0.20832627f0, 0.21695568f0, 0.24278758f0, 0.27789998f0, 0.39543962f0, 0.4276f0, 0.33524698f0, 0.23578292f0, 0.27228776f0, 0.27020702f0]
+  @test gapfillpoly(dshort)[50:60] == [0.33521008f0, 0.32984155f0, 0.4276f0, 0.38669506f0, 0.35547495f0, 0.3271779f0, 0.30180392f0, 0.27935302f0, 0.25982517f0, 0.20553333f0, 0.22209999f0]
   end
 
 

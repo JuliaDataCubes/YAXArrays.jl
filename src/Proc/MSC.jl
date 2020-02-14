@@ -1,5 +1,6 @@
 module MSC
-export removeMSC, gapFillMSC, getMSC, getMedSC
+export removeMSC, gapFillMSC, getMSC, getMedSC, gapfillpoly
+import Polynomials: polyfit
 using ..Cubes
 using ..DAT
 using ..Proc
@@ -35,9 +36,11 @@ function removeMSC(c::AbstractCubeData;kwargs...)
 end
 
 """
-    gapFillMSC(c::AbstractCubeData)
+    gapFillMSC(c::AbstractCubeData;complete_msc=false)
 
 Fills missing values of each time series in a cube with the mean annual cycle.
+If `complete_msc` is set to `true`, the MSC will be filled with a polynomial
+in case it still contains missing values due to systematic gaps.
 
 **Input Axis** `Time`axis
 
@@ -48,10 +51,69 @@ function gapFillMSC(c::AbstractCubeData;kwargs...)
   mapCube(gapFillMSC,c,NpY;indims=InDims("Time"),outdims=OutDims("Time"),kwargs...)
 end
 
-function gapFillMSC(aout::AbstractVector,ain::AbstractVector,NpY::Integer)
+function gapFillMSC(aout::AbstractVector,ain::AbstractVector,NpY::Integer;complete_msc=false)
   tmsc, tnmsc = zeros(Union{Float64,Missing},NpY),zeros(Int,NpY)
   fillmsc(1,tmsc,tnmsc,ain,NpY)
+  if complete_msc
+    fill_msc_poly!(tmsc)
+  end
   replaceMisswithMSC(tmsc,ain,aout,NpY)
+end
+
+function fill_msc_poly!(tmsc)
+  mscrep = [tmsc;tmsc;tmsc]
+  n = length(tmsc)
+  a = gapfillpoly(mscrep, max_gap = n÷2, nbefore_after = max(3,n÷30))
+  tmsc .= view(a,(n+1):(n+n))
+end
+
+gapfillpoly(x::AbstractCubeData;max_gap=30,nbefore_after=10, polyorder = 2) =
+  mapslices(gapfillpoly,x,dims="Time",max_gap=max_gap, nbefore_after=nbefore_after, polyorder=polyorder)
+
+"""
+    fillgaps_poly(x;max_gap=30,nbefore_after=10, polyorder = 2)
+
+Function for polnomial gap filling. Whenever a gap smaller than `max_gap` is found
+the algorithm uses `nbefore_after` time steps before and after the gap to fit
+a polynomial of order `polyorder`. The missing alues are then replaced by the
+fitted polynomial.
+"""
+function gapfillpoly(x;max_gap=30,nbefore_after=10, polyorder = 2)
+    x = replace(i->(!ismissing(i) && isfinite(i)) ? i : missing,x)
+    a = copy(x)
+    workx = Float64[]
+    worky = Float64[]
+    # find first nonmissing value
+    idxstart = findfirst(!ismissing,a)
+    idxstart === nothing && return a
+    while true
+        #find next missing value
+        gapstart = findnext(ismissing,a,idxstart)
+        gapstart === nothing && break
+        gapstop = findnext(!ismissing,a,gapstart)
+        gapstop === nothing && break
+        if gapstop-gapstart < max_gap
+            idxfirst = max(1,gapstart - nbefore_after)
+            idxlast  = min(length(a), gapstop + nbefore_after - 1)
+            idxr = idxfirst:idxlast
+            for (ii,idx) in enumerate(idxr)
+                if !ismissing(x[idx])
+                    push!(workx,idxr[ii])
+                    push!(worky,x[idx])
+                end
+            end
+            if length(workx)>polyorder
+                p = polyfit(workx,worky,polyorder)
+                for idx in gapstart:(gapstop-1)
+                    a[idx] = p(idx)
+                end
+            end
+        end
+        idxstart = gapstop
+        empty!(workx)
+        empty!(worky)
+    end
+    a
 end
 
 
