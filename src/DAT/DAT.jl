@@ -3,9 +3,9 @@ export mapCube, getInAxes, getOutAxes, findAxis, reduceCube, getAxis, InputCube,
 import ..Cubes
 using ..ESDLTools
 import Distributed: pmap, @everywhere, workers, remotecall_fetch, myid
-import ..Cubes: getAxis, getOutAxis, getAxis, cubechunks, iscompressed, chunkoffset, _write,
+import ..Cubes: getAxis, getOutAxis, getAxis, cubechunks, iscompressed, chunkoffset,
   CubeAxis, RangeAxis, CategoricalAxis, AbstractCubeData, CubeMem, AbstractCubeMem,
-  caxes, findAxis, _read, _write, Dataset, getsavefolder
+  caxes, findAxis, Dataset, getsavefolder
 import ..Cubes.Axes: AxisDescriptor, axname, ByInference, axsym
 import ...ESDL
 import ..Cubes.ESDLZarr: ZArrayCube
@@ -327,16 +327,24 @@ end
 function updatear(f,r,cube,ncol,loopinds,handle)
   indscol = ntuple(i->1:size(cube,i),ncol)
   indsr   = ntuple(i->r[loopinds[i]],length(loopinds))
-  indsall = CartesianIndices((indscol...,indsr...))
+  indsall = (indscol...,indsr...)
   if size(handle) != size(indsall)
-    hinds = map(i->1:length(i),indsall.indices)
-    f(cube,view(handle,hinds...),indsall)
+    hinds = map(i->1:length(i),indsall)
+    if f == :read
+      handle[hinds...] = cube[indsall...]
+    else
+      data(cube)[indsall] = handle[hinds...]
+    end
   else
-    f(cube,handle,indsall)
+    if f == :read
+      handle[:] = data(cube)[indsall...]
+    else
+      data(cube)[indsall...] = handle
+    end
   end
 end
-updateinars(dc,r)=updatears(dc.incubes,r,_read)
-writeoutars(dc,r)=updatears(dc.outcubes,r,_write)
+updateinars(dc,r)=updatears(dc.incubes,r,:read)
+writeoutars(dc,r)=updatears(dc.outcubes,r,:write)
 
 function runLoop(dc::DATConfig,showprog)
   allRanges=distributeLoopRanges((dc.loopcachesize...,),(map(length,dc.LoopAxes)...,),getchunkoffsets(dc))

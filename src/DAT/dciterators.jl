@@ -56,7 +56,7 @@ end
 Base.length(ci::CubeIterator)=prod(length.(ci.loopaxes))
 function Base.iterate(ci::CubeIterator)
     rnow,blockstate = iterate(ci.r)
-    updatears(ci.dc.incubes,rnow,ESDL.Cubes._read)
+    updatears(ci.dc.incubes,rnow,:read)
     innerinds = CartesianIndices(length.(rnow))
     indnow, innerstate = iterate(innerinds)
     offs = map(i->first(i)-1,rnow)
@@ -72,7 +72,7 @@ function Base.iterate(ci::CubeIterator,s)
         else
             rnow = t2[1]
             blockstate = t2[2]
-            updatears(ci.dc.incubes,rnow,_read)
+            updatears(ci.dc.incubes,rnow,:read)
             innerinds = CartesianIndices(length.(rnow))
             indnow,innerstate = iterate(innerinds)
 

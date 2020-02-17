@@ -7,6 +7,7 @@ export Axes, AbstractCubeData, getSubRange, readcubedata, AbstractCubeMem, axesC
        AbstractSubCube, CubeMem, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis, axVal2Index, MSCAxis,
        getSingVal, ScaleAxis, axname, @caxis_str, rmCube, cubeproperties, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
        getOutAxis, Cube, (..), getCubeData, subsetcube, CubeMask, renameaxis!, Dataset, S3Cube, cubeinfo
+import DiskArrays
 
 """
     AbstractCubeData{T,N}
@@ -92,101 +93,53 @@ the output cube is small enough to fit in memory or by explicitly calling
 * `data` N-D array containing the data
 
 """
-mutable struct CubeMem{T,N} <: AbstractCubeMem{T,N}
+struct ESDLArray{T,N,A<:AbstractArray{T,N}} <: AbstractCubeData{T,N}
   axes::Vector{CubeAxis}
-  data::Array{T,N}
+  data::A
   properties::Dict{String}
+  persist::Ref{Bool}
 end
 
-CubeMem(axes::Vector{CubeAxis},data) = CubeMem(axes,data,Dict{String,Any}())
-Base.permutedims(c::CubeMem,p)=CubeMem(c.axes[collect(p)],permutedims(c.data,p))
-caxes(c::CubeMem)=c.axes
-cubeproperties(c::CubeMem)=c.properties
-iscompressed(c::AbstractCubeMem)=false
+ESDLArray(axes::Vector{CubeAxis},data,properties=Dict{String,Any}(); persist=false) = ESDLArray(axes,data,properties, Ref(persist))
+Base.permutedims(c::ESDLArray,p)=ESDLArray(c.axes[collect(p)],permutedims(c.data,p),c.properties)
+caxes(c::ESDLArray)=c.axes
+cubeproperties(c::ESDLArray)=c.properties
+iscompressed(c::ESDLArray)=iscompressed(c.data)
+cubechunks(c::ESDLArray)=common_size(eachchunk(c.data))
+common_size(a::DiskArrays.GridChunks) = a.chunksize
+chunkoffset(c::ESDLArray)=common_offset(eachchunk(c.data))
+common_offset(a::DiskArrays.GridChunks) = a.chunkoffset
+readcubedata(c::ESDLArray)=ESDLArray(c.axes,Array(c.data),c.properties,c.persist)
 
-Base.IndexStyle(::CubeMem)=Base.LinearFast()
-function Base.setindex!(c::CubeMem,i::Integer,v)
-  c.data[i] = v
-end
-Base.size(c::CubeMem)=size(c.data)
-Base.size(c::CubeMem,i)=size(c.data,i)
-Base.similar(c::CubeMem)=CubeMem(c.axes,similar(c.data))
-Base.ndims(c::CubeMem{T,N}) where {T,N}=N
-
-readcubedata(c::CubeMem)=c
-
-function getSubRange(c::AbstractArray,i...;write::Bool=true)
-  length(i)==ndims(c) || error("Wrong number of view arguments to getSubRange. Cube is: $c \n indices are $i")
-  return view(c,i...)
-end
-getSubRange(c::Tuple{AbstractArray{T,0},AbstractArray{UInt8,0}};write::Bool=true) where {T}=c
+# function getSubRange(c::AbstractArray,i...;write::Bool=true)
+#   length(i)==ndims(c) || error("Wrong number of view arguments to getSubRange. Cube is: $c \n indices are $i")
+#   return view(c,i...)
+# end
+# getSubRange(c::Tuple{AbstractArray{T,0},AbstractArray{UInt8,0}};write::Bool=true) where {T}=c
 
 function _subsetcube end
 
-function subsetcube(z::CubeMem{T};kwargs...) where T
+function subsetcube(z::ESDLArray{T};kwargs...) where T
   newaxes, substuple = _subsetcube(z,collect(Any,map(Base.OneTo,size(z)));kwargs...)
-  newdata = z.data[substuple...]
-  !isa(newdata,AbstractArray) && (newdata = fill(newdata))
-  if haskey(z.properties,"labels")
-    alll = filter!(!ismissing,unique(newdata))
-    z.properties["labels"] = filter(i->in(i[1],alll),z.properties["labels"])
-  end
-  CubeMem{T,length(newaxes)}(newaxes,newdata,z.properties)
+  newdata = view(z.data,substuple...)
+  # if haskey(z.properties,"labels")
+  #   alll = filter!(!ismissing,unique(newdata))
+  #   z.properties["labels"] = filter(i->in(i[1],alll),z.properties["labels"])
+  # end
+  ESDLArray{T,length(newaxes)}(newaxes,newdata,z.properties,z.persist)
 end
 
-"""
-    gethandle(c::AbstractCubeData, [block_size])
+# """
+#     gethandle(c::AbstractCubeData, [block_size])
+#
+# Returns an indexable handle to the data.
+# """
+# gethandle(c::AbstractCubeMem) = c.data
+# gethandle(c::CubeAxis) = collect(c.values)
+# gethandle(c,block_size)=gethandle(c)
 
-Returns an indexable handle to the data.
-"""
-gethandle(c::AbstractCubeMem) = c.data
-gethandle(c::CubeAxis) = collect(c.values)
-gethandle(c,block_size)=gethandle(c)
-
-
-import ..ESDLTools.toRange
-#Generic fallback method for _read
-function _read(c::CubeMem,thedata::AbstractArray,r::CartesianIndices)
-  thedata .= view(c.data,r.indices...)
-end
-
-function _write(c::CubeMem,thedata::AbstractArray,r::CartesianIndices)
-  cubeview = getSubRange(c.data,r.indices...)
-  copyto!(cubeview,thedata)
-end
-
-
-#Implement getindex on AbstractCubeData objects
-const IndR = Union{Integer,Colon,UnitRange}
-getfirst(i::Integer,a::CubeAxis)=i
-getlast(i::Integer,a::CubeAxis)=i
-getfirst(i::UnitRange,a::CubeAxis)=first(i)
-getlast(i::UnitRange,a::CubeAxis)=last(i)
-getfirst(i::Colon,a::CubeAxis)=1
-getlast(i::Colon,a::CubeAxis)=length(a)
-
-function Base.getindex(c::AbstractCubeData,i::Integer...)
-  length(i)==ndims(c) || error("You must provide $(ndims(c)) indices")
-  r = CartesianIndices((first(i):first(i),Base.tail(i)...))
-  aout = zeros(eltype(c),size(r))
-  _read(c,aout,r)
-  return aout[1]
-end
-
-function Base.getindex(c::AbstractCubeData,i::IndR...)
-  length(i)==ndims(c) || error("You must provide $(ndims(c)) indices")
-  ax = (caxes(c)...,)
-  r = CartesianIndices(map((ii,iax)->getfirst(ii,iax):getlast(ii,iax),i,ax))
-  lall = map((rr,ii)->(length(rr),!isa(ii,Integer)),r.indices,i)
-  lshort = filter(ii->ii[2],collect(lall))
-  newshape = map(ii->ii[1],lshort)
-  aout = Array{eltype(c)}(undef,newshape...)
-  if newshape == size(r)
-    _read(c,aout,r)
-  else
-    _read(c,reshape(aout,size(r)),r)
-  end
-  aout
+function Base.getindex(c::AbstractCubeData,i...)
+  c.data[i...]
 end
 Base.read(d::AbstractCubeData) = getindex(d,fill(Colon(),ndims(d))...)
 
@@ -204,7 +157,7 @@ cubesize(c::AbstractCubeData{T,0}) where {T}=sizeof(T)+1
 
 getCubeDes(c::AbstractSubCube)="Data Cube view"
 getCubeDes(::CubeAxis)="Cube axis"
-getCubeDes(c::CubeMem)="In-Memory data cube"
+getCubeDes(c::ESDLArray)="ESDL data cube"
 getCubeDes(c::EmptyCube)="Empty Data Cube (placeholder)"
 function Base.show(io::IO,c::AbstractCubeData)
     println(io,getCubeDes(c), " with the following dimensions")
@@ -276,8 +229,6 @@ function Base.show(io::IO,a::CategoricalAxis)
 end
 Base.show(io::IO,a::SpatialPointAxis)=print(io,"Spatial points axis with ",length(a.values)," points")
 
-
-include("TransformedCubes.jl")
 function S3Cube end
 include("ZarrCubes.jl")
 import .ESDLZarr: (..), Cube, getCubeData, loadCube, rmCube, CubeMask, cubeinfo, getsubinds

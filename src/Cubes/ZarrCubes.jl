@@ -3,9 +3,9 @@ import ...ESDL
 import Distributed: myid
 import Zarr: ZGroup, zopen, ZArray, NoCompressor, zgroup, zcreate, readblock!, S3Store, DirectoryStore
 import ESDL.Cubes: cubechunks, iscompressed, AbstractCubeData, getCubeDes,
-  caxes,chunkoffset, gethandle, subsetcube, axVal2Index, findAxis, _read, S3Cube,
-  _write, cubeproperties, ConcatCube, concatenateCubes, _subsetcube, workdir, readcubedata, saveCube,
-  getsavefolder, check_overwrite
+  caxes,chunkoffset, subsetcube, axVal2Index, findAxis, S3Cube,
+  cubeproperties, ConcatCube, concatenateCubes, _subsetcube, workdir, readcubedata, saveCube,
+  getsavefolder, check_overwrite,ESDLArray
 import ESDL.Cubes.Axes: axname, CubeAxis, CategoricalAxis, RangeAxis, TimeAxis,
   axVal2Index_lb, axVal2Index_ub, get_step, getAxis
 import Dates: Day,Hour,Minute,Second,Month,Year, Date, DateTime, TimeType
@@ -14,36 +14,9 @@ import CFTime: timedecode, timeencode, DateTimeNoLeap, DateTime360Day, DateTimeA
 export (..), Cubes, getCubeData, CubeMask, cubeinfo
 const spand = Dict("days"=>Day,"months"=>Month,"years"=>Year,"hours"=>Hour,"seconds"=>Second,"minutes"=>Minute)
 
-mutable struct ZArrayCube{T,M,A<:ZArray{T},S} <: AbstractCubeData{T,M}
-  a::A
-  axes::Vector{CubeAxis}
-  subset::S
-  persist::Bool
-  properties::Dict{String,Any}
-end
-getCubeDes(::ZArrayCube)="ZArray Cube"
-caxes(z::ZArrayCube)=z.axes
-iscompressed(z::ZArrayCube)=!isa(z.a.metadata.compressor,NoCompressor)
-cubechunks(z::ZArrayCube{<:Any,<:Any,<:ZArray,Nothing}) = z.a.metadata.chunks
-cubechunks(z::ZArrayCube) = ((z.a.metadata.chunks[i] for i in 1:length(z.subset) if !isa(z.subset[i],Integer))...,)
-cubeproperties(z::ZArrayCube) = z.properties
-function chunkoffset(z::ZArrayCube)
-  cc = cubechunks(z)
-  map((s,c)->mod(first(s)-1,c),onlyrangetuple(z.subset),cc)
-end
-chunkoffset(z::ZArrayCube{T,N,A,Nothing}) where A<:ZArray{T} where {T,N}  = ntuple(i->0,N)
-Base.size(z::ZArrayCube) = map(length,onlyrangetuple(z.subset))
-Base.size(z::ZArrayCube,i::Int) = length(onlyrangetuple(z.subset)[i])
-@inline onlyrangetuple(x::Integer,r...) = onlyrangetuple(r...)
-@inline onlyrangetuple(x,r...) = (x,onlyrangetuple(r...)...)
-@inline onlyrangetuple(x::Integer) = ()
-@inline onlyrangetuple() = ()
-@inline onlyrangetuple(x) = (x,)
-@inline onlyrangetuple(x::Tuple)=onlyrangetuple(x...)
-Base.size(z::ZArrayCube{<:Any,<:Any,<:ZArray,Nothing}) = size(z.a)
-Base.size(z::ZArrayCube{<:Any,<:Any,<:ZArray,Nothing},i::Int) = size(z.a,i)
-#ESDL.Cubes.gethandle(z::ZArrayCube) = z.a
+const ZArrayCube{T,M} = ESDLArray{T,M,<:ZArray} where {T,M}
 
+iscompressed(z::ZArray)=!isa(z.metadata.compressor,NoCompressor)
 
 prependrange(r::AbstractRange,n) = n==0 ? r : range(first(r)-n*step(r),last(r),length=n+length(r))
 function prependrange(r::AbstractArray,n)
@@ -71,7 +44,6 @@ defaultcal(::Type{<:DateTime360Day}) = "360_day"
 datetodatetime(vals::AbstractArray{<:Date}) = DateTime.(vals)
 datetodatetime(vals) = vals
 function dataattfromaxis(ax::CubeAxis{T},n) where T<:TimeType
-
     data = timeencode(datetodatetime(ax.values),"days since 1980-01-01",defaultcal(T))
     prependrange(data,n), Dict{String,Any}("units"=>"days since 1980-01-01","calendar"=>defaultcal(T))
 end
@@ -120,7 +92,6 @@ of `CubeAxis`. A new empty Zarr array will be created and can serve as a sink fo
 * `fillvalue= T>:Missing ? defaultfillval(Base.nonmissingtype(T)) : nothing` fill value
 * `datasetaxis="Variable"` special treatment of a categorical axis that gets written into separate xarrays
 """
-
 function ZArrayCube(axlist;
   folder=tempname(),
   T=Union{Float32,Missing},
@@ -171,7 +142,10 @@ function ZArrayCube(axlist;
   end
   allcubes = map(cubenames) do cn
     za = zcreate(T, myar,cn, s...,attrs=attr, fill_value=fillvalue,chunks=chunksize,compressor=compressor)
-    zout = ZArrayCube{T,length(s),typeof(za),typeof(subs)}(za,axlist,subs,persist,propfromattr(attr))
+    if subs !== nothing
+      za = view(za,subs...)
+    end
+    zout = ESDLArray(axlist,za,axlist,persist,propfromattr(attr))
     finalizer(cleanZArrayCube,zout)
     zout
   end
@@ -182,45 +156,7 @@ function ZArrayCube(axlist;
   end
 end
 
-function _read(z::ZArrayCube{<:Any,N,<:Any,<:Nothing},thedata::AbstractArray{<:Any,N},r::CartesianIndices{N}) where N
-  readblock!(thedata,z.a,r)
-end
-
 propfromattr(attr) = filter(i->i[1]!=="_ARRAY_DIMENSIONS",attr)
-
-#Helper functions for subsetting indices
-_getinds(s1,s,i) = s1[firstarg(i...)],Base.tail(i)
-_getinds(s1::Int,s,i) = s1,i
-function getsubinds(subset,inds)
-    el,rest = _getinds(firstarg(subset...),subset,inds)
-    (el,getsubinds(Base.tail(subset),rest)...)
-end
-getsubinds(subset::Tuple{},inds) = ()
-firstarg(x,s...) = x
-
-maybereshapedata(thedata::AbstractArray{<:Any,N},subinds::NTuple{N,<:Any}) where N = thedata
-maybereshapedata(thedata,subinds) = reshape(thedata,map(length,subinds))
-
-
-function _read(z::ZArrayCube{<:Any,N,<:Any},thedata::AbstractArray{<:Any,N},r::CartesianIndices{N}) where N
-  allinds = CartesianIndices(map(Base.OneTo,size(z.a)))
-  subinds = map(getindex,allinds.indices,z.subset)
-  r2 = getsubinds(subinds,r.indices)
-  thedata = maybereshapedata(thedata,r2)
-  readblock!(thedata,z.a,CartesianIndices(r2))
-end
-
-function _write(y::ZArrayCube{<:Any,N,<:Any,<:Nothing},thedata::AbstractArray,r::CartesianIndices{N}) where N
-  readblock!(thedata,y.a,r,readmode=false)
-end
-
-function _write(z::ZArrayCube{<:Any,N,<:Any},thedata::AbstractArray{<:Any,N},r::CartesianIndices{N}) where N
-  allinds = CartesianIndices(map(Base.OneTo,size(z.a)))
-  subinds = map(getindex,allinds.indices,z.subset)
-  r2 = getsubinds(subinds,r.indices)
-  thedata = maybereshapedata(thedata,subinds)
-  readblock!(thedata,z.a,CartesianIndices(r2),readmode=false)
-end
 
 function toaxis(dimname,g,offs,len)
     axname = dimname in ("lon","lat","time") ? uppercasefirst(dimname) : dimname
@@ -275,41 +211,6 @@ CubeMask(v;kwargs...) = CubeMask(ESDL.ESDLDefaults.cubedir[],v;static=true,kwarg
 
 
 @deprecate getCubeData(c;longitude=(-180.0,180.0),latitude=(-90.0,90.0),kwargs...) subsetcube(c;lon=longitude,lat=latitude,kwargs...)
-
-# function Cube(g::ZGroup;varlist=nothing,joinname="Variable",static=false)
-#
-#   if varlist===nothing
-#     varlist = infervarlist(g)
-#   end
-#   v1 = g[varlist[1]]
-#   s = size(v1)
-#   vardims = reverse((v1.attrs["_ARRAY_DIMENSIONS"]...,))
-#   offsets = map(i->get(g[i].attrs,"_ARRAY_OFFSET",0),vardims)
-#   inneraxes = toaxis.(vardims,Ref(g),offsets)
-#   iax = collect(CubeAxis,inneraxes)
-#   s.-offsets == length.(inneraxes) || throw(DimensionMismatch("Array dimensions do not fit"))
-#   allcubes = map(varlist) do iv
-#     v = g[iv]
-#     size(v) == s || throw(DimensionMismatch("All variables must have the same shape. $iv does not match $(varlist[1])"))
-#     ZArrayCube{eltype(v),ndims(v),typeof(v),Nothing}(v,iax,nothing,true,propfromattr(v.attrs))
-#   end
-#   # Filter out minority element types
-#   c = counter(eltype(i) for i in allcubes)
-#   _,et = findmax(c)
-#   indtake = findall(i->eltype(i)==et,allcubes)
-#   allcubes = allcubes[indtake]
-#   varlist  = varlist[indtake]
-#   if length(allcubes)==1
-#     cout =  allcubes[1]
-#   else
-#     cout = concatenateCubes(allcubes,CategoricalAxis(joinname,varlist))
-#   end
-#   if static
-#     return subsetcube(cout,time=first(getAxis("Time",cout).values))
-#   else
-#     return cout
-#   end
-# end
 
 sorted(x,y) = x<y ? (x,y) : (y,x)
 
@@ -366,39 +267,33 @@ end
 
 include(joinpath(@__DIR__,"../CubeAPI/countrydict.jl"))
 
-function subsetcube(z::ZArrayCube{T};kwargs...) where T
-  subs = isa(z.subset,Nothing) ? collect(Any,map(Base.OneTo,size(z))) : collect(Any,z.subset)
-  newaxes, substuple = _subsetcube(z,subs;kwargs...)
-  ZArrayCube{T,length(newaxes),typeof(z.a),typeof(substuple)}(z.a,newaxes,substuple,true,z.properties)
-end
-
 Base.getindex(a::AbstractCubeData;kwargs...) = subsetcube(a;kwargs...)
 
-function subsetcube(z::ESDL.Cubes.ConcatCube{T,N};kwargs...) where {T,N}
-  kwargs = collect(kwargs)
-  isplitconcaxis = findfirst(kwargs) do kw
-    axdes = string(kw[1])
-    findAxis(axdes,caxes(z)) == N
-  end
-  if isa(isplitconcaxis,Nothing)
-    #We only need to subset the inner cubes
-    cubelist = map(i->subsetcube(i;kwargs...),z.cubelist)
-    cubeaxes = caxes(first(cubelist))
-    cataxis = deepcopy(z.cataxis)
-  else
-    subs = kwargs[isplitconcaxis][2]
-    subinds = interpretsubset(subs,z.cataxis)
-    cubelist = z.cubelist[subinds]
-    isa(cubelist,AbstractCubeData) && (cubelist=[cubelist];subinds=[subinds])
-    cataxis  = axcopy(z.cataxis,z.cataxis.values[subinds])
-    kwargsrem = (kwargs[(1:isplitconcaxis-1)]...,kwargs[isplitconcaxis+1:end]...)
-    if !isempty(kwargsrem)
-      cubelist = [subsetcube(i;kwargsrem...) for i in cubelist]
-    end
-    cubeaxes = deepcopy(caxes(cubelist[1]))
-  end
-  return length(cubelist)==1 ? cubelist[1] : ConcatCube{T,length(cubeaxes)+1}(cubelist,cataxis,cubeaxes,cubeproperties(z))
-end
+# function subsetcube(z::ESDL.Cubes.ConcatCube{T,N};kwargs...) where {T,N}
+#   kwargs = collect(kwargs)
+#   isplitconcaxis = findfirst(kwargs) do kw
+#     axdes = string(kw[1])
+#     findAxis(axdes,caxes(z)) == N
+#   end
+#   if isa(isplitconcaxis,Nothing)
+#     #We only need to subset the inner cubes
+#     cubelist = map(i->subsetcube(i;kwargs...),z.cubelist)
+#     cubeaxes = caxes(first(cubelist))
+#     cataxis = deepcopy(z.cataxis)
+#   else
+#     subs = kwargs[isplitconcaxis][2]
+#     subinds = interpretsubset(subs,z.cataxis)
+#     cubelist = z.cubelist[subinds]
+#     isa(cubelist,AbstractCubeData) && (cubelist=[cubelist];subinds=[subinds])
+#     cataxis  = axcopy(z.cataxis,z.cataxis.values[subinds])
+#     kwargsrem = (kwargs[(1:isplitconcaxis-1)]...,kwargs[isplitconcaxis+1:end]...)
+#     if !isempty(kwargsrem)
+#       cubelist = [subsetcube(i;kwargsrem...) for i in cubelist]
+#     end
+#     cubeaxes = deepcopy(caxes(cubelist[1]))
+#   end
+#   return length(cubelist)==1 ? cubelist[1] : ConcatCube{T,length(cubeaxes)+1}(cubelist,cataxis,cubeaxes,cubeproperties(z))
+# end
 
 function saveCube(z::ZArrayCube, name::AbstractString; overwrite=false, chunksize=nothing, compressor=NoCompressor())
   if z.subset === nothing && !z.persist && isa(z.a.storage, DirectoryStore) && chunksize==nothing && isa(compressor, NoCompressor)
@@ -494,9 +389,6 @@ function cubeinfo(cube::ZArrayCube)
       get(p,"comment",variable),
       get(p,"references","no reference")
     )
-end
-function cubeinfo(cube::ConcatCube)
-  allinfos = sort([cubeinfo(c) for c in cube.cubelist])
 end
 
 
