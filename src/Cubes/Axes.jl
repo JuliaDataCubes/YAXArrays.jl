@@ -342,6 +342,7 @@ end
 
 #Default constructor
 NcDim(a::CubeAxis{T},start::Integer,count::Integer) where {T<:Real}=NcDim(axname(a),count,values=collect(a.values[start:(start+count-1)]),atts=Dict{Any,Any}("units"=>axunits(a)))
-NcDim(a::CubeAxis,start::Integer,count::Integer)=NcDim(axname(a),count,values=string.(a.values[start:(start+count-1)]),atts=Dict{Any,Any}("units"=>axunits(a)))NcDim(a::CubeAxis)=NcDim(a,1,length(a))
+NcDim(a::CubeAxis,start::Integer,count::Integer)=NcDim(axname(a),count,values=string.(a.values[start:(start+count-1)]),atts=Dict{Any,Any}("units"=>axunits(a)))
+NcDim(a::CubeAxis)=NcDim(a,1,length(a))
 
 end
