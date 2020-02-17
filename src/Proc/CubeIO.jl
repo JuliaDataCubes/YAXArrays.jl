@@ -91,7 +91,7 @@ function exportcube(r::AbstractCubeData,filename::String;
   isempty(ax_cat) && (ax_cat=[VariableAxis(["layer"])])
   it = map(i->i.values,ax_cat)
   elt = Base.nonmissingtype(eltype(r))
-  vars = NcVar[NcVar(join(collect(string.(a)),"_"),dims,t=elt,atts=Dict("missing_value"=>convert(elt,-9999.0), "grid_mapping" => proj["grid_mapping_name"])) for a in product(it...)]
+  vars = vec(NcVar[NcVar(join(collect(string.(a)),"_"),dims,t=elt,atts=Dict("missing_value"=>convert(elt,-9999.0), "grid_mapping" => proj["grid_mapping_name"])) for a in product(it...)])
   file = NetCDF.create(filename,vars)
   for d in dims
     ncwrite(d.vals,filename,d.name)
