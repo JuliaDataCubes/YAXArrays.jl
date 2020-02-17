@@ -76,11 +76,15 @@ inside the resulting file. Dimensions will be ordered according to the
 `priorities` keyword argument, which defaults to `Dict("LON"=>1,"LAT"=>2,"TIME"=>3)`,
 which means that the file will be stored with longitudes varying fastest.
 """
-function exportcube(r::AbstractCubeData,filename::String;priorities = Dict("LON"=>1,"LAT"=>2,"TIME"=>3), proj=epsg4326)
+function exportcube(r::AbstractCubeData,filename::String;
+  priorities = Dict("LON"=>1,"LAT"=>2,"TIME"=>3),
+  proj=epsg4326,
+  forcecont = ())
 
   ax = caxes(r)
-  ax_cont = collect(filter(i->isa(i,RangeAxis),ax))
-  ax_cat  = filter(i->!isa(i,RangeAxis),ax)
+  forceaxes = map(i->getAxis(i,ax),forcecont)
+  ax_cont = collect(filter(i->isa(i,RangeAxis) || in(i,forceaxes),ax))
+  ax_cat  = filter(i->!in(i,ax_cont),ax)
   prir = map(i->get(priorities,uppercase(axname(i)),10),ax_cont)
   ax_cont=ax_cont[sortperm(prir)]
   dims = map(NcDim,ax_cont)
@@ -101,7 +105,6 @@ function exportcube(r::AbstractCubeData,filename::String;priorities = Dict("LON"
   cont_loop = Dict(ii=>axname(ax_cont[ii]) for ii in isplit:length(ax_cont))
   mapCube(writefun,r,length(ax_cont),cont_loop,filename,indims=incubes,include_loopvars=true,ispar=false,max_cache=5e8,
   nthreads=[1])
-  NetCDF.close(file)
   nothing
 end
 
