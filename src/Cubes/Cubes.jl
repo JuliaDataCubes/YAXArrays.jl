@@ -134,7 +134,7 @@ common_size(a::DiskArrays.GridChunks) = a.chunksize
 function common_size(a)
   ntuple(ndims(a)) do idim
     otherdims = setdiff(1:ndims(a),idim)
-    allengths = map(i->length(i[idim]),a)
+    allengths = map(i->length(i.indices[idim]),a)
     for od in otherdims
       allengths = unique(allengths,dims=od)
     end
