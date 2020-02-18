@@ -249,7 +249,7 @@ function _subsetcube(z::AbstractCubeData, subs;kwargs...)
   substuple = ntuple(i->subs[i],length(subs))
   inewaxes = findall(i->isa(i,AbstractVector),substuple)
   newaxes = newaxes[inewaxes]
-  @assert length.(newaxes) == map(length,filter(i->isa(i,AbstractRange),collect(substuple)))
+  @assert length.(newaxes) == map(length,filter(i->isa(i,AbstractVector),collect(substuple)))
   newaxes, substuple
 end
 

@@ -127,10 +127,35 @@ Base.permutedims(c::ESDLArray,p)=ESDLArray(c.axes[collect(p)],permutedims(c.data
 caxes(c::ESDLArray)=c.axes
 cubeproperties(c::ESDLArray)=c.properties
 iscompressed(c::ESDLArray)=iscompressed(c.data)
+iscompressed(c::DiskArrays.PermutedDiskArray) = iscompressed(c.a.parent)
+iscompressed(c::DiskArrays.SubDiskArray) = iscompressed(c.v.parent)
 cubechunks(c::ESDLArray)=common_size(eachchunk(c.data))
 common_size(a::DiskArrays.GridChunks) = a.chunksize
+function common_size(a)
+  ntuple(ndims(a)) do idim
+    otherdims = setdiff(1:ndims(a),idim)
+    allengths = map(i->length(i[idim]),a)
+    for od in otherdims
+      allengths = unique(allengths,dims=od)
+    end
+    @assert length(allengths) == size(a,idim)
+    length(allengths)<3 ? allengths[1] : allengths[2]
+  end
+end
+
 chunkoffset(c::ESDLArray)=common_offset(eachchunk(c.data))
 common_offset(a::DiskArrays.GridChunks) = a.chunkoffset
+function common_offset(a)
+  ntuple(ndims(a)) do idim
+    otherdims = setdiff(1:ndims(a),idim)
+    allengths = map(i->length(i[idim]),a)
+    for od in otherdims
+      allengths = unique(allengths,dims=od)
+    end
+    @assert length(allengths) == size(a,idim)
+    length(allengths)<3 ? 0 : allengths[2]-allengths[1]
+  end
+end
 readcubedata(c::ESDLArray)=ESDLArray(c.axes,Array(c.data),c.properties,nothing)
 
 # function getSubRange(c::AbstractArray,i...;write::Bool=true)

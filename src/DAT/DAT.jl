@@ -4,7 +4,7 @@ import ..Cubes
 using ..ESDLTools
 import Distributed: pmap, @everywhere, workers, remotecall_fetch, myid
 import ..Cubes: getAxis, cubechunks, iscompressed, chunkoffset,
-  CubeAxis, AbstractCubeData,
+  CubeAxis, AbstractCubeData, ESDLArray
   caxes, findAxis, Dataset, getsavefolder
 import ..Cubes.Axes: AxisDescriptor, axname, ByInference, axsym, getOutAxis
 import ...ESDL
@@ -322,18 +322,18 @@ function updatear(f,r,cube,ncol,loopinds,handle)
   indscol = ntuple(i->1:size(cube,i),ncol)
   indsr   = ntuple(i->r[loopinds[i]],length(loopinds))
   indsall = (indscol...,indsr...)
-  if size(handle) != size(indsall)
+  if size(handle) != length.(indsall)
     hinds = map(i->1:length(i),indsall)
     if f == :read
-      handle[hinds...] = cube[indsall...]
+      handle[hinds...] = cube.data[indsall...]
     else
-      data(cube)[indsall] = handle[hinds...]
+      cube.data[indsall...] = handle[hinds...]
     end
   else
     if f == :read
-      handle[:] = data(cube)[indsall...]
+      handle[:] = cube.data[indsall...]
     else
-      data(cube)[indsall...] = handle
+      cube.data[indsall...] = handle
     end
   end
 end
@@ -424,7 +424,7 @@ function getRetCubeType(oc,ispar,max_cache)
     if ispar || outsize>max_cache
       cubetype = ZArrayCube
     else
-      cubetype = CubeMem
+      cubetype = Array
     end
   else
     cubetype = oc.desc.retCubeType

@@ -25,6 +25,7 @@ function diskstack(a::Array{M,N}) where {N,M<:AbstractArray{T,NO}} where {T,NO}
 end
 Base.size(r::DiskArrayStack) = (size(r.arrays[1])...,size(r.arrays)...)
 haschunks(a::DiskArrayStack) = haschunks(a.arrays[1])
+iscompressed(a::DiskArrayStack) = any(iscompressed,a.arrays)
 function eachchunk(a::DiskArrayStack{<:Any,<:Any,<:Any,NO}) where NO
     iterold = eachchunk(a.arrays[1])
     cs = (iterold.chunksize...,ntuple(one,NO)...)
