@@ -3,6 +3,7 @@ export removeMSC, gapFillMSC, getMSC, getMedSC, gapfillpoly
 import Polynomials: polyfit
 import ..Proc: getNpY
 import ...Cubes: AbstractCubeData
+import ...Cubes.Axes: MSCAxis
 import ...DAT: mapCube, InDims, OutDims
 import Statistics: quantile!
 
@@ -129,7 +130,7 @@ Returns the mean annual cycle from each time series.
 """
 function getMSC(c::AbstractCubeData;kwargs...)
   outdims = OutDims(MSCAxis(getNpY(c)))
-  indims = InDims(TimeAxis)
+  indims = InDims("Time")
   mapCube(getMSC,c,getNpY(c);indims=indims,outdims=outdims,kwargs...)
 end
 
@@ -174,7 +175,7 @@ Returns the median annual cycle from each time series.
 """
 function getMedSC(c::AbstractCubeData;kwargs...)
   outdims = OutDims(MSCAxis(getNpY(c)))
-  indims = InDims(TimeAxis)
+  indims = InDims("Time")
   mapCube(getMedSC,c;indims=indims,outdims=outdims,kwargs...)
 end
 

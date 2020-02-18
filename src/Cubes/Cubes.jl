@@ -8,6 +8,7 @@ export Axes, AbstractCubeData, getSubRange, readcubedata, AbstractCubeMem, axesC
        getSingVal, ScaleAxis, axname, @caxis_str, rmCube, cubeproperties, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
        getOutAxis, Cube, (..), getCubeData, subsetcube, CubeMask, renameaxis!, Dataset, S3Cube, cubeinfo
 import DiskArrays
+import Distributed: myid
 
 """
     AbstractCubeData{T,N}
@@ -93,9 +94,9 @@ end
 function clean(c::CleanMe)
   if !c.persist && myid()==1
     if !isdir(c.path)
-      @warn "Cube directory $(y.a.storage.folder) does not exist. Can not clean"
+      @warn "Cube directory $(c.path) does not exist. Can not clean"
     else
-      rm(c,path,recursive=true)
+      rm(c.path,recursive=true)
     end
   end
 end

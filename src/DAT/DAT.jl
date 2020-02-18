@@ -422,7 +422,7 @@ function getRetCubeType(oc,ispar,max_cache)
   outsize=sizeof(eltype)*(length(oc.allAxes)>0 ? prod(map(length,oc.allAxes)) : 1)
   if string(oc.desc.retCubeType)=="auto"
     if ispar || outsize>max_cache
-      cubetype = ZArrayCube
+      cubetype = ZArray
     else
       cubetype = Array
     end

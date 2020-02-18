@@ -111,11 +111,11 @@ end
   @loadOrGenerate danom=>"Anomalies" begin
       error("This should never execute")
   end;
-  @test danom isa ESDL.Cubes.ConcatCube
+  @test danom.data isa ESDL.Cubes.DiskArrayStack
 
   saveCube(danom, "mySavedZArrayCube")
 
-  @test danom isa ESDL.Cubes.ConcatCube
+  @test danom.data isa ESDL.Cubes.DiskArrayStack
 
   danom=readcubedata(danom)
   danom2=readcubedata(loadCube("mySavedZArrayCube"))

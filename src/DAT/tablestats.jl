@@ -198,7 +198,7 @@ function tooutcube(
 
   filloutar(aout,convdictall,agg,map(i->1:length(i),outaxstat),post)
 
-  CubeMem(collect(CubeAxis,outax),aout)
+  ESDLArray(collect(outax),aout)
 end
 function filloutar(aout,convdictall,agg::GroupedOnlineAggregator,s,post)
     for (k,v) in agg.d

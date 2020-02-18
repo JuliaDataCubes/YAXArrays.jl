@@ -42,7 +42,12 @@ function DiskArrays.readblock!(a::DiskArrayStack{<:Any,N,<:Any,NO},aout,i...) wh
   iiter = CartesianIndices(outerinds)
   inum  = CartesianIndices(size(iiter))
   foreach(zip(iiter,inum)) do (iouter,iret)
-    readblock!(a.arrays[iouter],view(aout,innercolon...,iret.I...),innerinds...)
+    arnow = a.arrays[iouter]
+    if isa(arnow, AbstractDiskArray)
+      readblock!(a.arrays[iouter],view(aout,innercolon...,iret.I...),innerinds...)
+    else
+      aout[innercolon...,iret.I...] = arnow[innerinds...]
+    end
   end
   nothing
 end
@@ -55,7 +60,12 @@ function DiskArrays.writeblock!(a::DiskArrayStack{<:Any,N,<:Any,NO},v,i...) wher
   iiter = CartesianIndices(outerinds)
   inum  = CartesianIndices(size(iiter))
   foreach(zip(iiter,inum)) do (iouter,iret)
-    writeblock!(a.arrays[iouter],view(v,innercolon...,iret.I...),innerinds...)
+    arnow = a.arrays[iouter]
+    if isa(arnow, AbstractDiskArray)
+      writeblock!(a.arrays[iouter],view(v,innercolon...,iret.I...),innerinds...)
+    else
+      arnow[innerinds...] = aout[innercolon...,iret.I...]
+    end
   end
   nothing
 end
