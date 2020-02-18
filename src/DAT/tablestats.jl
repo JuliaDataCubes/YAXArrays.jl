@@ -1,4 +1,5 @@
 import OnlineStats: OnlineStat, Extrema, fit!, value
+import ...Cubes.Axes: CategoricalAxis, RangeAxis
 import IterTools
 using WeightedOnlineStats
 import ProgressMeter: next!, Progress

@@ -76,9 +76,29 @@ abstract type AbstractCubeMem{T,N} <: AbstractCubeData{T,N} end
 
 include("Axes.jl")
 using .Axes
-import .Axes: getOutAxis, getAxis
+import .Axes: getAxis
 struct EmptyCube{T}<:AbstractCubeData{T,0} end
 caxes(c::EmptyCube)=CubeAxis[]
+
+
+mutable struct CleanMe
+  path::String
+  persist::Bool
+  function CleanMe(path::String,toclean::Bool)
+    c = new(path,toclean)
+    finalizer(clean,c)
+    c
+  end
+end
+function clean(c::CleanMe)
+  if !c.persist && myid()==1
+    if !isdir(c.path)
+      @warn "Cube directory $(y.a.storage.folder) does not exist. Can not clean"
+    else
+      rm(c,path,recursive=true)
+    end
+  end
+end
 
 """
     CubeMem{T,N} <: AbstractCubeMem{T,N}
@@ -93,14 +113,16 @@ the output cube is small enough to fit in memory or by explicitly calling
 * `data` N-D array containing the data
 
 """
-struct ESDLArray{T,N,A<:AbstractArray{T,N}} <: AbstractCubeData{T,N}
-  axes::Vector{CubeAxis}
+struct ESDLArray{T,N,A<:AbstractArray{T,N},AT} <: AbstractCubeData{T,N}
+  axes::AT
   data::A
   properties::Dict{String}
-  persist::Ref{Bool}
+  cleaner::Union{CleanMe,Nothing}
 end
 
-ESDLArray(axes::Vector{CubeAxis},data,properties=Dict{String,Any}(); persist=false) = ESDLArray(axes,data,properties, Ref(persist))
+ESDLArray(axes,data,properties=Dict{String,Any}(); cleaner=nothing) = ESDLArray(axes,data,properties, cleaner)
+Base.size(a::ESDLArray) = size(a.data)
+Base.size(a::ESDLArray,i::Int) = size(a.data,i)
 Base.permutedims(c::ESDLArray,p)=ESDLArray(c.axes[collect(p)],permutedims(c.data,p),c.properties)
 caxes(c::ESDLArray)=c.axes
 cubeproperties(c::ESDLArray)=c.properties
@@ -109,7 +131,7 @@ cubechunks(c::ESDLArray)=common_size(eachchunk(c.data))
 common_size(a::DiskArrays.GridChunks) = a.chunksize
 chunkoffset(c::ESDLArray)=common_offset(eachchunk(c.data))
 common_offset(a::DiskArrays.GridChunks) = a.chunkoffset
-readcubedata(c::ESDLArray)=ESDLArray(c.axes,Array(c.data),c.properties,c.persist)
+readcubedata(c::ESDLArray)=ESDLArray(c.axes,Array(c.data),c.properties,nothing)
 
 # function getSubRange(c::AbstractArray,i...;write::Bool=true)
 #   length(i)==ndims(c) || error("Wrong number of view arguments to getSubRange. Cube is: $c \n indices are $i")
@@ -122,11 +144,7 @@ function _subsetcube end
 function subsetcube(z::ESDLArray{T};kwargs...) where T
   newaxes, substuple = _subsetcube(z,collect(Any,map(Base.OneTo,size(z)));kwargs...)
   newdata = view(z.data,substuple...)
-  # if haskey(z.properties,"labels")
-  #   alll = filter!(!ismissing,unique(newdata))
-  #   z.properties["labels"] = filter(i->in(i[1],alll),z.properties["labels"])
-  # end
-  ESDLArray{T,length(newaxes)}(newaxes,newdata,z.properties,z.persist)
+  ESDLArray(newaxes,newdata,z.properties,cleaner = z.cleaner)
 end
 
 # """
@@ -229,9 +247,11 @@ function Base.show(io::IO,a::CategoricalAxis)
 end
 Base.show(io::IO,a::SpatialPointAxis)=print(io,"Spatial points axis with ",length(a.values)," points")
 
+include("TransformedCubes.jl")
 function S3Cube end
 include("ZarrCubes.jl")
-import .ESDLZarr: (..), Cube, getCubeData, loadCube, rmCube, CubeMask, cubeinfo, getsubinds
+import .ESDLZarr: (..), Cube, getCubeData, loadCube, rmCube, CubeMask, cubeinfo
+
 include("NetCDFCubes.jl")
 include("Datasets.jl")
 import .Datasets: Dataset, ESDLDataset

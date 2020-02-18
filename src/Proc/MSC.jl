@@ -1,9 +1,7 @@
 module MSC
 export removeMSC, gapFillMSC, getMSC, getMedSC, gapfillpoly
 import Polynomials: polyfit
-using ..Cubes
-using ..DAT
-using ..Proc
+import ...Cubes: AbstractCubeData
 import Statistics: quantile!
 
 function removeMSC(aout,ain,NpY::Integer)

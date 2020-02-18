@@ -1,11 +1,11 @@
 module ESDLZarr
-import ...ESDL
+import ....ESDL
 import Distributed: myid
 import Zarr: ZGroup, zopen, ZArray, NoCompressor, zgroup, zcreate, readblock!, S3Store, DirectoryStore
-import ESDL.Cubes: cubechunks, iscompressed, AbstractCubeData, getCubeDes,
+import ...Cubes: cubechunks, iscompressed, AbstractCubeData, getCubeDes,
   caxes,chunkoffset, subsetcube, axVal2Index, findAxis, S3Cube,
-  cubeproperties, ConcatCube, concatenateCubes, _subsetcube, workdir, readcubedata, saveCube,
-  getsavefolder, check_overwrite,ESDLArray
+  cubeproperties, concatenateCubes, _subsetcube, workdir, readcubedata, saveCube,
+  getsavefolder, check_overwrite,ESDLArray, CleanMe
 import ESDL.Cubes.Axes: axname, CubeAxis, CategoricalAxis, RangeAxis, TimeAxis,
   axVal2Index_lb, axVal2Index_ub, get_step, getAxis
 import Dates: Day,Hour,Minute,Second,Month,Year, Date, DateTime, TimeType
@@ -55,17 +55,6 @@ function zarrayfromaxis(p::ZGroup,ax::CubeAxis,offs)
     za = zcreate(eltype(data),p,axname(ax), length(data),attrs=attr)
     za[:] = data
     za
-end
-
-
-function cleanZArrayCube(y::ZArrayCube)
-  if !y.persist && myid()==1
-    if !isdir(y.a.storage.folder)
-      @warn "Cube directory $(y.a.storage.folder) does not exist. Can not clean"
-    else
-      rm(y.a.storage.folder,recursive=true)
-    end
-  end
 end
 
 defaultfillval(T::Type{<:AbstractFloat}) = convert(T,1e32)
@@ -145,9 +134,8 @@ function ZArrayCube(axlist;
     if subs !== nothing
       za = view(za,subs...)
     end
-    zout = ESDLArray(axlist,za,axlist,persist,propfromattr(attr))
-    finalizer(cleanZArrayCube,zout)
-    zout
+    cleaner = persist ? nothing : CleanMe(folder,false)
+    ESDLArray(axlist,za,propfromattr(attr),cleaner=cleaner)
   end
   if groupaxis===nothing
     return allcubes[1]
@@ -261,7 +249,7 @@ function _subsetcube(z::AbstractCubeData, subs;kwargs...)
   substuple = ntuple(i->subs[i],length(subs))
   inewaxes = findall(i->isa(i,AbstractVector),substuple)
   newaxes = newaxes[inewaxes]
-  @assert length.(newaxes) == map(length,(substuple |> onlyrangetuple)) |> collect
+  @assert length.(newaxes) == map(length,filter(i->isa(i,AbstractRange),collect(substuple)))
   newaxes, substuple
 end
 

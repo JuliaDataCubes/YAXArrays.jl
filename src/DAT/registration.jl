@@ -4,6 +4,7 @@ import ..Cubes.Axes: get_descriptor, ByFunction
 import ..Cubes: getsavefolder
 import Zarr: Compressor, NoCompressor
 import ...ESDL: workdir, ESDLDefaults
+import DataFrames: DataFrame
 
 abstract type ArTypeRepr end
 struct AsArray <: ArTypeRepr end

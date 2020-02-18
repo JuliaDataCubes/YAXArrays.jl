@@ -3,7 +3,8 @@ export cubeAnomalies, removeMSC, gapFillMSC, normalizeTS, simpleAnomalies,
   sampleLandPoints, getMSC, filterTSFFT, getNpY, getMedSC, DATfitOnline,
   spatialinterp, extractLonLats, cubePCA, rotation_matrix, transformPCA, explained_variance,exportcube,
   gapfillpoly
-using ..DAT, ..Cubes
+import ..Cubes: ESDLArray, AbstractCubeData
+import ..DAT: mapCube
 
 import Dates.year
 """
@@ -20,7 +21,6 @@ function getNpY(cube::AbstractCubeData)
     years[end] > years[1] + 1 || error("Must have at least 3 years to calculate MSC")
     return count(i -> i == years[1] + 1, years)
 end
-getNpY(cube::InputCube)=getNpY(cube.cube)
 
 include("MSC.jl")
 include("Stats.jl")

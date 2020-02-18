@@ -1,12 +1,9 @@
 module CubeIO
-using ..Cubes
-using ..DAT
-using ..Proc
 
 import NetCDF.ncread, NetCDF.ncclose
 import Base.Iterators
-import ..Cubes: saveCube, check_overwrite, getsavefolder, cubechunks
-import ..Cubes.ESDLZarr: ZArrayCube
+import ...Cubes: saveCube, check_overwrite, getsavefolder, cubechunks, AbstractCubeData
+import ...Cubes.ESDLZarr: ZArrayCube
 
 
 function toPointAxis(aout,ain,loninds,latinds)

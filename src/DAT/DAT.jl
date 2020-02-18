@@ -1,18 +1,16 @@
 module DAT
-export mapCube, getInAxes, getOutAxes, findAxis, reduceCube, getAxis, InputCube, OutputCube
+export mapCube
 import ..Cubes
 using ..ESDLTools
 import Distributed: pmap, @everywhere, workers, remotecall_fetch, myid
-import ..Cubes: getAxis, getOutAxis, getAxis, cubechunks, iscompressed, chunkoffset,
-  CubeAxis, RangeAxis, CategoricalAxis, AbstractCubeData, CubeMem, AbstractCubeMem,
+import ..Cubes: getAxis, cubechunks, iscompressed, chunkoffset,
+  CubeAxis, AbstractCubeData,
   caxes, findAxis, Dataset, getsavefolder
-import ..Cubes.Axes: AxisDescriptor, axname, ByInference, axsym
+import ..Cubes.Axes: AxisDescriptor, axname, ByInference, axsym, getOutAxis
 import ...ESDL
-import ..Cubes.ESDLZarr: ZArrayCube
 import ...ESDL.workdir
-import DataFrames
+import Zarr: ZArray
 import Distributed: nprocs
-import DataFrames: DataFrame, ncol
 import ProgressMeter: Progress, next!, progress_pmap
 import Zarr: NoCompressor
 using Dates
@@ -36,16 +34,14 @@ mutable struct InputCube{N}
   axesSmall::Array{CubeAxis} #List of axes that were actually selected through the desciption
   loopinds::Vector{Int}        #Indices of loop axes that this cube does not contain, i.e. broadcasts
   cachesize::Vector{Int}     #Number of elements to keep in cache along each axis
-  isMem::Bool                #is the cube in-memory
   handle::Any                #allocated cache
   workarray::Any
 end
 
 function InputCube(c::AbstractCubeData, desc::InDims)
   axesSmall = getAxis.(desc.axisdesc,Ref(c))
-  isMem = isa(c,AbstractCubeMem)
   any(isequal(nothing),axesSmall) && error("One of the input axes not found in put cubes")
-  InputCube(c,desc,collect(CubeAxis,axesSmall),Int[],Int[],isMem,nothing,nothing)
+  InputCube(c,desc,collect(CubeAxis,axesSmall),Int[],Int[],nothing,nothing)
 end
 getcube(c::InputCube)=c.cube
 function setworkarray(c::InputCube,ntr)
@@ -69,7 +65,6 @@ mutable struct OutputCube
   allAxes::Vector{CubeAxis}        #List of all the axes of the cube
   broadcastAxes::Vector{CubeAxis}         #List of axes that are broadcasted
   loopinds::Vector{Int}              #Index of the loop axes that are broadcasted for this output cube
-  isMem::Bool                      #Shall the output cube be in memory
   innerchunks
   workarray::Any
   handle::Any                       #Cache to write the output to
@@ -110,7 +105,7 @@ function OutputCube(desc::OutDims,inAxes::Vector{CubeAxis},incubes,pargs,f)
   broadcastAxes = getOutAxis(desc.bcaxisdesc,inAxes,incubes,pargs,f)
   outtype       = getOuttype(desc.outtype,incubes)
   innerchunks   = interpretoutchunksizes(desc,axesSmall,incubes)
-  OutputCube(nothing,desc,collect(CubeAxis,axesSmall),CubeAxis[],collect(CubeAxis,broadcastAxes),Int[],false,innerchunks,nothing,nothing,outtype)
+  OutputCube(nothing,desc,collect(CubeAxis,axesSmall),CubeAxis[],collect(CubeAxis,broadcastAxes),Int[],innerchunks,nothing,nothing,outtype)
 end
 
 """
@@ -127,7 +122,6 @@ It contains the following fields:
 - LoopAxes::Vector{CubeAxis}
 - axlistOut::Vector{CubeAxis}
 - ispar::Bool
-- isMem::Vector{Bool}
 - inCubesH
 - outCubeH
 
@@ -438,18 +432,18 @@ function getRetCubeType(oc,ispar,max_cache)
   eltype,cubetype
 end
 
-function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co) where T<:ZArrayCube
+function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co) where T<:ZArray
   cs_inner = oc.innerchunks
   cs = (cs_inner..., loopcachesize...)
   folder = getsavefolder(oc.desc.path)
   oc.cube=ZArrayCube(oc.allAxes,folder=folder,T=eltype,persist=oc.desc.persist,chunksize=cs,chunkoffset=co,compressor=oc.desc.compressor)
 end
-function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co) where T<:CubeMem
+function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co) where T<:Array
   newsize=map(length,oc.allAxes)
   outar=Array{eltype}(undef,newsize...)
   genFun=oc.desc.genOut
   map!(_->genFun(eltype),outar,1:length(outar))
-  oc.cube = Cubes.CubeMem(oc.allAxes,outar)
+  oc.cube = ESDLArray(oc.allAxes,outar)
 end
 
 function generateOutCubes(dc::DATConfig)
@@ -537,10 +531,6 @@ end
 
 function getCacheSizes(dc::DATConfig)
 
-  if all(i->i.isMem,dc.incubes)
-    dc.loopcachesize=Int[length(x) for x in dc.LoopAxes]
-    return dc
-  end
   inAxlengths      = Vector{Int}[Int.(length.(cube.axesSmall)) for cube in dc.incubes]
   inblocksizes     = map((x,T)->isempty(x) ? mysizeof(eltype(T.cube)) : prod(x)*mysizeof(eltype(T.cube)),inAxlengths,dc.incubes)
   inblocksize,imax = findmax(inblocksizes)
@@ -571,11 +561,9 @@ function getCacheSizes(dc::DATConfig)
   #@show cmisses
   loopcachesize    = getLoopCacheSize(max(inblocksize,outblocksize),map(length,dc.LoopAxes),dc.max_cache, cmisses)
   for cube in dc.incubes
-    if !cube.isMem
-      cube.cachesize = map(length,cube.axesSmall)
-      for (cs,loopAx) in zip(loopcachesize,dc.LoopAxes)
-        in(typeof(loopAx),map(typeof,caxes(cube.cube))) && push!(cube.cachesize,cs)
-      end
+    cube.cachesize = map(length,cube.axesSmall)
+    for (cs,loopAx) in zip(loopcachesize,dc.LoopAxes)
+      in(typeof(loopAx),map(typeof,caxes(cube.cube))) && push!(cube.cachesize,cs)
     end
   end
   dc.loopcachesize=loopcachesize

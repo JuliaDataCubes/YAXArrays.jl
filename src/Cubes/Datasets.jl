@@ -2,7 +2,7 @@ module Datasets
 import ..Cubes.ESDLZarr: toaxis, axname, AbstractCubeData, ZArrayCube, propfromattr, subsetcube, caxes, concatenateCubes
 import Zarr: ZGroup, zopen
 import ..Cubes.Axes: axsym, CubeAxis, findAxis, CategoricalAxis
-import ..Cubes: AbstractCubeData, Cube
+import ..Cubes: AbstractCubeData, Cube, ESDLArray
 import DataStructures: OrderedDict, counter
 struct Dataset
     cubes::OrderedDict{Symbol,AbstractCubeData}
@@ -113,7 +113,7 @@ function Dataset(g::ZGroup)
     else
       ntuple(i->(offs[i]+1):(offs[i]+length(iax[i])),length(offs))
     end
-    allcubes[Symbol(vname)] = ZArrayCube{eltype(zarray),ndims(zarray),typeof(zarray),typeof(subs)}(zarray,iax,subs,true,propfromattr(zarray.attrs))
+    allcubes[Symbol(vname)] = ESDLArray(iax,zarray,propfromattr(zarray.attrs), cleaner=nothing)
   end
   sdimlist = Dict(Symbol(k)=>v.ax for (k,v) in dimlist)
   Dataset(allcubes,sdimlist)

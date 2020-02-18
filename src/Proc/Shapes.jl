@@ -69,7 +69,7 @@ function cubefromshape_fraction(shapepath,lonaxis,lataxis;labelsym=nothing, T=Fl
     newax = CategoricalAxis(labelsym,[pp[l] for l in labelsleft])
   end
 
-  return CubeMem(CubeAxis[lonaxis, lataxis, newax], allout)
+  return ESDLArray(CubeAxis[lonaxis, lataxis, newax], allout)
 
 
 end
@@ -84,7 +84,7 @@ function cubefromshape_single(shapepath, lonaxis, lataxis; labelsym = nothing, T
   labelsleft = collect(skipmissing(unique(outmat)))
   properties = getlabeldict(shapepath,labelsym,T,labelsleft)
 
-  return CubeMem(CubeAxis[lonaxis, lataxis], outmat,properties)
+  return ESDLArray(CubeAxis[lonaxis, lataxis], outmat,properties)
 end
 
 """
@@ -105,7 +105,7 @@ function cubefromshape(args...; samplefactor=nothing, kwargs...)
   end
 end
 
-function prune_labels!(c::CubeMem)
+function prune_labels!(c::ESDLArray)
   if haskey(c.properties,"labels")
     labelsleft = Set(skipmissing(unique(c.data)))
     dold = c.properties["labels"]

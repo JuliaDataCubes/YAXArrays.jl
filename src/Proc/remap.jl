@@ -1,6 +1,7 @@
 module ReSample
-using ..Cubes
-using ..DAT
+import ...Cubes: AbstractCubeData
+import ...Cubes.Axes: CubeAxis
+import ...DAT: mapCube
 export spatialinterp
 import Interpolations: BSpline, scale,extrapolate, interpolate, Constant, Linear, Quadratic,
   Cubic, OnGrid, Flat, Line,Free, Periodic, Reflect
