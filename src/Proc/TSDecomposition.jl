@@ -1,9 +1,9 @@
 module TSDecomposition
 export filterTSFFT
 import ...Cubes: AbstractCubeData
+import ...DAT: mapCube, InDims, OutDims, AnyMissing
 import FFTW: plan_fft
 import Statistics: mean
-import ...DAT: AnyMissing
 import Distributed: workers, remotecall, fetch, myid
 
 #Looks like linreg is broken in 0.7, here is a custom version, this should be replaced soon:

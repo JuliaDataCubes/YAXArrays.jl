@@ -3,7 +3,7 @@ export cubeAnomalies, removeMSC, gapFillMSC, normalizeTS, simpleAnomalies,
   sampleLandPoints, getMSC, filterTSFFT, getNpY, getMedSC, DATfitOnline,
   spatialinterp, extractLonLats, cubePCA, rotation_matrix, transformPCA, explained_variance,exportcube,
   gapfillpoly
-import ..Cubes: ESDLArray, AbstractCubeData
+import ..Cubes: ESDLArray, AbstractCubeData, getAxis
 import ..DAT: mapCube
 
 import Dates.year
@@ -14,9 +14,7 @@ import Dates.year
 Get the number of time steps per year
 """
 function getNpY(cube::AbstractCubeData)
-    axlist = caxes(cube)
-    isTime = [isa(a,TimeAxis) for a in axlist]
-    timax = axlist[isTime][1]
+    timax = getAxis("Time",cube)
     years = year.(timax.values)
     years[end] > years[1] + 1 || error("Must have at least 3 years to calculate MSC")
     return count(i -> i == years[1] + 1, years)

@@ -129,6 +129,7 @@ cubeproperties(c::ESDLArray)=c.properties
 iscompressed(c::ESDLArray)=iscompressed(c.data)
 iscompressed(c::DiskArrays.PermutedDiskArray) = iscompressed(c.a.parent)
 iscompressed(c::DiskArrays.SubDiskArray) = iscompressed(c.v.parent)
+iscompressed(c::Array) = false
 cubechunks(c::ESDLArray)=common_size(eachchunk(c.data))
 common_size(a::DiskArrays.GridChunks) = a.chunksize
 function common_size(a)
@@ -144,7 +145,7 @@ function common_size(a)
 end
 
 chunkoffset(c::ESDLArray)=common_offset(eachchunk(c.data))
-common_offset(a::DiskArrays.GridChunks) = a.chunkoffset
+common_offset(a::DiskArrays.GridChunks) = a.offset
 function common_offset(a)
   ntuple(ndims(a)) do idim
     otherdims = setdiff(1:ndims(a),idim)

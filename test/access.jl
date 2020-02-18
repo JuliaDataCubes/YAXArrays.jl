@@ -11,7 +11,7 @@ d = subsetcube(c,variable="air_temperature_2m",lon=(10,11),lat=(51,50),
                 time=(Date("2002-01-01"),Date("2008-12-31")))
 
 
-@test d.subset==(18:21, 17:20, 93:414)
+@test d.data.v.indices==(18:21, 17:20, 93:414)
 @test d.axes[1].values==10.125:0.25:10.875
 @test d.axes[2].values==50.875:-0.25:50.125
 @test isa(d.axes[1],LonAxis)
@@ -22,14 +22,12 @@ end
 d2 = subsetcube(c,variable=["air_temperature_2m","gross_primary_productivity"],lon=(10,11),lat=(50,51),
                 time=(Date("2002-01-01"),Date("2008-12-31")))
 
-@test d2.cataxis.values == ["air_temperature_2m", "gross_primary_productivity"]
-foreach(d2.cubelist) do cc
-  @test cc.subset ==(18:21, 17:20, 93:414)
-  @test cc.axes[1].values==10.125:0.25:10.875
-  @test cc.axes[2].values==50.875:-0.25:50.125
-  @test first(cc.axes[3].values) == Dates.Date(2002,1,5)
-  @test last(cc.axes[3].values) == Dates.Date(2008, 12, 30)
-end
+  @test d2.axes[4].values == ["air_temperature_2m", "gross_primary_productivity"]
+  @test d2.data.arrays[1].v.indices ==(18:21, 17:20, 93:414)
+  @test d2.axes[1].values==10.125:0.25:10.875
+  @test d2.axes[2].values==50.875:-0.25:50.125
+  @test first(d2.axes[3].values) == Dates.Date(2002,1,5)
+  @test last(d2.axes[3].values) == Dates.Date(2008, 12, 30)
 end
 
 @testset "Test values in MemCube" begin
@@ -108,7 +106,7 @@ end
       danom = removeMSC(d)
   end
 
-  @test danom isa ESDL.CubeMem
+  @test danom.data isa Array
 
   @loadOrGenerate danom=>"Anomalies" begin
       error("This should never execute")

@@ -2,8 +2,11 @@ module CubeIO
 
 import NetCDF.ncread, NetCDF.ncclose
 import Base.Iterators
-import ...Cubes: saveCube, check_overwrite, getsavefolder, cubechunks, AbstractCubeData
-import ...Cubes.ESDLZarr: ZArrayCube
+import ...Cubes: saveCube, check_overwrite, getsavefolder, cubechunks, AbstractCubeData, caxes,
+  axname
+import ...Cubes.Axes: findAxis, CategoricalAxis, axVal2Index, RangeAxis
+import ...DAT: InDims, OutDims, mapCube
+import Zarr: ZArray
 
 
 function toPointAxis(aout,ain,loninds,latinds)
@@ -25,13 +28,13 @@ of extracted coordinates. Returns a data cube without `LonAxis` and `LatAxis` bu
 function extractLonLats(c::AbstractCubeData,pl::Matrix;kwargs...)
   size(pl,2)==2 || error("Coordinate list must have exactly 2 columns")
   axlist=caxes(c)
-  ilon=findAxis(LonAxis,axlist)
-  ilat=findAxis(LatAxis,axlist)
+  ilon=findAxis("Lon",axlist)
+  ilat=findAxis("Lat",axlist)
   ilon>0 || error("Input cube must contain a LonAxis")
   ilat>0 || error("input cube must contain a LatAxis")
   lonax=axlist[ilon]
   latax=axlist[ilat]
-  pointax = SpatialPointAxis([(pl[i,1],pl[i,2]) for i in 1:size(pl,1)])
+  pointax = CategoricalAxis("SpatialPoint", [(pl[i,1],pl[i,2]) for i in 1:size(pl,1)])
   loninds = map(ll->axVal2Index(lonax,ll[1]),pointax.values)
   latinds = map(ll->axVal2Index(latax,ll[2]),pointax.values)
   incubes=InDims("Lon","Lat")
@@ -117,7 +120,7 @@ function saveCube(c::AbstractCubeData, name::AbstractString; overwrite = false, 
   indims = InDims(axn...)
   path = getsavefolder(name)
   check_overwrite(path,overwrite)
-  outdims = OutDims(axn..., retcubetype=ZArrayCube,chunksize=chunksize[1:length(axn)], compressor=compressor, path = path)
+  outdims = OutDims(axn..., retcubetype=ZArray,chunksize=chunksize[1:length(axn)], compressor=compressor, path = path)
   if forcesingle
     nprocs()>1 && println("Forcing single core processing because of bad chunk size")
     o = mapCube(copyto!,c,indims=indims, outdims=outdims,ispar=false,max_cache=max_cache)

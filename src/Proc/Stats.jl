@@ -1,6 +1,6 @@
 module Stats
 export normalizeTS, timeVariance, timeMean, spatialMean
-import ...DAT: NValid, mapCube
+import ...DAT: NValid, mapCube, mapCube, InDims, OutDims
 import ...Cubes: AbstractCubeData, findAxis, axname
 import StatsBase: pweights
 import Statistics: quantile, mean

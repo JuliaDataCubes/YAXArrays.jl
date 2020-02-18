@@ -7,6 +7,7 @@ import ..Cubes: getAxis, cubechunks, iscompressed, chunkoffset,
   CubeAxis, AbstractCubeData, ESDLArray,
   caxes, findAxis, Dataset, getsavefolder
 import ..Cubes.Axes: AxisDescriptor, axname, ByInference, axsym, getOutAxis
+import ..Cubes.ESDLZarr: ZArrayCube
 import ...ESDL
 import ...ESDL.workdir
 import Zarr: ZArray
@@ -417,7 +418,6 @@ end
 end
 
 function getRetCubeType(oc,ispar,max_cache)
-
   eltype=Union{typeof(oc.desc.genOut(oc.outtype)),Missing}
   outsize=sizeof(eltype)*(length(oc.allAxes)>0 ? prod(map(length,oc.allAxes)) : 1)
   if string(oc.desc.retCubeType)=="auto"
