@@ -110,10 +110,9 @@ MSCAxis(n::Int)=MSCAxis(DateTime(1900):Day(ceil(Int,366/n)):DateTime(1900,12,31,
 
 caxes(x::CubeAxis)=CubeAxis[x]
 
-axname(::CategoricalAxis{T,S}) where {T,S}=string(S)
-axname(::RangeAxis{T,S}) where {T,S}=string(S)
-axname(::Type{T}) where T<:CubeAxis{S,U} where {S,U} = U
-axsym(ax::CubeAxis{<:Any,S}) where S = S
+axname(::Type{<:CubeAxis{<:Any,U}}) where U = string(U)
+axname(::CubeAxis{<:Any,U}) where U = string(U)
+axsym(::CubeAxis{<:Any,S}) where S = S
 axunits(::CubeAxis)="unknown"
 axunits(::LonAxis)="degrees_east"
 axunits(::LatAxis)="degrees_north"

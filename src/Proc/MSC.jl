@@ -142,11 +142,11 @@ end
 
 
 "Subtracts given msc from input vector"
-function subtractMSC(msc::AbstractVector,xin2::AbstractVector,xout2,NpY)
+function subtractMSC(msc::AbstractVector,xin::AbstractVector,xout,NpY)
     imsc=1
-    ltime=length(xin2)
+    ltime=length(xin)
     for i in 1:ltime
-        xout2[i] = xin2[i]-msc[imsc]
+        xout[i] = xin[i]-msc[imsc]
         imsc =imsc==NpY ? 1 : imsc+1 # Increase msc time step counter
     end
 end
@@ -183,8 +183,8 @@ function getMedSC(aout::AbstractVector{Union{T,Missing}},ain::AbstractVector) wh
     #Reshape the cube to squeeze unimportant variables
     NpY=length(aout)
     yvec=T[]
-    q=[convert(eltype(yvec),0.5)]
-    for doy=1:length(aout)
+    q=[convert(T,0.5)]
+    for doy=1:NpY
         empty!(yvec)
         for i=doy:NpY:length(ain)
             ismissing(ain[i]) || push!(yvec,ain[i])
@@ -196,9 +196,9 @@ end
 
 
 "Calculates the mean seasonal cycle of a vector"
-function fillmsc(imscstart::Integer,msc::AbstractVector{T1},nmsc::AbstractVector{Int},xin::AbstractVector,NpY) where T1
+function fillmsc(imscstart::Integer,msc::AbstractVector,nmsc::AbstractVector,xin::AbstractVector,NpY)
   imsc=imscstart
-  fill!(msc,zero(T1))
+  fill!(msc, 0)
   fill!(nmsc,0)
   for v in xin
     if !ismissing(v)

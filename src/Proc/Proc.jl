@@ -16,7 +16,7 @@ Get the number of time steps per year
 function getNpY(cube::AbstractCubeData)
     timax = getAxis("Time",cube)
     years = year.(timax.values)
-    years[end] > years[1] + 1 || error("Must have at least 3 years to calculate MSC")
+    years[end] > years[1] + 1 || error("Must have at least 3 years to estimate number of time steps per year")
     return count(i -> i == years[1] + 1, years)
 end
 

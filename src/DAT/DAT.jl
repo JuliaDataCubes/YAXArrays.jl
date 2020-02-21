@@ -2,7 +2,7 @@ module DAT
 export mapCube
 import ..Cubes
 using ..ESDLTools
-import Distributed: pmap, @everywhere, workers, remotecall_fetch, myid
+using Distributed: pmap, @everywhere, workers, remotecall_fetch, myid, nprocs
 import ..Cubes: getAxis, cubechunks, iscompressed, chunkoffset,
   CubeAxis, AbstractCubeData, ESDLArray,
   caxes, findAxis, Dataset, getsavefolder
@@ -11,11 +11,11 @@ import ..Cubes.ESDLZarr: ZArrayCube
 import ...ESDL
 import ...ESDL.workdir
 import Zarr: ZArray
-import Distributed: nprocs
 import ProgressMeter: Progress, next!, progress_pmap
 import Zarr: NoCompressor
 using Dates
 global const debugDAT=[false]
+#TODO use a logging package
 macro debug_print(e)
   debugDAT[1] && return(:(println($e)))
   :()
@@ -41,16 +41,10 @@ end
 
 function InputCube(c::AbstractCubeData, desc::InDims)
   axesSmall = getAxis.(desc.axisdesc,Ref(c))
-  any(isequal(nothing),axesSmall) && error("One of the input axes not found in put cubes")
+  any(isequal(nothing),axesSmall) && error("One of the input axes not found in input cubes")
   InputCube(c,desc,collect(CubeAxis,axesSmall),Int[],Int[],nothing,nothing)
 end
-getcube(c::InputCube)=c.cube
-function setworkarray(c::InputCube,ntr)
-  wa = createworkarrays(eltype(c.cube),ntuple(i->length(c.axesSmall[i]),length(c.axesSmall)),ntr)
-  c.workarray = map(wa) do w
-    wrapWorkArray(c.desc.artype,w,c.axesSmall)
-  end
-end
+
 createworkarrays(T,s,ntr)=[Array{T}(undef,s...) for i=1:ntr]
 
 
@@ -71,12 +65,15 @@ mutable struct OutputCube
   handle::Any                       #Cache to write the output to
   outtype
 end
-getcube(c::OutputCube)      = c.cube
-getsmallax(c::Union{InputCube,OutputCube})=c.axesSmall
-getAxis(desc,c::OutputCube) = getAxis(desc,c.cube)
-getAxis(desc,c::InputCube)  = getAxis(desc,c.cube)
-function setworkarray(c::OutputCube,ntr)
-  wa = createworkarrays(eltype(c.cube),ntuple(i->length(c.axesSmall[i]),length(c.axesSmall)),ntr)
+
+const InOutCube = Union{InputCube,OutputCube}
+
+getsmallax(c::InOutCube)=c.axesSmall
+
+getAxis(desc,c::InOutCube) = getAxis(desc,c.cube)
+
+function setworkarray(c::InOutCube,ntr)
+  wa = createworkarrays(eltype(c.cube),(length.(c.axesSmall)...,),ntr)
   c.workarray = map(wa) do w
     wrapWorkArray(c.desc.artype,w,c.axesSmall)
   end
@@ -110,25 +107,27 @@ function OutputCube(desc::OutDims,inAxes::Vector{CubeAxis},incubes,pargs,f)
 end
 
 """
-Configuration object of a DAT process. This holds all necessary information to perform the calculations
+Configuration object of a DAT process. This holds all necessary information to perform the calculations.
 It contains the following fields:
 
-- `incubes::Vector{AbstractCubeData}` The input data cubes
-- `outcube::AbstractCubeData` The output data cube
-- `indims::Vector{Tuple}` Tuples of input axis types
-- `outdims::Tuple` Tuple of output axis types
-- `axlists::Vector{Vector{CubeAxis}}` Axes of the input data cubes
-- `inAxes::Vector{Vector{CubeAxis}}`
-- outAxes::Vector{CubeAxis}
-- LoopAxes::Vector{CubeAxis}
-- axlistOut::Vector{CubeAxis}
-- ispar::Bool
-- inCubesH
-- outCubeH
-
+- `incubes::NTuple{NIN,InputCube}` The input data cubes
+- `outcube::NTuple{NOUT,OutputCube}` The output data cubes
+allInAxes     :: Vector
+LoopAxes      :: Vector
+ispar         :: Bool
+loopcachesize :: Vector{Int}
+max_cache
+fu
+inplace      :: Bool
+include_loopvars:: Bool
+ntr
+addargs
+kwargs
 """
 mutable struct DATConfig{NIN,NOUT}
+  "The input data cubes"
   incubes       :: NTuple{NIN,InputCube}
+
   outcubes      :: NTuple{NOUT,OutputCube}
   allInAxes     :: Vector
   LoopAxes      :: Vector

@@ -1,26 +1,3 @@
-#import GDAL
-
-# # GDALRasterize
-# function rasterize!(outar,shapefile;x0=-180.0,y0=-90.0,x1=180.0,y1=90.0)
-#     sx,sy = size(outar)
-#     ds_point = GDAL.openex(shapefile, GDAL.GDAL_OF_VECTOR, C_NULL, C_NULL, C_NULL)
-#     ds_point == C_NULL && error("Could not open shapefile")
-#     options = GDAL.rasterizeoptionsnew(["-of","MEM","-ts",string(sx),string(sy),"-te",string(x0),string(y0),string(x1),string(y1),"-a_srs","WGS84"], C_NULL)
-#     ds_rasterize = GDAL.rasterize("data/point-rasterize.mem", Ptr{GDAL.GDALDatasetH}(C_NULL), ds_point, options, C_NULL)
-#     GDAL.rasterizeoptionsfree(options)
-#     GDAL.close(ds_point)
-#
-#     band = GDAL.getrasterband(ds_rasterize,1)
-#
-#     xsize = GDAL.getrasterbandxsize(band)
-#     ysize = GDAL.getrasterbandysize(band)
-#     dtype = GDAL.getdatatypename(GDAL.getrasterdatatype(band))
-#     @assert (xsize,ysize)==(sx,sy)
-#     GDAL.rasterio(band, GDAL.GF_Read, 0, 0, xsize, ysize,
-#     outar, xsize, ysize, GDAL.GDT_Float64, 0, 0)
-#     GDAL.close(ds_rasterize)
-# end
-
 import Shapefile
 import GeoInterface: AbstractMultiPolygon, AbstractPoint
 export cubefromshape
@@ -34,7 +11,7 @@ function getlabeldict(shapepath,labelsym,T,labelsleft)
   t = Shapefile.Table(shapepath)
   labels = getproperty(t,labelsym)
   labeldict = Dict(T(i)=>stripc0x(labels[i]) for i in 1:length(labels) if T(i) in labelsleft)
-  properties = Dict("labels"=>labeldict)
+  return Dict("labels"=>labeldict)
 end
 getlabeldict(shapepath, ::Nothing,T, labelsleft)=Dict{String,Any}()
 
@@ -53,7 +30,7 @@ end
 
 function cubefromshape_fraction(shapepath,lonaxis,lataxis;labelsym=nothing, T=Float64, nincrease=10)
   s = (length(lonaxis), length(lataxis))
-  outmat = zeros(T,map(i->i*nincrease,s)...)
+  outmat = zeros(T,s.*nincrease)
   lon1,lon2 = get_bb(lonaxis)
   lat1,lat2 = get_bb(lataxis)
   rasterize!(outmat, shapepath, bb = (left = lon1, right=lon2, top=lat1, bottom=lat2))
@@ -77,7 +54,7 @@ function cubefromshape_fraction(shapepath,lonaxis,lataxis;labelsym=nothing, T=Fl
 end
 function cubefromshape_single(shapepath, lonaxis, lataxis; labelsym = nothing, T=Int32)
   s = (length(lonaxis), length(lataxis))
-  outmat = zeros(T,s...)
+  outmat = zeros(T,s)
   lon1,lon2 = get_bb(lonaxis)
   lat1,lat2 = get_bb(lataxis)
   rasterize!(outmat, shapepath, bb = (left = lon1, right=lon2, top=lat1, bottom=lat2))
@@ -90,10 +67,10 @@ function cubefromshape_single(shapepath, lonaxis, lataxis; labelsym = nothing, T
 end
 
 """
-    cubefromshape_single(shapepath, refcube; samplefactor=nothing, labelsym = nothing, T=Int32)
+    cubefromshape(shapepath, refcube; samplefactor=nothing, labelsym = nothing, T=Int32)
 
-This function will read the shapefile at `shapepath` (path to the file with .shp extension), which is required to contain
-a list of polygons. The polygons will be *rasterized* to the same grid and bounding box as the reference data cube `refcube`.
+Read the shapefile at `shapepath`, which is required to contain
+a list of polygons to construct a cube. The polygons will be *rasterized* to the same grid and bounding box as the reference data cube `refcube`.
 If the shapefile comes with additional labels in a .dbf file, the labels can be mapped to the respective field codes by
 providing the label to choose as a symbol. If a `samplefactor` is supplied, the polygons will be rasterized on an n-times higher
 resolution and the fraction of area within each polygon will be returned.
@@ -118,8 +95,7 @@ function prune_labels!(c::ESDLArray)
 end
 stripc0x(a) = replace(a, r"[^\x20-\x7e]"=> "")
 
-function rasterize!(outar,shapefile;bb = (left = -180.0, right=180.0, top=90.0,bottom=-90.0),label=nothing)
-  shapepath = shapefile
+function rasterize!(outar,shapepath;bb = (left = -180.0, right=180.0, top=90.0,bottom=-90.0),label=nothing)
   t = Shapefile.Table(shapepath)
   p = Shapefile.shapes(t)
   if length(p)>1
@@ -198,24 +174,24 @@ end
 
 
 """
-    aggregate_shapefile(shp,cube,refdate; npast=3, nfuture=10)
+    aggregate_shapefile(shapepath,cube,refdate; npast=3, nfuture=10)
 
-Calculates spatially aggregated statistics over a shapefile specified by `shp`.
+Calculates spatially aggregated statistics over a shapefile specified by `shapepath`.
 Returns a time series cube for variables in `cube` that contains `npast` time steps
 prior to and `nfuture` time steps after the event.
 """
-function aggstats(shp,csubvar,refdate;npast=3,nfuture=10)
+function aggregate_shapefile(shapepath,cube,refdate;npast=3,nfuture=10)
 
-  craster = cubefromshape(shp, csubvar)
+  craster = cubefromshape(shapepath, cube)
   bspace = getboundingbox(craster.data)
   blon,blat = map(i->CartesianIndices((i,)),bspace.indices)
-  taxall = getAxis("Time",csubvar)
+  taxall = getAxis("Time",cube)
   itime = axVal2Index(taxall,refdate)
   refdate = taxall.values[itime]
   btime = LinearIndices((itime-npast:itime+nfuture,))
-  csmallbox = csubvar[lon=blon,lat=blat,time=btime]
+  csmallbox = cube[lon=blon,lat=blat,time=btime]
   maskcube = craster[lon=blon,lat=blat]
-  if findAxis("Variable",csubvar)===nothing
+  if findAxis("Variable",cube)===nothing
     by = ()
     incax = ("lat","time")
   else

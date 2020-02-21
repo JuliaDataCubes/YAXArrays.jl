@@ -4,6 +4,7 @@ import ...DAT: NValid, mapCube, mapCube, InDims, OutDims
 import ...Cubes: AbstractCubeData, findAxis, axname
 import StatsBase: pweights
 import Statistics: quantile, mean, std
+import WeightedOnlineStats: WeightedAdaptiveHist
 
 
 """
@@ -24,8 +25,6 @@ function normalizeTS(xout::AbstractVector,xin::AbstractVector)
   s = s==zero(s) ? one(s) : s
   map!(x->(x-m)/s,xout,xin)
 end
-
-import WeightedOnlineStats: WeightedAdaptiveHist
 
 """
     quantile(c::AbstractCubeData,p=[0.25,0.5,0.75];by=(),nbins=100)

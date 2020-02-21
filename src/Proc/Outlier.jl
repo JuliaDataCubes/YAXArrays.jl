@@ -55,8 +55,8 @@ function simpleAnomalies(xout::AbstractArray, xin::AbstractArray,methods)
       xout[:,i]=res[i]
     end
   else
-    xout[:]=NaN
-    end
+    xout .= missing
+  end
 end
 
 end

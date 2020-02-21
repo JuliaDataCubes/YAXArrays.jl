@@ -19,7 +19,7 @@ const ZArrayCube{T,M} = ESDLArray{T,M,<:ZArray} where {T,M}
 iscompressed(z::ZArray)=!isa(z.metadata.compressor,NoCompressor)
 
 prependrange(r::AbstractRange,n) = n==0 ? r : range(first(r)-n*step(r),last(r),length=n+length(r))
-function prependrange(r::AbstractArray,n)
+function prependrange(r::AbstractVector,n)
   if n==0
     return r
   else
@@ -31,18 +31,20 @@ function prependrange(r::AbstractArray,n)
   end
 end
 
+defaultcal(::Type{<:TimeType}) = "standard"
+defaultcal(::Type{<:DateTimeNoLeap}) = "noleap"
+defaultcal(::Type{<:DateTimeAllLeap}) = "allleap"
+defaultcal(::Type{<:DateTime360Day}) = "360_day"
+
+datetodatetime(vals::AbstractArray{<:Date}) = DateTime.(vals)
+datetodatetime(vals) = vals
+
 function dataattfromaxis(ax::CubeAxis{<:Number},n)
     prependrange(ax.values,n), Dict{String,Any}()
 end
 function dataattfromaxis(ax::CubeAxis,n)
     prependrange(1:length(ax.values),n), Dict{String,Any}("_ARRAYVALUES"=>collect(ax.values))
 end
-defaultcal(::Type{<:TimeType}) = "standard"
-defaultcal(::Type{<:DateTimeNoLeap}) = "noleap"
-defaultcal(::Type{<:DateTimeAllLeap}) = "allleap"
-defaultcal(::Type{<:DateTime360Day}) = "360_day"
-datetodatetime(vals::AbstractArray{<:Date}) = DateTime.(vals)
-datetodatetime(vals) = vals
 function dataattfromaxis(ax::CubeAxis{T},n) where T<:TimeType
     data = timeencode(datetodatetime(ax.values),"days since 1980-01-01",defaultcal(T))
     prependrange(data,n), Dict{String,Any}("units"=>"days since 1980-01-01","calendar"=>defaultcal(T))
@@ -79,7 +81,7 @@ of `CubeAxis`. A new empty Zarr array will be created and can serve as a sink fo
 * `overwrite::Bool=false` overwrite cube if it already exists
 * `properties=Dict{String,Any}()` additional cube properties
 * `fillvalue= T>:Missing ? defaultfillval(Base.nonmissingtype(T)) : nothing` fill value
-* `datasetaxis="Variable"` special treatment of a categorical axis that gets written into separate xarrays
+* `datasetaxis="Variable"` special treatment of a categorical axis that gets written into separate zarr arrays
 """
 function ZArrayCube(axlist;
   folder=tempname(),
@@ -202,6 +204,7 @@ CubeMask(v;kwargs...) = CubeMask(ESDL.ESDLDefaults.cubedir[],v;static=true,kwarg
 
 sorted(x,y) = x<y ? (x,y) : (y,x)
 
+#TODO move everything that is subset-related to its own file or to axes.jl
 interpretsubset(subexpr::Union{CartesianIndices{1},LinearIndices{1}},ax) = subexpr.indices[1]
 interpretsubset(subexpr::CartesianIndex{1},ax)   = subexpr.I[1]
 interpretsubset(subexpr,ax)                      = axVal2Index(ax,subexpr,fuzzy=true)
@@ -214,6 +217,7 @@ interpretsubset(subexpr::UnitRange{Int64},ax::RangeAxis{T}) where T<:TimeType = 
 interpretsubset(subexpr::Interval,ax)       = interpretsubset((subexpr.left,subexpr.right),ax)
 interpretsubset(subexpr::AbstractVector,ax::CategoricalAxis)      = axVal2Index.(Ref(ax),subexpr,fuzzy=true)
 
+#TODO move this to Axes.jl
 axcopy(ax::RangeAxis,vals) = RangeAxis(axname(ax),vals)
 axcopy(ax::CategoricalAxis,vals) = CategoricalAxis(axname(ax),vals)
 
@@ -257,32 +261,6 @@ include(joinpath(@__DIR__,"../CubeAPI/countrydict.jl"))
 
 Base.getindex(a::AbstractCubeData;kwargs...) = subsetcube(a;kwargs...)
 
-# function subsetcube(z::ESDL.Cubes.ConcatCube{T,N};kwargs...) where {T,N}
-#   kwargs = collect(kwargs)
-#   isplitconcaxis = findfirst(kwargs) do kw
-#     axdes = string(kw[1])
-#     findAxis(axdes,caxes(z)) == N
-#   end
-#   if isa(isplitconcaxis,Nothing)
-#     #We only need to subset the inner cubes
-#     cubelist = map(i->subsetcube(i;kwargs...),z.cubelist)
-#     cubeaxes = caxes(first(cubelist))
-#     cataxis = deepcopy(z.cataxis)
-#   else
-#     subs = kwargs[isplitconcaxis][2]
-#     subinds = interpretsubset(subs,z.cataxis)
-#     cubelist = z.cubelist[subinds]
-#     isa(cubelist,AbstractCubeData) && (cubelist=[cubelist];subinds=[subinds])
-#     cataxis  = axcopy(z.cataxis,z.cataxis.values[subinds])
-#     kwargsrem = (kwargs[(1:isplitconcaxis-1)]...,kwargs[isplitconcaxis+1:end]...)
-#     if !isempty(kwargsrem)
-#       cubelist = [subsetcube(i;kwargsrem...) for i in cubelist]
-#     end
-#     cubeaxes = deepcopy(caxes(cubelist[1]))
-#   end
-#   return length(cubelist)==1 ? cubelist[1] : ConcatCube{T,length(cubeaxes)+1}(cubelist,cataxis,cubeaxes,cubeproperties(z))
-# end
-
 function saveCube(z::ZArrayCube, name::AbstractString; overwrite=false, chunksize=nothing, compressor=NoCompressor())
   if z.subset === nothing && !z.persist && isa(z.a.storage, DirectoryStore) && chunksize==nothing && isa(compressor, NoCompressor)
     newfolder = joinpath(workdir[], name)
@@ -293,6 +271,7 @@ function saveCube(z::ZArrayCube, name::AbstractString; overwrite=false, chunksiz
     # mv(c.folder,newfolder)
     folder = splitdir(z.a.storage.folder)
     run(`mv $(folder[1]) $(newfolder)`)
+    #TODO persist does not exist anymore, save metadata
     z.persist = true
     z.a = zopen(newfolder * "/layer")
   else

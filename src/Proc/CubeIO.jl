@@ -1,12 +1,14 @@
 module CubeIO
 
-import NetCDF.ncread, NetCDF.ncclose
-import Base.Iterators
+using Base.Iterators: Iterators, product
+using Zarr: ZArray, NoCompressor
+using NetCDF: ncwrite, NcDim, NcVar, ncread, create, nccreate, ncputatt
+export exportcube, extractLonLats
 import ...Cubes: saveCube, check_overwrite, getsavefolder, cubechunks, AbstractCubeData, caxes,
   axname
 import ...Cubes.Axes: findAxis, CategoricalAxis, axVal2Index, RangeAxis
 import ...DAT: InDims, OutDims, mapCube
-import Zarr: ZArray
+
 
 
 function toPointAxis(aout,ain,loninds,latinds)
@@ -41,12 +43,10 @@ function extractLonLats(c::AbstractCubeData,pl::Matrix;kwargs...)
   outcubes=OutDims(pointax)
   y=mapCube(toPointAxis,c,loninds,latinds;indims=incubes,outdims=outcubes,max_cache=1e8,kwargs...)
 end
-export extractLonLats
 
-using NetCDF
-import Base.Iterators: product
-function writefun(xout,xin::AbstractArray{Union{Missing,T}},a,nd,cont_loop,filename;kwargs...) where T
+function writefun(xout,xin::AbstractArray{Union{Missing,T}},a,nd,cont_loop,filename) where T
 
+  #TODO replace -9999.0 this with a default missing value
   x = map(ix->ismissing(ix) ? convert(T,-9999.0) : ix,xin)
 
   count_vec = fill(-1,nd)
@@ -88,7 +88,7 @@ function exportcube(r::AbstractCubeData,filename::String;priorities = Dict("LON"
   it = map(i->i.values,ax_cat)
   elt = Base.nonmissingtype(eltype(r))
   vars = NcVar[NcVar(join(collect(string.(a)),"_"),dims,t=elt,atts=Dict("missing_value"=>convert(elt,-9999.0), "grid_mapping" => proj["grid_mapping_name"])) for a in product(it...)]
-  file = NetCDF.create(filename,vars)
+  file = create(filename,vars)
   for d in dims
     ncwrite(d.vals,filename,d.name)
   end
@@ -104,7 +104,7 @@ function exportcube(r::AbstractCubeData,filename::String;priorities = Dict("LON"
   nothing
 end
 
-import Zarr: NoCompressor
+
 
 function saveCube(c::AbstractCubeData, name::AbstractString; overwrite = false, chunksize = cubechunks(c), compressor=NoCompressor(), max_cache=1e8)
   allax = caxes(c)
@@ -127,8 +127,6 @@ function saveCube(c::AbstractCubeData, name::AbstractString; overwrite = false, 
     o = mapCube(copyto!,c,indims=indims, outdims=outdims,max_cache=max_cache)
   end
 end
-
-export exportcube
 
 global const projection = Dict(
 "grid_mapping_name" => "transverse_mercator",
