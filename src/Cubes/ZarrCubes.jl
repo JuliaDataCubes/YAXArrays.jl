@@ -131,12 +131,13 @@ function ZArrayCube(axlist;
   else
     cubenames = groupaxis.values
   end
+  cleaner = persist ? nothing : CleanMe(folder,false)
   allcubes = map(cubenames) do cn
     za = zcreate(T, myar,cn, s...,attrs=attr, fill_value=fillvalue,chunks=chunksize,compressor=compressor)
     if subs !== nothing
       za = view(za,subs...)
     end
-    cleaner = persist ? nothing : CleanMe(folder,false)
+
     ESDLArray(axlist,za,propfromattr(attr),cleaner=cleaner)
   end
   if groupaxis===nothing

@@ -102,7 +102,7 @@ function clean(c::CleanMe)
 end
 
 """
-    CubeMem{T,N} <: AbstractCubeMem{T,N}
+    ESDLArray{T,N} <: AbstractCubeMem{T,N}
 
 An in-memory data cube. It is returned by applying `mapCube` when
 the output cube is small enough to fit in memory or by explicitly calling
