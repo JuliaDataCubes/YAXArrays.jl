@@ -207,7 +207,7 @@ function _read(z::ZArrayCube{<:Any,N,<:Any},thedata::AbstractArray{<:Any,N},r::C
   subinds = map(getindex,allinds.indices,z.subset)
   r2 = getsubinds(subinds,r.indices)
   thedata = maybereshapedata(thedata,r2)
-  readblock!(thedata,z.a,CartesianIndices(r2))
+  readblock!(thedata,z.a,r2)
 end
 
 function _write(y::ZArrayCube{<:Any,N,<:Any,<:Nothing},thedata::AbstractArray,r::CartesianIndices{N}) where N
