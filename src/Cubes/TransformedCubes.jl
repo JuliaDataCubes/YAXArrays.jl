@@ -51,7 +51,7 @@ function DiskArrays.readblock!(a::DiskArrayStack{<:Any,N,<:Any,NO},aout,i::Abstr
   nothing
 end
 
-function DiskArrays.writeblock!(a::DiskArrayStack{<:Any,N,<:Any,NO},v,i...) where {N,NO}
+function DiskArrays.writeblock!(a::DiskArrayStack{<:Any,N,<:Any,NO},v,i::AbstractVector...) where {N,NO}
   innerinds = i[1:(N-NO)]
 
   outerinds = i[(N-NO+1):N]
