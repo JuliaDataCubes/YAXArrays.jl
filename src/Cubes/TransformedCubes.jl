@@ -19,7 +19,7 @@ struct DiskArrayStack{T,N,M,NO}<:AbstractDiskArray{T,N}
     arrays::Array{M,NO}
 end
 function diskstack(a::Array{M,N}) where {N,M<:AbstractArray{T,NO}} where {T,NO}
-    all(i->size(i)==size(a[1]),a) || error("All arrays in the stackl must have the same size")
+    all(i->size(i)==size(a[1]),a) || error("All arrays in the stack must have the same size")
     DiskArrayStack{T,N+NO,M,N}(a)
 end
 Base.size(r::DiskArrayStack) = (size(r.arrays[1])...,size(r.arrays)...)
@@ -32,7 +32,7 @@ function eachchunk(a::DiskArrayStack{<:Any,<:Any,<:Any,NO}) where NO
     DiskArrays.GridChunks(a,cs,offset=co)
 end
 
-function DiskArrays.readblock!(a::DiskArrayStack{<:Any,N,<:Any,NO},aout,i...) where {N,NO}
+function DiskArrays.readblock!(a::DiskArrayStack{<:Any,N,<:Any,NO},aout,i::AbstractVector...) where {N,NO}
 
   innerinds = i[1:(N-NO)]
 
