@@ -76,7 +76,7 @@ abstract type AbstractSubCube{T,N} <: AbstractCubeData{T,N} end
 abstract type AbstractCubeMem{T,N} <: AbstractCubeData{T,N} end
 
 include("Axes.jl")
-using .Axes: getAxis
+using .Axes
 struct EmptyCube{T}<:AbstractCubeData{T,0} end
 caxes(c::EmptyCube)=CubeAxis[]
 
