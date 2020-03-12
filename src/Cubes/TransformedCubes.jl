@@ -19,7 +19,7 @@ struct DiskArrayStack{T,N,M,NO}<:AbstractDiskArray{T,N}
     arrays::Array{M,NO}
 end
 function diskstack(a::Array{M,N}) where {N,M<:AbstractArray{T,NO}} where {T,NO}
-    all(i->size(i)==size(a[1]),a) || error("All arrays in the stack must have the same size")
+    length(unique(size.(a))) == 1 || error("All arrays in the stack must have the same size")
     DiskArrayStack{T,N+NO,M,N}(a)
 end
 Base.size(r::DiskArrayStack) = (size(r.arrays[1])...,size(r.arrays)...)

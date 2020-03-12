@@ -7,8 +7,8 @@ export Axes, AbstractCubeData, getSubRange, readcubedata, AbstractCubeMem, axesC
        AbstractSubCube, CubeMem, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis, axVal2Index, MSCAxis,
        getSingVal, ScaleAxis, axname, @caxis_str, rmCube, cubeproperties, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
        getOutAxis, Cube, (..), getCubeData, subsetcube, CubeMask, renameaxis!, Dataset, S3Cube, cubeinfo
-import DiskArrays
-import Distributed: myid
+using DiskArrays: DiskArrays
+using Distributed: myid
 
 """
     AbstractCubeData{T,N}
@@ -76,8 +76,7 @@ abstract type AbstractSubCube{T,N} <: AbstractCubeData{T,N} end
 abstract type AbstractCubeMem{T,N} <: AbstractCubeData{T,N} end
 
 include("Axes.jl")
-using .Axes
-import .Axes: getAxis
+using .Axes: getAxis
 struct EmptyCube{T}<:AbstractCubeData{T,0} end
 caxes(c::EmptyCube)=CubeAxis[]
 
@@ -85,8 +84,8 @@ caxes(c::EmptyCube)=CubeAxis[]
 mutable struct CleanMe
   path::String
   persist::Bool
-  function CleanMe(path::String,toclean::Bool)
-    c = new(path,toclean)
+  function CleanMe(path::String,persist::Bool)
+    c = new(path,persist)
     finalizer(clean,c)
     c
   end
@@ -130,7 +129,9 @@ cubeproperties(c::ESDLArray)=c.properties
 iscompressed(c::ESDLArray)=iscompressed(c.data)
 iscompressed(c::DiskArrays.PermutedDiskArray) = iscompressed(c.a.parent)
 iscompressed(c::DiskArrays.SubDiskArray) = iscompressed(c.v.parent)
-iscompressed(c::Array) = false
+iscompressed(c::AbstractArray) = false
+iscompressed(::AbstractCubeData) = false
+iscompressed(::CubeAxis) = false
 cubechunks(c::ESDLArray)=common_size(eachchunk(c.data))
 common_size(a::DiskArrays.GridChunks) = a.chunksize
 function common_size(a)
