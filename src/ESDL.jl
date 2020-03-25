@@ -5,19 +5,7 @@
 Some info on the project...
 """
 module ESDL
-import Dates: Date
-export Date
-export ESDLdir, getAxis
-export Cube, getCubeData,readcubedata,CubeMem,CubeAxis, TimeAxis, VariableAxis, LonAxis, LatAxis, SpatialPointAxis, saveCube, loadCube,
-        RangeAxis, CategoricalAxis, MSCAxis, ScaleAxis, QuantileAxis, MethodAxis, cubeinfo, @caxis_str,splitdim,
-        axVal2Index, mapCubeSimple, concatenateCubes, NetCDFCube, mergeAxes, caxes, subsetcube, CubeMask, renameaxis! #From Cube module
-export registerDATFunction, mapCube, reduceCube, getAxis, InDims, OutDims, (..), Dataset, ESDLDataset,S3Cube,
-        CubeTable, AsArray,AsAxisArray,AsDataFrame, cubefittable, TableAggregator, fittable #From DAT module
-export cubeAnomalies, removeMSC, gapFillMSC, normalizeTS,DATfitOnline,
-  sampleLandPoints, toPointAxis, getMSC, filterTSFFT, getNpY,
-  getMedSC, extractLonLats,simpleAnomalies,spatialinterp,cubefromshape, exportcube, gapfillpoly #From Proc module
-export rmCube # From CachedArrays
-export @loadOrGenerate # from ESDL Tools
+using Reexport
 import Zarr
 global const ESDLDefaults = (
   workdir = Ref("./"),
@@ -42,15 +30,26 @@ ESDLdir(x::String)=ESDLDefaults.workdir[]=x
 recalculate(x::Bool)=ESDLDefaults.recal[]=x
 recalculate()=ESDLDefaults.recal[]
 ESDLdir()=ESDLDefaults.workdir[]
-export ESDLdir
 
 include("ESDLTools.jl")
 include("Cubes/Cubes.jl")
-#include("CubeAPI/CubeAPI.jl")
+include("DatasetAPI/Datasets.jl")
 include("DAT/DAT.jl")
 include("Proc/Proc.jl")
 
-using .Cubes, .DAT, .Proc, .ESDLTools
+@reexport using Dates: Date, DateTime
+export ESDLdir
+@reexport using .Cubes: Cube, CubeMem, CubeAxis, saveCube,
+        RangeAxis, CategoricalAxis, cubeinfo, splitdim, getAxis,
+        concatenateCubes, caxes, subsetcube, renameaxis! #From Cube module
+@reexport using .DAT: mapCube, getAxis, InDims, OutDims, (..), Dataset, S3Cube,
+      CubeTable, cubefittable, fittable #From DAT module
+@reexport using .Proc: removeMSC, gapFillMSC,normalizeTS,
+  getMSC, filterTSFFT, getNpY,
+  getMedSC, extractLonLats, cubefromshape,
+  exportcube, gapfillpoly #From Proc module
+@reexport using ESDLTools: @loadOrGenerate # from ESDL Tools
+
 
 #include("precompile.jl")
 #_precompile_()

@@ -1,5 +1,5 @@
-module OBS
-import ..Cubes: S3Cube, Dataset, Cube
+module ESDC
+import ..Cubes: Dataset, Cube
 import Zarr: S3Store, zopen, aws_config
 import Dates
 import Dates: now

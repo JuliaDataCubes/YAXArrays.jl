@@ -4,8 +4,7 @@ SpatialPointAxis,Axes,YearStepRange,CategoricalAxis,RangeAxis,axVal2Index,MSCAxi
 ScaleAxis, axname, @caxis_str, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
 getOutAxis, ByInference, renameaxis!, axsym
 import NetCDF.NcDim
-using ..Cubes
-import ..Cubes: caxes, _read
+import ..Cubes: caxes, _read, Cubes
 using Dates
 
 macro defineCatAxis(axname,eltype)

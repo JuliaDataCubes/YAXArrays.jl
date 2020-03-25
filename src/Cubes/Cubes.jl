@@ -3,12 +3,12 @@ The functions provided by ESDL are supposed to work on different types of cubes.
 Data types that
 """
 module Cubes
-export Axes, AbstractCubeData, getSubRange, readcubedata, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, TimeHAxis, QuantileAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, caxes,
-       AbstractSubCube, CubeMem, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis, axVal2Index, MSCAxis,
-       getSingVal, ScaleAxis, axname, @caxis_str, rmCube, cubeproperties, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
-       getOutAxis, Cube, (..), getCubeData, subsetcube, CubeMask, renameaxis!, Dataset, S3Cube, cubeinfo
 using DiskArrays: DiskArrays
 using Distributed: myid
+using Dates: TimeType
+using IntervalSets: Interval
+using Base.Iterators: take, drop
+using ..ESDL: workdir
 
 """
     AbstractCubeData{T,N}
@@ -77,9 +77,6 @@ abstract type AbstractCubeMem{T,N} <: AbstractCubeData{T,N} end
 
 include("Axes.jl")
 using .Axes
-struct EmptyCube{T}<:AbstractCubeData{T,0} end
-caxes(c::EmptyCube)=CubeAxis[]
-
 
 mutable struct CleanMe
   path::String
@@ -175,18 +172,65 @@ function subsetcube(z::ESDLArray{T};kwargs...) where T
   ESDLArray(newaxes,newdata,z.properties,cleaner = z.cleaner)
 end
 
-# """
-#     gethandle(c::AbstractCubeData, [block_size])
-#
-# Returns an indexable handle to the data.
-# """
-# gethandle(c::AbstractCubeMem) = c.data
-# gethandle(c::CubeAxis) = collect(c.values)
-# gethandle(c,block_size)=gethandle(c)
+sorted(x,y) = x<y ? (x,y) : (y,x)
 
-function Base.getindex(c::AbstractCubeData,i...)
-  c.data[i...]
+#TODO move everything that is subset-related to its own file or to axes.jl
+interpretsubset(subexpr::Union{CartesianIndices{1},LinearIndices{1}},ax) = subexpr.indices[1]
+interpretsubset(subexpr::CartesianIndex{1},ax)   = subexpr.I[1]
+interpretsubset(subexpr,ax)                      = axVal2Index(ax,subexpr,fuzzy=true)
+function interpretsubset(subexpr::NTuple{2,Any},ax)
+  x, y = sorted(subexpr...)
+  Colon()(sorted(axVal2Index_lb(ax,x),axVal2Index_ub(ax,y))...)
 end
+interpretsubset(subexpr::NTuple{2,Int},ax::RangeAxis{T}) where T<:TimeType = interpretsubset(map(T,subexpr),ax)
+interpretsubset(subexpr::UnitRange{Int64},ax::RangeAxis{T}) where T<:TimeType = interpretsubset(T(first(subexpr))..T(last(subexpr)+1),ax)
+interpretsubset(subexpr::Interval,ax)       = interpretsubset((subexpr.left,subexpr.right),ax)
+interpretsubset(subexpr::AbstractVector,ax::CategoricalAxis)      = axVal2Index.(Ref(ax),subexpr,fuzzy=true)
+
+#TODO move this to Axes.jl
+axcopy(ax::RangeAxis,vals) = RangeAxis(axname(ax),vals)
+axcopy(ax::CategoricalAxis,vals) = CategoricalAxis(axname(ax),vals)
+
+function _subsetcube(z::AbstractCubeData, subs;kwargs...)
+  if :region in keys(kwargs)
+    kwargs = collect(Any,kwargs)
+    ireg = findfirst(i->i[1]==:region,kwargs)
+    reg = splice!(kwargs,ireg)
+    haskey(known_regions,reg[2]) || error("Region $(reg[2]) not known.")
+    lon1,lat1,lon2,lat2 = known_regions[reg[2]]
+    push!(kwargs,:lon=>lon1..lon2)
+    push!(kwargs,:lat=>lat1..lat2)
+  end
+  newaxes = deepcopy(caxes(z))
+  foreach(kwargs) do kw
+    axdes,subexpr = kw
+    axdes = string(axdes)
+    iax = findAxis(axdes,caxes(z))
+    if isa(iax,Nothing)
+      throw(ArgumentError("Axis $axdes not found in cube"))
+    else
+      oldax = newaxes[iax]
+      subinds = interpretsubset(subexpr,oldax)
+      subs2 = subs[iax][subinds]
+      subs[iax] = subs2
+      if !isa(subinds,AbstractVector) && !isa(subinds,AbstractRange)
+        newaxes[iax] = axcopy(oldax,oldax.values[subinds:subinds])
+      else
+        newaxes[iax] = axcopy(oldax,oldax.values[subinds])
+      end
+    end
+  end
+  substuple = ntuple(i->subs[i],length(subs))
+  inewaxes = findall(i->isa(i,AbstractVector),substuple)
+  newaxes = newaxes[inewaxes]
+  @assert length.(newaxes) == map(length,filter(i->isa(i,AbstractVector),collect(substuple)))
+  newaxes, substuple
+end
+
+include(joinpath(@__DIR__,"../DatasetAPI/countrydict.jl"))
+
+Base.getindex(a::AbstractCubeData;kwargs...) = subsetcube(a;kwargs...)
+
 Base.read(d::AbstractCubeData) = getindex(d,fill(Colon(),ndims(d))...)
 
 function formatbytes(x)
@@ -204,7 +248,6 @@ cubesize(c::AbstractCubeData{T,0}) where {T}=sizeof(T)+1
 getCubeDes(c::AbstractSubCube)="Data Cube view"
 getCubeDes(::CubeAxis)="Cube axis"
 getCubeDes(c::ESDLArray)="ESDL data cube"
-getCubeDes(c::EmptyCube)="Empty Data Cube (placeholder)"
 function Base.show(io::IO,c::AbstractCubeData)
     println(io,getCubeDes(c), " with the following dimensions")
     for a in caxes(c)
@@ -219,11 +262,10 @@ function Base.show(io::IO,c::AbstractCubeData)
     println(io,"Total size: ",formatbytes(cubesize(c)))
 end
 
-import ..ESDL.workdir
-using NetCDF
+
 
 function check_overwrite(newfolder, overwrite)
-  if isdir(newfolder)
+  if isdir(newfolder) || isfile(newfolder)
     if overwrite
       rm(newfolder, recursive=true)
     else
@@ -248,14 +290,6 @@ See also [`loadCube`](@ref)
 function saveCube end
 
 
-# function saveCube(c::CubeMem{T},name::AbstractString; overwrite=true) where T
-#   newfolder=getsavefolder(name)
-#   check_overwrite(newfolder, overwrite)
-#   tc=Cubes.ESDLZarr.ZArrayCube(c.axes,folder=newfolder,T=T)
-#   _write(tc,c.data,CartesianIndices(c.data))
-# end
-
-import Base.Iterators: take, drop
 Base.show(io::IO,a::RangeAxis)=print(io,rpad(Axes.axname(a),20," "),"Axis with ",length(a)," Elements from ",first(a.values)," to ",last(a.values))
 function Base.show(io::IO,a::CategoricalAxis)
   print(io,rpad(Axes.axname(a),20," "), "Axis with ", length(a), " elements: ")
@@ -276,12 +310,9 @@ end
 Base.show(io::IO,a::SpatialPointAxis)=print(io,"Spatial points axis with ",length(a.values)," points")
 
 include("TransformedCubes.jl")
-function S3Cube end
-include("ZarrCubes.jl")
-import .ESDLZarr: (..), Cube, getCubeData, loadCube, rmCube, CubeMask, cubeinfo
-
-include("NetCDFCubes.jl")
-include("Datasets.jl")
-import .Datasets: Dataset, ESDLDataset
-include("OBS.jl")
+#include("ZarrCubes.jl")
+#include("NetCDFCubes.jl")
+#include("Datasets.jl")
+#import .Datasets: Dataset, ESDLDataset
+#include("ESDC.jl")
 end

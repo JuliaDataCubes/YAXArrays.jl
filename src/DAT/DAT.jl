@@ -5,9 +5,9 @@ using ..ESDLTools
 using Distributed: pmap, @everywhere, workers, remotecall_fetch, myid, nprocs
 import ..Cubes: getAxis, cubechunks, iscompressed, chunkoffset,
   CubeAxis, AbstractCubeData, ESDLArray,
-  caxes, findAxis, Dataset, getsavefolder
+  caxes, findAxis, getsavefolder
 import ..Cubes.Axes: AxisDescriptor, axname, ByInference, axsym, getOutAxis
-import ..Cubes.ESDLZarr: ZArrayCube
+import ..Datasets: Dataset
 import ...ESDL
 import ...ESDL.workdir
 import Zarr: ZArray

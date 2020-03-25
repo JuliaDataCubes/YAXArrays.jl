@@ -1,9 +1,12 @@
 module Datasets
-import ..Cubes.ESDLZarr: toaxis, axname, AbstractCubeData, ZArrayCube, propfromattr, subsetcube, caxes, concatenateCubes
 import Zarr: ZGroup, zopen
 import ..Cubes.Axes: axsym, CubeAxis, findAxis, CategoricalAxis, RangeAxis
-import ..Cubes: AbstractCubeData, Cube, ESDLArray
-import DataStructures: OrderedDict, counter
+import ..Cubes: AbstractCubeData, ESDLArray
+using DataStructures: OrderedDict, counter
+using Dates: Day,Hour,Minute,Second,Month,Year, Date, DateTime, TimeType
+using IntervalSets: Interval, (..)
+using CFTime: timedecode, timeencode, DateTimeNoLeap, DateTime360Day, DateTimeAllLeap
+
 using NetCDF: NcFile
 
 include("interface.jl")
@@ -274,6 +277,51 @@ function arrayfromaxis(p::DatasetBackend,ax::CubeAxis,offs)
     za
 end
 
+prependrange(r::AbstractRange,n) = n==0 ? r : range(first(r)-n*step(r),last(r),length=n+length(r))
+function prependrange(r::AbstractVector,n)
+  if n==0
+    return r
+  else
+    step = r[2]-r[1]
+    first = r[1] - step*n
+    last = r[1] - step
+    radd = range(first,last,length=n)
+    return [radd;r]
+  end
+end
+
+defaultcal(::Type{<:TimeType}) = "standard"
+defaultcal(::Type{<:DateTimeNoLeap}) = "noleap"
+defaultcal(::Type{<:DateTimeAllLeap}) = "allleap"
+defaultcal(::Type{<:DateTime360Day}) = "360_day"
+
+datetodatetime(vals::AbstractArray{<:Date}) = DateTime.(vals)
+datetodatetime(vals) = vals
+
+function dataattfromaxis(ax::CubeAxis,n)
+    prependrange(ax.values,n), Dict{String,Any}()
+end
+# function dataattfromaxis(ax::CubeAxis,n)
+#     prependrange(1:length(ax.values),n), Dict{String,Any}("_ARRAYVALUES"=>collect(ax.values))
+# end
+function dataattfromaxis(ax::CubeAxis{T},n) where T<:TimeType
+    data = timeencode(datetodatetime(ax.values),"days since 1980-01-01",defaultcal(T))
+    prependrange(data,n), Dict{String,Any}("units"=>"days since 1980-01-01","calendar"=>defaultcal(T))
+end
+
+defaultfillval(T::Type{<:AbstractFloat}) = convert(T,1e32)
+defaultfillval(::Type{Float16}) = Float16(3.2e4)
+defaultfillval(T::Type{<:Integer}) = typemax(T)
+
+#The good old Cube function:
+Cube(s::String;kwargs...) = Cube(zopen(s,"r");kwargs...)
+function Cube(;kwargs...)
+  if !isempty(ESDL.ESDLDefaults.cubedir[])
+    Cube(ESDL.ESDLDefaults.cubedir[];kwargs...)
+  else
+    ESDC(;kwargs...)
+  end
+end
 
 
 end
