@@ -6,45 +6,9 @@ import ..Cubes: AbstractCubeData, Cube, ESDLArray
 import DataStructures: OrderedDict, counter
 using NetCDF: NcFile
 
-abstract type DatasetBackend end
-#Functions to be implemented for Dataset sources:
-
-"Test if a given variable name belongs to a dataset"
-Base.haskey(t::DatasetBackend, key) = error("haskey not implemented for $(typeof(t))")
-
-"Return a DiskArray handle to a dataset"
-get_var_handle(ds, name) = ds[name]
-
-"Return a list of variable names"
-function get_varnames(ds) end
-
-"Return a list of dimension names for a given variable"
-function get_var_dims(ds, name) end
-
-"Return a dict with the attributes for a given variable"
-function get_var_attrs(ds,name) end
-
-#Functions to be implemented for Dataset sinks
-
-
-function require_dim(ds, name, len) end
-
-function add_var(ds, name, dimlist, atts) end
-
-
-struct ZarrDataset <: DatasetBackend
-  g::ZGroup
-end
-
-get_var_dims(ds::ZarrDataset,name) = reverse(ds[name].attrs["_ARRAY_DIMENSIONS"])
-get_varnames(ds::ZarrDataset) = collect(keys(ds.g.arrays))
-get_var_attrs(ds::ZarrDataset, name) = ds[name].attrs
-Base.getindex(ds::ZarrDataset, i) = ds.g[i]
-Base.haskey(ds::ZarrDataset,k) = haskey(ds.g,k)
-
-struct NetCDFDataset <: DatasetBackend
-  nc::NcFile
-end
+include("interface.jl")
+include("zarr.jl")
+include("netcdf.jl")
 
 struct Dataset
     cubes::OrderedDict{Symbol,AbstractCubeData}
@@ -218,7 +182,6 @@ function Cube(ds::Dataset; joinname="Variable")
   end
 end
 
-Cube(z::ZGroup;joinname="Variable") = Cube(Dataset(ZarrDataset(z)),joinname=joinname)
 
 
 """
@@ -246,12 +209,11 @@ function createDataset(DS, axlist;
   T=Union{Float32,Missing},
   chunksize = ntuple(i->length(axlist[i]),length(axlist)),
   chunkoffset = ntuple(i->0,length(axlist)),
-  compressor = NoCompressor(),
   persist::Bool=true,
   overwrite::Bool=false,
   properties=Dict{String,Any}(),
-  fillvalue= T>:Missing ? defaultfillval(Base.nonmissingtype(T)) : nothing,
-  datasetaxis = "Variable"
+  datasetaxis = "Variable",
+  kwargs...
   )
   if isdir(folder) || isfile(folder)
     if overwrite
@@ -275,7 +237,6 @@ function createDataset(DS, axlist;
     arrayfromaxis(myar,ax,co)
   end
   attr = properties
-  attr["_ARRAY_DIMENSIONS"]=reverse(map(axname,axlist))
   s = map(length,axlist) .+ chunkoffset
   if all(iszero,chunkoffset)
     subs = nothing
@@ -291,7 +252,7 @@ function createDataset(DS, axlist;
   end
   cleaner = persist ? nothing : CleanMe(folder,false)
   allcubes = map(cubenames) do cn
-    za = zcreate(T, myar,cn, s...,attrs=attr, fill_value=fillvalue,chunks=chunksize,compressor=compressor)
+    add_var(myar, T, cn, map(length,axlist), map(axname,axlist), atts; chunksize = chunksize, kwargs...)
     if subs !== nothing
       za = view(za,subs...)
     end
@@ -313,9 +274,6 @@ function arrayfromaxis(p::DatasetBackend,ax::CubeAxis,offs)
     za
 end
 
-function add_var(p::ZarrayBackend, T, varname, s, dimnames, attr)
-  attr["_ARRAY_DIMENSIONS"]=reverse(collect(dimnames))
-  za = zcreate(T, p.g, varname, s...,attrs=attr)
-end
+
 
 end
