@@ -3,35 +3,58 @@ import ...Cubes: AbstractCubeData
 import ...DAT: mapCube, InDims, OutDims
 import ...Cubes.Axes: CubeAxis, getAxis, LonAxis, LatAxis
 export spatialinterp
-import Interpolations: BSpline, scale,extrapolate, interpolate, Constant, Linear, Quadratic,
-  Cubic, OnGrid, Flat, Line,Free, Periodic, Reflect
-function fremap(xout,xin,oldlons,oldlats,newlons,newlats;order=Linear(),bc = Flat())
-  #interp = LinearInterpolation((oldlons,oldlats),xin);
-  interp = extrapolate(scale(interpolate(xin, BSpline(order)), oldlons,oldlats), bc)
-  for (ilat,lat) in enumerate(newlats)
-    for (ilon,lon) in enumerate(newlons)
-      xout[ilon,ilat]=interp(lon,lat)
-    end
-  end
-end
+using DiskArrayTools: InterpolatedDiskArray
 
 """
   spatialinterp(c::AbstractCubeData,newlons::AbstractRange,newlats::AbstractRange;order=Linear(),bc = Flat())
 """
 function spatialinterp(c::AbstractCubeData,newlons::AbstractRange,newlats::AbstractRange;order=Linear(),bc = Flat())
-  oldlons = getAxis("Lon",c).values
-  oldlats = getAxis("Lat",c).values
-  indims=InDims("Lon","Lat")
-  outdims=OutDims(LonAxis(newlons),LatAxis(newlats))
-  if step(oldlats)<0
-    oldlats = reverse(oldlats)
-    newlats = reverse(newlats)
-  end
-
-  mapCube(fremap,c,oldlons,oldlats,newlons,newlats,indims=indims,outdims=outdims,order=order,bc=bc)
+  interpolatecube(c,Dict("Lon"=>newlons, "Lat"=>newlats), order = Dict("Lon"=>Linear(),"Lat"=>Linear()))
 end
 spatialinterp(c::AbstractCubeData,newlons::CubeAxis,newlats::CubeAxis;kwargs...)=
-  spatialinterp(c,newlons.values,newlats.values)
-# spatialinterp(c::AbstractCubeData,target_cube::AbstractCubeData)=
-#   spatialinterp(c,getAxis("Lon",))
+  spatialinterp(c,newlons.values,newlats.values;kwargs...)
+
+function interpolatecube(c::AbstractCubeData,newaxes::Dict,newchunks::Dict;order=Dict())
+  ii = map(axn->(axn,findAxis(axn,c)),keys(newaxes))
+  oo = ntuple(ndims(c)) do i
+    ai = findfirst(j->j[2]==i,ii)
+    if a === nothing
+      nothing,NoInterp()
+    else
+      oldvals = caxes(c)[i].values
+      newvals = newaxes[ii[ai][1]].values
+      getinterpinds(oldvals, newvals),get(order,a[1],Constant())
+    end
+  end
+  newinds = getindex.(oo,1)
+  intorder = getindex.(oo,2)
+  ar = InterpolatedDiskArray(ad,newchunks,newinds, order = intorder)
+  newax = map(caxes(c),newinds) do ax,val
+    if val === nothing
+      ax
+    else
+      RangeAxis(axname(ax),val)
+    end
+  end
+  ESDLArray(newax,ar, properties = c.properties, cleaner = c.cleaner)
+end
+
+function getinterpinds(oldvals::AbstractRange, newvals::AbstractRange)
+  (newvals.-first(oldvals))./step(oldvals).+1
+end
+function getinterpinds(r1,r2)
+  rev = issorted(r1) ? false : issorted(r1,rev=true) ? true : error("Axis values are not sorted")
+  map(r2) do ir
+    ii = searchsortedfirst(r1,ir,rev=rev)
+    ii1 = max(min(ii-1,length(r1)),1)
+    ii2 = max(min(ii,length(r1)),1)
+    ind = if ii1 == ii2
+      Float64(ii1)
+    else
+      ii1+(ir-r1[ii1])/(r1[ii2]-r1[ii1])
+    end
+    ind
+  end
+end
+
 end #module

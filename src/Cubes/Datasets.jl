@@ -1,9 +1,51 @@
 module Datasets
 import ..Cubes.ESDLZarr: toaxis, axname, AbstractCubeData, ZArrayCube, propfromattr, subsetcube, caxes, concatenateCubes
 import Zarr: ZGroup, zopen
-import ..Cubes.Axes: axsym, CubeAxis, findAxis, CategoricalAxis
+import ..Cubes.Axes: axsym, CubeAxis, findAxis, CategoricalAxis, RangeAxis
 import ..Cubes: AbstractCubeData, Cube, ESDLArray
 import DataStructures: OrderedDict, counter
+using NetCDF: NcFile
+
+abstract type DatasetBackend end
+#Functions to be implemented for Dataset sources:
+
+"Test if a given variable name belongs to a dataset"
+Base.haskey(t::DatasetBackend, key) = error("haskey not implemented for $(typeof(t))")
+
+"Return a DiskArray handle to a dataset"
+get_var_handle(ds, name) = ds[name]
+
+"Return a list of variable names"
+function get_varnames(ds) end
+
+"Return a list of dimension names for a given variable"
+function get_var_dims(ds, name) end
+
+"Return a dict with the attributes for a given variable"
+function get_var_attrs(ds,name) end
+
+#Functions to be implemented for Dataset sinks
+
+
+function require_dim(ds, name, len) end
+
+function add_var(ds, name, dimlist, atts) end
+
+
+struct ZarrDataset <: DatasetBackend
+  g::ZGroup
+end
+
+get_var_dims(ds::ZarrDataset,name) = reverse(ds[name].attrs["_ARRAY_DIMENSIONS"])
+get_varnames(ds::ZarrDataset) = collect(keys(ds.g.arrays))
+get_var_attrs(ds::ZarrDataset, name) = ds[name].attrs
+Base.getindex(ds::ZarrDataset, i) = ds.g[i]
+Base.haskey(ds::ZarrDataset,k) = haskey(ds.g,k)
+
+struct NetCDFDataset <: DatasetBackend
+  nc::NcFile
+end
+
 struct Dataset
     cubes::OrderedDict{Symbol,AbstractCubeData}
     axes::Dict{Symbol,CubeAxis}
@@ -60,7 +102,7 @@ function fuzzyfind(s::String,comp::Vector{String})
 end
 function Base.getindex(x::Dataset,i::Vector{String})
     istr = string.(keys(x.cubes))
-    ids = map(name->fuzzyfind(name,istr),i)
+    ids  = map(name->fuzzyfind(name,istr),i)
     syms   = map(j->Symbol(istr[j]),ids)
     cubesnew = Dict{Symbol, AbstractCubeData}(Symbol(i[j])=>x.cubes[syms[j]] for j=1:length(ids))
     Dataset(;cubesnew...)
@@ -77,13 +119,16 @@ function subsetcube(x::Dataset; var=nothing, kwargs...)
         Dataset(;map(ds->ds=>subsetcube(cc[ds];kwargs...),collect(keys(cc)))...)
     end
 end
-function collectdims(g::ZGroup)
+function collectdims(g::DatasetBackend)
   dlist = Set{Tuple{String,Int,Int}}()
-  foreach(g.arrays) do ar
-    k,v = ar
-    for (len,dname) in zip(size(v),reverse(v.attrs["_ARRAY_DIMENSIONS"]))
+  varnames = get_varnames(g)
+  foreach(varnames) do k
+    d = get_var_dims(g,k)
+    v = get_var_handle(g,k)
+    for (len,dname) in zip(size(v),d)
       if !occursin("bnd",dname) && !occursin("bounds",dname)
-        offs = get(g.arrays[dname].attrs,"_ARRAY_OFFSET",0)
+        datts = get_var_attrs(g,dname)
+        offs = get(datts,"_ARRAY_OFFSET",0)
         push!(dlist,(dname,offs,len))
       end
     end
@@ -93,19 +138,43 @@ function collectdims(g::ZGroup)
   outd
 end
 
-function Dataset(g::ZGroup)
+function toaxis(dimname,g,offs,len)
+    axname = dimname
+    if !haskey(g,dimname)
+      return RangeAxis(dimname, 1:len)
+    end
+    ar = g[dimname]
+    if axname=="Time" && haskey(ar.attrs,"units")
+        tsteps = timedecode(ar[:],ar.attrs["units"],get(ar.attrs,"calendar","standard"))
+        TimeAxis(tsteps[offs+1:end])
+    elseif haskey(ar.attrs,"_ARRAYVALUES")
+      vals = ar.attrs["_ARRAYVALUES"]
+      CategoricalAxis(axname,vals)
+    else
+      axdata = testrange(ar[offs+1:end])
+      RangeAxis(axname,axdata)
+    end
+end
+propfromattr(attr) = filter(i->i[1]!=="_ARRAY_DIMENSIONS",attr)
 
-  isempty(g.arrays) && throw(ArgumentError("Zarr Group does not contain datasets."))
+"Test if data in x can be approximated by a step range"
+function testrange(x)
+  r = range(first(x),last(x),length=length(x))
+  all(i->isapprox(i...),zip(x,r)) ? r : x
+end
+
+function Dataset(g::DatasetBackend)
+
+  isempty(get_varnames(g)) && throw(ArgumentError("Zarr Group does not contain datasets."))
   dimlist = collectdims(g)
   dnames  = string.(keys(dimlist))
-  varlist = filter(g.arrays) do ar
-    upname = uppercase(ar[1])
+  varlist = filter(get_varnames(g)) do vn
+    upname = uppercase(vn)
     !occursin("BNDS",upname) && !occursin("BOUNDS",upname) && !any(i->isequal(upname,uppercase(i)),dnames)
   end
   allcubes = OrderedDict{Symbol,AbstractCubeData}()
-  for iv in  varlist
-    vname, zarray = iv
-    vardims = reverse((zarray.attrs["_ARRAY_DIMENSIONS"]...,))
+  for vname in  varlist
+    vardims = get_var_dims(g,vname)
     iax = [dimlist[vd].ax for vd in vardims]
     offs = [dimlist[vd].offs for vd in vardims]
     subs = if all(iszero,offs)
@@ -113,7 +182,9 @@ function Dataset(g::ZGroup)
     else
       ntuple(i->(offs[i]+1):(offs[i]+length(iax[i])),length(offs))
     end
-    allcubes[Symbol(vname)] = ESDLArray(iax,zarray,propfromattr(zarray.attrs), cleaner=nothing)
+    ar = get_var_handle(g,vname)
+    att = get_var_attrs(g,vname)
+    allcubes[Symbol(vname)] = ESDLArray(iax,ar,propfromattr(att), cleaner=nothing)
   end
   sdimlist = Dict(Symbol(k)=>v.ax for (k,v) in dimlist)
   Dataset(allcubes,sdimlist)
@@ -147,8 +218,104 @@ function Cube(ds::Dataset; joinname="Variable")
   end
 end
 
-Cube(z::ZGroup;joinname="Variable") = Cube(Dataset(z),joinname=joinname)
+Cube(z::ZGroup;joinname="Variable") = Cube(Dataset(ZarrDataset(z)),joinname=joinname)
 
 
+"""
+    function createDataset(DS::Type{<:DatasetBackend},axlist; kwargs...)
+
+Creates a new datacube with axes specified in `axlist`. Each axis must be a subtype
+of `CubeAxis`. A new empty Zarr array will be created and can serve as a sink for
+`mapCube` operations.
+
+### Keyword arguments
+
+* `folder=tempname()` location where the new cube is stored
+* `T=Union{Float32,Missing}` data type of the target cube
+* `chunksize = ntuple(i->length(axlist[i]),length(axlist))` chunk sizes of the array
+* `chunkoffset = ntuple(i->0,length(axlist))` offsets of the chunks
+* `compressor = NoCompressor()` compression type
+* `persist::Bool=true` shall the disk data be garbage-collected when the cube goes out of scope?
+* `overwrite::Bool=false` overwrite cube if it already exists
+* `properties=Dict{String,Any}()` additional cube properties
+* `fillvalue= T>:Missing ? defaultfillval(Base.nonmissingtype(T)) : nothing` fill value
+* `datasetaxis="Variable"` special treatment of a categorical axis that gets written into separate zarr arrays
+"""
+function createDataset(DS, axlist;
+  path=tempname(),
+  T=Union{Float32,Missing},
+  chunksize = ntuple(i->length(axlist[i]),length(axlist)),
+  chunkoffset = ntuple(i->0,length(axlist)),
+  compressor = NoCompressor(),
+  persist::Bool=true,
+  overwrite::Bool=false,
+  properties=Dict{String,Any}(),
+  fillvalue= T>:Missing ? defaultfillval(Base.nonmissingtype(T)) : nothing,
+  datasetaxis = "Variable"
+  )
+  if isdir(folder) || isfile(folder)
+    if overwrite
+      rm(folder,recursive=true)
+    else
+      error("$folder alrSeady exists, set overwrite=true to overwrite.")
+    end
+  end
+  splice_generic(x::AbstractArray,i) = [x[1:(i-1)];x[(i+1:end)]]
+  splice_generic(x::Tuple,i)         = (x[1:(i-1)]...,x[(i+1:end)]...)
+  myar = create_empty(DS, path)
+  if (iax = findAxis(datasetaxis,axlist)) !== nothing
+    groupaxis = axlist[iax]
+    axlist = splice_generic(axlist,iax)
+    chunksize = splice_generic(chunksize,iax)
+    chunkoffset = splice_generic(chunkoffset,iax)
+  else
+    groupaxis = nothing
+  end
+  foreach(axlist,chunkoffset) do ax,co
+    arrayfromaxis(myar,ax,co)
+  end
+  attr = properties
+  attr["_ARRAY_DIMENSIONS"]=reverse(map(axname,axlist))
+  s = map(length,axlist) .+ chunkoffset
+  if all(iszero,chunkoffset)
+    subs = nothing
+  else
+    subs = ntuple(length(axlist)) do i
+      (chunkoffset[i]+1):(length(axlist[i].values)+chunkoffset[i])
+    end
+  end
+  if groupaxis===nothing
+    cubenames = ["layer"]
+  else
+    cubenames = groupaxis.values
+  end
+  cleaner = persist ? nothing : CleanMe(folder,false)
+  allcubes = map(cubenames) do cn
+    za = zcreate(T, myar,cn, s...,attrs=attr, fill_value=fillvalue,chunks=chunksize,compressor=compressor)
+    if subs !== nothing
+      za = view(za,subs...)
+    end
+
+    ESDLArray(axlist,za,propfromattr(attr),cleaner=cleaner)
+  end
+  if groupaxis===nothing
+    return allcubes[1]
+  else
+    return concatenateCubes(allcubes,groupaxis)
+  end
+end
+
+function arrayfromaxis(p::DatasetBackend,ax::CubeAxis,offs)
+    data, attr = dataattfromaxis(ax,offs)
+    attr["_ARRAY_OFFSET"]=offs
+    za = add_var(p, eltype(data), axname(ax), size(data), (axname(ax),), attr)
+    za[:] = data
+    za
+end
+
+function add_var(p::ZarrayBackend, T, varname, s, dimnames, attr)
+  attr["_ARRAY_DIMENSIONS"]=reverse(collect(dimnames))
+  za = zcreate(T, p.g, varname, s...,attrs=attr)
+end
 
 end

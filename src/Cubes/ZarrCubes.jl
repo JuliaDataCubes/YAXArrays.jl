@@ -50,138 +50,18 @@ function dataattfromaxis(ax::CubeAxis{T},n) where T<:TimeType
     prependrange(data,n), Dict{String,Any}("units"=>"days since 1980-01-01","calendar"=>defaultcal(T))
 end
 
-function zarrayfromaxis(p::ZGroup,ax::CubeAxis,offs)
-    data, attr = dataattfromaxis(ax,offs)
-    attr["_ARRAY_DIMENSIONS"]=[axname(ax)]
-    attr["_ARRAY_OFFSET"]=offs
-    za = zcreate(eltype(data),p,axname(ax), length(data),attrs=attr)
-    za[:] = data
-    za
-end
+
 
 defaultfillval(T::Type{<:AbstractFloat}) = convert(T,1e32)
 defaultfillval(::Type{Float16}) = Float16(3.2e4)
 defaultfillval(T::Type{<:Integer}) = typemax(T)
 
-"""
-    function ZArrayCube(axlist; kwargs...)
-
-Creates a new datacube with axes specified in `axlist`. Each axis must be a subtype
-of `CubeAxis`. A new empty Zarr array will be created and can serve as a sink for
-`mapCube` operations.
-
-### Keyword arguments
-
-* `folder=tempname()` location where the new cube is stored
-* `T=Union{Float32,Missing}` data type of the target cube
-* `chunksize = ntuple(i->length(axlist[i]),length(axlist))` chunk sizes of the array
-* `chunkoffset = ntuple(i->0,length(axlist))` offsets of the chunks
-* `compressor = NoCompressor()` compression type
-* `persist::Bool=true` shall the disk data be garbage-collected when the cube goes out of scope?
-* `overwrite::Bool=false` overwrite cube if it already exists
-* `properties=Dict{String,Any}()` additional cube properties
-* `fillvalue= T>:Missing ? defaultfillval(Base.nonmissingtype(T)) : nothing` fill value
-* `datasetaxis="Variable"` special treatment of a categorical axis that gets written into separate zarr arrays
-"""
-function ZArrayCube(axlist;
-  folder=tempname(),
-  T=Union{Float32,Missing},
-  chunksize = ntuple(i->length(axlist[i]),length(axlist)),
-  chunkoffset = ntuple(i->0,length(axlist)),
-  compressor = NoCompressor(),
-  persist::Bool=true,
-  overwrite::Bool=false,
-  properties=Dict{String,Any}(),
-  fillvalue= T>:Missing ? defaultfillval(Base.nonmissingtype(T)) : nothing,
-  datasetaxis = "Variable"
-  )
-  if isdir(folder)
-    if overwrite
-      rm(folder,recursive=true)
-    else
-      error("Folder $folder is not empty, set overwrite=true to overwrite.")
-    end
-  end
-  splice_generic(x::AbstractArray,i) = [x[1:(i-1)];x[(i+1:end)]]
-  splice_generic(x::Tuple,i)         = (x[1:(i-1)]...,x[(i+1:end)]...)
-  myar = zgroup(folder)
-  if (iax = findAxis(datasetaxis,axlist)) !== nothing
-    groupaxis = axlist[iax]
-    axlist = splice_generic(axlist,iax)
-    chunksize = splice_generic(chunksize,iax)
-    chunkoffset = splice_generic(chunkoffset,iax)
-  else
-    groupaxis = nothing
-  end
-  foreach(axlist,chunkoffset) do ax,co
-    zarrayfromaxis(myar,ax,co)
-  end
-  attr = properties
-  attr["_ARRAY_DIMENSIONS"]=reverse(map(axname,axlist))
-  s = map(length,axlist) .+ chunkoffset
-  if all(iszero,chunkoffset)
-    subs = nothing
-  else
-    subs = ntuple(length(axlist)) do i
-      (chunkoffset[i]+1):(length(axlist[i].values)+chunkoffset[i])
-    end
-  end
-  if groupaxis===nothing
-    cubenames = ["layer"]
-  else
-    cubenames = groupaxis.values
-  end
-  cleaner = persist ? nothing : CleanMe(folder,false)
-  allcubes = map(cubenames) do cn
-    za = zcreate(T, myar,cn, s...,attrs=attr, fill_value=fillvalue,chunks=chunksize,compressor=compressor)
-    if subs !== nothing
-      za = view(za,subs...)
-    end
-
-    ESDLArray(axlist,za,propfromattr(attr),cleaner=cleaner)
-  end
-  if groupaxis===nothing
-    return allcubes[1]
-  else
-    return concatenateCubes(allcubes,groupaxis)
-  end
+function ZArrayCube(axlist; folder = tempname(), kwargs...)
+  createDataset(ZarrDataset, axlist; path = folder, kwargs...)
 end
 
-propfromattr(attr) = filter(i->i[1]!=="_ARRAY_DIMENSIONS",attr)
 
-function toaxis(dimname,g,offs,len)
-    axname = dimname in ("lon","lat","time") ? uppercasefirst(dimname) : dimname
-    if !haskey(g,dimname)
-      return RangeAxis(dimname, 1:len)
-    end
-    ar = g[dimname]
-    if axname=="Time" && haskey(ar.attrs,"units")
-        tsteps = timedecode(ar[:],ar.attrs["units"],get(ar.attrs,"calendar","standard"))
-        TimeAxis(tsteps[offs+1:end])
-    elseif haskey(ar.attrs,"_ARRAYVALUES")
-      vals = ar.attrs["_ARRAYVALUES"]
-      CategoricalAxis(axname,vals)
-    else
-      axdata = testrange(ar[offs+1:end])
-      RangeAxis(axname,axdata)
-    end
-end
-
-"Test if data in x can be approximated by a step range"
-function testrange(x)
-  r = range(first(x),last(x),length=length(x))
-  all(i->isapprox(i...),zip(x,r)) ? r : x
-end
 import DataStructures: counter
-
-const static_vars = Set(["water_mask","country_mask","srex_mask"])
-const country_numeric_labels = include("../CubeAPI/countrylabels.jl")
-const country_numeric_alpha_2 = include("../CubeAPI/country_iso_numeric_iso_alpha2.jl")
-const country_numeric_alpha_3 = include("../CubeAPI/country_iso_numeric_iso_alpha3.jl")
-const countrylabels = country_numeric_labels
-const srexlabels = include("../CubeAPI/srexlabels.jl")
-const known_labels = Dict("water_mask"=>Dict(0x01=>"land",0x02=>"water"),"country_mask"=>countrylabels,"srex_mask"=>srexlabels)
-const known_names = Dict("water_mask"=>"Water","country_mask"=>"Country","srex_mask"=>"SREXregion")
 
 Cube(s::String;kwargs...) = Cube(zopen(s,"r");kwargs...)
 function Cube(;kwargs...)

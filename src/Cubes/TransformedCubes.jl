@@ -2,7 +2,7 @@ export ConcatCube, concatenateCubes
 export mergeAxes
 import ..ESDLTools.getiperm
 import ..Cubes: ESDLArray, caxes, iscompressed, cubechunks, chunkoffset
-import DiskArrays: AbstractDiskArray, eachchunk, haschunks, Chunked, estimate_chunksize, GridChunks, findints, readblock!, writeblock!
+using DiskArrayTools: diskstack
 
 function Base.permutedims(x::AbstractCubeData{T,N},perm) where {T,N}
   ESDLArray(x.axes[perm],permutedims(x.data,perm),x.properties,x.cleaner)
@@ -15,71 +15,6 @@ function Base.map(op, incubes::AbstractCubeData...)
   ESDLArray(axlist,broadcast(op,map(c->c.data,incubes)...),props,map(i->i.cleaner,incubes))
 end
 
-struct DiskArrayStack{T,N,M,NO}<:AbstractDiskArray{T,N}
-    arrays::Array{M,NO}
-end
-function diskstack(a::Array{M,N}) where {N,M<:AbstractArray{T,NO}} where {T,NO}
-    length(unique(size.(a))) == 1 || error("All arrays in the stack must have the same size")
-    DiskArrayStack{T,N+NO,M,N}(a)
-end
-Base.size(r::DiskArrayStack) = (size(r.arrays[1])...,size(r.arrays)...)
-haschunks(a::DiskArrayStack) = haschunks(a.arrays[1])
-iscompressed(a::DiskArrayStack) = any(iscompressed,a.arrays)
-function eachchunk(a::DiskArrayStack{<:Any,<:Any,<:Any,NO}) where NO
-    iterold = eachchunk(a.arrays[1])
-    cs = (iterold.chunksize...,ntuple(one,NO)...)
-    co = (iterold.offset...,ntuple(zero,NO)...)
-    DiskArrays.GridChunks(a,cs,offset=co)
-end
-
-function DiskArrays.readblock!(a::DiskArrayStack{<:Any,N,<:Any,NO},aout,i::AbstractVector...) where {N,NO}
-
-  innerinds = i[1:(N-NO)]
-
-  outerinds = i[(N-NO+1):N]
-  innercolon = map(_->(:), innerinds)
-  iiter = CartesianIndices(outerinds)
-  inum  = CartesianIndices(size(iiter))
-  foreach(zip(iiter,inum)) do (iouter,iret)
-    arnow = a.arrays[iouter]
-    if isa(arnow, AbstractDiskArray)
-      readblock!(a.arrays[iouter],view(aout,innercolon...,iret.I...),innerinds...)
-    else
-      aout[innercolon...,iret.I...] = arnow[innerinds...]
-    end
-  end
-  nothing
-end
-
-function DiskArrays.writeblock!(a::DiskArrayStack{<:Any,N,<:Any,NO},v,i::AbstractVector...) where {N,NO}
-  innerinds = i[1:(N-NO)]
-
-  outerinds = i[(N-NO+1):N]
-  innercolon = map(_->(:), innerinds)
-  iiter = CartesianIndices(outerinds)
-  inum  = CartesianIndices(size(iiter))
-  foreach(zip(iiter,inum)) do (iouter,iret)
-    arnow = a.arrays[iouter]
-    if isa(arnow, AbstractDiskArray)
-      writeblock!(a.arrays[iouter],view(v,innercolon...,iret.I...),innerinds...)
-    else
-      arnow[innerinds...] = aout[innercolon...,iret.I...]
-    end
-  end
-  nothing
-end
-
-function Base.view(a::DiskArrayStack{<:Any,N,<:Any,NO},i...) where {N,NO}
-    iinner = i[1:(N-NO)]
-    ashort = map(view(a.arrays,i[(N-NO+1):N]...)) do ai
-        view(ai,iinner...)
-    end
-    if ndims(ashort)==0
-      ashort[]
-    else
-      diskstack(ashort)
-    end
-end
 
 
 """

@@ -28,9 +28,8 @@ function NetCDFCube(file,variable)
     end
     end
     mv = get(v.atts,"missing_value",nothing)
-    et = mv === nothing ? eltype(v) : Union{Missing,eltype(v)}
     vmapped = (x->x==mv ? missing : x).(v)
-    ESDLArray(cubeaxes,variable, Dict{Any,Any}())
+    ESDLArray(cubeaxes,vmapped, Dict{Any,Any}())
 end
 iscompressed(v::NetCDF.NcVar) = v.compress>0
 getCubeDes(v::NetCDF.NcVar)="NetCDF data cube"
