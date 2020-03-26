@@ -1,10 +1,6 @@
 module Axes
-export CubeAxis, QuantileAxis, TimeAxis, TimeHAxis, VariableAxis, LonAxis, LatAxis, CountryAxis,
-SpatialPointAxis,Axes,YearStepRange,CategoricalAxis,RangeAxis,axVal2Index,MSCAxis,
-ScaleAxis, axname, @caxis_str, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
-getOutAxis, ByInference, renameaxis!, axsym
 import NetCDF.NcDim
-import ..Cubes: caxes, _read, Cubes
+import ..Cubes: caxes, _read, Cubes, AbstractCubeData
 using Dates
 
 macro defineCatAxis(axname,eltype)
@@ -48,7 +44,7 @@ of the aliases:
 * `MSCAxis` time step inside a year (for seasonal statistics)
 
 """
-abstract type CubeAxis{T,S} <: AbstractCubeMem{T,1} end
+abstract type CubeAxis{T,S} <: AbstractCubeData{T,1} end
 
 Base.size(x::CubeAxis)=(length(x.values),)
 Base.size(x::CubeAxis,i)=i==1 ? length(x.values) : error("Axis has only a single dimension")

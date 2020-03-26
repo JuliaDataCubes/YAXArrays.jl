@@ -3,10 +3,11 @@ export mapCube
 import ..Cubes
 using ..ESDLTools
 using Distributed: pmap, @everywhere, workers, remotecall_fetch, myid, nprocs
-import ..Cubes: getAxis, cubechunks, iscompressed, chunkoffset,
+import ..Cubes: cubechunks, iscompressed, chunkoffset,
   CubeAxis, AbstractCubeData, ESDLArray,
-  caxes, findAxis, getsavefolder
-import ..Cubes.Axes: AxisDescriptor, axname, ByInference, axsym, getOutAxis
+  caxes, getsavefolder
+import ..Cubes.Axes: AxisDescriptor, axname, ByInference, axsym,
+  getOutAxis, getAxis, findAxis
 import ..Datasets: Dataset
 import ...ESDL
 import ...ESDL.workdir

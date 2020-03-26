@@ -1,8 +1,7 @@
 module ESDC
 import ..Cubes: Dataset, Cube
 import Zarr: S3Store, zopen, aws_config
-import Dates
-import Dates: now
+using Dates: Dates, now
 
 global aws, cubesdict
 

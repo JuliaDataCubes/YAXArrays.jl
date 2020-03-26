@@ -1,11 +1,7 @@
-import Shapefile
-import GeoInterface: AbstractMultiPolygon, AbstractPoint
-export cubefromshape
-import ..Cubes.Axes: get_bb, axisfrombb, CubeAxis
-import ...Cubes: AbstractCubeData
-import ...DAT: mapCube, InDims, OutDims
-import WeightedOnlineStats: WeightedMean
-import Dates: Day
+using Shapefile: Shapefile
+using GeoInterface: AbstractMultiPolygon, AbstractPoint
+using WeightedOnlineStats: WeightedMean
+using Dates: Day
 
 function getlabeldict(shapepath,labelsym,T,labelsleft)
   t = Shapefile.Table(shapepath)

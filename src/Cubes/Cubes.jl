@@ -76,7 +76,7 @@ abstract type AbstractSubCube{T,N} <: AbstractCubeData{T,N} end
 abstract type AbstractCubeMem{T,N} <: AbstractCubeData{T,N} end
 
 include("Axes.jl")
-using .Axes
+using .Axes: CubeAxis, RangeAxis, CategoricalAxis
 
 mutable struct CleanMe
   path::String
@@ -307,7 +307,6 @@ function Base.show(io::IO,a::CategoricalAxis)
     end
   end
 end
-Base.show(io::IO,a::SpatialPointAxis)=print(io,"Spatial points axis with ",length(a.values)," points")
 
 include("TransformedCubes.jl")
 #include("ZarrCubes.jl")

@@ -1,10 +1,9 @@
 module Proc
-export cubeAnomalies, removeMSC, gapFillMSC, normalizeTS, simpleAnomalies,
-  sampleLandPoints, getMSC, filterTSFFT, getNpY, getMedSC, DATfitOnline,
-  spatialinterp, extractLonLats, cubePCA, rotation_matrix, transformPCA, explained_variance,exportcube,
-  gapfillpoly
-import ..Cubes: ESDLArray, AbstractCubeData, getAxis
-import ..DAT: mapCube
+using ..Cubes: ESDLArray, AbstractCubeData, saveCube, check_overwrite,
+  getsavefolder, cubechunks, caxes, axname
+using ..Cubes.Axes: getAxis, findAxis, CategoricalAxis, axVal2Index,
+  RangeAxis, get_bb, axisfrombb, CubeAxis
+using ..DAT: mapCube, InDims, OutDims, NValid, AnyMissing
 
 import Dates.year
 """

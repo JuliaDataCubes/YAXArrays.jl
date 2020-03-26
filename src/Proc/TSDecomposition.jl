@@ -1,10 +1,6 @@
-module TSDecomposition
-export filterTSFFT
-import ...Cubes: AbstractCubeData
-import ...DAT: mapCube, InDims, OutDims, AnyMissing
-import FFTW: plan_fft
-import Statistics: mean
-import Distributed: workers, remotecall, fetch, myid
+using FFTW: plan_fft
+using Statistics: mean
+using Distributed: workers, remotecall, fetch, myid
 
 function linreg(x,y)
   b = cov(x,y)/var(x)

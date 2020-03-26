@@ -1,11 +1,5 @@
-module MSC
-export removeMSC, gapFillMSC, getMSC, getMedSC, gapfillpoly
-import Polynomials: polyfit
-import ..Proc: getNpY
-import ...Cubes: AbstractCubeData
-import ...Cubes.Axes: MSCAxis
-import ...DAT: mapCube, InDims, OutDims
-import Statistics: quantile!
+using Polynomials: polyfit
+using Statistics: quantile!
 
 function removeMSC(aout,ain,NpY::Integer)
     #Start loop through all other variables
@@ -208,7 +202,4 @@ function fillmsc(imscstart::Integer,msc::AbstractVector,nmsc::AbstractVector,xin
     imsc=imsc==NpY ? 1 : imsc+1 # Increase msc time step counter
   end
   for i in 1:NpY msc[i] = nmsc[i] > 0 ? msc[i]/nmsc[i] : missing end # Get MSC by dividing by number of points
-end
-
-
 end

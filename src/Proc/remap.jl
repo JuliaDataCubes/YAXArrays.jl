@@ -1,8 +1,3 @@
-module ReSample
-import ...Cubes: AbstractCubeData
-import ...DAT: mapCube, InDims, OutDims
-import ...Cubes.Axes: CubeAxis, getAxis, LonAxis, LatAxis
-export spatialinterp
 using DiskArrayTools: InterpolatedDiskArray
 
 """
@@ -56,5 +51,3 @@ function getinterpinds(r1,r2)
     ind
   end
 end
-
-end #module

@@ -1,10 +1,6 @@
-module Stats
-export normalizeTS, timeVariance, timeMean, spatialMean
-import ...DAT: NValid, mapCube, mapCube, InDims, OutDims
-import ...Cubes: AbstractCubeData, findAxis, axname
-import StatsBase: pweights
-import Statistics: quantile, mean, std
-import WeightedOnlineStats: WeightedAdaptiveHist
+using StatsBase: pweights
+using Statistics: quantile, mean, std
+using WeightedOnlineStats: WeightedAdaptiveHist
 
 
 """
@@ -54,6 +50,4 @@ function cquantile(xout,xin,p)
   d = xin[nonzero,1]
   w = Float64.(xin[nonzero,2])
   xout[:] = quantile(d,pweights(w),p)
-end
-
 end
