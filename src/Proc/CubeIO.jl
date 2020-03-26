@@ -1,13 +1,56 @@
-module CubeIO
-
 using Base.Iterators: Iterators, product
 using Zarr: ZArray, NoCompressor
-using NetCDF: ncwrite, NcDim, NcVar, ncread, create, nccreate, ncputatt, sync
-export exportcube, extractLonLats
-import ...Cubes: saveCube, check_overwrite, getsavefolder, cubechunks, AbstractCubeData, caxes,
-  axname
-import ...Cubes.Axes: findAxis, CategoricalAxis, axVal2Index, RangeAxis
-import ...DAT: InDims, OutDims, mapCube
+using NetCDF: ncwrite, NcDim, NcVar, ncread, create, nccreate,
+  ncputatt, sync
+
+
+"""
+    saveCube(cube,name::String)
+
+Save a [`ZarrCube`](@ref) or [`CubeMem`](@ref) to the folder `name` in the ESDL working directory.
+
+See also [`loadCube`](@ref)
+"""
+function saveCube(c::AbstractCubeData, name::AbstractString; overwrite = false, chunksize = cubechunks(c), compressor=NoCompressor(), max_cache=1e8)
+  allax = caxes(c)
+  firstaxes = findall(i->i>1,chunksize)
+  lastaxes = setdiff(1:length(allax),firstaxes)
+  allax = allax[[firstaxes;lastaxes]]
+  dl = cumprod(length.(caxes(c)))
+  isplit = findfirst(i->i>max_cache/sizeof(eltype(c)),dl)
+  isplit isa Nothing && (isplit=length(dl)+1)
+  forcesingle = (isplit+1)<length(firstaxes)
+  axn = axname.(allax[1:isplit-1])
+  indims = InDims(axn...)
+  path = getsavefolder(name)
+  check_overwrite(path,overwrite)
+  outdims = OutDims(axn..., retcubetype=ZArray,chunksize=chunksize[1:length(axn)], compressor=compressor, path = path)
+  if forcesingle
+    nprocs()>1 && println("Forcing single core processing because of bad chunk size")
+    o = mapCube(copyto!,c,indims=indims, outdims=outdims,ispar=false,max_cache=max_cache)
+  else
+    o = mapCube(copyto!,c,indims=indims, outdims=outdims,max_cache=max_cache)
+  end
+end
+
+
+# function saveCube(z::ZArrayCube, name::AbstractString; overwrite=false, chunksize=nothing, compressor=NoCompressor())
+#   if z.subset === nothing && !z.persist && isa(z.a.storage, DirectoryStore) && chunksize==nothing && isa(compressor, NoCompressor)
+#     newfolder = joinpath(workdir[], name)
+#     check_overwrite(newfolder, overwrite)
+#     # the julia cp implentation currently can only deal with files <2GB
+#     # the issue is:
+#     # https://github.com/JuliaLang/julia/issues/14574
+#     # mv(c.folder,newfolder)
+#     folder = splitdir(z.a.storage.folder)
+#     run(`mv $(folder[1]) $(newfolder)`)
+#     #TODO persist does not exist anymore, save metadata
+#     z.persist = true
+#     z.a = zopen(newfolder * "/layer")
+#   else
+#     invoke(saveCube,Tuple{AbstractCubeData, AbstractString},z,name;overwrite=overwrite, chunksize=chunksize===nothing ? cubechunks(z) : chunksize, compressor=compressor)
+#   end
+# end
 
 
 
@@ -105,30 +148,6 @@ function exportcube(r::AbstractCubeData,filename::String;priorities = Dict("LON"
   nothing
 end
 
-
-
-function saveCube(c::AbstractCubeData, name::AbstractString; overwrite = false, chunksize = cubechunks(c), compressor=NoCompressor(), max_cache=1e8)
-  allax = caxes(c)
-  firstaxes = findall(i->i>1,chunksize)
-  lastaxes = setdiff(1:length(allax),firstaxes)
-  allax = allax[[firstaxes;lastaxes]]
-  dl = cumprod(length.(caxes(c)))
-  isplit = findfirst(i->i>max_cache/sizeof(eltype(c)),dl)
-  isplit isa Nothing && (isplit=length(dl)+1)
-  forcesingle = (isplit+1)<length(firstaxes)
-  axn = axname.(allax[1:isplit-1])
-  indims = InDims(axn...)
-  path = getsavefolder(name)
-  check_overwrite(path,overwrite)
-  outdims = OutDims(axn..., retcubetype=ZArray,chunksize=chunksize[1:length(axn)], compressor=compressor, path = path)
-  if forcesingle
-    nprocs()>1 && println("Forcing single core processing because of bad chunk size")
-    o = mapCube(copyto!,c,indims=indims, outdims=outdims,ispar=false,max_cache=max_cache)
-  else
-    o = mapCube(copyto!,c,indims=indims, outdims=outdims,max_cache=max_cache)
-  end
-end
-
 global const projection = Dict(
 "grid_mapping_name" => "transverse_mercator",
 "longitude_of_central_meridian" => -9. ,
@@ -167,5 +186,3 @@ global const epsg4326=Dict(
   "spatial_ref" => "GEOGCS[\"WGS 84\",DATUM[\"WGS_1984\",SPHEROID[\"WGS 84\",6378137,298.257223563,AUTHORITY[\"EPSG\",\"7030\"]],AUTHORITY[\"EPSG\",\"6326\"]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433],AUTHORITY[\"EPSG\",\"4326\"]]",
   "GeoTransform" => "-98.68712696894481 0.0001796630568239077 0 20.69179551612753 0 -0.0001796630568239077 "
 )
-
-end

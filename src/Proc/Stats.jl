@@ -1,5 +1,6 @@
 using StatsBase: pweights
-using Statistics: quantile, mean, std
+using Statistics: mean, std
+import Statistics: quantile
 using WeightedOnlineStats: WeightedAdaptiveHist
 
 

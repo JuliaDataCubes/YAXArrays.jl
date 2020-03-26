@@ -1,9 +1,9 @@
 module Proc
-using ..Cubes: ESDLArray, AbstractCubeData, saveCube, check_overwrite,
-  getsavefolder, cubechunks, caxes, axname
+using ..Cubes: ESDLArray, AbstractCubeData, cubechunks, caxes
 using ..Cubes.Axes: getAxis, findAxis, CategoricalAxis, axVal2Index,
-  RangeAxis, get_bb, axisfrombb, CubeAxis
-using ..DAT: mapCube, InDims, OutDims, NValid, AnyMissing
+  RangeAxis, get_bb, axisfrombb, CubeAxis, axname
+using ..DAT: mapCube, InDims, OutDims, NValid, AnyMissing, getsavefolder
+using ..Datasets: check_overwrite
 
 import Dates.year
 """
@@ -25,9 +25,5 @@ include("CubeIO.jl")
 include("TSDecomposition.jl")
 include("remap.jl")
 include("Shapes.jl")
-using .ReSample, .MSC, .Stats, .CubeIO,
-  .TSDecomposition
-
-
 
 end

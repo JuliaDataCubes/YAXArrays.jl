@@ -3,10 +3,10 @@ The functions provided by ESDL are supposed to work on different types of cubes.
 Data types that
 """
 module Cubes
-using DiskArrays: DiskArrays
+using DiskArrays: DiskArrays, eachchunk
 using Distributed: myid
 using Dates: TimeType
-using IntervalSets: Interval
+using IntervalSets: Interval, (..)
 using Base.Iterators: take, drop
 using ..ESDL: workdir
 
@@ -76,7 +76,8 @@ abstract type AbstractSubCube{T,N} <: AbstractCubeData{T,N} end
 abstract type AbstractCubeMem{T,N} <: AbstractCubeData{T,N} end
 
 include("Axes.jl")
-using .Axes: CubeAxis, RangeAxis, CategoricalAxis
+using .Axes: CubeAxis, RangeAxis, CategoricalAxis, findAxis, getAxis, axVal2Index,
+  axname, axsym, axVal2Index_lb, axVal2Index_ub
 
 mutable struct CleanMe
   path::String
@@ -263,49 +264,58 @@ function Base.show(io::IO,c::AbstractCubeData)
 end
 
 
+using Markdown
+struct ESDLVarInfo
+  project::String
+  longname::String
+  units::String
+  url::String
+  comment::String
+  reference::String
+end
+Base.isless(a::ESDLVarInfo, b::ESDLVarInfo) = isless(string(a.project, a.longname),string(b.project, b.longname))
 
-function check_overwrite(newfolder, overwrite)
-  if isdir(newfolder) || isfile(newfolder)
-    if overwrite
-      rm(newfolder, recursive=true)
-    else
-      error("$(newfolder) already exists, please pick another name or use `overwrite=true`")
-    end
-  end
+import Base.show
+function show(io::IO,::MIME"text/markdown",v::ESDLVarInfo)
+    un=v.units
+    url=v.url
+    re=v.reference
+    pr = v.project
+    ln = v.longname
+    co = v.comment
+    mdt=md"""
+### $ln
+*$(co)*
+
+* **Project** $(pr)
+* **units** $(un)
+* **Link** $(url)
+* **Reference** $(re)
+"""
+    mdt[3].items[1][1].content[3]=[" $pr"]
+    mdt[3].items[2][1].content[3]=[" $un"]
+    mdt[3].items[3][1].content[3]=[" $url"]
+    mdt[3].items[4][1].content[3]=[" $re"]
+    show(io,MIME"text/markdown"(),mdt)
 end
-function getsavefolder(name)
-  if isempty(name)
-    name = tempname()[2:end]
-  end
-  isabspath(name) ? name : joinpath(workdir[],name)
-end
+show(io::IO,::MIME"text/markdown",v::Vector{ESDLVarInfo})=foreach(x->show(io,MIME"text/markdown"(),x),v)
+using Zarr: zname
 
 """
-    saveCube(cube,name::String)
+    cubeinfo(cube)
 
-Save a [`ZarrCube`](@ref) or [`CubeMem`](@ref) to the folder `name` in the ESDL working directory.
-
-See also [`loadCube`](@ref)
+Shows the metadata and citation information on variables contained in a cube.
 """
-function saveCube end
-
-
-Base.show(io::IO,a::RangeAxis)=print(io,rpad(Axes.axname(a),20," "),"Axis with ",length(a)," Elements from ",first(a.values)," to ",last(a.values))
-function Base.show(io::IO,a::CategoricalAxis)
-  print(io,rpad(Axes.axname(a),20," "), "Axis with ", length(a), " elements: ")
-  if length(a.values)<10
-    for v in a.values
-      print(io,v," ")
-    end
-  else
-    for v in take(a.values,2)
-      print(io,v," ")
-    end
-    print(io,".. ")
-    for v in drop(a.values,length(a.values)-2)
-      print(io,v," ")
-    end
-  end
+function cubeinfo(ds::ESDLArray, variable="unknown")
+    p = ds.properties
+    vi=ESDLVarInfo(
+      get(p,"project_name", "unknown"),
+      get(p,"long_name",variable),
+      get(p,"units","unknown"),
+      get(p,"url","no link"),
+      get(p,"comment",variable),
+      get(p,"references","no reference")
+    )
 end
 
 include("TransformedCubes.jl")

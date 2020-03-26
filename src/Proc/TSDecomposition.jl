@@ -103,4 +103,3 @@ function filterTSFFT(outar::AbstractMatrix,y::AbstractVector, annfreq::Number,
         outar[i,4]=real(fy[i])
     end
 end
-end

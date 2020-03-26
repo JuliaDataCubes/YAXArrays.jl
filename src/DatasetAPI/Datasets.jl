@@ -1,7 +1,8 @@
 module Datasets
 import Zarr: ZGroup, zopen
-import ..Cubes.Axes: axsym, CubeAxis, findAxis, CategoricalAxis, RangeAxis
-import ..Cubes: AbstractCubeData, ESDLArray
+import ..Cubes.Axes: axsym, axname, CubeAxis, findAxis, CategoricalAxis, RangeAxis
+import ..Cubes: AbstractCubeData, ESDLArray, concatenateCubes, CleanMe
+import ...ESDL
 using DataStructures: OrderedDict, counter
 using Dates: Day,Hour,Minute,Second,Month,Year, Date, DateTime, TimeType
 using IntervalSets: Interval, (..)
@@ -111,9 +112,9 @@ function toaxis(dimname,g,offs,len)
       return RangeAxis(dimname, 1:len)
     end
     ar = g[dimname]
-    if axname=="Time" && haskey(ar.attrs,"units")
+    if uppercase(axname)=="TIME" && haskey(ar.attrs,"units")
         tsteps = timedecode(ar[:],ar.attrs["units"],get(ar.attrs,"calendar","standard"))
-        TimeAxis(tsteps[offs+1:end])
+        RangeAxis("Time",tsteps[offs+1:end])
     elseif haskey(ar.attrs,"_ARRAYVALUES")
       vals = ar.attrs["_ARRAYVALUES"]
       CategoricalAxis(axname,vals)
@@ -218,13 +219,7 @@ function createDataset(DS, axlist;
   datasetaxis = "Variable",
   kwargs...
   )
-  if isdir(folder) || isfile(folder)
-    if overwrite
-      rm(folder,recursive=true)
-    else
-      error("$folder alrSeady exists, set overwrite=true to overwrite.")
-    end
-  end
+  check_overwrite(path, overwrite)
   splice_generic(x::AbstractArray,i) = [x[1:(i-1)];x[(i+1:end)]]
   splice_generic(x::Tuple,i)         = (x[1:(i-1)]...,x[(i+1:end)]...)
   myar = create_empty(DS, path)
@@ -253,19 +248,29 @@ function createDataset(DS, axlist;
   else
     cubenames = groupaxis.values
   end
-  cleaner = persist ? nothing : CleanMe(folder,false)
+  cleaner = persist ? nothing : CleanMe(path,false)
   allcubes = map(cubenames) do cn
-    add_var(myar, T, cn, map(length,axlist), map(axname,axlist), atts; chunksize = chunksize, kwargs...)
+    v = add_var(myar, T, cn, map(length,axlist), map(axname,axlist), attr; chunksize = chunksize, kwargs...)
     if subs !== nothing
       za = view(za,subs...)
     end
-
-    ESDLArray(axlist,za,propfromattr(attr),cleaner=cleaner)
+    ESDLArray(axlist,v,propfromattr(attr),cleaner=cleaner)
   end
+  @show groupaxis
   if groupaxis===nothing
     return allcubes[1]
   else
     return concatenateCubes(allcubes,groupaxis)
+  end
+end
+
+function check_overwrite(newfolder, overwrite)
+  if isdir(newfolder) || isfile(newfolder)
+    if overwrite
+      rm(newfolder, recursive=true)
+    else
+      error("$(newfolder) already exists, please pick another name or use `overwrite=true`")
+    end
   end
 end
 
@@ -312,6 +317,7 @@ end
 defaultfillval(T::Type{<:AbstractFloat}) = convert(T,1e32)
 defaultfillval(::Type{Float16}) = Float16(3.2e4)
 defaultfillval(T::Type{<:Integer}) = typemax(T)
+defaultfillval(T::Type{<:AbstractString}) = ""
 
 #The good old Cube function:
 Cube(s::String;kwargs...) = Cube(zopen(s,"r");kwargs...)

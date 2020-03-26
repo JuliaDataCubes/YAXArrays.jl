@@ -5,10 +5,10 @@ using ..ESDLTools
 using Distributed: pmap, @everywhere, workers, remotecall_fetch, myid, nprocs
 import ..Cubes: cubechunks, iscompressed, chunkoffset,
   CubeAxis, AbstractCubeData, ESDLArray,
-  caxes, getsavefolder
+  caxes
 import ..Cubes.Axes: AxisDescriptor, axname, ByInference, axsym,
   getOutAxis, getAxis, findAxis
-import ..Datasets: Dataset
+import ..Datasets: Dataset, ZArrayCube
 import ...ESDL
 import ...ESDL.workdir
 import Zarr: ZArray
@@ -21,9 +21,6 @@ macro debug_print(e)
   debugDAT[1] && return(:(println($e)))
   :()
 end
-
-const hasparprogress=[false]
-const progresscolor=[:cyan]
 
 include("registration.jl")
 
@@ -316,6 +313,13 @@ function getchunkoffsets(dc::DATConfig)
   (co...,)
 end
 
+function getsavefolder(name)
+  if isempty(name)
+    name = tempname()[2:end]
+  end
+  occursin("/","name") ? name : joinpath(workdir[],name)
+end
+
 updatears(clist,r,f) = foreach(clist) do ic
   updatear(f,r, ic.cube,length(ic.axesSmall), ic.loopinds, ic.handle )
 end
@@ -334,6 +338,8 @@ function updatear(f,r,cube,ncol,loopinds,handle)
     if f == :read
       handle[:] = cube.data[indsall...]
     else
+      @show indsall
+      @show typeof(cube.data)
       cube.data[indsall...] = handle
     end
   end

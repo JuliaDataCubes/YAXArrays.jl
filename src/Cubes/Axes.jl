@@ -2,6 +2,7 @@ module Axes
 import NetCDF.NcDim
 import ..Cubes: caxes, _read, Cubes, AbstractCubeData
 using Dates
+using Base.Iterators: take, drop
 
 macro defineCatAxis(axname,eltype)
   newname=esc(Symbol(string(axname,"Axis")))
@@ -102,6 +103,24 @@ RangeAxis(s::AbstractString,v)=RangeAxis(Symbol(s),v)
 Base.length(a::CubeAxis)=length(a.values)
 
 MSCAxis(n::Int)=MSCAxis(DateTime(1900):Day(ceil(Int,366/n)):DateTime(1900,12,31,23,59,59))
+
+Base.show(io::IO,a::RangeAxis)=print(io,rpad(Axes.axname(a),20," "),"Axis with ",length(a)," Elements from ",first(a.values)," to ",last(a.values))
+function Base.show(io::IO,a::CategoricalAxis)
+  print(io,rpad(Axes.axname(a),20," "), "Axis with ", length(a), " elements: ")
+  if length(a.values)<10
+    for v in a.values
+      print(io,v," ")
+    end
+  else
+    for v in take(a.values,2)
+      print(io,v," ")
+    end
+    print(io,".. ")
+    for v in drop(a.values,length(a.values)-2)
+      print(io,v," ")
+    end
+  end
+end
 
 caxes(x::CubeAxis)=CubeAxis[x]
 

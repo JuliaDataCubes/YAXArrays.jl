@@ -30,6 +30,7 @@ ESDLdir(x::String)=ESDLDefaults.workdir[]=x
 recalculate(x::Bool)=ESDLDefaults.recal[]=x
 recalculate()=ESDLDefaults.recal[]
 ESDLdir()=ESDLDefaults.workdir[]
+export ESDLdir
 
 include("ESDLTools.jl")
 include("Cubes/Cubes.jl")
@@ -38,17 +39,19 @@ include("DAT/DAT.jl")
 include("Proc/Proc.jl")
 
 @reexport using Dates: Date, DateTime
-export ESDLdir
-@reexport using .Cubes: Cube, CubeMem, CubeAxis, saveCube,
-        RangeAxis, CategoricalAxis, cubeinfo, splitdim, getAxis,
-        concatenateCubes, caxes, subsetcube, renameaxis! #From Cube module
-@reexport using .DAT: mapCube, getAxis, InDims, OutDims, (..), Dataset, S3Cube,
+@reexport using IntervalSets: (..)
+@reexport using .Cubes: cubeinfo, concatenateCubes, caxes, subsetcube  #From Cube module
+@reexport using .Cubes.Axes: CubeAxis, RangeAxis, CategoricalAxis,
+  getAxis,renameaxis!
+
+@reexport using .DAT: mapCube, getAxis, InDims, OutDims, Dataset,
       CubeTable, cubefittable, fittable #From DAT module
 @reexport using .Proc: removeMSC, gapFillMSC,normalizeTS,
-  getMSC, filterTSFFT, getNpY,
+  getMSC, filterTSFFT, getNpY,saveCube,
   getMedSC, extractLonLats, cubefromshape,
   exportcube, gapfillpoly #From Proc module
-@reexport using ESDLTools: @loadOrGenerate # from ESDL Tools
+@reexport using .Datasets: Dataset, Cube
+@reexport using .ESDLTools: @loadOrGenerate # from ESDL Tools
 
 
 #include("precompile.jl")
