@@ -28,7 +28,7 @@ const ZArrayCube{T,M} = ESDLArray{T,M,<:ZArray} where {T,M}
 
 
 function ZArrayCube(axlist; folder = tempname(), kwargs...)
-  createDataset(ZarrDataset, axlist; path = folder, kwargs...)
+  createdataset(ZarrDataset, axlist; path = folder, kwargs...)
 end
 
 

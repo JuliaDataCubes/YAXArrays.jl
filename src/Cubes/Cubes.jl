@@ -103,7 +103,7 @@ end
 
 An in-memory data cube. It is returned by applying `mapCube` when
 the output cube is small enough to fit in memory or by explicitly calling
-[`readCubeData`](@ref) on any type of cube.
+[`readcubedata`](@ref) on any type of cube.
 
 ### Fields
 
@@ -115,13 +115,13 @@ struct ESDLArray{T,N,A<:AbstractArray{T,N},AT} <: AbstractCubeData{T,N}
   axes::AT
   data::A
   properties::Dict{String}
-  cleaner::Union{CleanMe,Nothing}
+  cleaner::Vector{CleanMe}
 end
 
-ESDLArray(axes,data,properties=Dict{String,Any}(); cleaner=nothing) = ESDLArray(axes,data,properties, cleaner)
+ESDLArray(axes,data,properties=Dict{String,Any}(); cleaner=CleanMe[]) = ESDLArray(axes,data,properties, cleaner)
 Base.size(a::ESDLArray) = size(a.data)
 Base.size(a::ESDLArray,i::Int) = size(a.data,i)
-Base.permutedims(c::ESDLArray,p)=ESDLArray(c.axes[collect(p)],permutedims(c.data,p),c.properties)
+Base.permutedims(c::ESDLArray,p)=ESDLArray(c.axes[collect(p)],permutedims(c.data,p),c.properties,c.cleaner)
 caxes(c::ESDLArray)=c.axes
 cubeproperties(c::ESDLArray)=c.properties
 iscompressed(c::ESDLArray)=iscompressed(c.data)
@@ -157,7 +157,7 @@ function common_offset(a)
     length(allengths)<3 ? 0 : allengths[2]-allengths[1]
   end
 end
-readcubedata(c::ESDLArray)=ESDLArray(c.axes,Array(c.data),c.properties,nothing)
+readcubedata(c::ESDLArray)=ESDLArray(c.axes,Array(c.data),c.properties,CleanMe[])
 
 # function getSubRange(c::AbstractArray,i...;write::Bool=true)
 #   length(i)==ndims(c) || error("Wrong number of view arguments to getSubRange. Cube is: $c \n indices are $i")

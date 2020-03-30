@@ -5,13 +5,16 @@ using NetCDF: ncwrite, NcDim, NcVar, ncread, create, nccreate,
 
 
 """
-    saveCube(cube,name::String)
+    savecube(cube,name::String)
 
-Save a [`ZarrCube`](@ref) or [`CubeMem`](@ref) to the folder `name` in the ESDL working directory.
-
-See also [`loadCube`](@ref)
+Save a [`ESDLArray`](@ref) to the folder `name` in the ESDL working directory.
 """
-function saveCube(c::AbstractCubeData, name::AbstractString; overwrite = false, chunksize = cubechunks(c), compressor=NoCompressor(), max_cache=1e8)
+function savecube(c::AbstractCubeData, name::AbstractString;
+  chunksize = cubechunks(c),
+  max_cache = 1e8,
+  backend = :zarr,
+  backendargs...
+)
   allax = caxes(c)
   firstaxes = findall(i->i>1,chunksize)
   lastaxes = setdiff(1:length(allax),firstaxes)
@@ -22,9 +25,7 @@ function saveCube(c::AbstractCubeData, name::AbstractString; overwrite = false, 
   forcesingle = (isplit+1)<length(firstaxes)
   axn = axname.(allax[1:isplit-1])
   indims = InDims(axn...)
-  path = getsavefolder(name)
-  check_overwrite(path,overwrite)
-  outdims = OutDims(axn..., retcubetype=ZArray,chunksize=chunksize[1:length(axn)], compressor=compressor, path = path)
+  outdims = OutDims(axn..., backend=backend,chunksize=chunksize[1:length(axn)], path = name; backendargs...)
   if forcesingle
     nprocs()>1 && println("Forcing single core processing because of bad chunk size")
     o = mapCube(copyto!,c,indims=indims, outdims=outdims,ispar=false,max_cache=max_cache)
@@ -32,7 +33,6 @@ function saveCube(c::AbstractCubeData, name::AbstractString; overwrite = false, 
     o = mapCube(copyto!,c,indims=indims, outdims=outdims,max_cache=max_cache)
   end
 end
-
 
 # function saveCube(z::ZArrayCube, name::AbstractString; overwrite=false, chunksize=nothing, compressor=NoCompressor())
 #   if z.subset === nothing && !z.persist && isa(z.a.storage, DirectoryStore) && chunksize==nothing && isa(compressor, NoCompressor)

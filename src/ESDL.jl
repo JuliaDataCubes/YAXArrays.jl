@@ -40,18 +40,22 @@ include("Proc/Proc.jl")
 
 @reexport using Dates: Date, DateTime
 @reexport using IntervalSets: (..)
-@reexport using .Cubes: cubeinfo, concatenateCubes, caxes, subsetcube  #From Cube module
+@reexport using .Cubes: cubeinfo, concatenateCubes, caxes,
+  subsetcube, readcubedata
 @reexport using .Cubes.Axes: CubeAxis, RangeAxis, CategoricalAxis,
   getAxis,renameaxis!
 
 @reexport using .DAT: mapCube, getAxis, InDims, OutDims, Dataset,
       CubeTable, cubefittable, fittable #From DAT module
 @reexport using .Proc: removeMSC, gapFillMSC,normalizeTS,
-  getMSC, filterTSFFT, getNpY,saveCube,
+  getMSC, filterTSFFT, getNpY,savecube,
   getMedSC, extractLonLats, cubefromshape,
   exportcube, gapfillpoly #From Proc module
 @reexport using .Datasets: Dataset, Cube
 @reexport using .ESDLTools: @loadOrGenerate # from ESDL Tools
+
+
+@deprecate saveCube(data, filename) savecube(data,filename)
 
 
 #include("precompile.jl")

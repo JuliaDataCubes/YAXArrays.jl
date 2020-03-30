@@ -28,13 +28,16 @@ function concatenateCubes(cl,cataxis::CubeAxis)
   axlist=copy(caxes(cl[1]))
   T=eltype(cl[1])
   N=ndims(cl[1])
+  cleaners = CleanMe[]
+  append!(cleaners,cl[1].cleaner)
   for i=2:length(cl)
     all(caxes(cl[i]).==axlist) || error("All cubes must have the same axes, cube number $i does not match")
     eltype(cl[i])==T || error("All cubes must have the same element type, cube number $i does not match")
     ndims(cl[i])==N || error("All cubes must have the same dimension")
+    append!(cleaners,cl[i].cleaner)
   end
   props=mapreduce(cubeproperties,merge,cl,init=cubeproperties(cl[1]))
-  ESDLArray([axlist...,cataxis],diskstack([c.data for c in cl]),props)
+  ESDLArray([axlist...,cataxis],diskstack([c.data for c in cl]),props, cleaners)
 end
 function concatenateCubes(;kwargs...)
   cubenames = String[]

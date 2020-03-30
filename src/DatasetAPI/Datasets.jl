@@ -2,7 +2,7 @@ module Datasets
 import Zarr: ZGroup, zopen
 import ..Cubes.Axes: axsym, axname, CubeAxis, findAxis, CategoricalAxis, RangeAxis
 import ..Cubes: AbstractCubeData, ESDLArray, concatenateCubes, CleanMe
-import ...ESDL
+using ...ESDL: ESDL, ESDLDefaults
 using DataStructures: OrderedDict, counter
 using Dates: Day,Hour,Minute,Second,Month,Year, Date, DateTime, TimeType
 using IntervalSets: Interval, (..)
@@ -13,6 +13,12 @@ using NetCDF: NcFile
 include("interface.jl")
 include("zarr.jl")
 include("netcdf.jl")
+
+backendlist = Dict(
+  :zarr => ZarrDataset,
+  :netcdf => NetCDFDataset,
+  :array => Array,
+)
 
 struct Dataset
     cubes::OrderedDict{Symbol,AbstractCubeData}
@@ -152,7 +158,7 @@ function Dataset(g::DatasetBackend)
     end
     ar = get_var_handle(g,vname)
     att = get_var_attrs(g,vname)
-    allcubes[Symbol(vname)] = ESDLArray(iax,ar,propfromattr(att), cleaner=nothing)
+    allcubes[Symbol(vname)] = ESDLArray(iax,ar,propfromattr(att), cleaner=CleanMe[])
   end
   sdimlist = Dict(Symbol(k)=>v.ax for (k,v) in dimlist)
   Dataset(allcubes,sdimlist)
@@ -189,7 +195,7 @@ end
 
 
 """
-    function createDataset(DS::Type{<:DatasetBackend},axlist; kwargs...)
+    function createdataset(DS::Type{<:DatasetBackend},axlist; kwargs...)
 
 Creates a new datacube with axes specified in `axlist`. Each axis must be a subtype
 of `CubeAxis`. A new empty Zarr array will be created and can serve as a sink for
@@ -201,24 +207,25 @@ of `CubeAxis`. A new empty Zarr array will be created and can serve as a sink fo
 * `T=Union{Float32,Missing}` data type of the target cube
 * `chunksize = ntuple(i->length(axlist[i]),length(axlist))` chunk sizes of the array
 * `chunkoffset = ntuple(i->0,length(axlist))` offsets of the chunks
-* `compressor = NoCompressor()` compression type
 * `persist::Bool=true` shall the disk data be garbage-collected when the cube goes out of scope?
 * `overwrite::Bool=false` overwrite cube if it already exists
 * `properties=Dict{String,Any}()` additional cube properties
 * `fillvalue= T>:Missing ? defaultfillval(Base.nonmissingtype(T)) : nothing` fill value
 * `datasetaxis="Variable"` special treatment of a categorical axis that gets written into separate zarr arrays
 """
-function createDataset(DS, axlist;
-  path=tempname(),
+function createdataset(DS, axlist;
+  path="",
+  persist = false,
   T=Union{Float32,Missing},
   chunksize = ntuple(i->length(axlist[i]),length(axlist)),
   chunkoffset = ntuple(i->0,length(axlist)),
-  persist::Bool=true,
   overwrite::Bool=false,
   properties=Dict{String,Any}(),
   datasetaxis = "Variable",
   kwargs...
   )
+  persist = !isempty(path) || persist
+  path = getsavefolder(path, persist)
   check_overwrite(path, overwrite)
   splice_generic(x::AbstractArray,i) = [x[1:(i-1)];x[(i+1:end)]]
   splice_generic(x::Tuple,i)         = (x[1:(i-1)]...,x[(i+1:end)]...)
@@ -248,7 +255,8 @@ function createDataset(DS, axlist;
   else
     cubenames = groupaxis.values
   end
-  cleaner = persist ? nothing : CleanMe(path,false)
+  cleaner = CleanMe[]
+  persist || push!(cleaner,CleanMe(path,false))
   allcubes = map(cubenames) do cn
     v = add_var(myar, T, cn, map(length,axlist), map(axname,axlist), attr; chunksize = chunksize, kwargs...)
     if subs !== nothing
@@ -256,11 +264,19 @@ function createDataset(DS, axlist;
     end
     ESDLArray(axlist,v,propfromattr(attr),cleaner=cleaner)
   end
-  @show groupaxis
   if groupaxis===nothing
     return allcubes[1]
   else
     return concatenateCubes(allcubes,groupaxis)
+  end
+end
+
+function getsavefolder(name,persist)
+  if isempty(name)
+    name = persist ? split(tempname(),"/")[end] : tempname()[2:end]
+    joinpath(ESDLDefaults.workdir[],name)
+  else
+    occursin("/",name) ? name : joinpath(ESDLDefaults.workdir[],name)
   end
 end
 
@@ -278,7 +294,7 @@ function arrayfromaxis(p::DatasetBackend,ax::CubeAxis,offs)
     data, attr = dataattfromaxis(ax,offs)
     attr["_ARRAY_OFFSET"]=offs
     za = add_var(p, eltype(data), axname(ax), size(data), (axname(ax),), attr)
-    za[:] = data
+    za[:] = collect(data)
     za
 end
 

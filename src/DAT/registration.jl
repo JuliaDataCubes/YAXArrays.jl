@@ -92,51 +92,33 @@ Creates a description of an Output Data Cube for cube operations. Takes a single
   name (String), through an Axis type, or by passing a concrete axis.
 
 - `axisdesc`: List of input axis names
-- `genOut`: function to initialize the values of the output cube given its element type. Defaults to `zero`
-- `finalizeOut`: function to finalize the values of an output cube, defaults to identity.
-- `retCubeType`: sepcifies the type of the return cube, can be `CubeMem` to force in-memory, `TempCube` to force disk storage, or `"auto"` to let the system decide.
 - `chunksize`: Chunk size for the inner dimensions, a tuple of the same length as `axisdesc`, or `:input` to copy chunksizes from input cube axes or `:max` to not chunk the inner dimensions
 - `compressor`: A Zarr compressor for the specified output cube
-- `retCubeType`: sepcifies the type of the return cube, can be `CubeMem` to force in-memory, `ZArrayCube` to force disk storage, or `"auto"` to let the system decide.
+- `retcubetype`: sepcifies the type of the return cube, can be `CubeMem` to force in-memory, `ZArrayCube` to force disk storage, or `"auto"` to let the system decide.
 - `outtype`: force the output type to a specific type, defaults to `Any` which means that the element type of the first input cube is used
 """
 struct OutDims
   axisdesc
-  bcaxisdesc
-  genOut::Any
-  finalizeOut::Any
-  retCubeType::Any
+  backend::Symbol
+  backendargs
   update::Bool
   artype::ArTypeRepr
   chunksize::Any
-  compressor::Any
-  path::String
-  persist::Bool
   outtype::Union{Int,DataType}
 end
 function OutDims(axisdesc...;
-           bcaxisdesc=(),
-           genOut=zero,
-           finalizeOut=identity,
-           retcubetype=:auto,
+           backend=:auto,
            update=false,
            artype::ArTypeRepr=AsArray(),
            chunksize=ESDLDefaults.chunksize[],
-           compressor=ESDLDefaults.compressor[],
-           path="",
-           outtype=1)
-  descs = map(get_descriptor,axisdesc)
-  bcdescs = (map(get_descriptor,bcaxisdesc)...,)
+           outtype=1,
+           backendargs...)
+  descs = get_descriptor.(axisdesc)
   isa(artype,AsDataFrame) && length(descs)!=2 && error("DataFrame representation only possible if for 2D inner arrays")
   if !in(chunksize,(:input, :max)) && length(chunksize)!=length(axisdesc)
     error("Length of chunk sizes must equal number of inner Axes")
   end
-  if path == ""
-    persist = false
-  else
-    persist = true
-  end
-  OutDims(descs,bcdescs,genOut,finalizeOut,retcubetype,update,artype,chunksize,compressor,path,persist,outtype)
+  OutDims(descs,backend,backendargs,update,artype,chunksize,outtype)
 end
 
 registerDATFunction(a...;kwargs...)=@warn("Registration does not exist anymore, ignoring....")

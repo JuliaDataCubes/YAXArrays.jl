@@ -8,7 +8,7 @@ import ..Cubes: cubechunks, iscompressed, chunkoffset,
   caxes
 import ..Cubes.Axes: AxisDescriptor, axname, ByInference, axsym,
   getOutAxis, getAxis, findAxis
-import ..Datasets: Dataset, ZArrayCube
+import ..Datasets: Dataset, DatasetBackend, backendlist, createdataset
 import ...ESDL
 import ...ESDL.workdir
 import Zarr: ZArray
@@ -56,7 +56,6 @@ mutable struct OutputCube
   desc::OutDims                 #The description of the output axes as given by users or registration
   axesSmall::Array{CubeAxis}       #The list of output axes determined through the description
   allAxes::Vector{CubeAxis}        #List of all the axes of the cube
-  broadcastAxes::Vector{CubeAxis}         #List of axes that are broadcasted
   loopinds::Vector{Int}              #Index of the loop axes that are broadcasted for this output cube
   innerchunks
   workarray::Any
@@ -98,10 +97,9 @@ end
 getOutAxis(desc::Tuple,inAxes,incubes,pargs,f)=map(i->getOutAxis(i,inAxes,incubes,pargs,f),desc)
 function OutputCube(desc::OutDims,inAxes::Vector{CubeAxis},incubes,pargs,f)
   axesSmall     = getOutAxis(desc.axisdesc,inAxes,incubes,pargs,f)
-  broadcastAxes = getOutAxis(desc.bcaxisdesc,inAxes,incubes,pargs,f)
   outtype       = getOuttype(desc.outtype,incubes)
   innerchunks   = interpretoutchunksizes(desc,axesSmall,incubes)
-  OutputCube(nothing,desc,collect(CubeAxis,axesSmall),CubeAxis[],collect(CubeAxis,broadcastAxes),Int[],innerchunks,nothing,nothing,outtype)
+  OutputCube(nothing,desc,collect(CubeAxis,axesSmall),CubeAxis[],Int[],innerchunks,nothing,nothing,outtype)
 end
 
 """
@@ -271,9 +269,9 @@ function mapCube(fu::Function,
   @debug_print "Finalizing Output Cube"
 
   if length(dc.outcubes)==1
-    return dc.outcubes[1].desc.finalizeOut(dc.outcubes[1].cube)
+    return dc.outcubes[1].cube
   else
-    return (map(i->i.desc.finalizeOut(i.cube),dc.outcubes)...,)
+    return (map(i->i.cube,dc.outcubes)...,)
   end
 
 end
@@ -313,13 +311,6 @@ function getchunkoffsets(dc::DATConfig)
   (co...,)
 end
 
-function getsavefolder(name)
-  if isempty(name)
-    name = tempname()[2:end]
-  end
-  occursin("/","name") ? name : joinpath(workdir[],name)
-end
-
 updatears(clist,r,f) = foreach(clist) do ic
   updatear(f,r, ic.cube,length(ic.axesSmall), ic.loopinds, ic.handle )
 end
@@ -338,8 +329,6 @@ function updatear(f,r,cube,ncol,loopinds,handle)
     if f == :read
       handle[:] = cube.data[indsall...]
     else
-      @show indsall
-      @show typeof(cube.data)
       cube.data[indsall...] = handle
     end
   end
@@ -423,34 +412,34 @@ end
   end
 end
 
-function getRetCubeType(oc,ispar,max_cache)
-  eltype=Union{typeof(oc.desc.genOut(oc.outtype)),Missing}
+function getbackend(oc,ispar,max_cache)
+  eltype=Union{oc.outtype,Missing}
   outsize=sizeof(eltype)*(length(oc.allAxes)>0 ? prod(map(length,oc.allAxes)) : 1)
-  if string(oc.desc.retCubeType)=="auto"
+  rt = oc.desc.backend
+  if rt == :auto
     if ispar || outsize>max_cache
-      cubetype = ZArray
+      rt = :zarr
     else
-      cubetype = Array
+      rt = :array
     end
-  else
-    cubetype = oc.desc.retCubeType
   end
-  eltype,cubetype
+  eltype,backendlist[Symbol(rt)]
 end
 
-function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co) where T<:ZArray
+function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co;kwargs...) where T<:DatasetBackend
   cs_inner = oc.innerchunks
   cs = (cs_inner..., loopcachesize...)
-  folder = getsavefolder(oc.desc.path)
-  oc.cube=ZArrayCube(oc.allAxes,folder=folder,T=eltype,persist=oc.desc.persist,chunksize=cs,chunkoffset=co,compressor=oc.desc.compressor)
+  oc.cube=createdataset(T, oc.allAxes; chunksize=cs, chunkoffset=co, kwargs...)
 end
-function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co) where T<:Array
+function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co;kwargs...) where T<:Array
   newsize=map(length,oc.allAxes)
   outar=Array{eltype}(undef,newsize...)
-  genFun=oc.desc.genOut
-  map!(_->genFun(eltype),outar,1:length(outar))
+  map!(_->_zero(eltype),outar,1:length(outar))
   oc.cube = ESDLArray(oc.allAxes,outar)
 end
+_zero(T) = zero(T)
+_zero(T::Type{<:AbstractString}) = convert(T,"")
+
 
 function generateOutCubes(dc::DATConfig)
   co = getchunkoffsets(dc)
@@ -460,8 +449,8 @@ function generateOutCubes(dc::DATConfig)
   end
 end
 function generateOutCube(oc::OutputCube,ispar::Bool,max_cache,loopcachesize,co)
-  eltype,cubetype = getRetCubeType(oc,ispar,max_cache)
-  generateOutCube(cubetype,eltype,oc,loopcachesize,co)
+  eltype,cubetype = getbackend(oc,ispar,max_cache)
+  generateOutCube(cubetype,eltype,oc,loopcachesize,co;oc.desc.backendargs...)
 end
 
 dcg=nothing
@@ -509,10 +498,8 @@ function analyzeAxes(dc::DATConfig{NIN,NOUT}) where {NIN,NOUT}
   for outcube=dc.outcubes
     LoopAxesAdd=CubeAxis[]
     for (il,loopax) in enumerate(dc.LoopAxes)
-      if !in(loopax,outcube.broadcastAxes)
-        push!(outcube.loopinds,il)
-        push!(LoopAxesAdd,loopax)
-      end
+      push!(outcube.loopinds,il)
+      push!(LoopAxesAdd,loopax)
     end
     outcube.allAxes=CubeAxis[outcube.axesSmall;LoopAxesAdd]
   end

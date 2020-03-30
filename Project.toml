@@ -57,6 +57,7 @@ CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
 RDatasets = "ce6b1742-4840-55fa-b093-852dadbb1d8b"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+ESDC = "78cc4143-e042-47c7-b459-414d105d7ed4"
 
 [targets]
-test = ["Test", "CSV", "RDatasets", "StatsBase"]
+test = ["Test", "CSV", "RDatasets", "StatsBase","ESDC"]
