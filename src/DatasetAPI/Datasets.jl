@@ -126,7 +126,11 @@ function toaxis(dimname,g,offs,len)
       CategoricalAxis(axname,vals)
     else
       axdata = testrange(ar[offs+1:end])
-      RangeAxis(axname,axdata)
+      if eltype(axdata)<:AbstractString || (!issorted(axdata) && !issorted(axdata,rev=true))
+        CategoricalAxis(axname,axdata)
+      else
+        RangeAxis(axname,axdata)
+      end
     end
 end
 propfromattr(attr) = filter(i->i[1]!=="_ARRAY_DIMENSIONS",attr)
@@ -136,6 +140,8 @@ function testrange(x)
   r = range(first(x),last(x),length=length(x))
   all(i->isapprox(i...),zip(x,r)) ? r : x
 end
+
+testrange(x::AbstractArray{<:AbstractString}) = x
 
 function Dataset(g::DatasetBackend)
 
@@ -293,8 +299,7 @@ end
 function arrayfromaxis(p::DatasetBackend,ax::CubeAxis,offs)
     data, attr = dataattfromaxis(ax,offs)
     attr["_ARRAY_OFFSET"]=offs
-    za = add_var(p, eltype(data), axname(ax), size(data), (axname(ax),), attr)
-    za[:] = collect(data)
+    za = add_var(p, data, axname(ax), size(data), (axname(ax),), attr)
     za
 end
 

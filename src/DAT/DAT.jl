@@ -445,10 +445,10 @@ function generateOutCubes(dc::DATConfig)
   co = getchunkoffsets(dc)
   foreach(dc.outcubes) do c
     co2 = (zeros(Int,length(c.axesSmall))...,co...)
-    generateOutCube(c,dc.ispar,dc.max_cache,dc.loopcachesize,co2)
+    generateOutCube(c,Ref(dc.ispar),dc.max_cache,dc.loopcachesize,co2)
   end
 end
-function generateOutCube(oc::OutputCube,ispar::Bool,max_cache,loopcachesize,co)
+function generateOutCube(oc::OutputCube,ispar::Ref{Bool},max_cache,loopcachesize,co)
   eltype,cubetype = getbackend(oc,ispar,max_cache)
   generateOutCube(cubetype,eltype,oc,loopcachesize,co;oc.desc.backendargs...)
 end

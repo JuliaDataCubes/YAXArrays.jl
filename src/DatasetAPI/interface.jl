@@ -16,10 +16,11 @@ function get_var_dims(ds, name) end
 "Return a dict with the attributes for a given variable"
 function get_var_attrs(ds,name) end
 
+
+#Functions to be implemented for Dataset sinks
 "Initialize and return a handle to a new empty dataset"
 create_empty(T::Type{<:DatasetBackend},path) =
   error("create_empty not implemented for $T")
-#Functions to be implemented for Dataset sinks
 
 """
     add_var(ds, T, name, s, dimlist, atts)
@@ -29,3 +30,22 @@ name `name`, size `s` and depending on the dimensions `dimlist`
 given by a list of Strings. `atts` is a list of attributes.
 """
 function add_var(ds, T, name, s, dimlist, atts;kwargs...) end
+
+"""
+    allow_parallel_write(ds)
+
+Returns true if different chunks of a dataset can be written to by
+2 processes simultaneously
+"""
+allow_parallel_write(ds) = false
+
+
+#Fallback for writing array
+function add_var(ds,x::AbstractArray,name,s,dimlist,atts;kwargs...)
+  a = add_var(ds,eltype(x),name,s,dimlist,atts;kwargs...)
+  if ds isa NetCDFDataset
+    sleep(0.1)
+  end
+  a .= x
+  a
+end

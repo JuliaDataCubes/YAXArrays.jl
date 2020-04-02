@@ -25,6 +25,7 @@ function savecube(c::AbstractCubeData, name::AbstractString;
   forcesingle = (isplit+1)<length(firstaxes)
   axn = axname.(allax[1:isplit-1])
   indims = InDims(axn...)
+  @show isplit, axn
   outdims = OutDims(axn..., backend=backend,chunksize=chunksize[1:length(axn)], path = name; backendargs...)
   if forcesingle
     nprocs()>1 && println("Forcing single core processing because of bad chunk size")
