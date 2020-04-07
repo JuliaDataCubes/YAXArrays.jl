@@ -1,7 +1,7 @@
 module ESDLZarr
 import ...ESDL
 import Distributed: myid
-import Zarr: ZGroup, zopen, ZArray, NoCompressor, zgroup, zcreate, readblock!, S3Store, DirectoryStore
+import Zarr: ZGroup, zopen, ZArray, NoCompressor, zgroup, zcreate, S3Store, DirectoryStore
 import ESDL.Cubes: cubechunks, iscompressed, AbstractCubeData, getCubeDes,
   caxes,chunkoffset, gethandle, subsetcube, axVal2Index, findAxis, _read, S3Cube,
   _write, cubeproperties, ConcatCube, concatenateCubes, _subsetcube, workdir, readcubedata, saveCube,
@@ -208,7 +208,7 @@ function _read(z::ZArrayCube{<:Any,N,<:Any},thedata::AbstractArray{<:Any,N},r::C
   subinds = map(getindex,allinds.indices,z.subset)
   r2 = getsubinds(subinds,r.indices)
   thedata = maybereshapedata(thedata,r2)
-  readblock!(thedata,z.a,toRanges(r2))
+  readblock!(thedata,z.a,CartesianIndices(toRanges(r2)))
 end
 
 function _write(y::ZArrayCube{<:Any,N,<:Any,<:Nothing},thedata::AbstractArray,r::CartesianIndices{N}) where N
