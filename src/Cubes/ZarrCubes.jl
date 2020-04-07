@@ -4,7 +4,7 @@ import Distributed: myid
 import Zarr: ZGroup, zopen, ZArray, NoCompressor, zgroup, zcreate, readblock!, S3Store, DirectoryStore
 import ...Cubes: cubechunks, iscompressed, AbstractCubeData, getCubeDes,
   caxes,chunkoffset, subsetcube, axVal2Index, findAxis, S3Cube,
-  cubeproperties, concatenateCubes, _subsetcube, workdir, readcubedata, saveCube,
+  getattributes, concatenateCubes, _subsetcube, workdir, readcubedata, saveCube,
   getsavefolder, check_overwrite,ESDLArray, CleanMe
 import ESDL.Cubes.Axes: axname, CubeAxis, CategoricalAxis, RangeAxis, TimeAxis,
   axVal2Index_lb, axVal2Index_ub, get_step, getAxis

@@ -41,14 +41,14 @@ include("Proc/Proc.jl")
 @reexport using Dates: Date, DateTime
 @reexport using IntervalSets: (..)
 @reexport using .Cubes: cubeinfo, concatenateCubes, caxes,
-  subsetcube, readcubedata
+  subsetcube, readcubedata,renameaxis!
 @reexport using .Cubes.Axes: CubeAxis, RangeAxis, CategoricalAxis,
-  getAxis,renameaxis!
+  getAxis
 
 @reexport using .DAT: mapCube, getAxis, InDims, OutDims, Dataset,
       CubeTable, cubefittable, fittable #From DAT module
 @reexport using .Proc: removeMSC, gapFillMSC,normalizeTS,
-  getMSC, filterTSFFT, getNpY,savecube,
+  getMSC, filterTSFFT, getNpY,savecube,loadcube,rmcube,
   getMedSC, extractLonLats, cubefromshape,
   exportcube, gapfillpoly #From Proc module
 @reexport using .Datasets: Dataset, Cube
@@ -56,7 +56,7 @@ include("Proc/Proc.jl")
 
 
 @deprecate saveCube(data, filename) savecube(data,filename)
-
+@deprecate cubeproperties(x) getattributes(x)
 
 #include("precompile.jl")
 #_precompile_()

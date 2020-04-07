@@ -8,7 +8,8 @@ import ..Cubes: cubechunks, iscompressed, chunkoffset,
   caxes
 import ..Cubes.Axes: AxisDescriptor, axname, ByInference, axsym,
   getOutAxis, getAxis, findAxis
-import ..Datasets: Dataset, DatasetBackend, backendlist, createdataset
+import ..Datasets: Dataset, backendlist,
+  createdataset, allow_parallel_write
 import ...ESDL
 import ...ESDL.workdir
 import Zarr: ZArray
@@ -417,16 +418,20 @@ function getbackend(oc,ispar,max_cache)
   outsize=sizeof(eltype)*(length(oc.allAxes)>0 ? prod(map(length,oc.allAxes)) : 1)
   rt = oc.desc.backend
   if rt == :auto
-    if ispar || outsize>max_cache
+    if ispar[] || outsize>max_cache
       rt = :zarr
     else
       rt = :array
     end
   end
-  eltype,backendlist[Symbol(rt)]
+  b = backendlist[Symbol(rt)]
+  if !allow_parallel_write(b)
+    ispar[] = false
+  end
+  eltype,b
 end
 
-function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co;kwargs...) where T<:DatasetBackend
+function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co;kwargs...) where T
   cs_inner = oc.innerchunks
   cs = (cs_inner..., loopcachesize...)
   oc.cube=createdataset(T, oc.allAxes; chunksize=cs, chunkoffset=co, kwargs...)

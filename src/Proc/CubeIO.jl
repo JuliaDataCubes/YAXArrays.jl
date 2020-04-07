@@ -35,6 +35,17 @@ function savecube(c::AbstractCubeData, name::AbstractString;
   end
 end
 
+function loadcube(s)
+  Cube(getsavefolder(s))
+end
+
+function rmcube(s)
+  p = getsavefolder(s)
+  if isfile(p) || isdir(p)
+    rm(p, recursive=true)
+  end
+end
+
 # function saveCube(z::ZArrayCube, name::AbstractString; overwrite=false, chunksize=nothing, compressor=NoCompressor())
 #   if z.subset === nothing && !z.persist && isa(z.a.storage, DirectoryStore) && chunksize==nothing && isa(compressor, NoCompressor)
 #     newfolder = joinpath(workdir[], name)

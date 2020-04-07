@@ -1,8 +1,7 @@
-abstract type DatasetBackend end
 #Functions to be implemented for Dataset sources:
 
 "Test if a given variable name belongs to a dataset"
-Base.haskey(t::DatasetBackend, key) = error("haskey not implemented for $(typeof(t))")
+Base.haskey(t, key) = error("haskey not implemented for $(typeof(t))")
 
 "Return a DiskArray handle to a dataset"
 get_var_handle(ds, name) = ds[name]
@@ -19,7 +18,7 @@ function get_var_attrs(ds,name) end
 
 #Functions to be implemented for Dataset sinks
 "Initialize and return a handle to a new empty dataset"
-create_empty(T::Type{<:DatasetBackend},path) =
+create_empty(T::Type,path) =
   error("create_empty not implemented for $T")
 
 """

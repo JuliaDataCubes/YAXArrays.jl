@@ -93,8 +93,6 @@ The default constructor is:
 RangeAxis(s::Symbol,v::AbstractVector{T}) where T = RangeAxis{T,s,typeof(v)}(v)
 RangeAxis(s::AbstractString,v)=RangeAxis(Symbol(s),v)
 
-
-
 @defineRanAxis MSC TimeType
 @defineRanAxis Lon Number
 @defineRanAxis Lat Number
@@ -103,6 +101,15 @@ RangeAxis(s::AbstractString,v)=RangeAxis(Symbol(s),v)
 Base.length(a::CubeAxis)=length(a.values)
 
 MSCAxis(n::Int)=MSCAxis(DateTime(1900):Day(ceil(Int,366/n)):DateTime(1900,12,31,23,59,59))
+
+"""
+    axcopy(x,vals)
+
+Makes a copy of a `CubeAxis` with the values `vals`
+"""
+axcopy(ax::RangeAxis,vals) = RangeAxis(axname(ax),vals)
+axcopy(ax::CategoricalAxis,vals) = CategoricalAxis(axname(ax),vals)
+
 
 Base.show(io::IO,a::RangeAxis)=print(io,rpad(Axes.axname(a),20," "),"Axis with ",length(a)," Elements from ",first(a.values)," to ",last(a.values))
 function Base.show(io::IO,a::CategoricalAxis)
@@ -313,18 +320,6 @@ getSubRange(x::TimeAxis,i)=view(x,i),nothing
 
 renameaxis(r::RangeAxis{T,<:Any,V}, newname) where {T,V} = RangeAxis{T,Symbol(newname),V}(r.values)
 renameaxis(r::CategoricalAxis{T,<:Any,V}, newname) where {T,V} = CategoricalAxis{T,Symbol(newname),V}(r.values)
-function renameaxis!(c::AbstractCubeData,p::Pair)
-  i = findAxis(p[1],c.axes)
-  c.axes[i]=renameaxis(c.axes[i],p[2])
-  c
-end
-function renameaxis!(c::AbstractCubeData,p::Pair{<:Any,<:CubeAxis})
-  i = findAxis(p[1],c.axes)
-  i === nothing && throw(ArgumentError("Axis not found"))
-  length(c.axes[i].values) == length(p[2].values) || throw(ArgumentError("Length of replacement axis must equal length of old axis"))
-  c.axes[i]=p[2]
-  c
-end
 
 function _read(ax::CubeAxis, ar::AbstractArray, I::CartesianIndices)
   ar[:] .= ax.values[I.indices[1]]

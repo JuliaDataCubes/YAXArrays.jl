@@ -11,7 +11,7 @@ as a data sink:
 
 - `compress = -1` set the compression level for the NetCDF file
 """
-struct NetCDFDataset <: DatasetBackend
+struct NetCDFDataset
   filename::String
 end
 
@@ -55,6 +55,7 @@ function create_empty(::Type{NetCDFDataset}, path)
   NetCDFDataset(path)
 end
 
+allow_parallel_write(::NetCDFDataset) = false
 #
 #
 #

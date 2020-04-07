@@ -1,6 +1,6 @@
 using Zarr: ZArray, ZGroup, zgroup, zcreate, to_zarrtype
 
-struct ZarrDataset <: DatasetBackend
+struct ZarrDataset
   g::ZGroup
 end
 

@@ -93,7 +93,7 @@ function subsetcube(x::Dataset; var=nothing, kwargs...)
         Dataset(;map(ds->ds=>subsetcube(cc[ds];kwargs...),collect(keys(cc)))...)
     end
 end
-function collectdims(g::DatasetBackend)
+function collectdims(g)
   dlist = Set{Tuple{String,Int,Int}}()
   varnames = get_varnames(g)
   foreach(varnames) do k
@@ -143,8 +143,8 @@ end
 
 testrange(x::AbstractArray{<:AbstractString}) = x
 
-function Dataset(g::DatasetBackend)
-
+function open_dataset(g; driver = :all)
+  g = to_backend(g)
   isempty(get_varnames(g)) && throw(ArgumentError("Zarr Group does not contain datasets."))
   dimlist = collectdims(g)
   dnames  = string.(keys(dimlist))
@@ -170,7 +170,6 @@ function Dataset(g::DatasetBackend)
   Dataset(allcubes,sdimlist)
 end
 Base.getindex(x::Dataset;kwargs...) = subsetcube(x;kwargs...)
-Dataset(s::String;kwargs...) = Dataset(zopen(s);kwargs...)
 ESDLDataset(;kwargs...) = Dataset(ESDL.ESDLDefaults.cubedir[];kwargs...)
 
 
@@ -201,7 +200,7 @@ end
 
 
 """
-    function createdataset(DS::Type{<:DatasetBackend},axlist; kwargs...)
+    function createdataset(DS::Type,axlist; kwargs...)
 
 Creates a new datacube with axes specified in `axlist`. Each axis must be a subtype
 of `CubeAxis`. A new empty Zarr array will be created and can serve as a sink for
@@ -296,7 +295,7 @@ function check_overwrite(newfolder, overwrite)
   end
 end
 
-function arrayfromaxis(p::DatasetBackend,ax::CubeAxis,offs)
+function arrayfromaxis(p,ax::CubeAxis,offs)
     data, attr = dataattfromaxis(ax,offs)
     attr["_ARRAY_OFFSET"]=offs
     za = add_var(p, data, axname(ax), size(data), (axname(ax),), attr)
@@ -341,7 +340,7 @@ defaultfillval(T::Type{<:Integer}) = typemax(T)
 defaultfillval(T::Type{<:AbstractString}) = ""
 
 #The good old Cube function:
-Cube(s::String;kwargs...) = Cube(zopen(s,"r");kwargs...)
+Cube(s::String;kwargs...) = Cube(open_dataset(zopen(s,"r"));kwargs...)
 function Cube(;kwargs...)
   if !isempty(ESDL.ESDLDefaults.cubedir[])
     Cube(ESDL.ESDLDefaults.cubedir[];kwargs...)

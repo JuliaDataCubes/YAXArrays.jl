@@ -21,11 +21,6 @@ of `AbstractCubeData`
 """
 abstract type AbstractCubeData{T,N} end
 
-"""
-getSingVal reads a single point from the cube's data
-"""
-getSingVal(c::AbstractCubeData,a...)=error("getSingVal called in the wrong way with argument types $(typeof(c)), $(map(typeof,a))")
-
 Base.eltype(::AbstractCubeData{T}) where T = T
 Base.ndims(::AbstractCubeData{<:Any,N}) where N = N
 
@@ -34,12 +29,12 @@ Base.ndims(::AbstractCubeData{<:Any,N}) where N = N
 
 Given any type of `AbstractCubeData` returns a [`CubeMem`](@ref) from it.
 """
-function readcubedata(x::AbstractCubeData{T,N}) where {T,N}
+function readcubedata(x)
   s=size(x)
-  aout = zeros(Union{T,Missing},s...)
+  aout = zeros(eltype(x),s...)
   r=CartesianIndices(s)
   _read(x,aout,r)
-  CubeMem(collect(CubeAxis,caxes(x)),aout,cubeproperties(x))
+  CubeMem(collect(CubeAxis,caxes(x)),aout,getattributes(x))
 end
 
 """
@@ -49,16 +44,10 @@ function subsetcube end
 
 function _read end
 
-getsubset(x::AbstractCubeData) = x.subset === nothing ? ntuple(i->Colon(),ndims(x)) : x.subset
-#"""
-#Internal function to read a range from a datacube
-#"""
-#_read(c::AbstractCubeData,d,r::CartesianRange)=error("_read not implemented for $(typeof(c))")
-
 "Returns the axes of a Cube"
 caxes(c::AbstractCubeData)=error("Axes function not implemented for $(typeof(c))")
 
-cubeproperties(::AbstractCubeData)=Dict{String,Any}()
+getattributes(::AbstractCubeData)=Dict{String,Any}()
 
 "Chunks, if given"
 cubechunks(c::AbstractCubeData) = (size(c,1),map(i->1,2:ndims(c))...)
@@ -77,7 +66,7 @@ abstract type AbstractCubeMem{T,N} <: AbstractCubeData{T,N} end
 
 include("Axes.jl")
 using .Axes: CubeAxis, RangeAxis, CategoricalAxis, findAxis, getAxis, axVal2Index,
-  axname, axsym, axVal2Index_lb, axVal2Index_ub
+  axname, axsym, axVal2Index_lb, axVal2Index_ub, renameaxis
 
 mutable struct CleanMe
   path::String
@@ -117,20 +106,29 @@ struct ESDLArray{T,N,A<:AbstractArray{T,N},AT} <: AbstractCubeData{T,N}
   properties::Dict{String}
   cleaner::Vector{CleanMe}
 end
+include("cubeinterface.jl")
 
 ESDLArray(axes,data,properties=Dict{String,Any}(); cleaner=CleanMe[]) = ESDLArray(axes,data,properties, cleaner)
+function ESDLArray(x::AbstractArray)
+  ax = caxes(x)
+  props = getattributes(x)
+  ESDLArray(ax,x,props)
+end
 Base.size(a::ESDLArray) = size(a.data)
 Base.size(a::ESDLArray,i::Int) = size(a.data,i)
 Base.permutedims(c::ESDLArray,p)=ESDLArray(c.axes[collect(p)],permutedims(c.data,p),c.properties,c.cleaner)
 caxes(c::ESDLArray)=c.axes
-cubeproperties(c::ESDLArray)=c.properties
+function caxes(x)
+  map(enumerate(dimnames(x))) do i,s
+    v = dimvals(x,i)
+    iscontdim(x,i) ? RangeAxis(s,v) : CategoricalAxis(s,v)
+  end
+end
 iscompressed(c::ESDLArray)=iscompressed(c.data)
 iscompressed(c::DiskArrays.PermutedDiskArray) = iscompressed(c.a.parent)
 iscompressed(c::DiskArrays.SubDiskArray) = iscompressed(c.v.parent)
-iscompressed(c::AbstractArray) = false
-iscompressed(::AbstractCubeData) = false
-iscompressed(::CubeAxis) = false
 cubechunks(c::ESDLArray)=common_size(eachchunk(c.data))
+cubechunks(x) = common_size(eachchunk(x))
 common_size(a::DiskArrays.GridChunks) = a.chunksize
 function common_size(a)
   ntuple(ndims(a)) do idim
@@ -145,6 +143,7 @@ function common_size(a)
 end
 
 chunkoffset(c::ESDLArray)=common_offset(eachchunk(c.data))
+chunkoffset(x) = common_offset(eachchunk(x))
 common_offset(a::DiskArrays.GridChunks) = a.offset
 function common_offset(a)
   ntuple(ndims(a)) do idim
@@ -158,6 +157,19 @@ function common_offset(a)
   end
 end
 readcubedata(c::ESDLArray)=ESDLArray(c.axes,Array(c.data),c.properties,CleanMe[])
+
+function renameaxis!(c::ESDLArray,p::Pair)
+  i = findAxis(p[1],c.axes)
+  c.axes[i]=renameaxis(c.axes[i],p[2])
+  c
+end
+function renameaxis!(c::ESDLArray,p::Pair{<:Any,<:CubeAxis})
+  i = findAxis(p[1],c.axes)
+  i === nothing && throw(ArgumentError("Axis not found"))
+  length(c.axes[i].values) == length(p[2].values) || throw(ArgumentError("Length of replacement axis must equal length of old axis"))
+  c.axes[i]=p[2]
+  c
+end
 
 # function getSubRange(c::AbstractArray,i...;write::Bool=true)
 #   length(i)==ndims(c) || error("Wrong number of view arguments to getSubRange. Cube is: $c \n indices are $i")
@@ -188,9 +200,6 @@ interpretsubset(subexpr::UnitRange{Int64},ax::RangeAxis{T}) where T<:TimeType = 
 interpretsubset(subexpr::Interval,ax)       = interpretsubset((subexpr.left,subexpr.right),ax)
 interpretsubset(subexpr::AbstractVector,ax::CategoricalAxis)      = axVal2Index.(Ref(ax),subexpr,fuzzy=true)
 
-#TODO move this to Axes.jl
-axcopy(ax::RangeAxis,vals) = RangeAxis(axname(ax),vals)
-axcopy(ax::CategoricalAxis,vals) = CategoricalAxis(axname(ax),vals)
 
 function _subsetcube(z::AbstractCubeData, subs;kwargs...)
   if :region in keys(kwargs)
@@ -255,7 +264,7 @@ function Base.show(io::IO,c::AbstractCubeData)
         println(io,a)
     end
 
-    foreach(cubeproperties(c)) do p
+    foreach(getattributes(c)) do p
       if p[1] in ("labels","name","units")
         println(io,p[1],": ",p[2])
       end
@@ -319,9 +328,4 @@ function cubeinfo(ds::ESDLArray, variable="unknown")
 end
 
 include("TransformedCubes.jl")
-#include("ZarrCubes.jl")
-#include("NetCDFCubes.jl")
-#include("Datasets.jl")
-#import .Datasets: Dataset, ESDLDataset
-#include("ESDC.jl")
 end
