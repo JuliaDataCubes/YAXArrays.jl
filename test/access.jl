@@ -1,22 +1,5 @@
-using ESDL
-using ESDC
-using Test
-
-newcubedir = mktempdir()
-ESDLdir(newcubedir)
-# Download Cube subset
-c = esdc()
-
-cgermany = c[
-  region = "Germany",
-  var = ["gross", "net_ecosystem", "air_temperature_2m", "terrestrial_ecosystem", "soil_moisture"],
-  time = 2000:2010
-]
-savecube(cgermany,"germanycube", chunksize=(20,20,92,1))
-ESDL.ESDLDefaults.cubedir[] = joinpath(newcubedir,"germanycube")
-
 using Dates
-#access.jl
+
 c=Cube()
 
 @testset "Access single variable" begin
@@ -127,12 +110,13 @@ using DiskArrayTools: DiskArrayStack
   end;
   @test danom.data isa DiskArrayStack
 
-  savecube(danom, "./mySavedZArrayCube")
+  zp = tempname()
+  savecube(danom, zp, overwrite=true)
 
   @test danom.data isa DiskArrayStack
 
   danom=readcubedata(danom)
-  danom2=readcubedata(loadcube("./mySavedZArrayCube"))
+  danom2=readcubedata(loadcube(zp))
 
   @test danom.axes==danom2.axes
   @test all(map(isequal,danom.data,danom2.data))

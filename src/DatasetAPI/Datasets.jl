@@ -263,7 +263,6 @@ function createdataset(DS, axlist;
       if !haskey(attr,"missing_value")
         attr["missing_value"] = EarthSystemDataLabAPI.defaultfillval(S)
       end
-      @show S
       v = add_var(myar, S, cn, map(length,axlist), map(axname,axlist), attr; chunksize = chunksize, kwargs...)
       CFDiskArray(v,attr)
     end
