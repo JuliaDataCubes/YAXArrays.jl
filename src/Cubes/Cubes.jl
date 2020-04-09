@@ -9,6 +9,8 @@ using Dates: TimeType
 using IntervalSets: Interval, (..)
 using Base.Iterators: take, drop
 using ..ESDL: workdir
+using EarthSystemDataLabAPI
+import EarthSystemDataLabAPI: iscompressed, getattributes
 
 """
     AbstractCubeData{T,N}
@@ -66,7 +68,7 @@ abstract type AbstractCubeMem{T,N} <: AbstractCubeData{T,N} end
 
 include("Axes.jl")
 using .Axes: CubeAxis, RangeAxis, CategoricalAxis, findAxis, getAxis, axVal2Index,
-  axname, axsym, axVal2Index_lb, axVal2Index_ub, renameaxis
+  axname, axsym, axVal2Index_lb, axVal2Index_ub, renameaxis, axcopy
 
 mutable struct CleanMe
   path::String
@@ -106,7 +108,6 @@ struct ESDLArray{T,N,A<:AbstractArray{T,N},AT} <: AbstractCubeData{T,N}
   properties::Dict{String}
   cleaner::Vector{CleanMe}
 end
-include("cubeinterface.jl")
 
 ESDLArray(axes,data,properties=Dict{String,Any}(); cleaner=CleanMe[]) = ESDLArray(axes,data,properties, cleaner)
 function ESDLArray(x::AbstractArray)
@@ -119,7 +120,8 @@ Base.size(a::ESDLArray,i::Int) = size(a.data,i)
 Base.permutedims(c::ESDLArray,p)=ESDLArray(c.axes[collect(p)],permutedims(c.data,p),c.properties,c.cleaner)
 caxes(c::ESDLArray)=c.axes
 function caxes(x)
-  map(enumerate(dimnames(x))) do i,s
+  map(enumerate(dimnames(x))) do a
+    i,s = a
     v = dimvals(x,i)
     iscontdim(x,i) ? RangeAxis(s,v) : CategoricalAxis(s,v)
   end

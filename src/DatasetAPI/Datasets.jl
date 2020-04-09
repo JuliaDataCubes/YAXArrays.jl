@@ -7,18 +7,10 @@ using DataStructures: OrderedDict, counter
 using Dates: Day,Hour,Minute,Second,Month,Year, Date, DateTime, TimeType
 using IntervalSets: Interval, (..)
 using CFTime: timedecode, timeencode, DateTimeNoLeap, DateTime360Day, DateTimeAllLeap
+using EarthSystemDataLabAPI
+using DiskArrayTools: CFDiskArray
 
 using NetCDF: NcFile
-
-include("interface.jl")
-include("zarr.jl")
-include("netcdf.jl")
-
-backendlist = Dict(
-  :zarr => ZarrDataset,
-  :netcdf => NetCDFDataset,
-  :array => Array,
-)
 
 struct Dataset
     cubes::OrderedDict{Symbol,AbstractCubeData}
@@ -118,11 +110,12 @@ function toaxis(dimname,g,offs,len)
       return RangeAxis(dimname, 1:len)
     end
     ar = g[dimname]
-    if uppercase(axname)=="TIME" && haskey(ar.attrs,"units")
-        tsteps = timedecode(ar[:],ar.attrs["units"],get(ar.attrs,"calendar","standard"))
+    aratts = get_var_attrs(g,dimname)
+    if uppercase(axname)=="TIME" && haskey(aratts,"units")
+        tsteps = timedecode(ar[:],aratts["units"],get(aratts,"calendar","standard"))
         RangeAxis("Time",tsteps[offs+1:end])
-    elseif haskey(ar.attrs,"_ARRAYVALUES")
-      vals = ar.attrs["_ARRAYVALUES"]
+    elseif haskey(aratts,"_ARRAYVALUES")
+      vals = aratts["_ARRAYVALUES"]
       CategoricalAxis(axname,vals)
     else
       axdata = testrange(ar[offs+1:end])
@@ -133,7 +126,7 @@ function toaxis(dimname,g,offs,len)
       end
     end
 end
-propfromattr(attr) = filter(i->i[1]!=="_ARRAY_DIMENSIONS",attr)
+propfromattr(attr) = Dict{String,Any}(filter(i->i[1]!=="_ARRAY_DIMENSIONS",attr))
 
 "Test if data in x can be approximated by a step range"
 function testrange(x)
@@ -144,7 +137,7 @@ end
 testrange(x::AbstractArray{<:AbstractString}) = x
 
 function open_dataset(g; driver = :all)
-  g = to_backend(g)
+  g = to_dataset(g, driver=driver)
   isempty(get_varnames(g)) && throw(ArgumentError("Zarr Group does not contain datasets."))
   dimlist = collectdims(g)
   dnames  = string.(keys(dimlist))
@@ -263,7 +256,17 @@ function createdataset(DS, axlist;
   cleaner = CleanMe[]
   persist || push!(cleaner,CleanMe(path,false))
   allcubes = map(cubenames) do cn
-    v = add_var(myar, T, cn, map(length,axlist), map(axname,axlist), attr; chunksize = chunksize, kwargs...)
+    v = if allow_missings(myar) || !(T>:Missing)
+      add_var(myar, T, cn, map(length,axlist), map(axname,axlist), attr; chunksize = chunksize, kwargs...)
+    else
+      S = Base.nonmissingtype(T)
+      if !haskey(attr,"missing_value")
+        attr["missing_value"] = EarthSystemDataLabAPI.defaultfillval(S)
+      end
+      @show S
+      v = add_var(myar, S, cn, map(length,axlist), map(axname,axlist), attr; chunksize = chunksize, kwargs...)
+      CFDiskArray(v,attr)
+    end
     if subs !== nothing
       za = view(za,subs...)
     end
@@ -334,13 +337,8 @@ function dataattfromaxis(ax::CubeAxis{T},n) where T<:TimeType
     prependrange(data,n), Dict{String,Any}("units"=>"days since 1980-01-01","calendar"=>defaultcal(T))
 end
 
-defaultfillval(T::Type{<:AbstractFloat}) = convert(T,1e32)
-defaultfillval(::Type{Float16}) = Float16(3.2e4)
-defaultfillval(T::Type{<:Integer}) = typemax(T)
-defaultfillval(T::Type{<:AbstractString}) = ""
-
 #The good old Cube function:
-Cube(s::String;kwargs...) = Cube(open_dataset(zopen(s,"r"));kwargs...)
+Cube(s::String;kwargs...) = Cube(open_dataset(s);kwargs...)
 function Cube(;kwargs...)
   if !isempty(ESDL.ESDLDefaults.cubedir[])
     Cube(ESDL.ESDLDefaults.cubedir[];kwargs...)

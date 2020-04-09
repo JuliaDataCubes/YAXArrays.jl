@@ -25,7 +25,6 @@ function savecube(c::AbstractCubeData, name::AbstractString;
   forcesingle = (isplit+1)<length(firstaxes)
   axn = axname.(allax[1:isplit-1])
   indims = InDims(axn...)
-  @show isplit, axn
   outdims = OutDims(axn..., backend=backend,chunksize=chunksize[1:length(axn)], path = name; backendargs...)
   if forcesingle
     nprocs()>1 && println("Forcing single core processing because of bad chunk size")
@@ -36,11 +35,11 @@ function savecube(c::AbstractCubeData, name::AbstractString;
 end
 
 function loadcube(s)
-  Cube(getsavefolder(s))
+  Cube(getsavefolder(s, true))
 end
 
 function rmcube(s)
-  p = getsavefolder(s)
+  p = getsavefolder(s, true)
   if isfile(p) || isdir(p)
     rm(p, recursive=true)
   end
@@ -118,46 +117,6 @@ function writefun(xout,xin::AbstractArray{Union{Missing,T}},a,nd,cont_loop,filen
   vn = join(string.([a[s][2] for s in splinds]),"_")
   isempty(vn) && (vn="layer")
   ncwrite(x,filename,vn,start=start_vec,count=count_vec)
-end
-
-"""
-    exportcube(r::AbstractCubeData,filename::String)
-
-Saves a cube object to a portable NetCDF file in `filename`.
-
-When saving, every RangeAxis will be converted to an axis in the NetCDF cube,
-while every categorical axis will be represented by a different variable
-inside the resulting file. Dimensions will be ordered according to the
-`priorities` keyword argument, which defaults to `Dict("LON"=>1,"LAT"=>2,"TIME"=>3)`,
-which means that the file will be stored with longitudes varying fastest.
-"""
-function exportcube(r::AbstractCubeData,filename::String;priorities = Dict("LON"=>1,"LAT"=>2,"TIME"=>3), proj=epsg4326)
-
-  ax = caxes(r)
-  ax_cont = collect(filter(i->isa(i,RangeAxis),ax))
-  ax_cat  = filter(i->!isa(i,RangeAxis),ax)
-  prir = map(i->get(priorities,uppercase(axname(i)),10),ax_cont)
-  ax_cont=ax_cont[sortperm(prir)]
-  dims = map(NcDim,ax_cont)
-  isempty(ax_cat) && (ax_cat=[VariableAxis(["layer"])])
-  it = map(i->i.values,ax_cat)
-  elt = Base.nonmissingtype(eltype(r))
-  vars = NcVar[NcVar(join(collect(string.(a)),"_"),dims,t=elt,atts=Dict("missing_value"=>convert(elt,-9999.0), "grid_mapping" => proj["grid_mapping_name"])) for a in product(it...)]
-  file = create(filename,vars)
-  for d in dims
-    ncwrite(d.vals,filename,d.name)
-  end
-  nccreate(filename, proj["grid_mapping_name"])
-  ncputatt(filename, proj["grid_mapping_name"], proj)
-  dl = map(i->i.dimlen,dims) |> cumprod
-  isplit = findfirst(i->i>5e7,dl)
-  isplit isa Nothing && (isplit=length(dl))
-  incubes = InDims(ax_cont[1:(isplit-1)]...)
-  cont_loop = Dict(ii=>axname(ax_cont[ii]) for ii in isplit:length(ax_cont))
-  mapCube(writefun,r,length(ax_cont),cont_loop,filename,indims=incubes,include_loopvars=true,ispar=false,max_cache=5e8,
-  nthreads=[1])
-  sync(file)
-  nothing
 end
 
 global const projection = Dict(

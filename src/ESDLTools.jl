@@ -182,15 +182,15 @@ macro loadOrGenerate(x...)
   end
   xnames=map(i->i[2],x2)
   loadEx=map(x2) do i
-    :($(i[1]) = loadCube($(i[2])))
+    :($(i[1]) = loadcube($(i[2])))
   end
   loadEx=Expr(:block,loadEx...)
   saveEx=map(x2) do i
-    :(saveCube($(i[1]),$(i[2])))
+    :(savecube($(i[1]),$(i[2])))
   end
   saveEx=Expr(:block,saveEx...)
   rmEx=map(x2) do i
-    :(rmCube($(i[2])))
+    :(rmcube($(i[2])))
   end
   rmEx=Expr(:block,rmEx...)
   esc(quote

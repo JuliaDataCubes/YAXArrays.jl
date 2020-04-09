@@ -50,12 +50,14 @@ include("Proc/Proc.jl")
 @reexport using .Proc: removeMSC, gapFillMSC,normalizeTS,
   getMSC, filterTSFFT, getNpY,savecube,loadcube,rmcube,
   getMedSC, extractLonLats, cubefromshape,
-  exportcube, gapfillpoly #From Proc module
+  gapfillpoly #From Proc module
 @reexport using .Datasets: Dataset, Cube
 @reexport using .ESDLTools: @loadOrGenerate # from ESDL Tools
 
-
 @deprecate saveCube(data, filename) savecube(data,filename)
+@deprecate loadCube(filename) loadcube(filename)
+@deprecate rmCube(filename) rmcube(filename)
+@deprecate exportcube(data, filename; kwargs...) savecube(data, filename; backend=:netcdf, kwargs...)
 @deprecate cubeproperties(x) getattributes(x)
 
 #include("precompile.jl")

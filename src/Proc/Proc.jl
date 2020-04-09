@@ -3,7 +3,7 @@ using ..Cubes: ESDLArray, AbstractCubeData, cubechunks, caxes
 using ..Cubes.Axes: getAxis, findAxis, CategoricalAxis, axVal2Index,
   RangeAxis, get_bb, axisfrombb, CubeAxis, axname
 using ..DAT: mapCube, InDims, OutDims, NValid, AnyMissing
-using ..Datasets: getsavefolder
+using ..Datasets: getsavefolder, Cube
 import Dates.year
 """
     getNpY(cube::AbstractCubeData)

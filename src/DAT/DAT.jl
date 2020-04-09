@@ -8,13 +8,13 @@ import ..Cubes: cubechunks, iscompressed, chunkoffset,
   caxes
 import ..Cubes.Axes: AxisDescriptor, axname, ByInference, axsym,
   getOutAxis, getAxis, findAxis
-import ..Datasets: Dataset, backendlist,
-  createdataset, allow_parallel_write
+import ..Datasets: Dataset, createdataset
 import ...ESDL
 import ...ESDL.workdir
 import Zarr: ZArray
 import ProgressMeter: Progress, next!, progress_pmap
 import Zarr: NoCompressor
+using EarthSystemDataLabAPI
 using Dates
 global const debugDAT=[false]
 #TODO use a logging package
@@ -29,7 +29,7 @@ include("registration.jl")
 Internal representation of an input cube for DAT operations
 """
 mutable struct InputCube{N}
-  cube::AbstractCubeData{<:Any,N}   #The input data cube
+  cube::Any   #The input data cube
   desc::InDims               #The input description given by the user/registration
   axesSmall::Array{CubeAxis} #List of axes that were actually selected through the desciption
   loopinds::Vector{Int}        #Indices of loop axes that this cube does not contain, i.e. broadcasts
@@ -38,10 +38,10 @@ mutable struct InputCube{N}
   workarray::Any
 end
 
-function InputCube(c::AbstractCubeData, desc::InDims)
+function InputCube(c, desc::InDims)
   axesSmall = getAxis.(desc.axisdesc,Ref(c))
   any(isequal(nothing),axesSmall) && error("One of the input axes not found in input cubes")
-  InputCube(c,desc,collect(CubeAxis,axesSmall),Int[],Int[],nothing,nothing)
+  InputCube{ndims(c)}(c,desc,collect(CubeAxis,axesSmall),Int[],Int[],nothing,nothing)
 end
 
 createworkarrays(T,s,ntr)=[Array{T}(undef,s...) for i=1:ntr]
@@ -53,7 +53,7 @@ createworkarrays(T,s,ntr)=[Array{T}(undef,s...) for i=1:ntr]
 Internal representation of an output cube for DAT operations
 """
 mutable struct OutputCube
-  cube::Union{AbstractCubeData,Nothing} #The actual outcube cube, once it is generated
+  cube::Any #The actual outcube cube, once it is generated
   desc::OutDims                 #The description of the output axes as given by users or registration
   axesSmall::Array{CubeAxis}       #The list of output axes determined through the description
   allAxes::Vector{CubeAxis}        #List of all the axes of the cube
@@ -172,7 +172,7 @@ function getOuttype(outtype::DataType,cdata)
   outtype
 end
 
-mapCube(fu::Function,cdata::AbstractCubeData,addargs...;kwargs...)=mapCube(fu,(cdata,),addargs...;kwargs...)
+mapCube(fu::Function,cdata,addargs...;kwargs...)=mapCube(fu,(cdata,),addargs...;kwargs...)
 
 function mapCube(f, in_ds::Dataset, addargs...; indims=InDims(), outdims=OutDims(), inplace=true, kwargs...)
     allars = values(in_ds.cubes)
@@ -322,15 +322,15 @@ function updatear(f,r,cube,ncol,loopinds,handle)
   if size(handle) != length.(indsall)
     hinds = map(i->1:length(i),indsall)
     if f == :read
-      handle[hinds...] = cube.data[indsall...]
+      handle[hinds...] = getdata(cube)[indsall...]
     else
-      cube.data[indsall...] = handle[hinds...]
+      getdata(cube)[indsall...] = handle[hinds...]
     end
   else
     if f == :read
-      handle[:] = cube.data[indsall...]
+      handle[:] = getdata(cube)[indsall...]
     else
-      cube.data[indsall...] = handle
+      getdata(cube)[indsall...] = handle
     end
   end
 end
@@ -424,7 +424,7 @@ function getbackend(oc,ispar,max_cache)
       rt = :array
     end
   end
-  b = backendlist[Symbol(rt)]
+  b = EarthSystemDataLabAPI.backendlist[Symbol(rt)]
   if !allow_parallel_write(b)
     ispar[] = false
   end
@@ -666,7 +666,7 @@ end
 
 
 "Calculate an axis permutation that brings the wanted dimensions to the front"
-function getFrontPerm(dc::AbstractCubeData{T},dims) where T
+function getFrontPerm(dc,dims)
   ax=caxes(dc)
   N=length(ax)
   perm=Int[i for i=1:length(ax)];

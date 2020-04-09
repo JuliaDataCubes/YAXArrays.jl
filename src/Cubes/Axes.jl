@@ -205,7 +205,6 @@ function axVal2Index(x,v;fuzzy::Bool=false)
   return i
 end
 abstract type AxisDescriptor end
-getAxis(d::Any,v::Any)=error("getAxis not defined for $d $v")
 struct ByName <: AxisDescriptor
   name::String
 end
@@ -220,7 +219,7 @@ struct ByFunction <: AxisDescriptor
   f::Function
 end
 
-findAxis(a,c::AbstractCubeData)=findAxis(a,caxes(c))
+findAxis(a::Any,c::Any)=findAxis(a,caxes(c))
 get_descriptor(a::String)=ByName(a)
 get_descriptor(a::Type{T}) where {T<:CubeAxis}=ByType(a)
 get_descriptor(a::CubeAxis)=ByValue(a)
@@ -229,6 +228,7 @@ get_descriptor(a)=error("$a is not a valid axis description")
 get_descriptor(a::AxisDescriptor)=a
 
 const VecOrTuple{S} = Union{Vector{<:S},NTuple{<:Any,S}} where S
+
 
 "Find a certain axis type in a vector of Cube axes and returns the index"
 function findAxis(bt::ByType,v::VecOrTuple{S}) where S<:CubeAxis
@@ -254,7 +254,7 @@ function findAxis(bv::ByValue,axlist::VecOrTuple{T}) where T<:CubeAxis
   v=bv.v
   return findfirst(i->i==v,axlist)
 end
-function getAxis(desc,axlist::Vector{T}) where T<:CubeAxis
+function getAxis(desc,axlist::VecOrTuple{T}) where T<:CubeAxis
   i = findAxis(desc,axlist)
   if isa(i,Nothing)
     return nothing
@@ -309,11 +309,11 @@ end
 
 Given the string of an axis name and a cube, returns this axis of the cube.
 """
-getAxis(desc,c::AbstractCubeData)=getAxis(desc,caxes(c))
+getAxis(desc,c)=getAxis(desc,caxes(c))
 getAxis(desc::ByValue,axlist::Vector{T}) where {T<:CubeAxis}=desc.v
 
 "Fallback method"
-findAxis(a,axlist)=findAxis(get_descriptor(a),axlist)
+findAxis(a,axlist::VecOrTuple{T}) where T<:CubeAxis = findAxis(get_descriptor(a),axlist)
 
 getSubRange(x::CubeAxis,i)=x.values[i],nothing
 getSubRange(x::TimeAxis,i)=view(x,i),nothing
