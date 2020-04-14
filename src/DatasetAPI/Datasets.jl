@@ -115,7 +115,7 @@ function toaxis(dimname,g,offs,len)
         tsteps = timedecode(ar[:],aratts["units"],get(aratts,"calendar","standard"))
         RangeAxis("Time",tsteps[offs+1:end])
     elseif haskey(aratts,"_ARRAYVALUES")
-      vals = aratts["_ARRAYVALUES"]
+      vals = identity.(aratts["_ARRAYVALUES"])
       CategoricalAxis(axname,vals)
     else
       axdata = testrange(ar[offs+1:end])
