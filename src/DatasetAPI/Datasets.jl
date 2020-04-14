@@ -7,7 +7,7 @@ using DataStructures: OrderedDict, counter
 using Dates: Day,Hour,Minute,Second,Month,Year, Date, DateTime, TimeType
 using IntervalSets: Interval, (..)
 using CFTime: timedecode, timeencode, DateTimeNoLeap, DateTime360Day, DateTimeAllLeap
-using EarthSystemDataLabAPI
+using YAXArrayBase
 using DiskArrayTools: CFDiskArray
 
 using NetCDF: NcFile
@@ -261,7 +261,7 @@ function createdataset(DS, axlist;
     else
       S = Base.nonmissingtype(T)
       if !haskey(attr,"missing_value")
-        attr["missing_value"] = EarthSystemDataLabAPI.defaultfillval(S)
+        attr["missing_value"] = YAXArrayBase.defaultfillval(S)
       end
       v = add_var(myar, S, cn, map(length,axlist), map(axname,axlist), attr; chunksize = chunksize, kwargs...)
       CFDiskArray(v,attr)

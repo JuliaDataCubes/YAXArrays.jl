@@ -14,7 +14,7 @@ addprocs(2)
     end
     xout2[1]=m
 end
-function sub_and_return_mean(c::ESDL.AbstractCubeData)
+function sub_and_return_mean(c)
   mapCube(sub_and_return_mean,c,
   indims=InDims("Time"),
   outdims=(OutDims("Time"),OutDims()))

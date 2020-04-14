@@ -4,7 +4,7 @@ using ..Cubes.Axes: getAxis, findAxis, CategoricalAxis, axVal2Index,
   RangeAxis, get_bb, axisfrombb, CubeAxis, axname
 using ..DAT: mapCube, InDims, OutDims, NValid, AnyMissing
 using ..Datasets: getsavefolder, Cube
-import Dates.year
+using Dates: year, Date, DateTime
 """
     getNpY(cube::AbstractCubeData)
     getNpY(cube::InputCube)

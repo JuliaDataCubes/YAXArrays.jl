@@ -9,8 +9,8 @@ using Dates: TimeType
 using IntervalSets: Interval, (..)
 using Base.Iterators: take, drop
 using ..ESDL: workdir
-using EarthSystemDataLabAPI
-import EarthSystemDataLabAPI: iscompressed, getattributes
+using YAXArrayBase
+import YAXArrayBase: iscompressed, getattributes
 
 """
     AbstractCubeData{T,N}
@@ -144,6 +144,7 @@ function common_size(a)
   end
 end
 
+Base.getindex(x::ESDLArray, i...) = x.data[i...]
 chunkoffset(c::ESDLArray)=common_offset(eachchunk(c.data))
 chunkoffset(x) = common_offset(eachchunk(x))
 common_offset(a::DiskArrays.GridChunks) = a.offset

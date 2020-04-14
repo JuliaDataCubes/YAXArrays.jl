@@ -100,8 +100,6 @@ RangeAxis(s::AbstractString,v)=RangeAxis(Symbol(s),v)
 
 Base.length(a::CubeAxis)=length(a.values)
 
-MSCAxis(n::Int)=MSCAxis(DateTime(1900):Day(ceil(Int,366/n)):DateTime(1900,12,31,23,59,59))
-
 """
     axcopy(x,vals)
 

@@ -14,7 +14,7 @@ import ...ESDL.workdir
 import Zarr: ZArray
 import ProgressMeter: Progress, next!, progress_pmap
 import Zarr: NoCompressor
-using EarthSystemDataLabAPI
+using YAXArrayBase
 using Dates
 global const debugDAT=[false]
 #TODO use a logging package
@@ -424,7 +424,7 @@ function getbackend(oc,ispar,max_cache)
       rt = :array
     end
   end
-  b = EarthSystemDataLabAPI.backendlist[Symbol(rt)]
+  b = YAXArrayBase.backendlist[Symbol(rt)]
   if !allow_parallel_write(b)
     ispar[] = false
   end

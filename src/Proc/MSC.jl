@@ -123,7 +123,8 @@ Returns the mean annual cycle from each time series.
 
 """
 function getMSC(c::AbstractCubeData;kwargs...)
-  outdims = OutDims(MSCAxis(getNpY(c)))
+  N = getNpY(c)
+  outdims = OutDims(RangeAxis("MSC",DateTime(1900):Day(ceil(Int,366/N)):DateTime(1900,12,31,23,59,59)))
   indims = InDims("Time")
   mapCube(getMSC,c,getNpY(c);indims=indims,outdims=outdims,kwargs...)
 end
@@ -168,7 +169,8 @@ Returns the median annual cycle from each time series.
 **Output Axis** `MSC`axis
 """
 function getMedSC(c::AbstractCubeData;kwargs...)
-  outdims = OutDims(MSCAxis(getNpY(c)))
+  N = getNpY(c)
+  outdims = OutDims(RangeAxis("MSC",DateTime(1900):Day(ceil(Int,366/N)):DateTime(1900,12,31,23,59,59)))
   indims = InDims("Time")
   mapCube(getMedSC,c;indims=indims,outdims=outdims,kwargs...)
 end
