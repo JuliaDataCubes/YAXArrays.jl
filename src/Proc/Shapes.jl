@@ -50,7 +50,6 @@ function aggregate_out(allout, highmat, labelsleft,n)
 end
 
 function cubefromshape_fraction(shapepath,lonaxis,lataxis;labelsym=nothing, T=Float64, nincrease=10)
-  @debug "cubefromshapefraction"
   s = (length(lonaxis), length(lataxis))
   outmat = zeros(T,map(i->i*nincrease,s)...)
   lon1,lon2 = get_bb(lonaxis)
@@ -74,16 +73,13 @@ function cubefromshape_fraction(shapepath,lonaxis,lataxis;labelsym=nothing, T=Fl
 
 
 end
-function cubefromshape_single(shapepath, lonaxis, lataxis; labelsym = nothing, T=Int32, kwargs...)
+function cubefromshape_single(shapepath, lonaxis, lataxis; labelsym = nothing, T=Int32)
   s = (length(lonaxis), length(lataxis))
   outmat = zeros(T,s...)
-  @debug s
-  @debug kwargs
   lon1,lon2 = get_bb(lonaxis)
   lat1,lat2 = get_bb(lataxis)
-  @debug lon1, lon2
-  @debug lat1, lat2
-  rasterize!(outmat, shapepath, bb = (left = lon1, right=lon2, top=lat1, bottom=lat2); kwargs...)
+  rasterize!(outmat, shapepath, bb = (left = lon1, right=lon2, top=lat1, bottom=lat2))
+
   outmat = replace(outmat,zero(T)=>missing)
   labelsleft = collect(skipmissing(unique(outmat)))
   properties = getlabeldict(shapepath,labelsym,T,labelsleft)
@@ -102,7 +98,6 @@ resolution and the fraction of area within each polygon will be returned.
 """
 cubefromshape(shapepath, c::AbstractCubeData; kwargs...) = cubefromshape(shapepath, getAxis("Lon",c), getAxis("Lat",c);kwargs...)
 function cubefromshape(args...; samplefactor=nothing, kwargs...)
-  @debug kwargs[:wrap]
   if samplefactor===nothing
     cubefromshape_single(args...; kwargs...)
   else
@@ -123,91 +118,67 @@ stripc0x(a) = replace(a, r"[^\x20-\x7e]"=> "")
 
 function rasterize!(outar,shapefile;bb = (left = -180.0, right=180.0, top=90.0,bottom=-90.0),label=nothing)
   shapepath = shapefile
-function rasterize!(outar,shapepath;bb = (left = -180.0, right=180.0, top=90.0,bottom=-90.0),label=nothing, kwargs...)
   t = Shapefile.Table(shapepath)
   p = Shapefile.shapes(t)
-  @debug p
-  @debug kwargs
   if length(p)>1
-    @debug length(p)
-    rasterizepoly!(outar,p,bb; kwargs...)
+    rasterizepoly!(outar,p,bb)
   else
-    rasterizepoly!(outar,p[1],bb;kwargs...)
+    rasterizepoly!(outar,p[1],bb)
   end
 end
 
-function rasterizepoly!(outmat,poly::Vector{<:Union{Missing,AbstractMultiPolygon}},bb;wrap = (left = -180.0,right = 180.0))
+function rasterizepoly!(outmat,poly::Vector{<:Union{Missing,AbstractMultiPolygon}},bb)
     foreach(1:length(poly)) do ipoly
-      @debug ipoly
-        rasterizepoly!(outmat,poly[ipoly],bb,value=ipoly, wrap=wrap)
+        rasterizepoly!(outmat,poly[ipoly],bb,value=ipoly)
     end
     outmat
 end
 
 function rasterizepoly!(outmat,poly::Vector{T},bb;value=one(eltype(outmat)), wrap = (left = -180.0,right = 180.0)) where T<:AbstractPoint
 nx,ny = size(outmat)
-@debug wrap
-@debug nx, ny
-@debug bb
 resx = (bb.right-bb.left)/nx
 resy = (bb.top-bb.bottom)/ny
-@debug resx, resy
-@debug bb.left
 xr = range(bb.left+resx/2,bb.right-resx/2,length=nx)
 yr = range(bb.top-resy/2,bb.bottom+resy/2,length=ny)
-@debug xr, yr
-for (iy,pixelY) in enumerate(yr)
+wrapwidth = wrap.right-wrap.left
 
+for (iy,pixelY) in enumerate(yr)
     nodeX = Float64[]
     j = length(poly)
     for i = 1:length(poly)
         p1 = poly[i]
         p2 = poly[j]
-        if wrap !==nothing
-          wrapwidth = wrap.right-wrap.left
-          @debug wrapwidth
-          if abs(p1.x-p2.x)>wrapwidth
+        if wrap !==nothing && abs(p1.x-p2.x)>wrapwidth
             p1,p2 = p1.x < p2.x ? (T(p1.x+wrapwidth,p1.y),T(p2.x,p2.y)) : (T(p1.x,p1.y),T(p2.x+wrapwidth,p2.y))
-            @debug p1, p2
-          end
         end
         if (p1.y < pixelY) && (p2.y >= pixelY) || (p2.y < pixelY) && (p1.y >= pixelY)
-            @debug nodeX, pixelY
             push!(nodeX, p1.x + (pixelY-p1.y)/(p2.y-p1.y)*(p2.x-p1.x))
         end
         j = i
     end
     #Add intersect points at start and end for wrapped polygons
     if wrap!==nothing && any(i->i>wrap.right,nodeX)
-      wrapwidth = wrap.right-wrap.left
-      @debug wrap.left
-      @debug nodeX
         push!(nodeX,wrap.left)
         push!(nodeX,wrap.right)
         map!(i->i>wrap.right ? i-wrapwidth : i,nodeX,nodeX)
     end
-    #@debug nodeX
     sort!(nodeX)
     @assert(iseven(length(nodeX)))
-    #@debug nodeX
     for i = 1:2:length(nodeX)
-      @debug nodeX
-        @debug searchsortedfirst(xr, nodeX[i]), searchsortedlast(xr, nodeX[i+1])
-        @debug iy
         outmat[searchsortedfirst(xr,nodeX[i]):searchsortedlast(xr,nodeX[i+1]),iy].=value
     end
 end
     outmat
 end
 
-function rasterizepoly!(outmat,pp::Shapefile.Polygon,bb;value=one(eltype(outmat)), kwargs...)
+function rasterizepoly!(outmat,pp::Shapefile.Polygon,bb;value=one(eltype(outmat)))
     points = map(1:length(pp.parts)) do ipart
         i0 = pp.parts[ipart]+1
         iend = ipart == length(pp.parts) ? length(pp.points) : pp.parts[ipart+1]
         pp.points[i0:iend]
     end
     foreach(1:length(points)) do ipoly
-        rasterizepoly!(outmat,points[ipoly],bb,value=value;kwargs...)
+        rasterizepoly!(outmat,points[ipoly],bb,value=value)
     end
     outmat
 end
