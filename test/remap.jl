@@ -1,6 +1,6 @@
 @testset "Resampling" begin
   c=Cube()
-  d=getCubeData(c,variable="gross_primary_productivity",region="Germany",time=(Date(2001,1,1),Date(2001,1,15)))
+  d=subsetcube(c,variable="gross_primary_productivity",region="Germany",time=(Date(2001,1,1),Date(2001,1,15)))
   newlons=5.875:0.05:14.875
   newlats=54.875:-0.05:47.375
   shigh = spatialinterp(d,newlons,newlats)
