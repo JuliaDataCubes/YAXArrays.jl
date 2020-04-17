@@ -50,7 +50,7 @@ include("Proc/Proc.jl")
 @reexport using .Proc: removeMSC, gapFillMSC,normalizeTS,
   getMSC, filterTSFFT, getNpY,savecube,loadcube,rmcube,
   getMedSC, extractLonLats, cubefromshape,
-  gapfillpoly #From Proc module
+  gapfillpoly, spatialinterp #From Proc module
 @reexport using .Datasets: Dataset, Cube, open_dataset
 @reexport using .ESDLTools: @loadOrGenerate # from ESDL Tools
 

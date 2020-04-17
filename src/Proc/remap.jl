@@ -1,5 +1,6 @@
 using DiskArrayTools: InterpolatedDiskArray
-
+using Interpolations: Linear, Flat, Constant, NoInterp
+using DiskArrays: eachchunk, GridChunks
 """
   spatialinterp(c::AbstractCubeData,newlons::AbstractRange,newlats::AbstractRange;order=Linear(),bc = Flat())
 """
@@ -9,29 +10,52 @@ end
 spatialinterp(c::AbstractCubeData,newlons::CubeAxis,newlats::CubeAxis;kwargs...)=
   spatialinterp(c,newlons.values,newlats.values;kwargs...)
 
-function interpolatecube(c::AbstractCubeData,newaxes::Dict,newchunks::Dict;order=Dict())
-  ii = map(axn->(axn,findAxis(axn,c)),keys(newaxes))
+  function expandchunksizes(c,newaxdict)
+    k = collect(keys(newaxdict))
+    chunkold = eachchunk(c.data)
+    axold = caxes(c)
+    axinds  = map(i->findAxis(i,c),k)
+    axsteps = map(i->step(axold[i].values),axinds)
+    steprats = map((i,s)->step(newaxdict[i])/s,k,axsteps)
+    newcs = ntuple(ndims(c)) do i
+          ii = findfirst(isequal(i),axinds)
+          round(Int,chunkold.chunksize[i] * (ii==nothing ? 1 : steprats[ii]))
+      end
+      newco = ntuple(ndims(c)) do i
+          ii = findfirst(isequal(i),axinds)
+          round(Int,chunkold.offset[i] * (ii==nothing ? 1 : steprats[ii]))
+      end
+    newchunks = GridChunks(size(c),newcs, offset = newco)
+  end
+
+function interpolatecube(c::AbstractCubeData,
+  newaxes::Dict,
+  newchunks = expandchunksizes(c,newaxes);
+  order=Dict()
+  )
+  ii = map(axn->(axn,findAxis(axn,c)),collect(keys(newaxes)))
   oo = ntuple(ndims(c)) do i
     ai = findfirst(j->j[2]==i,ii)
-    if a === nothing
-      nothing,NoInterp()
+    if ai === nothing
+      nothing,NoInterp(),nothing
     else
       oldvals = caxes(c)[i].values
-      newvals = newaxes[ii[ai][1]].values
-      getinterpinds(oldvals, newvals),get(order,a[1],Constant())
+      newvals = newaxes[ii[ai][1]]
+      getinterpinds(oldvals, newvals),get(order,ai[1],Constant()),newvals
     end
   end
   newinds = getindex.(oo,1)
   intorder = getindex.(oo,2)
-  ar = InterpolatedDiskArray(ad,newchunks,newinds, order = intorder)
-  newax = map(caxes(c),newinds) do ax,val
+  ar = InterpolatedDiskArray(c.data,newchunks,newinds..., order = intorder)
+  newvals = getindex.(oo,3)
+  newax = map(caxes(c),newvals) do ax,val
     if val === nothing
       ax
     else
       RangeAxis(axname(ax),val)
     end
   end
-  ESDLArray(newax,ar, properties = c.properties, cleaner = c.cleaner)
+  ESDLArray(newax,ar,c.properties, cleaner = c.cleaner)
 end
 
 function getinterpinds(oldvals::AbstractRange, newvals::AbstractRange)
