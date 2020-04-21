@@ -311,7 +311,6 @@ function show(io::IO,::MIME"text/markdown",v::ESDLVarInfo)
     show(io,MIME"text/markdown"(),mdt)
 end
 show(io::IO,::MIME"text/markdown",v::Vector{ESDLVarInfo})=foreach(x->show(io,MIME"text/markdown"(),x),v)
-using Zarr: zname
 
 """
     cubeinfo(cube)

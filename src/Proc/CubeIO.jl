@@ -1,7 +1,4 @@
 using Base.Iterators: Iterators, product
-using Zarr: ZArray, NoCompressor
-using NetCDF: ncwrite, NcDim, NcVar, ncread, create, nccreate,
-  ncputatt, sync
 
 
 """
@@ -44,25 +41,6 @@ function rmcube(s)
     rm(p, recursive=true)
   end
 end
-
-# function saveCube(z::ZArrayCube, name::AbstractString; overwrite=false, chunksize=nothing, compressor=NoCompressor())
-#   if z.subset === nothing && !z.persist && isa(z.a.storage, DirectoryStore) && chunksize==nothing && isa(compressor, NoCompressor)
-#     newfolder = joinpath(workdir[], name)
-#     check_overwrite(newfolder, overwrite)
-#     # the julia cp implentation currently can only deal with files <2GB
-#     # the issue is:
-#     # https://github.com/JuliaLang/julia/issues/14574
-#     # mv(c.folder,newfolder)
-#     folder = splitdir(z.a.storage.folder)
-#     run(`mv $(folder[1]) $(newfolder)`)
-#     #TODO persist does not exist anymore, save metadata
-#     z.persist = true
-#     z.a = zopen(newfolder * "/layer")
-#   else
-#     invoke(saveCube,Tuple{AbstractCubeData, AbstractString},z,name;overwrite=overwrite, chunksize=chunksize===nothing ? cubechunks(z) : chunksize, compressor=compressor)
-#   end
-# end
-
 
 
 function toPointAxis(aout,ain,loninds,latinds)

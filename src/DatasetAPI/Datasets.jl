@@ -1,5 +1,4 @@
 module Datasets
-import Zarr: ZGroup, zopen
 import ..Cubes.Axes: axsym, axname, CubeAxis, findAxis, CategoricalAxis, RangeAxis
 import ..Cubes: AbstractCubeData, ESDLArray, concatenateCubes, CleanMe
 using ...ESDL: ESDL, ESDLDefaults

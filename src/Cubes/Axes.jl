@@ -1,5 +1,4 @@
 module Axes
-import NetCDF.NcDim
 import ..Cubes: caxes, _read, Cubes, AbstractCubeData
 using Dates
 using Base.Iterators: take, drop
@@ -331,24 +330,5 @@ import Base.==
 import Base.isequal
 ==(a::CubeAxis,b::CubeAxis)=(a.values==b.values) && (axname(a)==axname(b))
 isequal(a::CubeAxis, b::CubeAxis) = a==b
-
-import CFTime: timeencode
-function NcDim(a::CubeAxis{T},start::Integer,count::Integer) where T<:TimeType
-  if start + count - 1 > length(a.values)
-    count = oftype(count,length(a.values) - start + 1)
-  end
-  tv=a.values[start:(start+count-1)]
-  startyear=Dates.year(first(a.values))
-  starttime=T(startyear)
-  timeunits = "days since $startyear-01-01"
-  atts=Dict{Any,Any}("units"=>timeunits, "calendar"=>"standard")
-  d = timeencode(tv, timeunits)
-  NcDim(axname(a),length(d),values=d,atts=atts)
-end
-
-#Default constructor
-NcDim(a::CubeAxis{T},start::Integer,count::Integer) where {T<:Real}=NcDim(axname(a),count,values=collect(a.values[start:(start+count-1)]),atts=Dict{Any,Any}("units"=>axunits(a)))
-NcDim(a::CubeAxis,start::Integer,count::Integer)=NcDim(axname(a),count,values=Float64[start:(start+count-1);],atts=Dict{Any,Any}("units"=>axunits(a)))
-NcDim(a::CubeAxis)=NcDim(a,1,length(a))
 
 end

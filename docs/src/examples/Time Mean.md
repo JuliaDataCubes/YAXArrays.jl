@@ -59,7 +59,7 @@ addprocs(SlurmManager(10))
 
 inpath="zg1000_AERday_CanESM5_esm-hist_r6i1p1f1_gn_18500101-20141231.nc"
 
-c = NetCDFCube(inpath, "zg1000")
+c = Cube(inpath, "zg1000")
 
 resultcube = mapslices(mean ∘ skipmissing, c, dims="time")
 ```

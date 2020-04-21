@@ -6,11 +6,9 @@ Some info on the project...
 """
 module ESDL
 using Reexport
-import Zarr
 global const ESDLDefaults = (
   workdir = Ref("./"),
   recal   = Ref(false),
-  compressor = Ref{Zarr.Compressor}(Zarr.NoCompressor()),
   chunksize  = Ref{Any}(:input),
   max_cache  = Ref(1e8),
   cubedir    = Ref(""),
@@ -20,11 +18,7 @@ global const recal=ESDLDefaults.recal
 function __init__()
   ESDLDefaults.workdir[]   = get(ENV,"ESDL_WORKDIR","./")
   ESDLDefaults.max_cache[] = parse(Float64,get(ENV,"ESDL_MAX_CACHE","100")) * 1e6
-  ESDLDefaults.cubedir[]   = if isdir("/home/jovyan/work/datacube/ESDCv2.0.0/esdc-8d-0.25deg-184x90x90-2.0.0.zarr/")
-    "/home/jovyan/work/datacube/ESDCv2.0.0/esdc-8d-0.25deg-184x90x90-2.0.0.zarr/"
-  else
-    get(ENV,"ESDL_CUBEDIR","")
-  end
+  ESDLDefaults.cubedir[]   = get(ENV,"ESDL_CUBEDIR","")
 end
 ESDLdir(x::String)=ESDLDefaults.workdir[]=x
 recalculate(x::Bool)=ESDLDefaults.recal[]=x

@@ -1,7 +1,6 @@
 export InDims, OutDims,AsArray,AsDataFrame,AsAxisArray
 const AxisDescriptorAll = Union{AxisDescriptor,String,Type{T},CubeAxis,Function} where T<:CubeAxis
 using ..Cubes.Axes: get_descriptor, ByFunction
-using Zarr: Compressor, NoCompressor
 using ...ESDL: workdir, ESDLDefaults
 using DataFrames: DataFrame
 
@@ -84,19 +83,7 @@ function InDims(axisdesc::AxisDescriptorAll...; artype::ArTypeRepr=AsArray(), fi
   InDims(descs,artype,getprocfilter(filter))
 end
 
-"""
-    OutDims(axisdesc;...)
 
-Creates a description of an Output Data Cube for cube operations. Takes a single
-  or a Vector/Tuple of axes as first argument. Axes can be specified by their
-  name (String), through an Axis type, or by passing a concrete axis.
-
-- `axisdesc`: List of input axis names
-- `chunksize`: Chunk size for the inner dimensions, a tuple of the same length as `axisdesc`, or `:input` to copy chunksizes from input cube axes or `:max` to not chunk the inner dimensions
-- `compressor`: A Zarr compressor for the specified output cube
-- `retcubetype`: sepcifies the type of the return cube, can be `CubeMem` to force in-memory, `ZArrayCube` to force disk storage, or `"auto"` to let the system decide.
-- `outtype`: force the output type to a specific type, defaults to `Any` which means that the element type of the first input cube is used
-"""
 struct OutDims
   axisdesc
   backend::Symbol
@@ -106,6 +93,20 @@ struct OutDims
   chunksize::Any
   outtype::Union{Int,DataType}
 end
+"""
+    OutDims(axisdesc;...)
+
+Creates a description of an Output Data Cube for cube operations. Takes a single
+  or a Vector/Tuple of axes as first argument. Axes can be specified by their
+  name (String), through an Axis type, or by passing a concrete axis.
+
+- `axisdesc`: List of input axis names
+- `backend` : specifies the dataset backend to write data to, must be either :auto or a key in `YAXArrayBase.backendlist`
+- `update` : specifies wether the function operates inplace or if an output is returned
+- `artype` : specifies the Array type inside the inner function that is mapped over
+- `chunksize`: Chunk size for the inner dimensions, a tuple of the same length as `axisdesc`, or `:input` to copy chunksizes from input cube axes or `:max` to not chunk the inner dimensions
+- `outtype`: force the output type to a specific type, defaults to `Any` which means that the element type of the first input cube is used
+"""
 function OutDims(axisdesc...;
            backend=:auto,
            update=false,
