@@ -1,8 +1,8 @@
 module ESDLTools
 using Distributed
 import ..ESDL: ESDLdir
-export mypermutedims!, freshworkermodule, passobj, @everywhereelsem,
-toRange, getiperm, CItimes, CIdiv, @loadOrGenerate, PickAxisArray
+export freshworkermodule, passobj, @everywhereelsem,
+@loadOrGenerate, PickAxisArray
 struct PickAxisArray{T,N,AT<:AbstractArray,P,NCOL}
     parent::AT
 end
@@ -30,46 +30,6 @@ function newparent(a::PickAxisArray{T,N,AT,P,NCOL},parent) where {T,N,AT,P,NCOL}
   size(parent) == size(a.parent) || error("Sizes do not match")
   PickAxisArray{T,N,AT,P,NCOL}(parent)
 end
-
-
-function getiperm(perm)
-    iperm = Array{Int}(undef,length(perm))
-    for i = 1:length(perm)
-        iperm[perm[i]] = i
-    end
-    return ntuple(i->iperm[i],length(iperm))
-end
-
-using Base.Cartesian
-@generated function mypermutedims!(dest::AbstractArray{T,N},src::AbstractArray{S,N},perm::Type{Q}) where {Q,T,S,N}
-    ind1=ntuple(i->Symbol("i_",i),N)
-    ind2=ntuple(i->Symbol("i_",perm.parameters[1].parameters[1][i]),N)
-    ex1=Expr(:ref,:src,ind1...)
-    ex2=Expr(:ref,:dest,ind2...)
-    quote
-        @nloops $N i src begin
-            $ex2=$ex1
-        end
-    end
-end
-
-@generated function CIdiv(index1::CartesianIndex{N}, index2::CartesianIndex{N}) where N
-    I = index1
-    args = [:(Base.div(index1[$d],index2[$d])) for d = 1:N]
-    :($I($(args...)))
-end
-@generated function CItimes(index1::CartesianIndex{N}, index2::CartesianIndex{N}) where N
-    I = index1
-    args = [:(.*(index1[$d],index2[$d])) for d = 1:N]
-    :($I($(args...)))
-end
-
-@generated function Base.getindex(t::NTuple{N},p::NTuple{N,Int}) where N
-    :(@ntuple $N d->t[p[d]])
-end
-
-toRange(r::CartesianIndices)=map(colon,r.start.I,r.stop.I)
-toRange(c1::CartesianIndex,c2::CartesianIndex)=map(colon,c1.I,c2.I)
 
 function passobj(src::Int, target::Vector{Int}, nm::Symbol;
                  from_mod=Main, to_mod=Main)
