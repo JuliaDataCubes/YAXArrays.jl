@@ -1,6 +1,5 @@
 export ConcatCube, concatenateCubes
 export mergeAxes
-import ..ESDLTools.getiperm
 import ..Cubes: ESDLArray, caxes, iscompressed, cubechunks, chunkoffset
 using DiskArrayTools: diskstack
 
@@ -10,8 +9,6 @@ function Base.map(op, incubes::ESDLArray...)
   props=merge(getattributes.(incubes)...)
   ESDLArray(axlist,broadcast(op,map(c->c.data,incubes)...),props,map(i->i.cleaner,incubes))
 end
-
-
 
 """
     function concatenateCubes(cubelist, cataxis::CategoricalAxis)

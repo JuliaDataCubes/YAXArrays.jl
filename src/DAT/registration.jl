@@ -1,32 +1,21 @@
-export InDims, OutDims,AsArray,AsDataFrame,AsAxisArray
+export InDims, OutDims
 const AxisDescriptorAll = Union{AxisDescriptor,String,Type{T},CubeAxis,Function} where T<:CubeAxis
 using ..Cubes.Axes: get_descriptor, ByFunction
 using ...ESDL: workdir, ESDLDefaults
 using DataFrames: DataFrame
+using YAXArrayBase: yaxcreate
 
-abstract type ArTypeRepr end
-struct AsArray <: ArTypeRepr end
-#struct AsAxisArray <: ArTypeRepr end
-struct AsDataFrame <: ArTypeRepr
-  dimcol::Bool
-end
-AsDataFrame()=AsDataFrame(false)
-wrapWorkArray(::AsArray,a,axes) = a
-# function wrapWorkArray(::AsAxisArray,a,cablabaxes)
-#   newaxes = map(cablabaxes) do ax
-#     AxisArrays.Axis{Symbol(axname(ax))}(ax.values)
+wrapWorkArray(::Type{Array},a,axes) = a
+wrapWorkArray(T,a,axes) = yaxcreate(T,a,map(axname,axes),map(i->i.values,axes),nothing)
+# import DataFrames
+# function wrapWorkArray(t::AsDataFrame,a,cablabaxes)
+#   colnames = map(Symbol,cablabaxes[2].values)
+#   df = DataFrames.DataFrame(a,colnames)
+#   if t.dimcol
+#     df[Symbol(axname(cablabaxes[1]))]=collect(cablabaxes[1].values)
 #   end
-#   AxisArrays.AxisArray(a,newaxes...)
+#   df
 # end
-import DataFrames
-function wrapWorkArray(t::AsDataFrame,a,cablabaxes)
-  colnames = map(Symbol,cablabaxes[2].values)
-  df = DataFrames.DataFrame(a,colnames)
-  if t.dimcol
-    df[Symbol(axname(cablabaxes[1]))]=collect(cablabaxes[1].values)
-  end
-  df
-end
 
 abstract type ProcFilter end
 struct AllMissing <: ProcFilter end
@@ -73,13 +62,12 @@ Creates a description of an Input Data Cube for cube operations. Takes a single
 """
 mutable struct InDims
   axisdesc::Tuple
-  artype::ArTypeRepr
+  artype
   procfilter::Tuple
 end
-function InDims(axisdesc::AxisDescriptorAll...; artype::ArTypeRepr=AsArray(), filter = AllMissing())
+function InDims(axisdesc::AxisDescriptorAll...; artype=Array, filter = AllMissing())
   descs = map(get_descriptor,axisdesc)
   any(i->isa(i,ByFunction),descs) && error("Input cubes can not be specified through a function")
-  isa(artype,AsDataFrame) && length(descs)!=2 && error("DataFrame representation only possible if for 2D inner arrays")
   InDims(descs,artype,getprocfilter(filter))
 end
 
@@ -89,7 +77,7 @@ struct OutDims
   backend::Symbol
   backendargs
   update::Bool
-  artype::ArTypeRepr
+  artype
   chunksize::Any
   outtype::Union{Int,DataType}
 end
@@ -110,12 +98,11 @@ Creates a description of an Output Data Cube for cube operations. Takes a single
 function OutDims(axisdesc...;
            backend=:auto,
            update=false,
-           artype::ArTypeRepr=AsArray(),
+           artype=Array,
            chunksize=ESDLDefaults.chunksize[],
            outtype=1,
            backendargs...)
   descs = get_descriptor.(axisdesc)
-  isa(artype,AsDataFrame) && length(descs)!=2 && error("DataFrame representation only possible if for 2D inner arrays")
   if !in(chunksize,(:input, :max)) && length(chunksize)!=length(axisdesc)
     error("Length of chunk sizes must equal number of inner Axes")
   end

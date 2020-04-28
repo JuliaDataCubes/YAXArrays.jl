@@ -2,7 +2,9 @@ module DAT
 export mapCube
 import ..Cubes
 using ..ESDLTools
-using Distributed: pmap, @everywhere, workers, remotecall_fetch, myid, nprocs
+using Distributed: RemoteChannel, nworkers,pmap,
+  @everywhere, workers, remotecall_fetch,
+  remote_do, myid, nprocs
 import ..Cubes: cubechunks, iscompressed, chunkoffset,
   CubeAxis, AbstractCubeData, ESDLArray,
   caxes
@@ -29,19 +31,23 @@ Internal representation of an input cube for DAT operations
 mutable struct InputCube{N}
   cube::Any   #The input data cube
   desc::InDims               #The input description given by the user/registration
-  axesSmall::Array{CubeAxis} #List of axes that were actually selected through the desciption
+  axesSmall::Vector{CubeAxis} #List of axes that were actually selected through the desciption
+  icolon::Vector{Int}
+  colonperm::Union{Vector{Int},Nothing}
   loopinds::Vector{Int}        #Indices of loop axes that this cube does not contain, i.e. broadcasts
   cachesize::Vector{Int}     #Number of elements to keep in cache along each axis
-  handle::Any                #allocated cache
-  workarray::Any
 end
 
 function InputCube(c, desc::InDims)
-  axesSmall = getAxis.(desc.axisdesc,Ref(c))
+  iaxessmall = findAxis.(desc.axisdesc,Ref(c))
+  axlist = caxes(c)
+  axesSmall = map(i->axlist[i], iaxessmall)
+  colonperm = issorted(iaxessmall) ? nothing : collect(Base.invperm(sortperm(collect(iaxessmall))))
+  iaxessmall = collect(iaxessmall)
   any(isequal(nothing),axesSmall) && error("One of the input axes not found in input cubes")
-  InputCube{ndims(c)}(c,desc,collect(CubeAxis,axesSmall),Int[],Int[],nothing,nothing)
+  InputCube{ndims(c)}(c,desc,collect(CubeAxis,axesSmall),iaxessmall,colonperm,Int[],Int[])
 end
-
+geticolon(ic::InputCube) = ic.icolon
 createworkarrays(T,s,ntr)=[Array{T}(undef,s...) for i=1:ntr]
 
 
@@ -57,20 +63,18 @@ mutable struct OutputCube
   allAxes::Vector{CubeAxis}        #List of all the axes of the cube
   loopinds::Vector{Int}              #Index of the loop axes that are broadcasted for this output cube
   innerchunks
-  workarray::Any
-  handle::Any                       #Cache to write the output to
   outtype
 end
 
 const InOutCube = Union{InputCube,OutputCube}
 
 getsmallax(c::InOutCube)=c.axesSmall
-
+geticolon(c::OutputCube)=1:length(c.axesSmall)
 getAxis(desc,c::InOutCube) = getAxis(desc,c.cube)
 
-function setworkarray(c::InOutCube,ntr)
-  wa = createworkarrays(eltype(c.cube),(length.(c.axesSmall)...,),ntr)
-  c.workarray = map(wa) do w
+function getworkarray(c::InOutCube,ntr)
+  wa = createworkarrays(eltype(c.cube),length.(c.axesSmall),ntr)
+  map(wa) do w
     wrapWorkArray(c.desc.artype,w,c.axesSmall)
   end
 end
@@ -98,7 +102,7 @@ function OutputCube(desc::OutDims,inAxes::Vector{CubeAxis},incubes,pargs,f)
   axesSmall     = getOutAxis(desc.axisdesc,inAxes,incubes,pargs,f)
   outtype       = getOuttype(desc.outtype,incubes)
   innerchunks   = interpretoutchunksizes(desc,axesSmall,incubes)
-  OutputCube(nothing,desc,collect(CubeAxis,axesSmall),CubeAxis[],Int[],innerchunks,nothing,nothing,outtype)
+  OutputCube(nothing,desc,collect(CubeAxis,axesSmall),CubeAxis[],Int[],innerchunks,outtype)
 end
 
 """
@@ -250,18 +254,12 @@ function mapCube(fu::Function,
   @debug_print "Generating DATConfig"
   dc=DATConfig(cdata,indims,outdims,inplace,
     max_cache,fu,ispar,include_loopvars,nthreads,addargs,kwargs)
-  @debug_print "Reordering Cubes"
-  reOrderInCubes(dc)
   @debug_print "Analysing Axes"
   analyzeAxes(dc)
   @debug_print "Calculating Cache Sizes"
   getCacheSizes(dc)
   @debug_print "Generating Output Cube"
   generateOutCubes(dc)
-  @debug_print "Generating cube handles"
-  getCubeHandles(dc)
-  @debug_print "Generating work arrays"
-  generateworkarrays(dc)
   @debug_print "Running main Loop"
   debug && return(dc)
   runLoop(dc,showprog)
@@ -282,24 +280,11 @@ function makeinplace(f)
   end
 end
 
-mustReorder(cdata,inAxes)=!all(caxes(cdata)[1:length(inAxes)].==inAxes)
-
-function reOrderInCubes(dc::DATConfig)
-  ics = dc.incubes
-  for (i,ic) in enumerate(ics)
-    ax = ic.axesSmall
-    if mustReorder(ic.cube,ax)
-      perm=getFrontPerm(ic.cube,ax)
-      ic.cube=permutedims(ic.cube,perm)
-    end
-  end
-end
 
 function getchunkoffsets(dc::DATConfig)
   co = zeros(Int,length(dc.LoopAxes))
   lc = dc.loopcachesize
   for ic in dc.incubes
-    #@show chunkoffset
     for (ax,cocur,cs) in zip(caxes(ic.cube),chunkoffset(ic.cube),cubechunks(ic.cube))
       ii = findAxis(ax,dc.LoopAxes)
       if !isa(ii,Nothing) && iszero(co[ii]) && cocur>0 && mod(lc[ii],cs)==0
@@ -310,46 +295,109 @@ function getchunkoffsets(dc::DATConfig)
   (co...,)
 end
 
-updatears(clist,r,f) = foreach(clist) do ic
-  updatear(f,r, ic.cube,length(ic.axesSmall), ic.loopinds, ic.handle )
+updatears(clist,r,f,caches) = foreach(clist, caches) do ic, ca
+  updatear(f,r, ic.cube,geticolon(ic),ic.loopinds, ca )
 end
-function updatear(f,r,cube,ncol,loopinds,handle)
-  indscol = ntuple(i->1:size(cube,i),ncol)
-  indsr   = ntuple(i->r[loopinds[i]],length(loopinds))
-  indsall = (indscol...,indsr...)
-  if size(handle) != length.(indsall)
-    hinds = map(i->1:length(i),indsall)
+getindsall(indscol, loopinds, rfunc, colfunc = _->Colon()) = getindsall((),1,(sort(indscol)...,),(loopinds...,),rfunc,colfunc)
+function getindsall(indsall,inow,indscol,loopinds,rfunc,colfunc)
+  if !isempty(indscol) && first(indscol) == inow
+    getindsall((indsall..., colfunc(inow)),inow+1,Base.tail(indscol),loopinds,rfunc,colfunc)
+  else
+    getindsall((indsall..., rfunc(first(loopinds))),inow+1,indscol,Base.tail(loopinds),rfunc,colfunc)
+  end
+end
+getindsall(indsall,inow,::Tuple{},::Tuple{},r,c) = indsall
+
+
+function updatear(f,r,cube,indscol,loopinds,cache)
+  indsall = getindsall(indscol,loopinds,i->r[i])
+  l2 = map((i,s)->isa(i,Colon) ? s : length(i),indsall,size(cache))
+  if size(cache) != l2
+    hinds = map((i,s)->isa(i,Colon) ? (1:s) : 1:length(i),indsall,size(cache))
     if f == :read
-      handle[hinds...] = getdata(cube)[indsall...]
+      cache[hinds...] = getdata(cube)[indsall...]
     else
-      getdata(cube)[indsall...] = handle[hinds...]
+      getdata(cube)[indsall...] = cache[hinds...]
     end
   else
     if f == :read
-      handle[:] = getdata(cube)[indsall...]
+      d = getdata(cube)[indsall...]
+      cache[:] = d
     else
-      getdata(cube)[indsall...] = handle
+      getdata(cube)[indsall...] = cache
     end
   end
 end
-updateinars(dc,r)=updatears(dc.incubes,r,:read)
-writeoutars(dc,r)=updatears(dc.outcubes,r,:write)
+updateinars(dc,r,incaches)=updatears(dc.incubes,r,:read,incaches)
+writeoutars(dc,r, outcaches)=updatears(dc.outcubes,r,:write,outcaches)
+
+function loopworker(dcchan::RemoteChannel, ranchan, reschan)
+    loopworker(take!(dcchan), ranchan, reschan)
+end
+function loopworker(dc::DATConfig, ranchan, reschan)
+  incaches, outcaches, args = try
+    getallargs(dc)
+  catch e
+    println("Error during initialization: ", e)
+    put!(reschan, e)
+  end
+  try
+    loopworker(dc,ranchan, reschan, incaches, outcaches, args)
+  catch e
+    if e isa InvalidStateException
+      return nothing
+    else
+      println("Error during running loop: ", e)
+      put!(reschan, e)
+    end
+  end
+end
+
+function loopworker(dc,ranchan, reschan, incaches, outcaches, args)
+  while true
+    r = take!(ranchan)
+    updateinars(dc,r,incaches)
+    innerLoop(r,args...)
+    writeoutars(dc,r,outcaches)
+    @async put!(reschan,r)
+  end
+end
 
 function runLoop(dc::DATConfig,showprog)
   allRanges=distributeLoopRanges((dc.loopcachesize...,),(map(length,dc.LoopAxes)...,),getchunkoffsets(dc))
-  #@show collect(allRanges)
-  if dc.ispar
-    pmapfun = showprog ? progress_pmap : pmap
-    pmapfun(runLooppar,allRanges)
+  chnlfunc() = Channel{eltype(allRanges)}(length(allRanges))
+  outchanfunc() = Channel(length(allRanges))
+  inchan, outchan, dcpass = if dc.ispar
+    dcpass = RemoteChannel(()->Channel{DATConfig}(nworkers()))
+    for i=1:nworkers()
+      put!(dcpass, dc)
+    end
+    RemoteChannel(chnlfunc), RemoteChannel(outchanfunc), dcpass
   else
-    runLoop(dc,allRanges,showprog)
+    chnlfunc(), outchanfunc(), dc
   end
+  #Now distribute the jobs
+  for r in allRanges
+    put!(inchan,r)
+  end
+  #And start the workers
+  if dc.ispar
+    for p in workers()
+      remote_do(ESDL.DAT.loopworker, p, dcpass, inchan, outchan)
+    end
+  else
+    @async loopworker(dc, inchan, outchan)
+  end
+  showprog && (pm=Progress(length(allRanges)))
+  for i in 1:length(allRanges)
+    r = take!(outchan)
+    if isa(r,Exception)
+      throw(r)
+    end
+    showprog && next!(pm)
+  end
+  close(inchan)
   dc.outcubes
-end
-
-function runLooppar(allRanges)
-  dc = Main.PMDATMODULE.dc
-  runLoop(dc,(allRanges,),false)
 end
 
 abstract type AxValCreator end
@@ -364,11 +412,9 @@ getlaxvals(a::AllLoopAxes,cI,offscur) = (NamedTuple{a.loopsyms}(map((ax,i,of)->(
 
 
 function getallargs(dc::DATConfig)
-  inars = map(ic->ic.handle,dc.incubes)
-  outars = map(ic->ic.handle,dc.outcubes)
+  incache, outcache = getCubeCache(dc)
   filters = map(ic->ic.desc.procfilter,dc.incubes)
-  inworkar = (map(i->i.workarray,dc.incubes)...,)
-  outworkar = (map(i->i.workarray,dc.outcubes)...,)
+  inworkar, outworkar = generateworkarrays(dc)
   axvals = if dc.include_loopvars
     lax = (dc.LoopAxes...,)
     AllLoopAxes(lax)
@@ -382,34 +428,23 @@ function getallargs(dc::DATConfig)
   else
     dc.fu
   end
-  inarsbc = map(dc.incubes) do ic
-    allax = falses(length(dc.LoopAxes))
-    allax[ic.loopinds].=true
-    PickAxisArray(ic.handle,allax,ncol=length(ic.axesSmall))
+  inarsbc = map(dc.incubes, incache) do ic, cache
+    allax = getindsall(geticolon(ic), ic.loopinds, i->true)
+    if ic.colonperm === nothing
+      pa = PickAxisArray(cache,allax)
+    else
+      pa = PickAxisArray(cache,allax,ic.colonperm)
+    end
   end
-  outarsbc = map(dc.outcubes) do oc
-    allax = falses(length(dc.LoopAxes))
-    allax[oc.loopinds].=true
-    PickAxisArray(oc.handle,allax,ncol=length(oc.axesSmall))
+  outarsbc = map(dc.outcubes, outcache) do oc, cache
+    allax = getindsall(1:length(oc.axesSmall), oc.loopinds, i->true)
+    pa = PickAxisArray(cache,allax)
+    pa
   end
-  (fu,inars,outars,inarsbc,outarsbc,filters,inworkar,outworkar,
+  incache, outcache, (fu,inarsbc,outarsbc,filters,inworkar,outworkar,
   axvals,adda,kwa)
 end
 
-function runLoop(dc::DATConfig, allRanges, showprog)
-  allargs = getallargs(dc)
-  runLoopArgs(dc,allargs,allRanges,showprog)
-end
-
-@noinline function runLoopArgs(dc,args,allRanges,doprogress)
-  doprogress && (pm = Progress(length(allRanges)))
-  for r in allRanges
-    updateinars(dc,r)
-    innerLoop(r,args...)
-    writeoutars(dc,r)
-    doprogress && next!(pm)
-  end
-end
 
 function getbackend(oc,ispar,max_cache)
   eltype=Union{oc.outtype,Missing}
@@ -456,27 +491,16 @@ function generateOutCube(oc::OutputCube,ispar::Ref{Bool},max_cache,loopcachesize
   generateOutCube(cubetype,eltype,oc,loopcachesize,co;oc.desc.backendargs...)
 end
 
-dcg=nothing
-function getCubeHandles(dc::DATConfig)
-  if dc.ispar
-    freshworkermodule()
-    global dcg=dc
-    passobj(1, workers(), [:dcg],from_mod=ESDL.DAT,to_mod=Main.PMDATMODULE)
-    @everywhereelsem begin
-      dc=Main.PMDATMODULE.dcg
-      foreach(i->ESDL.DAT.allocatecachebuf(i,dc.loopcachesize),dc.outcubes)
-      foreach(i->ESDL.DAT.allocatecachebuf(i,dc.loopcachesize),dc.incubes)
-    end
-  else
-    foreach(i->allocatecachebuf(i,dc.loopcachesize),dc.outcubes)
-    foreach(i->allocatecachebuf(i,dc.loopcachesize),dc.incubes)
-  end
+function getCubeCache(dc::DATConfig)
+  outcaches = map(i->allocatecachebuf(i,dc.loopcachesize),dc.outcubes)
+  incaches = map(i->allocatecachebuf(i,dc.loopcachesize),dc.incubes)
+  incaches, outcaches
 end
 
 function allocatecachebuf(ic::Union{InputCube,OutputCube},loopcachesize) where N
-  sl = ntuple(i->loopcachesize[ic.loopinds[i]],length(ic.loopinds))
-  s = (map(length,ic.axesSmall)...,sl...)
-  ic.handle = zeros(eltype(ic.cube),s...)
+  s = size(ic.cube)
+  indsall = getindsall(geticolon(ic), ic.loopinds, i->loopcachesize[i], i->s[i])
+  zeros(eltype(ic.cube),indsall...)
 end
 
 function init_DATworkers()
@@ -554,7 +578,6 @@ function getCacheSizes(dc::DATConfig)
     # end
   end
   sort!(cmisses,lt=cmpcachmisses)
-  #@show cmisses
   loopcachesize    = getLoopCacheSize(max(inblocksize,outblocksize),map(length,dc.LoopAxes),dc.max_cache, cmisses)
   for cube in dc.incubes
     cube.cachesize = map(length,cube.axesSmall)
@@ -568,8 +591,6 @@ end
 
 "Calculate optimal Cache size to DAT operation"
 function getLoopCacheSize(preblocksize,loopaxlengths,max_cache,cmisses)
-  #@show preblocksize
-  #@show cmisses
   totcachesize=max_cache
 
   incfac=totcachesize/preblocksize
@@ -613,13 +634,9 @@ function distributeLoopRanges(block_size::NTuple{N,Int},loopR::NTuple{N,Int},co)
 end
 
 function generateworkarrays(dc::DATConfig)
-  if dc.ispar
-    @everywhereelsem foreach(i->ESDL.DAT.setworkarray(i,PMDATMODULE.dc.ntr[Distributed.myid()]),PMDATMODULE.dc.incubes)
-    @everywhereelsem foreach(i->ESDL.DAT.setworkarray(i,PMDATMODULE.dc.ntr[Distributed.myid()]),PMDATMODULE.dc.outcubes)
-  else
-    foreach(i->setworkarray(i,dc.ntr[1]),dc.incubes)
-    foreach(i->setworkarray(i,dc.ntr[1]),dc.outcubes)
-  end
+  inwork = map(i->getworkarray(i,dc.ntr[myid()]),dc.incubes)
+  outwork = map(i->getworkarray(i,dc.ntr[myid()]),dc.outcubes)
+  inwork, outwork
 end
 
 macro innercode()
@@ -629,7 +646,9 @@ macro innercode()
     myinwork = map(i->i[ithr],inwork)
     myoutwork = map(i->i[ithr],outwork)
     #Copy data into work arrays
-    foreach((iw,x)->iw.=view(x,cI.I...),myinwork,xinBC)
+    foreach(myinwork,xinBC) do iw,x
+      iw.=view(x,cI.I...)
+    end
     #Apply filters
     mvs = map(docheck,filters,myinwork)
     if any(mvs)
@@ -648,7 +667,7 @@ end
 
 using DataStructures: OrderedDict
 using Base.Cartesian
-@noinline function innerLoop(loopRanges,f,xin,xout,xinBC,xoutBC,filters,
+@noinline function innerLoop(loopRanges,f,xinBC,xoutBC,filters,
   inwork,outwork,axvalcreator,addargs,kwargs)
   offscur = map(i->(first(i)-1), loopRanges)
   if length(inwork[1])==1

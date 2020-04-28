@@ -3,113 +3,49 @@ using Distributed
 import ..ESDL: ESDLdir
 export freshworkermodule, passobj, @everywhereelsem,
 @loadOrGenerate, PickAxisArray
-struct PickAxisArray{T,N,AT<:AbstractArray,P,NCOL}
+struct PickAxisArray{T,N,AT<:AbstractArray,P,PERM}
     parent::AT
 end
 
-function PickAxisArray(parent, indmask; ncol=0)
-    @assert sum(indmask)+ncol==ndims(parent)
-    f  = findall(indmask)
-    PickAxisArray{eltype(parent),length(indmask),typeof(parent),(f...,),ncol}(parent)
+function PickAxisArray(parent, indmask, perm=nothing)
+    f  = findall(isequal(true),indmask)
+    f2 = findall(isequal(Colon()), indmask)
+
+    o = sort([f;f2])
+    o = isempty(f2) ? o : replace(o, map(i->i=>Colon(),f2)...)
+    nsub = 0
+    for i in 1:length(o)
+      if o[i] isa Colon
+        nsub +=1
+      else
+        o[i] = o[i]-nsub
+      end
+    end
+    if perm !== nothing
+      length(perm) != length(f2) && error("Not a valid permutation")
+      perm = (perm...,)
+    end
+    PickAxisArray{eltype(parent),length(indmask),typeof(parent),(o...,),perm}(parent)
 end
-indmask(p::PickAxisArray{<:Any,<:Any,<:Any,i,<:Any}) where i = i
-getncol(p::PickAxisArray{<:Any,<:Any,<:Any,<:Any,NCOL}) where NCOL = NCOL
-function Base.view(p::PickAxisArray, i...)
-    inew = map(j->i[j],indmask(p))
-    cols = ntuple(_ -> Colon(), getncol(p))
-    view(p.parent,cols...,inew...)
+indmask(p::PickAxisArray{<:Any,<:Any,<:Any,i}) where i = i
+getind(i,j) = i[j]
+getind(i,j::Colon) = j
+permout(::PickAxisArray{<:Any,<:Any,<:Any,<:Any,P},x) where P = permutedims(x,P)
+permout(::PickAxisArray{<:Any,<:Any,<:Any,<:Any,nothing},x) = x
+function Base.view(p::PickAxisArray, i::Integer...)
+  inew = map(j->getind(i,j),indmask(p))
+  r = permout(p,view(p.parent,inew...))
+  r
 end
-function Base.getindex(p::PickAxisArray, i...)
-    inew = map(j->i[j],indmask(p))
-    cols = ntuple(_ -> Colon(), getncol(p))
-    getindex(p.parent,cols...,inew...)
+function Base.getindex(p::PickAxisArray, i::Integer...)
+    inew = map(j->getind(i,j),indmask(p))
+    permout(p,getindex(p.parent,inew...))
 end
 Base.getindex(p::PickAxisArray,i::CartesianIndex) = p[i.I...]
-function newparent(a::PickAxisArray{T,N,AT,P,NCOL},parent) where {T,N,AT,P,NCOL}
+function newparent(a::PickAxisArray{T,N,AT,P},parent) where {T,N,AT,P}
   eltype(parent) == T || error("Types do not match")
   size(parent) == size(a.parent) || error("Sizes do not match")
-  PickAxisArray{T,N,AT,P,NCOL}(parent)
-end
-
-function passobj(src::Int, target::Vector{Int}, nm::Symbol;
-                 from_mod=Main, to_mod=Main)
-    r = RemoteChannel(src)
-    @spawnat(src, put!(r, getfield(from_mod, nm)))
-    @sync for to in target
-        @spawnat(to, Core.eval(to_mod, Expr(:(=), nm, fetch(r))))
-    end
-    nothing
-end
-
-
-function passobj(src::Int, target::Int, nm::Symbol; from_mod=Main, to_mod=Main)
-    passobj(src, [target], nm; from_mod=from_mod, to_mod=to_mod)
-end
-
-
-function passobj(src::Int, target, nms::Vector{Symbol};
-                 from_mod=Main, to_mod=Main)
-    for nm in nms
-        passobj(src, target, nm; from_mod=from_mod, to_mod=to_mod)
-    end
-end
-
-function sendto(p::Int; args...)
-    for (nm, val) in args
-        @spawnat(p, Core.eval(Main, Expr(:(=), nm, val)))
-    end
-end
-
-
-function sendto(ps::Vector{Int}; args...)
-    for p in ps
-        sendto(p; args...)
-    end
-end
-
-getfrom(p::Int, nm::Symbol; mod=Main) = fetch(@spawnat(p, getfield(mod, nm)))
-
-
-function freshworkermodule()
-    in(:PMDATMODULE,names(Main)) || Core.eval(Main,:(module PMDATMODULE
-        using ESDL
-        using Distributed
-    end))
-    Core.eval(Main,quote
-      using Distributed
-      rs=Future[]
-      for pid in workers()
-        n=remotecall_fetch(()->in(:PMDATMODULE,names(Main)),pid)
-        if !n
-          r1=remotecall(()->(Core.eval(Main,:(using ESDL, Distributed));nothing),pid)
-          r2=remotecall(()->(Core.eval(Main,:(module PMDATMODULE
-          using ESDL
-          using Distributed
-        end));nothing),pid)
-          push!(rs,r1)
-          push!(rs,r2)
-        end
-      end
-      [wait(r) for r in rs]
-  end)
-
-  nothing
-end
-
-import Distributed: extract_imports, remotecall_eval
-macro everywhereelsem(ex)
-  modu=:(Main.PMDATMODULE)
-  procs = :(workers())
-  imps = [Expr(:import, m) for m in extract_imports(ex)]
-  return quote
-    p = $(esc(procs))
-    if p!=[1]
-      $(isempty(imps) ? nothing : Expr(:toplevel, imps...)) # run imports locally first
-      let ex = $(Expr(:quote, ex)), procs = p, mo=$(esc(modu))
-        remotecall_eval(mo, procs, ex)
-      end
-    end
-  end
+  PickAxisArray{T,N,AT,P}(parent)
 end
 
 """

@@ -5,7 +5,7 @@ import Base.Iterators
 using Distributed
 using Statistics
 addprocs(2)
-@everywhere using ESDL, Statistics
+@everywhere using ESDL, Statistics, ESDC, NetCDF
 
 @everywhere function sub_and_return_mean(xout1,xout2,xin)
     m=mean(skipmissing(xin))

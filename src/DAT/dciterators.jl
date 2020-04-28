@@ -26,13 +26,13 @@ defaultval(t::Type{<:Unsigned})=typemax(t)-1
 
 function CubeIterator(dc,r;varnames::Tuple=ntuple(i->Symbol("x$i"),length(dc.incubes)),include_loopvars=())
     loopaxes = ntuple(i->dc.LoopAxes[i],length(dc.LoopAxes))
-    inars = getproperty.(dc.incubes,:handle)
+    inars, outcaches = getCubeCache(dc)
     length(varnames) == length(dc.incubes) || error("Supplied $(length(varnames)) varnames and $(length(dc.incubes)) cubes.")
-    rt = map(c->Union{eltype(c.handle[1]),Missing},dc.incubes)
-    inarsbc = map(dc.incubes) do ic
+    rt = map(a->Union{eltype(a),Missing},inars)
+    inarsbc = map(dc.incubes,inars) do ic, ia
       allax = falses(length(dc.LoopAxes))
       allax[ic.loopinds].=true
-      PickAxisArray(ic.handle,allax)
+      PickAxisArray(ia,allax)
     end
     et = map(i->SentinelMissings.SentinelMissing{eltype(i[1]),defaultval(eltype(i[1]))},inars)
     if include_loopvars == true
@@ -56,11 +56,16 @@ end
 Base.length(ci::CubeIterator)=prod(length.(ci.loopaxes))
 function Base.iterate(ci::CubeIterator)
     rnow,blockstate = iterate(ci.r)
-    updatears(ci.dc.incubes,rnow,:read)
+    updatears(ci.dc.incubes,rnow,:read,ci.inars)
     innerinds = CartesianIndices(length.(rnow))
     indnow, innerstate = iterate(innerinds)
     offs = map(i->first(i)-1,rnow)
-    getrow(ci,ci.inarsBC,indnow,offs),(rnow=rnow,blockstate=blockstate,innerinds = innerinds, innerstate=innerstate)
+    getrow(ci,ci.inarsBC,indnow,offs),
+    (rnow=rnow,
+      blockstate=blockstate,
+      innerinds = innerinds,
+      innerstate=innerstate
+    )
 end
 function Base.iterate(ci::CubeIterator,s)
     t1 = iterate(s.innerinds,s.innerstate)
@@ -72,7 +77,7 @@ function Base.iterate(ci::CubeIterator,s)
         else
             rnow = t2[1]
             blockstate = t2[2]
-            updatears(ci.dc.incubes,rnow,:read)
+            updatears(ci.dc.incubes,rnow,:read,ci.inars)
             innerinds = CartesianIndices(length.(rnow))
             indnow,innerstate = iterate(innerinds)
 

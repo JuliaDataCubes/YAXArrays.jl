@@ -1,4 +1,4 @@
-using ESDL, ESDC
+using ESDL, ESDC, NetCDF
 using Test
 
 newcubedir = mktempdir()

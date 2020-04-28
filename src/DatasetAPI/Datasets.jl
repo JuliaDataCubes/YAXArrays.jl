@@ -9,8 +9,6 @@ using CFTime: timedecode, timeencode, DateTimeNoLeap, DateTime360Day, DateTimeAl
 using YAXArrayBase
 using DiskArrayTools: CFDiskArray
 
-using NetCDF: NcFile
-
 struct Dataset
     cubes::OrderedDict{Symbol,AbstractCubeData}
     axes::Dict{Symbol,CubeAxis}
@@ -299,7 +297,7 @@ end
 function arrayfromaxis(p,ax::CubeAxis,offs)
     data, attr = dataattfromaxis(ax,offs)
     attr["_ARRAY_OFFSET"]=offs
-    za = add_var(p, data, axname(ax), size(data), (axname(ax),), attr)
+    za = add_var(p, data, axname(ax), (axname(ax),), attr)
     za
 end
 

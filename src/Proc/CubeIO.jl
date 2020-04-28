@@ -23,11 +23,17 @@ function savecube(c::AbstractCubeData, name::AbstractString;
   axn = axname.(allax[1:isplit-1])
   indims = InDims(axn...)
   outdims = OutDims(axn..., backend=backend,chunksize=chunksize[1:length(axn)], path = name; backendargs...)
+  @show axn
+  function cop(xout,xin)
+    @show size(xout)
+    @show size(xin)
+    xout .= xin
+  end
   if forcesingle
     nprocs()>1 && println("Forcing single core processing because of bad chunk size")
-    o = mapCube(copyto!,c,indims=indims, outdims=outdims,ispar=false,max_cache=max_cache)
+    o = mapCube(cop,c,indims=indims, outdims=outdims,ispar=false,max_cache=max_cache)
   else
-    o = mapCube(copyto!,c,indims=indims, outdims=outdims,max_cache=max_cache)
+    o = mapCube(cop,c,indims=indims, outdims=outdims,max_cache=max_cache)
   end
 end
 
