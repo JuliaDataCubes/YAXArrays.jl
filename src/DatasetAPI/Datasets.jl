@@ -156,7 +156,7 @@ end
 open_mfdataset(g::AbstractString; kwargs...) = open_mfdataset(resolve_stars(g); kwargs...)
 open_mfdataset(g::Vector{<:AbstractString};kwargs...) =
   merge_datasets(map(i->open_dataset(i;kwargs...), g))
-  
+
 function open_dataset(g; driver = :all)
   g = to_dataset(g, driver=driver)
   isempty(get_varnames(g)) && throw(ArgumentError("Zarr Group does not contain datasets."))

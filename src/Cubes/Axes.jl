@@ -3,22 +3,6 @@ import ..Cubes: caxes, _read, Cubes, AbstractCubeData
 using Dates
 using Base.Iterators: take, drop
 
-macro defineCatAxis(axname,eltype)
-  newname=esc(Symbol(string(axname,"Axis")))
-  quote
-    const $newname = CategoricalAxis{T,$(QuoteNode(axname)),R} where R<:AbstractVector{T} where T<:$(eltype)
-    $(newname)(v::AbstractVector{T}) where T = CategoricalAxis{T,$(QuoteNode(axname)),typeof(v)}(v)
-  end
-end
-
-macro defineRanAxis(axname,eltype)
-  newname=esc(Symbol(string(axname,"Axis")))
-  quote
-    const $newname = RangeAxis{T,$(QuoteNode(axname)),R} where R<:AbstractVector{T} where T<:$(eltype)
-    $(newname)(v::AbstractVector{T}) where T = RangeAxis{T,$(QuoteNode(axname)),typeof(v)}(v)
-  end
-end
-
 """
     abstract CubeAxis{T} <: AbstractCubeData{T,1}
 
@@ -69,11 +53,6 @@ end
 CategoricalAxis(s::Symbol,v)=CategoricalAxis{eltype(v),s,typeof(v)}(v)
 CategoricalAxis(s::AbstractString,v)=CategoricalAxis(Symbol(s),v)
 
-@defineCatAxis Variable String
-@defineCatAxis SpatialPoint Tuple{Number,Number}
-@defineCatAxis Scale String
-@defineCatAxis Quantile AbstractFloat
-
 struct RangeAxis{T,S,R<:AbstractVector{T}} <: CubeAxis{T,S}
   values::R
 end
@@ -91,11 +70,6 @@ The default constructor is:
 """
 RangeAxis(s::Symbol,v::AbstractVector{T}) where T = RangeAxis{T,s,typeof(v)}(v)
 RangeAxis(s::AbstractString,v)=RangeAxis(Symbol(s),v)
-
-@defineRanAxis MSC TimeType
-@defineRanAxis Lon Number
-@defineRanAxis Lat Number
-@defineRanAxis Time TimeType
 
 Base.length(a::CubeAxis)=length(a.values)
 
@@ -131,9 +105,6 @@ caxes(x::CubeAxis)=CubeAxis[x]
 axname(::Type{<:CubeAxis{<:Any,U}}) where U = string(U)
 axname(::CubeAxis{<:Any,U}) where U = string(U)
 axsym(::CubeAxis{<:Any,S}) where S = S
-axunits(::CubeAxis)="unknown"
-axunits(::LonAxis)="degrees_east"
-axunits(::LatAxis)="degrees_north"
 
 get_step(r::AbstractRange)=step(r)
 get_step(r::AbstractVector)=length(r)==0 ? zero(eltype(r)) : r[2]-r[1]
@@ -216,7 +187,9 @@ struct ByFunction <: AxisDescriptor
   f::Function
 end
 
-findAxis(a::Any,c::Any)=findAxis(a,caxes(c))
+const VecOrTuple{S} = Union{Vector{<:S},Tuple{Vararg{<:S}}} where S
+
+#findAxis(a::Any,c::VecOrTuple{<:CubeAxis}) = findAxis(get_descriptor(desc),c)
 get_descriptor(a::String)=ByName(a)
 get_descriptor(a::Type{T}) where {T<:CubeAxis}=ByType(a)
 get_descriptor(a::CubeAxis)=ByValue(a)
@@ -224,18 +197,17 @@ get_descriptor(a::Function)=ByFunction(a)
 get_descriptor(a)=error("$a is not a valid axis description")
 get_descriptor(a::AxisDescriptor)=a
 
-const VecOrTuple{S} = Union{Vector{<:S},NTuple{<:Any,S}} where S
 
 
 "Find a certain axis type in a vector of Cube axes and returns the index"
-function findAxis(bt::ByType,v::VecOrTuple{S}) where S<:CubeAxis
+function findAxis(bt::ByType,v::VecOrTuple{CubeAxis})
   a=bt.t
   for i=1:length(v)
     isa(v[i],a) && return i
   end
   return nothing
 end
-function findAxis(bs::ByName,axlist::VecOrTuple{T}) where T<:CubeAxis
+function findAxis(bs::ByName,axlist::VecOrTuple{CubeAxis})
   matchstr=bs.name
   ism=findall(i->startswith(lowercase(axname(i)),lowercase(matchstr)),axlist)
   isempty(ism) && return nothing
@@ -247,11 +219,11 @@ function findAxis(bs::ByName,axlist::VecOrTuple{T}) where T<:CubeAxis
     return ism[1]
   end
 end
-function findAxis(bv::ByValue,axlist::VecOrTuple{T}) where T<:CubeAxis
+function findAxis(bv::ByValue,axlist::VecOrTuple{CubeAxis})
   v=bv.v
   return findfirst(i->i==v,axlist)
 end
-function getAxis(desc,axlist::VecOrTuple{T}) where T<:CubeAxis
+function getAxis(desc,axlist::VecOrTuple{CubeAxis})
   i = findAxis(desc,axlist)
   if isa(i,Nothing)
     return nothing
@@ -310,10 +282,9 @@ getAxis(desc,c)=getAxis(desc,caxes(c))
 getAxis(desc::ByValue,axlist::Vector{T}) where {T<:CubeAxis}=desc.v
 
 "Fallback method"
-findAxis(a,axlist::VecOrTuple{T}) where T<:CubeAxis = findAxis(get_descriptor(a),axlist)
+findAxis(a,axlist::VecOrTuple{CubeAxis}) = findAxis(get_descriptor(a),axlist)
 
 getSubRange(x::CubeAxis,i)=x.values[i],nothing
-getSubRange(x::TimeAxis,i)=view(x,i),nothing
 
 renameaxis(r::RangeAxis{T,<:Any,V}, newname) where {T,V} = RangeAxis{T,Symbol(newname),V}(r.values)
 renameaxis(r::CategoricalAxis{T,<:Any,V}, newname) where {T,V} = CategoricalAxis{T,Symbol(newname),V}(r.values)
@@ -331,4 +302,10 @@ import Base.isequal
 ==(a::CubeAxis,b::CubeAxis)=(a.values==b.values) && (axname(a)==axname(b))
 isequal(a::CubeAxis, b::CubeAxis) = a==b
 
+using YAXArrayBase: YAXArrayBase
+#Implement yaxarray interface
+YAXArrayBase.dimname(x::CubeAxis,_) = axname(x)
+YAXArrayBase.dimvals(x,_) = x.values
+YAXArrayBase.iscontdim(::RangeAxis,_) = true
+YAXArrayBase.iscontdim(::CategoricalAxis,_) = false
 end
