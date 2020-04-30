@@ -10,7 +10,6 @@ end
 function PickAxisArray(parent, indmask, perm=nothing)
     f  = findall(isequal(true),indmask)
     f2 = findall(isequal(Colon()), indmask)
-
     o = sort([f;f2])
     o = isempty(f2) ? o : replace(o, map(i->i=>Colon(),f2)...)
     nsub = 0
@@ -41,12 +40,25 @@ function Base.getindex(p::PickAxisArray, i::Integer...)
     inew = map(j->getind(i,j),indmask(p))
     permout(p,getindex(p.parent,inew...))
 end
-Base.getindex(p::PickAxisArray,i::CartesianIndex) = p[i.I...]
-function newparent(a::PickAxisArray{T,N,AT,P},parent) where {T,N,AT,P}
-  eltype(parent) == T || error("Types do not match")
-  size(parent) == size(a.parent) || error("Sizes do not match")
-  PickAxisArray{T,N,AT,P}(parent)
+anycol(t::Tuple{}) = false
+anycol(t::Tuple) = anycol(first(t), Base.tail(t))
+anycol(::Colon,t::Tuple) = true
+anycol(i,::Tuple{}) = false
+anycol(i,t::Tuple) = anycol(first(t),Base.tail(t))
+ncol(t::Tuple) = ncol(first(t), Base.tail(t),0)
+ncol(::Colon,t::Tuple,n) = ncol(first(t),Base.tail(t), n+1)
+ncol(i,::Tuple{},n) = n
+ncol(i,t::Tuple,n) = ncol(first(t),Base.tail(t),n)
+
+function Base.eltype(p::PickAxisArray{T}) where T
+  im = indmask(p)
+  if anycol(im)
+    Array{T,ncol(im)}
+  else
+    T
+  end
 end
+Base.getindex(p::PickAxisArray,i::CartesianIndex) = p[i.I...]
 
 """
     macro loadOrGenerate(x...,expression)

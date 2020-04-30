@@ -23,10 +23,7 @@ function savecube(c::AbstractCubeData, name::AbstractString;
   axn = axname.(allax[1:isplit-1])
   indims = InDims(axn...)
   outdims = OutDims(axn..., backend=backend,chunksize=chunksize[1:length(axn)], path = name; backendargs...)
-  @show axn
   function cop(xout,xin)
-    @show size(xout)
-    @show size(xin)
     xout .= xin
   end
   if forcesingle

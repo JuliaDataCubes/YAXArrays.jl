@@ -258,10 +258,12 @@ end
 cubesize(c::AbstractCubeData{T}) where {T}=(sizeof(T)+1)*prod(map(length,caxes(c)))
 cubesize(c::AbstractCubeData{T,0}) where {T}=sizeof(T)+1
 
-getCubeDes(c::AbstractSubCube)="Data Cube view"
 getCubeDes(::CubeAxis)="Cube axis"
-getCubeDes(c::ESDLArray)="ESDL data cube"
-function Base.show(io::IO,c::AbstractCubeData)
+getCubeDes(::ESDLArray)="ESDL data cube"
+getCubeDes(::Type{T}) where T = string(T)
+Base.show(io::IO,c::AbstractCubeData) = show_yax(io,c)
+
+function show_yax(io::IO,c)
     println(io,getCubeDes(c), " with the following dimensions")
     for a in caxes(c)
         println(io,a)
@@ -330,4 +332,5 @@ function cubeinfo(ds::ESDLArray, variable="unknown")
 end
 
 include("TransformedCubes.jl")
+include("Slices.jl")
 end

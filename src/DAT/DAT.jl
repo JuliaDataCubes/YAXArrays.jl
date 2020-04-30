@@ -7,7 +7,7 @@ using Distributed: RemoteChannel, nworkers,pmap,
   remote_do, myid, nprocs
 import ..Cubes: cubechunks, iscompressed, chunkoffset,
   CubeAxis, AbstractCubeData, ESDLArray,
-  caxes
+  caxes, YAXSlice
 import ..Cubes.Axes: AxisDescriptor, axname, ByInference, axsym,
   getOutAxis, getAxis, findAxis
 import ..Datasets: Dataset, createdataset
@@ -250,6 +250,18 @@ function mapCube(fu::Function,
     showprog=true,
     nthreads=ispar ? Dict(i=>remotecall_fetch(Threads.nthreads,i) for i in workers()) : [Threads.nthreads()] ,
     kwargs...)
+
+  #Translate slices
+  if any(i->isa(i,YAXSlice),cdata)
+    inew = map(cdata) do d
+      isa(d,YAXSlice) ? InDims(axname.(d.sliceaxes[2])...) : InDims()
+    end
+    cnew = map(i->isa(i,YAXSlice) ? i.c : i, cdata)
+    return mapCube(fu, cnew, addargs...;
+      indims=inew, outdims=outdims, inplace=inplace, ispar=ispar,
+      debug=debug, include_loopvars=include_loopvars, showprog=showprog,
+      nthreads=nthreads, kwargs...)
+  end
   @debug_print "Check if function is registered"
   @debug_print "Generating DATConfig"
   dc=DATConfig(cdata,indims,outdims,inplace,
@@ -616,6 +628,15 @@ function getLoopCacheSize(preblocksize,loopaxlengths,max_cache,cmisses)
       end
     end
     imiss+=1
+  end
+  #Now second run to read multiple blocks at once
+  if incfac >= 2
+    for i=1:length(loopcachesize)
+      imul = min(floor(Int,incfac),loopaxlengths[i]÷loopcachesize[i])
+      loopcachesize[i] = loopcachesize[i] * imul
+      incfac = incfac/imul
+      incfac < 2 && break
+    end
   end
   if imiss<length(cmisses)+1
     @warn "There are still cache misses"

@@ -1,5 +1,5 @@
 module Datasets
-import ..Cubes.Axes: axsym, axname, CubeAxis, findAxis, CategoricalAxis, RangeAxis
+import ..Cubes.Axes: axsym, axname, CubeAxis, findAxis, CategoricalAxis, RangeAxis, caxes
 import ..Cubes: AbstractCubeData, ESDLArray, concatenateCubes, CleanMe
 using ...ESDL: ESDL, ESDLDefaults
 using DataStructures: OrderedDict, counter
@@ -7,7 +7,8 @@ using Dates: Day,Hour,Minute,Second,Month,Year, Date, DateTime, TimeType
 using IntervalSets: Interval, (..)
 using CFTime: timedecode, timeencode, DateTimeNoLeap, DateTime360Day, DateTimeAllLeap
 using YAXArrayBase
-using DiskArrayTools: CFDiskArray
+using YAXArrayBase: iscontdimval
+using DiskArrayTools: CFDiskArray, ConcatDiskArray
 
 struct Dataset
     cubes::OrderedDict{Symbol,AbstractCubeData}
@@ -20,7 +21,7 @@ function Dataset(;cubesnew...)
         foreach(a->push!(axesall,a),ax)
     end
     axesall = collect(axesall)
-    axnameall = [axsym(a) in (:Lon, :Lat, :Time) ? Symbol(lowercase(string(axsym(a)))) : axsym(a) for a in axesall]
+    axnameall = axsym.(axesall)
     axesnew = Dict{Symbol,CubeAxis}(axnameall[i]=>axesall[i] for i in 1:length(axesall))
     Dataset(OrderedDict(cubesnew), axesnew)
 end
@@ -110,7 +111,7 @@ function toaxis(dimname,g,offs,len)
     aratts = get_var_attrs(g,dimname)
     if uppercase(axname)=="TIME" && haskey(aratts,"units")
         tsteps = timedecode(ar[:],aratts["units"],get(aratts,"calendar","standard"))
-        RangeAxis("Time",tsteps[offs+1:end])
+        RangeAxis(dimname,tsteps[offs+1:end])
     elseif haskey(aratts,"_ARRAYVALUES")
       vals = identity.(aratts["_ARRAYVALUES"])
       CategoricalAxis(axname,vals)
@@ -133,6 +134,29 @@ end
 
 testrange(x::AbstractArray{<:AbstractString}) = x
 
+function resolve_stars(s, res=String[])
+    s2 = splitpath(s)
+    istar = findfirst(i->occursin('*',i),s2)
+    if istar==nothing
+        return push!(res,s)
+    end
+    p = joinpath(s2[1:istar-1]...)
+    allfiles = readdir(p)
+    allfiles = filter(i->match(wildcard_to_regex(s2[istar]), i)!==nothing, allfiles)
+    foreach(i->resolve_stars(joinpath(p,i,s2[istar+1:end]...),res),allfiles)
+    return res
+end
+function wildcard_to_regex(s)
+    if startswith(s,"*")
+        s = string("[^.]",s)
+    end
+    Regex(replace(s,'*'=>".*"))
+end
+
+open_mfdataset(g::AbstractString; kwargs...) = open_mfdataset(resolve_stars(g); kwargs...)
+open_mfdataset(g::Vector{<:AbstractString};kwargs...) =
+  merge_datasets(map(i->open_dataset(i;kwargs...), g))
+  
 function open_dataset(g; driver = :all)
   g = to_dataset(g, driver=driver)
   isempty(get_varnames(g)) && throw(ArgumentError("Zarr Group does not contain datasets."))
@@ -341,6 +365,95 @@ function Cube(;kwargs...)
   else
     ESDC(;kwargs...)
   end
+end
+
+#Defining joins of Datasets
+abstract type AxisJoin end
+struct AllEqual <: AxisJoin
+     ax
+end
+struct SortedRanges <: AxisJoin
+     axlist
+     perm
+end
+blocksize(x::AllEqual) = 1
+blocksize(x::SortedRanges) = length(x.axlist)
+getperminds(x::AllEqual) = 1:1
+getperminds(x::SortedRanges) = x.perm
+wholeax(x::AllEqual) = x.ax
+wholeax(x::SortedRanges) = reduce(vcat,x.axlist[x.perm])
+struct NewDim <: AxisJoin
+     newax
+end
+#Test for a range of categorical axes how to concatenate them
+function analyse_axjoin_ranges(dimvallist)
+    firstax = first(dimvallist)
+    if all(isequal(firstax), dimvallist)
+        return AllEqual(firstax)
+    end
+    revorder = if all(issorted,dimvallist)
+        false
+    elseif all(i->issorted(i,rev=true),dimvallist)
+        true
+    else
+        error("Dimension values are not sorted")
+    end
+    function ltfunc(ax1,ax2)
+        min1,max1 = extrema(ax1)
+        min2,max2 = extrema(ax2)
+        if max1 < min2
+            return true
+        elseif min1 > max2
+            return false
+        else
+            error("Dimension ranges overlap")
+        end
+    end
+    sp = sortperm(dimvallist, rev = revorder, lt = ltfunc)
+    SortedRanges(dimvallist, sp)
+end
+using YAXArrayBase: YAXArrayBase, getdata, getattributes, yaxcreate
+function create_mergedict(dimvallist)
+    allmerges = Dict{Symbol,Any}()
+
+    for (axn,dimvals) in dimvallist
+        iscont = iscontdimval.(dimvals)
+        if all(iscont)
+            allmerges[axn] = analyse_axjoin_ranges(dimvals)
+        elseif any(iscont)
+            error("Mix of continous and non-continous values")
+        else
+            allmerges[axn] = analyse_axjoin_categorical(dimvals)
+        end
+    end
+    allmerges
+end
+function merge_datasets(dslist)
+    allaxnames = counter(Symbol)
+    for ds in dslist, k in keys(ds.axes)
+        push!(allaxnames,k)
+    end
+    dimvallist = Dict(ax=>map(i->i.axes[ax].values,dslist) for ax in keys(allaxnames))
+    allmerges = create_mergedict(dimvallist)
+    repvars = counter(Symbol)
+    for ds in dslist, v in keys(ds.cubes)
+        push!(repvars,v)
+    end
+    tomergevars = filter(i->i[2]==length(dslist), repvars)
+    mergedvars=Dict{Symbol,Any}()
+    for v in keys(tomergevars)
+        dn = YAXArrayBase.dimnames(first(dslist)[v])
+        howmerge = getindex.(Ref(allmerges), dn)
+        sizeblockar = map(blocksize,howmerge)
+        perminds = map(getperminds,howmerge)
+        @assert length(dslist) == prod(sizeblockar)
+        vcol = map(i->getdata(i[v]), dslist)
+        allatts = mapreduce(i->getattributes(i[v]),merge,dslist, init=Dict{String,Any}())
+        aa = [vcol[i] for (i,_) in enumerate(Iterators.product(perminds...))]
+        dvals = map(wholeax, howmerge)
+        mergedvars[v] = yaxcreate(ESDLArray, ConcatDiskArray(aa), dn, dvals, allatts)
+    end
+    Dataset(;mergedvars...)
 end
 
 
