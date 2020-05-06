@@ -59,6 +59,7 @@ function CubeIterator(dc,r;varnames::Tuple=ntuple(i->Symbol("x$i"),length(dc.inc
     elt = NamedTuple{(map(Symbol,varnames)...,map(Symbol,include_loopvars)...),Tuple{et...}}
     CubeIterator{typeof(r),typeof(inars),typeof(inarsbc),typeof(loopaxes),ilax,elt}(dc,r,inars,inarsbc,loopaxes)
 end
+iternames(::CubeIterator{<:Any,<:Any,<:Any,<:Any,<:Any,E}) where E = E
 tuplenames(t::Type{<:NamedTuple{N}}) where N = string.(N)
 function Base.show(io::IO,ci::CubeIterator{<:Any,<:Any,<:Any,<:Any,<:Any,E}) where E
   print(io,"Datacube iterator with ", length(ci), " elements with fields: ",tuplenames(E))

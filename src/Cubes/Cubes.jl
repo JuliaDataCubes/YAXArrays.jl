@@ -8,7 +8,7 @@ using Distributed: myid
 using Dates: TimeType
 using IntervalSets: Interval, (..)
 using Base.Iterators: take, drop
-using ..ESDL: workdir
+using ..ESDL: workdir, ESDLDefaults
 using YAXArrayBase
 import YAXArrayBase: iscompressed, getattributes
 
@@ -205,14 +205,9 @@ interpretsubset(subexpr::AbstractVector,ax::CategoricalAxis)      = axVal2Index.
 
 
 function _subsetcube(z::AbstractCubeData, subs;kwargs...)
-  if :region in keys(kwargs)
-    kwargs = collect(Any,kwargs)
-    ireg = findfirst(i->i[1]==:region,kwargs)
-    reg = splice!(kwargs,ireg)
-    haskey(known_regions,reg[2]) || error("Region $(reg[2]) not known.")
-    lon1,lat1,lon2,lat2 = known_regions[reg[2]]
-    push!(kwargs,:lon=>lon1..lon2)
-    push!(kwargs,:lat=>lat1..lat2)
+  kwargs = Dict(kwargs)
+  for f in ESDLDefaults.subsetextensions
+    f(kwargs)
   end
   newaxes = deepcopy(caxes(z))
   foreach(kwargs) do kw

@@ -46,7 +46,7 @@ data2=readcubedata(d2)
 @test caxes(data1)[1:2]==CubeAxis[RangeAxis("lon",10.125:0.25:10.875),RangeAxis("lat",50.875:-0.25:50.125)]
 
 tax = caxes(data1)[3]
-@test ESDL.Cubes.Axes.axsym(tax)==:Time
+@test ESDL.Cubes.Axes.axsym(tax)==:time
 @test tax.values[1] == Date(2002,1,5)
 @test tax.values[end] == Date(2008,12,30)
 @test length(tax.values) == 7*46
@@ -54,7 +54,7 @@ tax = caxes(data1)[3]
 @test caxes(data2)[[1,2,4]]==CubeAxis[RangeAxis("lon",10.125:0.25:10.875),RangeAxis("lat",50.875:-0.25:50.125),CategoricalAxis("Variable",["air_temperature_2m","gross_primary_productivity"])]
 
 tax = caxes(data2)[3]
-@test ESDL.Cubes.Axes.axsym(tax)==:Time
+@test ESDL.Cubes.Axes.axsym(tax)==:time
 @test tax.values[1] == Date(2002,1,5)
 @test tax.values[end] == Date(2008,12,30)
 @test length(tax.values) == 7*46
@@ -128,8 +128,8 @@ using DiskArrayTools: DiskArrayStack
   #Test exportcube
   @test ncread(ncf,"lon") == 10.125:0.25:10.875
   @test ncread(ncf,"lat") == 50.875:-0.25:50.125
-  @test ncgetatt(ncf,"Time","units") == "days since 1980-01-01"
-  @test getAxis("Time",danom).values .- DateTime(1980) == Millisecond.(Day.(ncread(ncf,"Time")))
+  @test ncgetatt(ncf,"time","units") == "days since 1980-01-01"
+  @test getAxis("time",danom).values .- DateTime(1980) == Millisecond.(Day.(ncread(ncf,"time")))
 
   anc = replace(ncread(ncf,"gross_primary_productivity")[:,:,:],-9999.0=>missing)
   @test all(isequal.(anc, danom.data[:,:,:,1]))

@@ -7,26 +7,7 @@ using Base.Iterators: take, drop
     abstract CubeAxis{T} <: AbstractCubeData{T,1}
 
 Supertype of all axes. Every `CubeAxis` is an 1D Cube itself and can be passed
-to mapCube operations. Although all cube axes are instances of the parametric typealias
-`CategoricalAxis` and `RangeAxis`, there are some typealiases defined
-to provide shorter and more convenient names for commonly used cube axes. Here is a list
-of the aliases:
-
-### Categorical Axes
-
-* `VariableAxis` represents different variables
-* `SpatialPointAxis` represents a list of coordinates
-* `CountryAxis` countries
-* `ScaleAxis` time scales after time series decomposition
-* `QuantileAxis` represents different quantiles
-
-### Continuous Axes
-
-* `LonAxis` longitudes
-* `LatAxis` latitudes
-* `TimeAxis` time
-* `MSCAxis` time step inside a year (for seasonal statistics)
-
+to mapCube operations. 
 """
 abstract type CubeAxis{T,S} <: AbstractCubeData{T,1} end
 
@@ -282,6 +263,7 @@ getAxis(desc,c)=getAxis(desc,caxes(c))
 getAxis(desc::ByValue,axlist::Vector{T}) where {T<:CubeAxis}=desc.v
 
 "Fallback method"
+findAxis(desc,c)=findAxis(desc,caxes(c))
 findAxis(a,axlist::VecOrTuple{CubeAxis}) = findAxis(get_descriptor(a),axlist)
 
 getSubRange(x::CubeAxis,i)=x.values[i],nothing

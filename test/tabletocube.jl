@@ -7,17 +7,16 @@ using WeightedOnlineStats
 c=Cube()
 d = subsetcube(c,variable=["air_temperature_2m", "gross_primary_productivity", "soil_moisture"],lon=(30,31),lat=(50,51),
               time=(Date("2002-01-01"),Date("2008-12-31")))
-mytable = CubeTable(variable=d,include_axes=("lon", "lat", "time"),fastest="variable")
+mytable = CubeTable(value=d,include_axes=("lon", "lat", "time"), expandaxes=("var",))
 
-mytable2 = CubeTable(data=d,include_axes=("lon", "lat", "time", "variable"),fastest="variable")
+mytable2 = CubeTable(data=d,include_axes=("lon", "lat", "time", "variable"))
 
 @testset "cubefittable and WeightedCovMatrix fittable" begin
-    covmCube = cubefittable(mytable, WeightedCovMatrix, :variable, weight=(x->cosd(x.lat)),showprog=false)
-    newtab = IterTools.partition(mytable,3)
+    covmCube = cubefittable(mytable, WeightedCovMatrix, :value, weight=(x->cosd(x.lat)),showprog=false)
     covmVal = WeightedCovMatrix()
-    for row in newtab
-        obs = [row[i].variable for i in 1:length(row)]
-        obslat = row[1].lat
+    for row in mytable
+        obs = row.value
+        obslat = row.lat
         if !any(ismissing.(obs))
             fit!(covmVal, obs, cosd(obslat))
         end

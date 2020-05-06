@@ -12,6 +12,7 @@ global const ESDLDefaults = (
   chunksize  = Ref{Any}(:input),
   max_cache  = Ref(1e8),
   cubedir    = Ref(""),
+  subsetextensions = [],
 )
 global const workdir=ESDLDefaults.workdir
 global const recal=ESDLDefaults.recal

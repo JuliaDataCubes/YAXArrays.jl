@@ -885,3 +885,18 @@ const known_regions = Dict{String,NTuple{4,Float64}}(
   "Zimbabwe" => (25.219369751374444,-22.397339782252487,33.0427681886182,-15.614808044416833),
   "ZWE" => (25.219369751374444,-22.397339782252487,33.0427681886182,-15.614808044416833),
 )
+
+using ..ESDL: ESDLDefaults
+
+function replaceregion(kwargs)
+  if haskey(kwargs,:region)
+    reg = kwargs[:region]
+    delete!(kwargs, :region)
+    haskey(known_regions,reg) || error("Region $(reg[2]) not known.")
+    lon1,lat1,lon2,lat2 = known_regions[reg]
+    kwargs[:lon] = lon1..lon2
+    kwargs[:lat] = lat1..lat2
+  end
+end
+
+push!(ESDLDefaults.subsetextensions, replaceregion)
