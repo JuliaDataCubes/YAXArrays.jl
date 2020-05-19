@@ -10,8 +10,8 @@
 [codecov-img]: https://img.shields.io/codecov/c/github/esa-esdl/ESDL.jl/master.svg?label=codecov
 # Installation
 
-- clone the ESDL package
-`Pkg.clone("https://github.com/esa-esdl/ESDL.jl")`
+- Add the ESDL package
+`Pkg.add("https://github.com/esa-esdl/ESDL.jl")`
 
 # Documentation
 
