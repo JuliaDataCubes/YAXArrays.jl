@@ -1,5 +1,5 @@
 using Base.Iterators: Iterators, product
-
+using DataStructures: OrderedDict
 
 """
     savecube(cube,name::String)
@@ -7,22 +7,27 @@ using Base.Iterators: Iterators, product
 Save a [`ESDLArray`](@ref) to the folder `name` in the ESDL working directory.
 """
 function savecube(c::AbstractCubeData, name::AbstractString;
-  chunksize = cubechunks(c),
+  chunksize = Dict(),
   max_cache = 1e8,
   backend = :zarr,
   backendargs...
 )
-  allax = caxes(c)
-  firstaxes = findall(i->i>1,chunksize)
+allax = caxes(c)
+if !isa(chunksize,AbstractDict)
+  @warn "Chunksize must be provided as a Dict mapping axis names to chunk size in the future"
+  chunksize = OrderedDict(axname(i[1])=>i[2] for i in zip(allax,chunksize))
+end
+  firstaxes = [findAxis(a,allax) for a in keys(chunksize)]
   lastaxes = setdiff(1:length(allax),firstaxes)
   allax = allax[[firstaxes;lastaxes]]
   dl = cumprod(length.(caxes(c)))
   isplit = findfirst(i->i>max_cache/sizeof(eltype(c)),dl)
   isplit isa Nothing && (isplit=length(dl)+1)
   forcesingle = (isplit+1)<length(firstaxes)
-  axn = axname.(allax[1:isplit-1])
+  axin = allax[1:isplit-1]
+  axn = axname.(axin)
   indims = InDims(axn...)
-  outdims = OutDims(axn..., backend=backend,chunksize=chunksize[1:length(axn)], path = name; backendargs...)
+  outdims = OutDims(axn..., backend=backend,chunksize=chunksize, path = name; backendargs...)
   function cop(xout,xin)
     xout .= xin
   end

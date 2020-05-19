@@ -233,6 +233,7 @@ Map a given function `fun` over slices of the data cube `cube`.
 * `ispar` boolean to determine if parallelisation should be applied, defaults to `true` if workers are available.
 * `showprog` boolean indicating if a ProgressMeter shall be shown
 * `include_loopvars` boolean to indicate if the varoables looped over should be added as function arguments
+* `loopchunksize` determines the chunk sizes of variables which are looped over, a dict
 * `kwargs` additional keyword arguments passed to the inner function
 
 The first argument is always the function to be applied, the second is the input cube or
@@ -249,6 +250,7 @@ function mapCube(fu::Function,
     include_loopvars=false,
     showprog=true,
     nthreads=ispar ? Dict(i=>remotecall_fetch(Threads.nthreads,i) for i in workers()) : [Threads.nthreads()] ,
+    loopchunksize = Dict(),
     kwargs...)
 
   #Translate slices
@@ -262,14 +264,13 @@ function mapCube(fu::Function,
       debug=debug, include_loopvars=include_loopvars, showprog=showprog,
       nthreads=nthreads, kwargs...)
   end
-  @debug_print "Check if function is registered"
   @debug_print "Generating DATConfig"
   dc=DATConfig(cdata,indims,outdims,inplace,
     max_cache,fu,ispar,include_loopvars,nthreads,addargs,kwargs)
   @debug_print "Analysing Axes"
   analyzeAxes(dc)
   @debug_print "Calculating Cache Sizes"
-  getCacheSizes(dc)
+  getCacheSizes(dc,loopchunksize)
   @debug_print "Generating Output Cube"
   generateOutCubes(dc)
   @debug_print "Running main Loop"
@@ -477,8 +478,13 @@ function getbackend(oc,ispar,max_cache)
 end
 
 function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co;kwargs...) where T
-  cs_inner = oc.innerchunks
+  cs_inner = (map(length,oc.axesSmall)...,)
   cs = (cs_inner..., loopcachesize...)
+  for (i,cc) in enumerate(oc.innerchunks)
+    if cc !== nothing
+      cs = Base.setindex(cs,cc,i)
+    end
+  end
   oc.cube=createdataset(T, oc.allAxes; chunksize=cs, chunkoffset=co, kwargs...)
 end
 function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co;kwargs...) where T<:Array
@@ -541,7 +547,18 @@ function analyzeAxes(dc::DATConfig{NIN,NOUT}) where {NIN,NOUT}
       push!(LoopAxesAdd,loopax)
     end
     outcube.allAxes=CubeAxis[outcube.axesSmall;LoopAxesAdd]
+    dold = outcube.innerchunks
+    newchunks = Union{Int,Nothing}[nothing for _ in 1:length(outcube.allAxes)]
+    for (k,v) in dold
+      ii = findAxis(k,outcube.allAxes)
+      if ii !== nothing
+        newchunks[ii] = v
+      end
+    end
+    @show newchunks
+    outcube.innerchunks = newchunks
   end
+  #And resolve names in chunk size dicts
   return dc
 end
 
@@ -561,7 +578,7 @@ function cmpcachmisses(x1,x2)
   end
 end
 
-function getCacheSizes(dc::DATConfig)
+function getCacheSizes(dc::DATConfig,loopchunksizes)
 
   inAxlengths      = Vector{Int}[Int.(length.(cube.axesSmall)) for cube in dc.incubes]
   inblocksizes     = map((x,T)->isempty(x) ? mysizeof(eltype(T.cube)) : prod(x)*mysizeof(eltype(T.cube)),inAxlengths,dc.incubes)
@@ -569,45 +586,53 @@ function getCacheSizes(dc::DATConfig)
   outblocksizes    = map(C->length(C.axesSmall)>0 ? sizeof(C.outtype)*prod(map(Int∘length,C.axesSmall)) : 1,dc.outcubes)
   outblocksize     = length(outblocksizes) > 0 ? findmax(outblocksizes)[1] : 1
   #Now add cache miss information for each input cube to every loop axis
-  cmisses= NamedTuple{(:iloopax,:cs, :iscompressed, :innerleap),Tuple{Int64,Int64,Bool,Int64}}[]
+  cmisses= NamedTuple{(:iloopax,:cs, :iscompressed, :innerleap,:preventpar),Tuple{Int64,Int64,Bool,Int64,Bool}}[]
+  userchunks = Dict{Int,Int}()
+  for (k,v) in loopchunksizes
+    ii = findAxis(k,dc.LoopAxes)
+    if ii !== nothing
+      userchunks[ii] = v
+    end
+  end
   foreach(dc.LoopAxes,1:length(dc.LoopAxes)) do lax,ilax
+    haskey(userchunks,ilax) && return nothing
     for ic in dc.incubes
       ii = findAxis(lax,ic.cube)
       if !isa(ii,Nothing)
         inax = isempty(ic.axesSmall) ? 1 : prod(map(length,ic.axesSmall))
-        push!(cmisses,(iloopax = ilax,cs = cubechunks(ic.cube)[ii],iscompressed = iscompressed(ic.cube), innerleap=inax))
+        push!(cmisses,(iloopax = ilax,cs = cubechunks(ic.cube)[ii],iscompressed = iscompressed(ic.cube), innerleap=inax,preventpar=false))
       end
     end
-    # for oc in dc.outcubes
-    #   cs = oc.desc.chunksize
-    #   if cs !== nothing
-    #     ii = findAxis(lax,oc.allAxes)
-    #     if !isa(ii,Nothing)
-    #       innerleap = prod(cs)
-    #       push!(cmisses,(iloopax = ilax,cs = cs[ii],iscompressed = isa(oc.desc.compressor,NoCompressor), innerleap=innerleap))
-    #     end
-    #   end
-    # end
+    for oc in dc.outcubes
+      cs = oc.innerchunks
+      ii = findAxis(lax,oc.allAxes)
+      if !isa(ii,Nothing) && !isa(cs[ii],Nothing)
+        innerleap = isempty(oc.axesSmall) ? 1 : prod(map(length,oc.axesSmall))
+        push!(cmisses,(iloopax = ilax,cs = cs[ii],iscompressed = iscompressed(oc.cube), innerleap=innerleap, preventpar=true))
+      end
+    end
   end
   sort!(cmisses,lt=cmpcachmisses)
-  loopcachesize    = getLoopCacheSize(max(inblocksize,outblocksize),map(length,dc.LoopAxes),dc.max_cache, cmisses)
+  loopcachesize,nopar    = getLoopCacheSize(max(inblocksize,outblocksize),map(length,dc.LoopAxes),dc.max_cache, cmisses, userchunks)
   for cube in dc.incubes
     cube.cachesize = map(length,cube.axesSmall)
     for (cs,loopAx) in zip(loopcachesize,dc.LoopAxes)
       in(typeof(loopAx),map(typeof,caxes(cube.cube))) && push!(cube.cachesize,cs)
     end
   end
+  nopar && (dc.ispar = false)
   dc.loopcachesize=loopcachesize
   return dc
 end
 
 "Calculate optimal Cache size to DAT operation"
-function getLoopCacheSize(preblocksize,loopaxlengths,max_cache,cmisses)
+function getLoopCacheSize(preblocksize,loopaxlengths,max_cache,cmisses,userchunks)
   totcachesize=max_cache
-
-  incfac=totcachesize/preblocksize
-  incfac<1 && error("The requested slices do not fit into the specified cache. Please consider increasing max_cache")
   loopcachesize = ones(Int,length(loopaxlengths))
+  #Go through user definitions
+  incfac=totcachesize/preblocksize/prod(loopcachesize)
+  incfac<1 && error("The requested slices do not fit into the specified cache. Please consider increasing max_cache")
+
   # Go through list of cache misses first and decide
   imiss = 1
   while imiss<=length(cmisses)
@@ -632,6 +657,7 @@ function getLoopCacheSize(preblocksize,loopaxlengths,max_cache,cmisses)
   #Now second run to read multiple blocks at once
   if incfac >= 2
     for i=1:length(loopcachesize)
+      haskey(userchunks,i) && continue
       imul = min(floor(Int,incfac),loopaxlengths[i]÷loopcachesize[i])
       loopcachesize[i] = loopcachesize[i] * imul
       incfac = incfac/imul
@@ -644,7 +670,8 @@ function getLoopCacheSize(preblocksize,loopaxlengths,max_cache,cmisses)
   else
     #TODO continue increasing cache sizes on by one...
   end
-  return loopcachesize
+  nopar = any(i->i.preventpar,cmisses[imiss:end])
+  return loopcachesize, nopar
 end
 
 function distributeLoopRanges(block_size::NTuple{N,Int},loopR::NTuple{N,Int},co) where N

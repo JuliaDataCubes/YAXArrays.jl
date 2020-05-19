@@ -92,7 +92,7 @@ Creates a description of an Output Data Cube for cube operations. Takes a single
 - `backend` : specifies the dataset backend to write data to, must be either :auto or a key in `YAXArrayBase.backendlist`
 - `update` : specifies wether the function operates inplace or if an output is returned
 - `artype` : specifies the Array type inside the inner function that is mapped over
-- `chunksize`: Chunk size for the inner dimensions, a tuple of the same length as `axisdesc`, or `:input` to copy chunksizes from input cube axes or `:max` to not chunk the inner dimensions
+- `chunksize`: A Dict specifying the chunksizes for the output dimensions of the cube, or `:input` to copy chunksizes from input cube axes or `:max` to not chunk the inner dimensions
 - `outtype`: force the output type to a specific type, defaults to `Any` which means that the element type of the first input cube is used
 """
 function OutDims(axisdesc...;
@@ -103,9 +103,6 @@ function OutDims(axisdesc...;
            outtype=1,
            backendargs...)
   descs = get_descriptor.(axisdesc)
-  if !in(chunksize,(:input, :max)) && length(chunksize)!=length(axisdesc)
-    error("Length of chunk sizes must equal number of inner Axes")
-  end
   OutDims(descs,backend,backendargs,update,artype,chunksize,outtype)
 end
 
