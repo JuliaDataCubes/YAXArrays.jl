@@ -17,7 +17,7 @@ if !isa(chunksize,AbstractDict)
   @warn "Chunksize must be provided as a Dict mapping axis names to chunk size in the future"
   chunksize = OrderedDict(axname(i[1])=>i[2] for i in zip(allax,chunksize))
 end
-  firstaxes = [findAxis(a,allax) for a in keys(chunksize)]
+  firstaxes = sort!([findAxis(a,allax) for a in keys(chunksize)])
   lastaxes = setdiff(1:length(allax),firstaxes)
   allax = allax[[firstaxes;lastaxes]]
   dl = cumprod(length.(caxes(c)))

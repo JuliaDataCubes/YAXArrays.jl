@@ -11,7 +11,8 @@ cgermany = c[
   var = ["gross", "net_ecosystem", "air_temperature_2m", "terrestrial_ecosystem", "soil_moisture"],
   time = 2000:2010
 ]
-savecube(cgermany,"germanycube", chunksize=(20,20,92,1))
+savecube(cgermany,"germanycube",
+  chunksize=Dict("lon"=>20,"lat"=>20,"time"=>92))
 ESDL.ESDLDefaults.cubedir[] = joinpath(newcubedir,"germanycube")
 include("access.jl")
 include("analysis.jl")
