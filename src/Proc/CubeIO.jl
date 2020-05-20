@@ -13,11 +13,11 @@ function savecube(c::AbstractCubeData, name::AbstractString;
   backendargs...
 )
 allax = caxes(c)
-if !isa(chunksize,AbstractDict)
+if !isa(chunksize,AbstractDict) && !isa(chunksize,NamedTuple)
   @warn "Chunksize must be provided as a Dict mapping axis names to chunk size in the future"
   chunksize = OrderedDict(axname(i[1])=>i[2] for i in zip(allax,chunksize))
 end
-  firstaxes = sort!([findAxis(a,allax) for a in keys(chunksize)])
+  firstaxes = sort!([findAxis(String(k),allax) for k in keys(chunksize)])
   lastaxes = setdiff(1:length(allax),firstaxes)
   allax = allax[[firstaxes;lastaxes]]
   dl = cumprod(length.(caxes(c)))

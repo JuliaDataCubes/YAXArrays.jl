@@ -7,7 +7,7 @@ using Base.Iterators: take, drop
     abstract CubeAxis{T} <: AbstractCubeData{T,1}
 
 Supertype of all axes. Every `CubeAxis` is an 1D Cube itself and can be passed
-to mapCube operations. 
+to mapCube operations.
 """
 abstract type CubeAxis{T,S} <: AbstractCubeData{T,1} end
 
@@ -172,6 +172,7 @@ const VecOrTuple{S} = Union{Vector{<:S},Tuple{Vararg{<:S}}} where S
 
 #findAxis(a::Any,c::VecOrTuple{<:CubeAxis}) = findAxis(get_descriptor(desc),c)
 get_descriptor(a::String)=ByName(a)
+get_descriptor(a::Symbol)=ByName(String(a))
 get_descriptor(a::Type{T}) where {T<:CubeAxis}=ByType(a)
 get_descriptor(a::CubeAxis)=ByValue(a)
 get_descriptor(a::Function)=ByFunction(a)

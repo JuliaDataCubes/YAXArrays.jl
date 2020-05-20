@@ -81,16 +81,16 @@ end
 
 function interpretoutchunksizes(desc,axesSmall,incubes)
   if desc.chunksize == :max
-    map(length,axesSmall)
+    map(ax->axname(ax)=>length(ax),axesSmall)
   elseif desc.chunksize == :input
     map(axesSmall) do ax
       for cc in incubes
         i = findAxis(axname(ax),cc)
         if i !== nothing
-          return min(length(ax),cubechunks(cc)[i])
+          return axname(ax)=>min(length(ax),cubechunks(cc)[i])
         end
       end
-      return length(ax)
+      return axname(ax)=>length(ax)
     end
   else
     desc.chunksize
@@ -549,13 +549,12 @@ function analyzeAxes(dc::DATConfig{NIN,NOUT}) where {NIN,NOUT}
     outcube.allAxes=CubeAxis[outcube.axesSmall;LoopAxesAdd]
     dold = outcube.innerchunks
     newchunks = Union{Int,Nothing}[nothing for _ in 1:length(outcube.allAxes)]
-    for (k,v) in dold
+    for k in keys(dold)
       ii = findAxis(k,outcube.allAxes)
       if ii !== nothing
-        newchunks[ii] = v
+        newchunks[ii] = dold[k]
       end
     end
-    @show newchunks
     outcube.innerchunks = newchunks
   end
   #And resolve names in chunk size dicts
