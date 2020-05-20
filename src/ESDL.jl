@@ -5,7 +5,6 @@
 Some info on the project...
 """
 module ESDL
-using Reexport
 global const ESDLDefaults = (
   workdir = Ref("./"),
   recal   = Ref(false),
