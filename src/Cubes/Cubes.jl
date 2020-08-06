@@ -209,7 +209,7 @@ function _subsetcube(z::AbstractCubeData, subs;kwargs...)
   for f in ESDLDefaults.subsetextensions
     f(kwargs)
   end
-  newaxes = deepcopy(caxes(z))
+  newaxes = deepcopy(collect(caxes(z)))
   foreach(kwargs) do kw
     axdes,subexpr = kw
     axdes = string(axdes)

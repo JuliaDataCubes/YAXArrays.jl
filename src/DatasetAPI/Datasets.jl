@@ -137,7 +137,7 @@ testrange(x::AbstractArray{<:AbstractString}) = x
 function resolve_stars(s, res=String[])
     s2 = splitpath(s)
     istar = findfirst(i->occursin('*',i),s2)
-    if istar==nothing
+    if istar===nothing
         return push!(res,s)
     end
     p = joinpath(s2[1:istar-1]...)

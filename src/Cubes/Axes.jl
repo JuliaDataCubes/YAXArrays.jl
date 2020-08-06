@@ -131,7 +131,7 @@ function axVal2Index(a::RangeAxis{T,<:Any,<:AbstractRange},v;fuzzy=false) where 
 end
 function axVal2Index(axis::CategoricalAxis{String},v::String;fuzzy::Bool=false)
   r=findfirst(isequal(v),axis.values)
-  if r==nothing
+  if r===nothing
     if fuzzy
       r=findall(axis.values) do i
         startswith(lowercase(i),lowercase(v[1:min(length(i),length(v))]))
@@ -288,7 +288,7 @@ isequal(a::CubeAxis, b::CubeAxis) = a==b
 using YAXArrayBase: YAXArrayBase
 #Implement yaxarray interface
 YAXArrayBase.dimname(x::CubeAxis,_) = axname(x)
-YAXArrayBase.dimvals(x,_) = x.values
+YAXArrayBase.dimvals(x::CubeAxis,_) = x.values
 YAXArrayBase.iscontdim(::RangeAxis,_) = true
 YAXArrayBase.iscontdim(::CategoricalAxis,_) = false
 end
