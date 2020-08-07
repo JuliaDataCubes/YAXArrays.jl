@@ -1,20 +1,20 @@
-using ESDL
+using ESDL, ESDC, NetCDF
 using Test
 
 newcubedir = mktempdir()
-ESDLdir(newcubedir)
+YAXdir(newcubedir)
 # Download Cube subset
-c = S3Cube()
+c = esdc()
+
 cgermany = c[
   region = "Germany",
   var = ["gross", "net_ecosystem", "air_temperature_2m", "terrestrial_ecosystem", "soil_moisture"],
   time = 2000:2010
 ]
-saveCube(cgermany,"germanycube", chunksize=(20,20,92,1))
-ESDL.ESDLDefaults.cubedir[] = joinpath(newcubedir,"germanycube")
-
+savecube(cgermany,"germanycube",
+  chunksize=Dict("lon"=>20,"lat"=>20,"time"=>92))
+ESDL.YAXDefaults.cubedir[] = joinpath(newcubedir,"germanycube")
 include("access.jl")
-include("axes.jl")
 include("analysis.jl")
 #include("artype.jl")
 include("transform.jl")

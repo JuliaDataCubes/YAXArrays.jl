@@ -1,28 +1,27 @@
 """
-The functions provided by ESDL are supposed to work on different types of cubes. This module defines the interface for all
+The functions provided by YAXArrays are supposed to work on different types of cubes. This module defines the interface for all
 Data types that
 """
 module Cubes
-export Axes, AbstractCubeData, getSubRange, readcubedata, AbstractCubeMem, axesCubeMem,CubeAxis, TimeAxis, TimeHAxis, QuantileAxis, VariableAxis, LonAxis, LatAxis, CountryAxis, SpatialPointAxis, caxes,
-       AbstractSubCube, CubeMem, EmptyCube, YearStepRange, _read, saveCube, loadCube, RangeAxis, CategoricalAxis, axVal2Index, MSCAxis,
-       getSingVal, ScaleAxis, axname, @caxis_str, rmCube, cubeproperties, findAxis, AxisDescriptor, get_descriptor, ByName, ByType, ByValue, ByFunction, getAxis,
-       getOutAxis, Cube, (..), getCubeData, subsetcube, CubeMask, renameaxis!, Dataset, S3Cube, cubeinfo
+using DiskArrays: DiskArrays, eachchunk
+using Distributed: myid
+using Dates: TimeType
+using IntervalSets: Interval, (..)
+using Base.Iterators: take, drop
+using ..YAXArrays: workdir, YAXDefaults
+using YAXArrayBase: YAXArrayBase, iscompressed
+import YAXArrayBase: getattributes
 
 """
     AbstractCubeData{T,N}
 
 Supertype of all cubes. `T` is the data type of the cube and `N` the number of
 dimensions. Beware that an `AbstractCubeData` does not implement the `AbstractArray`
-interface. However, the `ESDL` functions [`mapCube`](@ref), [`reduceCube`](@ref),
+interface. However, the `YAXArrays` functions [`mapCube`](@ref), [`reduceCube`](@ref),
 [`readcubedata`](@ref), [`plotMAP`](@ref) and [`plotXY`](@ref) will work on any subtype
 of `AbstractCubeData`
 """
 abstract type AbstractCubeData{T,N} end
-
-"""
-getSingVal reads a single point from the cube's data
-"""
-getSingVal(c::AbstractCubeData,a...)=error("getSingVal called in the wrong way with argument types $(typeof(c)), $(map(typeof,a))")
 
 Base.eltype(::AbstractCubeData{T}) where T = T
 Base.ndims(::AbstractCubeData{<:Any,N}) where N = N
@@ -32,12 +31,12 @@ Base.ndims(::AbstractCubeData{<:Any,N}) where N = N
 
 Given any type of `AbstractCubeData` returns a [`CubeMem`](@ref) from it.
 """
-function readcubedata(x::AbstractCubeData{T,N}) where {T,N}
+function readcubedata(x)
   s=size(x)
-  aout = zeros(Union{T,Missing},s...)
+  aout = zeros(eltype(x),s...)
   r=CartesianIndices(s)
   _read(x,aout,r)
-  CubeMem(collect(CubeAxis,caxes(x)),aout,cubeproperties(x))
+  CubeMem(collect(CubeAxis,caxes(x)),aout,getattributes(x))
 end
 
 """
@@ -47,24 +46,16 @@ function subsetcube end
 
 function _read end
 
-getsubset(x::AbstractCubeData) = x.subset === nothing ? ntuple(i->Colon(),ndims(x)) : x.subset
-#"""
-#Internal function to read a range from a datacube
-#"""
-#_read(c::AbstractCubeData,d,r::CartesianRange)=error("_read not implemented for $(typeof(c))")
-
 "Returns the axes of a Cube"
 caxes(c::AbstractCubeData)=error("Axes function not implemented for $(typeof(c))")
 
-cubeproperties(::AbstractCubeData)=Dict{String,Any}()
+YAXArrayBase.getattributes(::AbstractCubeData)=Dict{String,Any}()
 
 "Chunks, if given"
 cubechunks(c::AbstractCubeData) = (size(c,1),map(i->1,2:ndims(c))...)
 
 "Offset of the first chunk"
 chunkoffset(c::AbstractCubeData) = ntuple(i->0,ndims(c))
-
-function iscompressed end
 
 "Supertype of all subtypes of the original data cube"
 abstract type AbstractSubCube{T,N} <: AbstractCubeData{T,N} end
@@ -74,17 +65,34 @@ abstract type AbstractSubCube{T,N} <: AbstractCubeData{T,N} end
 abstract type AbstractCubeMem{T,N} <: AbstractCubeData{T,N} end
 
 include("Axes.jl")
-using .Axes
-import .Axes: getOutAxis, getAxis
-struct EmptyCube{T}<:AbstractCubeData{T,0} end
-caxes(c::EmptyCube)=CubeAxis[]
+using .Axes: CubeAxis, RangeAxis, CategoricalAxis, findAxis, getAxis, axVal2Index,
+  axname, axsym, axVal2Index_lb, axVal2Index_ub, renameaxis, axcopy
+
+mutable struct CleanMe
+  path::String
+  persist::Bool
+  function CleanMe(path::String,persist::Bool)
+    c = new(path,persist)
+    finalizer(clean,c)
+    c
+  end
+end
+function clean(c::CleanMe)
+  if !c.persist && myid()==1
+    if !isdir(c.path)
+      @warn "Cube directory $(c.path) does not exist. Can not clean"
+    else
+      rm(c.path,recursive=true)
+    end
+  end
+end
 
 """
-    CubeMem{T,N} <: AbstractCubeMem{T,N}
+    YAXArray{T,N} <: AbstractCubeMem{T,N}
 
 An in-memory data cube. It is returned by applying `mapCube` when
 the output cube is small enough to fit in memory or by explicitly calling
-[`readCubeData`](@ref) on any type of cube.
+[`readcubedata`](@ref) on any type of cube.
 
 ### Fields
 
@@ -92,102 +100,163 @@ the output cube is small enough to fit in memory or by explicitly calling
 * `data` N-D array containing the data
 
 """
-mutable struct CubeMem{T,N} <: AbstractCubeMem{T,N}
-  axes::Vector{CubeAxis}
-  data::Array{T,N}
+struct YAXArray{T,N,A<:AbstractArray{T,N},AT} <: AbstractCubeData{T,N}
+  axes::AT
+  data::A
   properties::Dict{String}
+  cleaner::Vector{CleanMe}
 end
 
-CubeMem(axes::Vector{CubeAxis},data) = CubeMem(axes,data,Dict{String,Any}())
-Base.permutedims(c::CubeMem,p)=CubeMem(c.axes[collect(p)],permutedims(c.data,p))
-caxes(c::CubeMem)=c.axes
-cubeproperties(c::CubeMem)=c.properties
-iscompressed(c::AbstractCubeMem)=false
-
-Base.IndexStyle(::CubeMem)=Base.LinearFast()
-function Base.setindex!(c::CubeMem,i::Integer,v)
-  c.data[i] = v
+YAXArray(axes,data,properties=Dict{String,Any}(); cleaner=CleanMe[]) = YAXArray(axes,data,properties, cleaner)
+function YAXArray(x::AbstractArray)
+  ax = caxes(x)
+  props = getattributes(x)
+  YAXArray(ax,x,props)
 end
-Base.size(c::CubeMem)=size(c.data)
-Base.size(c::CubeMem,i)=size(c.data,i)
-Base.similar(c::CubeMem)=CubeMem(c.axes,similar(c.data))
-Base.ndims(c::CubeMem{T,N}) where {T,N}=N
-
-readcubedata(c::CubeMem)=c
-
-function getSubRange(c::AbstractArray,i...;write::Bool=true)
-  length(i)==ndims(c) || error("Wrong number of view arguments to getSubRange. Cube is: $c \n indices are $i")
-  return view(c,i...)
+Base.size(a::YAXArray) = size(a.data)
+Base.size(a::YAXArray,i::Int) = size(a.data,i)
+Base.permutedims(c::YAXArray,p)=YAXArray(c.axes[collect(p)],permutedims(c.data,p),c.properties,c.cleaner)
+caxes(c::YAXArray)=c.axes
+function caxes(x)
+  map(enumerate(dimnames(x))) do a
+    i,s = a
+    v = dimvals(x,i)
+    iscontdim(x,i) ? RangeAxis(s,v) : CategoricalAxis(s,v)
+  end
 end
-getSubRange(c::Tuple{AbstractArray{T,0},AbstractArray{UInt8,0}};write::Bool=true) where {T}=c
+cubechunks(c::YAXArray)=common_size(eachchunk(c.data))
+cubechunks(x) = common_size(eachchunk(x))
+common_size(a::DiskArrays.GridChunks) = a.chunksize
+function common_size(a)
+  ntuple(ndims(a)) do idim
+    otherdims = setdiff(1:ndims(a),idim)
+    allengths = map(i->length(i.indices[idim]),a)
+    for od in otherdims
+      allengths = unique(allengths,dims=od)
+    end
+    @assert length(allengths) == size(a,idim)
+    length(allengths)<3 ? allengths[1] : allengths[2]
+  end
+end
+
+Base.getindex(x::YAXArray, i...) = x.data[i...]
+chunkoffset(c::YAXArray)=common_offset(eachchunk(c.data))
+chunkoffset(x) = common_offset(eachchunk(x))
+common_offset(a::DiskArrays.GridChunks) = a.offset
+function common_offset(a)
+  ntuple(ndims(a)) do idim
+    otherdims = setdiff(1:ndims(a),idim)
+    allengths = map(i->length(i[idim]),a)
+    for od in otherdims
+      allengths = unique(allengths,dims=od)
+    end
+    @assert length(allengths) == size(a,idim)
+    length(allengths)<3 ? 0 : allengths[2]-allengths[1]
+  end
+end
+readcubedata(c::YAXArray)=YAXArray(c.axes,Array(c.data),c.properties,CleanMe[])
+
+# Implementation for YAXArrayBase interface
+YAXArrayBase.dimvals(x::YAXArray, i) = x.axes[i].values
+
+function YAXArrayBase.dimname(x::YAXArray, i)
+  axsym(x.axes[i])
+end
+
+YAXArrayBase.getattributes(x::YAXArray) = x.properties
+
+YAXArrayBase.iscontdim(x::YAXArray, i) = isa(x.axes[i], RangeAxis)
+
+YAXArrayBase.getdata(x::YAXArray) = x.data
+
+function YAXArrayBase.yaxcreate(::Type{YAXArray},data, dimnames, dimvals, atts)
+  axlist = map(dimnames, dimvals) do dn, dv
+    iscontdimval(dv) ? RangeAxis(dn,dv) : CategoricalAxis(dn,dv)
+  end
+  YAXArray(axlist, data, atts)
+end
+YAXArrayBase.iscompressed(c::YAXArray)=_iscompressed(c.data)
+_iscompressed(c::DiskArrays.PermutedDiskArray) = iscompressed(c.a.parent)
+_iscompressed(c::DiskArrays.SubDiskArray) = iscompressed(c.v.parent)
+_iscompressed(c) = YAXArrayBase.iscompressed(c)
+
+function renameaxis!(c::YAXArray,p::Pair)
+  i = findAxis(p[1],c.axes)
+  c.axes[i]=renameaxis(c.axes[i],p[2])
+  c
+end
+function renameaxis!(c::YAXArray,p::Pair{<:Any,<:CubeAxis})
+  i = findAxis(p[1],c.axes)
+  i === nothing && throw(ArgumentError("Axis not found"))
+  length(c.axes[i].values) == length(p[2].values) || throw(ArgumentError("Length of replacement axis must equal length of old axis"))
+  c.axes[i]=p[2]
+  c
+end
+
+# function getSubRange(c::AbstractArray,i...;write::Bool=true)
+#   length(i)==ndims(c) || error("Wrong number of view arguments to getSubRange. Cube is: $c \n indices are $i")
+#   return view(c,i...)
+# end
+# getSubRange(c::Tuple{AbstractArray{T,0},AbstractArray{UInt8,0}};write::Bool=true) where {T}=c
 
 function _subsetcube end
 
-function subsetcube(z::CubeMem{T};kwargs...) where T
+function subsetcube(z::YAXArray{T};kwargs...) where T
   newaxes, substuple = _subsetcube(z,collect(Any,map(Base.OneTo,size(z)));kwargs...)
-  newdata = z.data[substuple...]
-  !isa(newdata,AbstractArray) && (newdata = fill(newdata))
-  if haskey(z.properties,"labels")
-    alll = filter!(!ismissing,unique(newdata))
-    z.properties["labels"] = filter(i->in(i[1],alll),z.properties["labels"])
+  newdata = view(z.data,substuple...)
+  YAXArray(newaxes,newdata,z.properties,cleaner = z.cleaner)
+end
+
+sorted(x,y) = x<y ? (x,y) : (y,x)
+
+#TODO move everything that is subset-related to its own file or to axes.jl
+interpretsubset(subexpr::Union{CartesianIndices{1},LinearIndices{1}},ax) = subexpr.indices[1]
+interpretsubset(subexpr::CartesianIndex{1},ax)   = subexpr.I[1]
+interpretsubset(subexpr,ax)                      = axVal2Index(ax,subexpr,fuzzy=true)
+function interpretsubset(subexpr::NTuple{2,Any},ax)
+  x, y = sorted(subexpr...)
+  Colon()(sorted(axVal2Index_lb(ax,x),axVal2Index_ub(ax,y))...)
+end
+interpretsubset(subexpr::NTuple{2,Int},ax::RangeAxis{T}) where T<:TimeType = interpretsubset(map(T,subexpr),ax)
+interpretsubset(subexpr::UnitRange{Int64},ax::RangeAxis{T}) where T<:TimeType = interpretsubset(T(first(subexpr))..T(last(subexpr)+1),ax)
+interpretsubset(subexpr::Interval,ax)       = interpretsubset((subexpr.left,subexpr.right),ax)
+interpretsubset(subexpr::AbstractVector,ax::CategoricalAxis)      = axVal2Index.(Ref(ax),subexpr,fuzzy=true)
+
+
+function _subsetcube(z::AbstractCubeData, subs;kwargs...)
+  kwargs = Dict(kwargs)
+  for f in YAXDefaults.subsetextensions
+    f(kwargs)
   end
-  CubeMem{T,length(newaxes)}(newaxes,newdata,z.properties)
-end
-
-"""
-    gethandle(c::AbstractCubeData, [block_size])
-
-Returns an indexable handle to the data.
-"""
-gethandle(c::AbstractCubeMem) = c.data
-gethandle(c::CubeAxis) = collect(c.values)
-gethandle(c,block_size)=gethandle(c)
-
-
-import ..ESDLTools.toRange
-#Generic fallback method for _read
-function _read(c::CubeMem,thedata::AbstractArray,r::CartesianIndices)
-  thedata .= view(c.data,r.indices...)
-end
-
-function _write(c::CubeMem,thedata::AbstractArray,r::CartesianIndices)
-  cubeview = getSubRange(c.data,r.indices...)
-  copyto!(cubeview,thedata)
-end
-
-
-#Implement getindex on AbstractCubeData objects
-const IndR = Union{Integer,Colon,UnitRange}
-getfirst(i::Integer,a::CubeAxis)=i
-getlast(i::Integer,a::CubeAxis)=i
-getfirst(i::UnitRange,a::CubeAxis)=first(i)
-getlast(i::UnitRange,a::CubeAxis)=last(i)
-getfirst(i::Colon,a::CubeAxis)=1
-getlast(i::Colon,a::CubeAxis)=length(a)
-
-function Base.getindex(c::AbstractCubeData,i::Integer...)
-  length(i)==ndims(c) || error("You must provide $(ndims(c)) indices")
-  r = CartesianIndices((first(i):first(i),Base.tail(i)...))
-  aout = zeros(eltype(c),size(r))
-  _read(c,aout,r)
-  return aout[1]
-end
-
-function Base.getindex(c::AbstractCubeData,i::IndR...)
-  length(i)==ndims(c) || error("You must provide $(ndims(c)) indices")
-  ax = (caxes(c)...,)
-  r = CartesianIndices(map((ii,iax)->getfirst(ii,iax):getlast(ii,iax),i,ax))
-  lall = map((rr,ii)->(length(rr),!isa(ii,Integer)),r.indices,i)
-  lshort = filter(ii->ii[2],collect(lall))
-  newshape = map(ii->ii[1],lshort)
-  aout = Array{eltype(c)}(undef,newshape...)
-  if newshape == size(r)
-    _read(c,aout,r)
-  else
-    _read(c,reshape(aout,size(r)),r)
+  newaxes = deepcopy(collect(caxes(z)))
+  foreach(kwargs) do kw
+    axdes,subexpr = kw
+    axdes = string(axdes)
+    iax = findAxis(axdes,caxes(z))
+    if isa(iax,Nothing)
+      throw(ArgumentError("Axis $axdes not found in cube"))
+    else
+      oldax = newaxes[iax]
+      subinds = interpretsubset(subexpr,oldax)
+      subs2 = subs[iax][subinds]
+      subs[iax] = subs2
+      if !isa(subinds,AbstractVector) && !isa(subinds,AbstractRange)
+        newaxes[iax] = axcopy(oldax,oldax.values[subinds:subinds])
+      else
+        newaxes[iax] = axcopy(oldax,oldax.values[subinds])
+      end
+    end
   end
-  aout
+  substuple = ntuple(i->subs[i],length(subs))
+  inewaxes = findall(i->isa(i,AbstractVector),substuple)
+  newaxes = newaxes[inewaxes]
+  @assert length.(newaxes) == map(length,filter(i->isa(i,AbstractVector),collect(substuple)))
+  newaxes, substuple
 end
+
+
+Base.getindex(a::AbstractCubeData;kwargs...) = subsetcube(a;kwargs...)
+
 Base.read(d::AbstractCubeData) = getindex(d,fill(Colon(),ndims(d))...)
 
 function formatbytes(x)
@@ -202,17 +271,18 @@ end
 cubesize(c::AbstractCubeData{T}) where {T}=(sizeof(T)+1)*prod(map(length,caxes(c)))
 cubesize(c::AbstractCubeData{T,0}) where {T}=sizeof(T)+1
 
-getCubeDes(c::AbstractSubCube)="Data Cube view"
 getCubeDes(::CubeAxis)="Cube axis"
-getCubeDes(c::CubeMem)="In-Memory data cube"
-getCubeDes(c::EmptyCube)="Empty Data Cube (placeholder)"
-function Base.show(io::IO,c::AbstractCubeData)
+getCubeDes(::YAXArray)="YAXArray"
+getCubeDes(::Type{T}) where T = string(T)
+Base.show(io::IO,c::AbstractCubeData) = show_yax(io,c)
+
+function show_yax(io::IO,c)
     println(io,getCubeDes(c), " with the following dimensions")
     for a in caxes(c)
         println(io,a)
     end
 
-    foreach(cubeproperties(c)) do p
+    foreach(getattributes(c)) do p
       if p[1] in ("labels","name","units")
         println(io,p[1],": ",p[2])
       end
@@ -220,69 +290,60 @@ function Base.show(io::IO,c::AbstractCubeData)
     println(io,"Total size: ",formatbytes(cubesize(c)))
 end
 
-import ..ESDL.workdir
-using NetCDF
 
-function check_overwrite(newfolder, overwrite)
-  if isdir(newfolder)
-    if overwrite
-      rm(newfolder, recursive=true)
-    else
-      error("$(newfolder) already exists, please pick another name or use `overwrite=true`")
-    end
-  end
+using Markdown
+struct YAXVarInfo
+  project::String
+  longname::String
+  units::String
+  url::String
+  comment::String
+  reference::String
 end
-function getsavefolder(name)
-  if isempty(name)
-    name = tempname()[2:end]
-  end
-  isabspath(name) ? name : joinpath(workdir[],name)
+Base.isless(a::YAXVarInfo, b::YAXVarInfo) = isless(string(a.project, a.longname),string(b.project, b.longname))
+
+import Base.show
+function show(io::IO,::MIME"text/markdown",v::YAXVarInfo)
+    un=v.units
+    url=v.url
+    re=v.reference
+    pr = v.project
+    ln = v.longname
+    co = v.comment
+    mdt=md"""
+### $ln
+*$(co)*
+
+* **Project** $(pr)
+* **units** $(un)
+* **Link** $(url)
+* **Reference** $(re)
+"""
+    mdt[3].items[1][1].content[3]=[" $pr"]
+    mdt[3].items[2][1].content[3]=[" $un"]
+    mdt[3].items[3][1].content[3]=[" $url"]
+    mdt[3].items[4][1].content[3]=[" $re"]
+    show(io,MIME"text/markdown"(),mdt)
 end
+show(io::IO,::MIME"text/markdown",v::Vector{YAXVarInfo})=foreach(x->show(io,MIME"text/markdown"(),x),v)
 
 """
-    saveCube(cube,name::String)
+    cubeinfo(cube)
 
-Save a [`ZarrCube`](@ref) or [`CubeMem`](@ref) to the folder `name` in the ESDL working directory.
-
-See also [`loadCube`](@ref)
+Shows the metadata and citation information on variables contained in a cube.
 """
-function saveCube end
-
-
-# function saveCube(c::CubeMem{T},name::AbstractString; overwrite=true) where T
-#   newfolder=getsavefolder(name)
-#   check_overwrite(newfolder, overwrite)
-#   tc=Cubes.ESDLZarr.ZArrayCube(c.axes,folder=newfolder,T=T)
-#   _write(tc,c.data,CartesianIndices(c.data))
-# end
-
-import Base.Iterators: take, drop
-Base.show(io::IO,a::RangeAxis)=print(io,rpad(Axes.axname(a),20," "),"Axis with ",length(a)," Elements from ",first(a.values)," to ",last(a.values))
-function Base.show(io::IO,a::CategoricalAxis)
-  print(io,rpad(Axes.axname(a),20," "), "Axis with ", length(a), " elements: ")
-  if length(a.values)<10
-    for v in a.values
-      print(io,v," ")
-    end
-  else
-    for v in take(a.values,2)
-      print(io,v," ")
-    end
-    print(io,".. ")
-    for v in drop(a.values,length(a.values)-2)
-      print(io,v," ")
-    end
-  end
+function cubeinfo(ds::YAXArray, variable="unknown")
+    p = ds.properties
+    vi=YAXVarInfo(
+      get(p,"project_name", "unknown"),
+      get(p,"long_name",variable),
+      get(p,"units","unknown"),
+      get(p,"url","no link"),
+      get(p,"comment",variable),
+      get(p,"references","no reference")
+    )
 end
-Base.show(io::IO,a::SpatialPointAxis)=print(io,"Spatial points axis with ",length(a.values)," points")
-
 
 include("TransformedCubes.jl")
-function S3Cube end
-include("ZarrCubes.jl")
-import .ESDLZarr: (..), Cube, getCubeData, loadCube, rmCube, CubeMask, cubeinfo, getsubinds
-include("NetCDFCubes.jl")
-include("Datasets.jl")
-import .Datasets: Dataset, ESDLDataset
-include("OBS.jl")
+include("Slices.jl")
 end

@@ -1,7 +1,7 @@
 include("SentinelMissings.jl")
 import .SentinelMissings
-import ESDL.DAT: DATConfig
-import ESDL.ESDLTools: PickAxisArray
+import YAXArrays.DAT: DATConfig
+import YAXArrays.YAXTools: PickAxisArray
 
 struct CubeIterator{R,ART,ARTBC,LAX,ILAX,S}
     dc::DATConfig
@@ -26,19 +26,29 @@ defaultval(t::Type{<:Unsigned})=typemax(t)-1
 
 function CubeIterator(dc,r;varnames::Tuple=ntuple(i->Symbol("x$i"),length(dc.incubes)),include_loopvars=())
     loopaxes = ntuple(i->dc.LoopAxes[i],length(dc.LoopAxes))
-    inars = getproperty.(dc.incubes,:handle)
+    inars, _ = getCubeCache(dc)
     length(varnames) == length(dc.incubes) || error("Supplied $(length(varnames)) varnames and $(length(dc.incubes)) cubes.")
-    rt = map(c->Union{eltype(c.handle[1]),Missing},dc.incubes)
-    inarsbc = map(dc.incubes) do ic
-      allax = falses(length(dc.LoopAxes))
-      allax[ic.loopinds].=true
-      PickAxisArray(ic.handle,allax)
+    inarsbc = map(dc.incubes, inars) do ic, cache
+      allax = getindsall(geticolon(ic), ic.loopinds, i->true)
+      if ic.colonperm === nothing
+        pa = PickAxisArray(cache,allax)
+      else
+        pa = PickAxisArray(cache,allax,ic.colonperm)
+      end
     end
-    et = map(i->SentinelMissings.SentinelMissing{eltype(i[1]),defaultval(eltype(i[1]))},inars)
+    et = map(inarsbc) do ibc
+      ti = eltype(ibc)
+      if ti <: AbstractArray
+        ti
+      else
+        ti = Base.nonmissingtype(ti)
+        SentinelMissings.SentinelMissing{ti,defaultval(ti)}
+      end
+    end
     if include_loopvars == true
       include_loopvars = map(axname,(loopaxes...,))
     end
-    if !isempty(include_loopvars)
+    if isa(include_loopvars,Tuple) && !isempty(include_loopvars)
       ilax = map(i->findAxis(i,collect(loopaxes)),include_loopvars)
       any(isequal(nothing),ilax) && error("Axis not found in cubes")
       et=(et...,map(i->eltype(loopaxes[i]),ilax)...)
@@ -49,6 +59,7 @@ function CubeIterator(dc,r;varnames::Tuple=ntuple(i->Symbol("x$i"),length(dc.inc
     elt = NamedTuple{(map(Symbol,varnames)...,map(Symbol,include_loopvars)...),Tuple{et...}}
     CubeIterator{typeof(r),typeof(inars),typeof(inarsbc),typeof(loopaxes),ilax,elt}(dc,r,inars,inarsbc,loopaxes)
 end
+iternames(::CubeIterator{<:Any,<:Any,<:Any,<:Any,<:Any,E}) where E = E
 tuplenames(t::Type{<:NamedTuple{N}}) where N = string.(N)
 function Base.show(io::IO,ci::CubeIterator{<:Any,<:Any,<:Any,<:Any,<:Any,E}) where E
   print(io,"Datacube iterator with ", length(ci), " elements with fields: ",tuplenames(E))
@@ -56,11 +67,16 @@ end
 Base.length(ci::CubeIterator)=prod(length.(ci.loopaxes))
 function Base.iterate(ci::CubeIterator)
     rnow,blockstate = iterate(ci.r)
-    updatears(ci.dc.incubes,rnow,ESDL.Cubes._read)
+    updatears(ci.dc.incubes,rnow,:read,ci.inars)
     innerinds = CartesianIndices(length.(rnow))
     indnow, innerstate = iterate(innerinds)
     offs = map(i->first(i)-1,rnow)
-    getrow(ci,ci.inarsBC,indnow,offs),(rnow=rnow,blockstate=blockstate,innerinds = innerinds, innerstate=innerstate)
+    getrow(ci,ci.inarsBC,indnow,offs),
+    (rnow=rnow,
+      blockstate=blockstate,
+      innerinds = innerinds,
+      innerstate=innerstate
+    )
 end
 function Base.iterate(ci::CubeIterator,s)
     t1 = iterate(s.innerinds,s.innerstate)
@@ -72,7 +88,7 @@ function Base.iterate(ci::CubeIterator,s)
         else
             rnow = t2[1]
             blockstate = t2[2]
-            updatears(ci.dc.incubes,rnow,_read)
+            updatears(ci.dc.incubes,rnow,:read,ci.inars)
             innerinds = CartesianIndices(length.(rnow))
             indnow,innerstate = iterate(innerinds)
 
@@ -151,56 +167,40 @@ Lastly there is an option to specify which axis shall be the fastest changing wh
 For example `CubeTable(tair=cube1,fastest="time"` will ensure that the iterator will always loop over consecutive
 time steps of the same location.
 """
-function CubeTable(;include_axes=(),fastest="",cubes...)
-  inax=nothing
+function CubeTable(;include_axes=(),expandaxes=(),cubes...)
   c = (map((k,v)->v,keys(cubes),values(cubes))...,)
   all(i->isa(i,AbstractCubeData),c) || throw(ArgumentError("All inputs must be DataCubes"))
   varnames = map(string,keys(cubes))
-  if isempty(string(fastest))
-    indims = map(i->InDims(),c)
+  expandaxes = isa(expandaxes,Tuple) ? expandaxes : (expandaxes,)
+  inaxnames = Set{String}()
+  indims = if isempty(expandaxes)
+    map(i->InDims(),c)
   else
-    indims = map(c) do i
-      iax = findAxis(string(fastest),i)
-      if iax > 0
-        inax = caxes(i)[iax]
-        InDims(string(fastest))
-      else
-        InDims()
+    map(c) do i
+      axn = filter(collect(expandaxes)) do ax
+        findAxis(ax,i) !== nothing
       end
+      foreach(j->push!(inaxnames,axname(getAxis(j,i))), axn)
+      InDims(axn...)
     end
   end
-  inaxname = inax==nothing ? nothing : axname(inax)
   axnames = map(i->axname.(caxes(i)),c)
   allvars = union(axnames...)
   allnums = collect(1:length(allvars))
-  perms = map(axnames) do v
-    map(i->findfirst(isequal(i),allvars),v)
-  end
-  c2 = map(perms,c) do p,cube
-    if issorted(p)
-      cube
-    else
-      pp=sortperm(p)
-      pp = ntuple(i->pp[i],length(pp))
-      permutedims(cube,pp)
-    end
-  end
 
-    configiter = mapCube(identity,c2,debug=true,indims=indims,outdims=(),ispar=false);
-    if inax !== nothing
-    linax = length(inax)
-    pushfirst!(configiter.LoopAxes,inax)
-    pushfirst!(configiter.loopcachesize,linax)
-    foreach(configiter.incubes) do ic1
-      if !isempty(ic1.axesSmall)
-        empty!(ic1.axesSmall)
-        map!(i->i+1,ic1.loopinds,ic1.loopinds)
-        pushfirst!(ic1.loopinds,1)
-      else
-        map!(i->i+1,ic1.loopinds,ic1.loopinds)
-      end
-    end
-  end
+  configiter = mapCube(identity,c,debug=true,indims=indims,outdims=(),ispar=false);
+  # if inax !== nothing
+  #   linax = length(inax)
+  #   foreach(configiter.incubes) do ic1
+  #     if !isempty(ic1.axesSmall)
+  #       empty!(ic1.axesSmall)
+  #       map!(i->i+1,ic1.loopinds,ic1.loopinds)
+  #       pushfirst!(ic1.loopinds,1)
+  #     else
+  #       map!(i->i+1,ic1.loopinds,ic1.loopinds)
+  #     end
+  #   end
+  # end
   r = collect(distributeLoopRanges((configiter.loopcachesize...,),(map(length,configiter.LoopAxes)...,),getchunkoffsets(configiter)))
   ci = CubeIterator(configiter,r,include_loopvars=include_axes,varnames=varnames)
 end

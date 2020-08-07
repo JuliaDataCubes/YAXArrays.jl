@@ -1,6 +1,6 @@
-# ESDL.jl
+# YAXArrays.jl
 
-*Julia Package for the Earth System Data Cube*
+*Yet Another XArray-like Julia Package*
 
 | **Documentation**                                                                                                        | **Build Status**                                                                                |
 |:-------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------------------:|
@@ -15,4 +15,4 @@
 
 # Documentation
 
-The Documentation is available [here](https://esa-esdl.github.io/ESDL.jl/latest).
+The Documentation is available [here](https://meggart.github.io/YAXArrays.jl/latest).
