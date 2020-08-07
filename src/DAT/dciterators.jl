@@ -1,7 +1,7 @@
 include("SentinelMissings.jl")
 import .SentinelMissings
-import ESDL.DAT: DATConfig
-import ESDL.ESDLTools: PickAxisArray
+import YAXArrays.DAT: DATConfig
+import YAXArrays.YAXTools: PickAxisArray
 
 struct CubeIterator{R,ART,ARTBC,LAX,ILAX,S}
     dc::DATConfig

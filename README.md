@@ -1,16 +1,11 @@
-# ESDL.jl
+# YAXArrays.jl
 
-*Julia Package for the Earth System Data Cube*
+*Yet Another XArray-like Julia Package*
 
 | **Documentation**                                                                                                        | **Build Status**                                                                                |
 |:-------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------------------:|
-| [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://esa-esdl.github.io/ESDL.jl/latest) | [![Build Status](https://travis-ci.org/esa-esdl/ESDL.jl.svg?branch=master)](https://travis-ci.org/esa-esdl/ESDL.jl)|
-
-# Installation
-
-- clone the ESDL package
-`Pkg.clone("https://github.com/esa-esdl/ESDL.jl")`
+| [![](https://img.shields.io/badge/docs-latest-blue.svg)](https://meggart.github.io/YaxArrays.jl/latest) | [![Build Status](https://travis-ci.org/meggart/YAXArrays.jl.svg?branch=master)](https://travis-ci.org/meggart/YAXArrays.jl)|
 
 # Documentation
 
-The Documentation is available [here](https://esa-esdl.github.io/ESDL.jl/latest).
+The Documentation is available [here](https://meggart.github.io/YAXArrays.jl/latest).

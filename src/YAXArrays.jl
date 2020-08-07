@@ -4,8 +4,8 @@
 
 Some info on the project...
 """
-module ESDL
-global const ESDLDefaults = (
+module YAXArrays
+global const YAXDefaults = (
   workdir = Ref("./"),
   recal   = Ref(false),
   chunksize  = Ref{Any}(:input),
@@ -13,31 +13,31 @@ global const ESDLDefaults = (
   cubedir    = Ref(""),
   subsetextensions = [],
 )
-global const workdir=ESDLDefaults.workdir
-global const recal=ESDLDefaults.recal
+global const workdir=YAXDefaults.workdir
+global const recal=YAXDefaults.recal
 function __init__()
-  ESDLDefaults.workdir[]   = get(ENV,"ESDL_WORKDIR","./")
-  ESDLDefaults.max_cache[] = parse(Float64,get(ENV,"ESDL_MAX_CACHE","100")) * 1e6
-  ESDLDefaults.cubedir[]   = get(ENV,"ESDL_CUBEDIR","")
+  YAXDefaults.workdir[]   = get(ENV,"YAXARRAY_WORKDIR","./")
+  YAXDefaults.max_cache[] = parse(Float64,get(ENV,"YAXARRAY_MAX_CACHE","100")) * 1e6
+  YAXDefaults.cubedir[]   = get(ENV,"YAXARRAY_CUBEDIR","")
 end
-ESDLdir(x::String)=ESDLDefaults.workdir[]=x
-recalculate(x::Bool)=ESDLDefaults.recal[]=x
-recalculate()=ESDLDefaults.recal[]
-ESDLdir()=ESDLDefaults.workdir[]
-export ESDLdir
+YAXdir(x::String)=YAXDefaults.workdir[]=x
+recalculate(x::Bool)=YAXDefaults.recal[]=x
+recalculate()=YAXDefaults.recal[]
+YAXdir()=YAXDefaults.workdir[]
+export YAXdir
 
-include("ESDLTools.jl")
+include("YAXTools.jl")
 include("Cubes/Cubes.jl")
 include("DatasetAPI/Datasets.jl")
 include("DAT/DAT.jl")
 include("Proc/Proc.jl")
 
-using .ESDLTools: @reexport
+using .YAXTools: @reexport
 
 @reexport using Dates: Date, DateTime
 @reexport using IntervalSets: (..)
 @reexport using .Cubes: cubeinfo, concatenateCubes, caxes,
-  subsetcube, readcubedata,renameaxis!, ESDLArray
+  subsetcube, readcubedata,renameaxis!, YAXArray
 @reexport using .Cubes.Axes: CubeAxis, RangeAxis, CategoricalAxis,
   getAxis
 
@@ -48,7 +48,7 @@ using .ESDLTools: @reexport
   getMedSC, extractLonLats, cubefromshape,
   gapfillpoly, spatialinterp #From Proc module
 @reexport using .Datasets: Dataset, Cube, open_dataset
-@reexport using .ESDLTools: @loadOrGenerate # from ESDL Tools
+@reexport using .YAXTools: @loadOrGenerate # from YAXTools
 
 @deprecate saveCube(data, filename) savecube(data,filename)
 @deprecate loadCube(filename) loadcube(filename)

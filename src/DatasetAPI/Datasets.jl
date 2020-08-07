@@ -1,7 +1,7 @@
 module Datasets
 import ..Cubes.Axes: axsym, axname, CubeAxis, findAxis, CategoricalAxis, RangeAxis, caxes
-import ..Cubes: AbstractCubeData, ESDLArray, concatenateCubes, CleanMe
-using ...ESDL: ESDL, ESDLDefaults
+import ..Cubes: AbstractCubeData, YAXArray, concatenateCubes, CleanMe
+using ...YAXArrays: YAXArrays, YAXDefaults
 using DataStructures: OrderedDict, counter
 using Dates: Day,Hour,Minute,Second,Month,Year, Date, DateTime, TimeType
 using IntervalSets: Interval, (..)
@@ -27,7 +27,7 @@ function Dataset(;cubesnew...)
 end
 
 function Base.show(io::IO,ds::Dataset)
-    println(io,"ESDL Dataset")
+    println(io,"YAXArray Dataset")
     println(io,"Dimensions: ")
     foreach(a->println(io,"   ", a),values(ds.axes))
     print(io,"Variables: ")
@@ -178,13 +178,13 @@ function open_dataset(g; driver = :all)
     end
     ar = get_var_handle(g,vname)
     att = get_var_attrs(g,vname)
-    allcubes[Symbol(vname)] = ESDLArray(iax,ar,propfromattr(att), cleaner=CleanMe[])
+    allcubes[Symbol(vname)] = YAXArray(iax,ar,propfromattr(att), cleaner=CleanMe[])
   end
   sdimlist = Dict(Symbol(k)=>v.ax for (k,v) in dimlist)
   Dataset(allcubes,sdimlist)
 end
 Base.getindex(x::Dataset;kwargs...) = subsetcube(x;kwargs...)
-ESDLDataset(;kwargs...) = Dataset(ESDL.ESDLDefaults.cubedir[];kwargs...)
+YAXDataset(;kwargs...) = Dataset(YAXArrays.YAXDefaults.cubedir[];kwargs...)
 
 
 function Cube(ds::Dataset; joinname="Variable")
@@ -290,7 +290,7 @@ function createdataset(DS, axlist;
     if subs !== nothing
       za = view(za,subs...)
     end
-    ESDLArray(axlist,v,propfromattr(attr),cleaner=cleaner)
+    YAXArray(axlist,v,propfromattr(attr),cleaner=cleaner)
   end
   if groupaxis===nothing
     return allcubes[1]
@@ -302,9 +302,9 @@ end
 function getsavefolder(name,persist)
   if isempty(name)
     name = persist ? split(tempname(),"/")[end] : tempname()[2:end]
-    joinpath(ESDLDefaults.workdir[],name)
+    joinpath(YAXDefaults.workdir[],name)
   else
-    occursin("/",name) ? name : joinpath(ESDLDefaults.workdir[],name)
+    occursin("/",name) ? name : joinpath(YAXDefaults.workdir[],name)
   end
 end
 
@@ -360,10 +360,10 @@ end
 #The good old Cube function:
 Cube(s::String;kwargs...) = Cube(open_dataset(s);kwargs...)
 function Cube(;kwargs...)
-  if !isempty(ESDL.ESDLDefaults.cubedir[])
-    Cube(ESDL.ESDLDefaults.cubedir[];kwargs...)
+  if !isempty(YAXArrays.YAXDefaults.cubedir[])
+    Cube(YAXArrays.YAXDefaults.cubedir[];kwargs...)
   else
-    ESDC(;kwargs...)
+    error("A path should be specified")
   end
 end
 
@@ -451,7 +451,7 @@ function merge_datasets(dslist)
         allatts = mapreduce(i->getattributes(i[v]),merge,dslist, init=Dict{String,Any}())
         aa = [vcol[i] for (i,_) in enumerate(Iterators.product(perminds...))]
         dvals = map(wholeax, howmerge)
-        mergedvars[v] = yaxcreate(ESDLArray, ConcatDiskArray(aa), dn, dvals, allatts)
+        mergedvars[v] = yaxcreate(YAXArray, ConcatDiskArray(aa), dn, dvals, allatts)
     end
     Dataset(;mergedvars...)
 end

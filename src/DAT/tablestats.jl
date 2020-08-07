@@ -161,7 +161,7 @@ function getStatOutAxes(tab,agg,::Type{<:WeightedCovMatrix})
     s = varsym(agg)
     icube = findfirst(isequal(s),varn)
     ax = tab.dc.incubes[icube].axesSmall[1]
-    oldname = ESDL.Cubes.Axes.axname(ax)
+    oldname = YAXArrays.Cubes.Axes.axname(ax)
     coname = string("Co",oldname)
     v = ax.values
     axtype = axt(ax)
@@ -199,7 +199,7 @@ function tooutcube(
   aout = fill!(zeros(Union{cubeeltype(agg),Missing},snew),missing)
   filloutar(aout,convdictall,agg,map(i->1:length(i),outaxstat),post)
 
-  ESDLArray(collect(outax),aout)
+  YAXArray(collect(outax),aout)
 end
 function filloutar(aout,convdictall,agg::GroupedOnlineAggregator,s,post)
     for (k,v) in agg.d

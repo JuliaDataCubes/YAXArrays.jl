@@ -1,5 +1,5 @@
 """
-The functions provided by ESDL are supposed to work on different types of cubes. This module defines the interface for all
+The functions provided by YAXArrays are supposed to work on different types of cubes. This module defines the interface for all
 Data types that
 """
 module Cubes
@@ -8,7 +8,7 @@ using Distributed: myid
 using Dates: TimeType
 using IntervalSets: Interval, (..)
 using Base.Iterators: take, drop
-using ..ESDL: workdir, ESDLDefaults
+using ..YAXArrays: workdir, YAXDefaults
 using YAXArrayBase
 import YAXArrayBase: iscompressed, getattributes
 
@@ -17,7 +17,7 @@ import YAXArrayBase: iscompressed, getattributes
 
 Supertype of all cubes. `T` is the data type of the cube and `N` the number of
 dimensions. Beware that an `AbstractCubeData` does not implement the `AbstractArray`
-interface. However, the `ESDL` functions [`mapCube`](@ref), [`reduceCube`](@ref),
+interface. However, the `YAXArrays` functions [`mapCube`](@ref), [`reduceCube`](@ref),
 [`readcubedata`](@ref), [`plotMAP`](@ref) and [`plotXY`](@ref) will work on any subtype
 of `AbstractCubeData`
 """
@@ -90,7 +90,7 @@ function clean(c::CleanMe)
 end
 
 """
-    ESDLArray{T,N} <: AbstractCubeMem{T,N}
+    YAXArray{T,N} <: AbstractCubeMem{T,N}
 
 An in-memory data cube. It is returned by applying `mapCube` when
 the output cube is small enough to fit in memory or by explicitly calling
@@ -102,23 +102,23 @@ the output cube is small enough to fit in memory or by explicitly calling
 * `data` N-D array containing the data
 
 """
-struct ESDLArray{T,N,A<:AbstractArray{T,N},AT} <: AbstractCubeData{T,N}
+struct YAXArray{T,N,A<:AbstractArray{T,N},AT} <: AbstractCubeData{T,N}
   axes::AT
   data::A
   properties::Dict{String}
   cleaner::Vector{CleanMe}
 end
 
-ESDLArray(axes,data,properties=Dict{String,Any}(); cleaner=CleanMe[]) = ESDLArray(axes,data,properties, cleaner)
-function ESDLArray(x::AbstractArray)
+YAXArray(axes,data,properties=Dict{String,Any}(); cleaner=CleanMe[]) = YAXArray(axes,data,properties, cleaner)
+function YAXArray(x::AbstractArray)
   ax = caxes(x)
   props = getattributes(x)
-  ESDLArray(ax,x,props)
+  YAXArray(ax,x,props)
 end
-Base.size(a::ESDLArray) = size(a.data)
-Base.size(a::ESDLArray,i::Int) = size(a.data,i)
-Base.permutedims(c::ESDLArray,p)=ESDLArray(c.axes[collect(p)],permutedims(c.data,p),c.properties,c.cleaner)
-caxes(c::ESDLArray)=c.axes
+Base.size(a::YAXArray) = size(a.data)
+Base.size(a::YAXArray,i::Int) = size(a.data,i)
+Base.permutedims(c::YAXArray,p)=YAXArray(c.axes[collect(p)],permutedims(c.data,p),c.properties,c.cleaner)
+caxes(c::YAXArray)=c.axes
 function caxes(x)
   map(enumerate(dimnames(x))) do a
     i,s = a
@@ -126,10 +126,10 @@ function caxes(x)
     iscontdim(x,i) ? RangeAxis(s,v) : CategoricalAxis(s,v)
   end
 end
-iscompressed(c::ESDLArray)=iscompressed(c.data)
+iscompressed(c::YAXArray)=iscompressed(c.data)
 iscompressed(c::DiskArrays.PermutedDiskArray) = iscompressed(c.a.parent)
 iscompressed(c::DiskArrays.SubDiskArray) = iscompressed(c.v.parent)
-cubechunks(c::ESDLArray)=common_size(eachchunk(c.data))
+cubechunks(c::YAXArray)=common_size(eachchunk(c.data))
 cubechunks(x) = common_size(eachchunk(x))
 common_size(a::DiskArrays.GridChunks) = a.chunksize
 function common_size(a)
@@ -144,8 +144,8 @@ function common_size(a)
   end
 end
 
-Base.getindex(x::ESDLArray, i...) = x.data[i...]
-chunkoffset(c::ESDLArray)=common_offset(eachchunk(c.data))
+Base.getindex(x::YAXArray, i...) = x.data[i...]
+chunkoffset(c::YAXArray)=common_offset(eachchunk(c.data))
 chunkoffset(x) = common_offset(eachchunk(x))
 common_offset(a::DiskArrays.GridChunks) = a.offset
 function common_offset(a)
@@ -159,14 +159,14 @@ function common_offset(a)
     length(allengths)<3 ? 0 : allengths[2]-allengths[1]
   end
 end
-readcubedata(c::ESDLArray)=ESDLArray(c.axes,Array(c.data),c.properties,CleanMe[])
+readcubedata(c::YAXArray)=YAXArray(c.axes,Array(c.data),c.properties,CleanMe[])
 
-function renameaxis!(c::ESDLArray,p::Pair)
+function renameaxis!(c::YAXArray,p::Pair)
   i = findAxis(p[1],c.axes)
   c.axes[i]=renameaxis(c.axes[i],p[2])
   c
 end
-function renameaxis!(c::ESDLArray,p::Pair{<:Any,<:CubeAxis})
+function renameaxis!(c::YAXArray,p::Pair{<:Any,<:CubeAxis})
   i = findAxis(p[1],c.axes)
   i === nothing && throw(ArgumentError("Axis not found"))
   length(c.axes[i].values) == length(p[2].values) || throw(ArgumentError("Length of replacement axis must equal length of old axis"))
@@ -182,10 +182,10 @@ end
 
 function _subsetcube end
 
-function subsetcube(z::ESDLArray{T};kwargs...) where T
+function subsetcube(z::YAXArray{T};kwargs...) where T
   newaxes, substuple = _subsetcube(z,collect(Any,map(Base.OneTo,size(z)));kwargs...)
   newdata = view(z.data,substuple...)
-  ESDLArray(newaxes,newdata,z.properties,cleaner = z.cleaner)
+  YAXArray(newaxes,newdata,z.properties,cleaner = z.cleaner)
 end
 
 sorted(x,y) = x<y ? (x,y) : (y,x)
@@ -206,7 +206,7 @@ interpretsubset(subexpr::AbstractVector,ax::CategoricalAxis)      = axVal2Index.
 
 function _subsetcube(z::AbstractCubeData, subs;kwargs...)
   kwargs = Dict(kwargs)
-  for f in ESDLDefaults.subsetextensions
+  for f in YAXDefaults.subsetextensions
     f(kwargs)
   end
   newaxes = deepcopy(collect(caxes(z)))
@@ -254,7 +254,7 @@ cubesize(c::AbstractCubeData{T}) where {T}=(sizeof(T)+1)*prod(map(length,caxes(c
 cubesize(c::AbstractCubeData{T,0}) where {T}=sizeof(T)+1
 
 getCubeDes(::CubeAxis)="Cube axis"
-getCubeDes(::ESDLArray)="ESDL data cube"
+getCubeDes(::YAXArray)="YAXArray"
 getCubeDes(::Type{T}) where T = string(T)
 Base.show(io::IO,c::AbstractCubeData) = show_yax(io,c)
 
@@ -274,7 +274,7 @@ end
 
 
 using Markdown
-struct ESDLVarInfo
+struct YAXVarInfo
   project::String
   longname::String
   units::String
@@ -282,10 +282,10 @@ struct ESDLVarInfo
   comment::String
   reference::String
 end
-Base.isless(a::ESDLVarInfo, b::ESDLVarInfo) = isless(string(a.project, a.longname),string(b.project, b.longname))
+Base.isless(a::YAXVarInfo, b::YAXVarInfo) = isless(string(a.project, a.longname),string(b.project, b.longname))
 
 import Base.show
-function show(io::IO,::MIME"text/markdown",v::ESDLVarInfo)
+function show(io::IO,::MIME"text/markdown",v::YAXVarInfo)
     un=v.units
     url=v.url
     re=v.reference
@@ -307,16 +307,16 @@ function show(io::IO,::MIME"text/markdown",v::ESDLVarInfo)
     mdt[3].items[4][1].content[3]=[" $re"]
     show(io,MIME"text/markdown"(),mdt)
 end
-show(io::IO,::MIME"text/markdown",v::Vector{ESDLVarInfo})=foreach(x->show(io,MIME"text/markdown"(),x),v)
+show(io::IO,::MIME"text/markdown",v::Vector{YAXVarInfo})=foreach(x->show(io,MIME"text/markdown"(),x),v)
 
 """
     cubeinfo(cube)
 
 Shows the metadata and citation information on variables contained in a cube.
 """
-function cubeinfo(ds::ESDLArray, variable="unknown")
+function cubeinfo(ds::YAXArray, variable="unknown")
     p = ds.properties
-    vi=ESDLVarInfo(
+    vi=YAXVarInfo(
       get(p,"project_name", "unknown"),
       get(p,"long_name",variable),
       get(p,"units","unknown"),

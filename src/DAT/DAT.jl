@@ -1,18 +1,18 @@
 module DAT
 export mapCube
 import ..Cubes
-using ..ESDLTools
+using ..YAXTools
 using Distributed: RemoteChannel, nworkers,pmap,
   @everywhere, workers, remotecall_fetch,
   remote_do, myid, nprocs
 import ..Cubes: cubechunks, iscompressed, chunkoffset,
-  CubeAxis, AbstractCubeData, ESDLArray,
+  CubeAxis, AbstractCubeData, YAXArray,
   caxes, YAXSlice
 import ..Cubes.Axes: AxisDescriptor, axname, ByInference, axsym,
   getOutAxis, getAxis, findAxis
 import ..Datasets: Dataset, createdataset
-import ...ESDL
-import ...ESDL.workdir
+import ...YAXArrays
+import ...YAXArrays.workdir
 import ProgressMeter: Progress, next!, progress_pmap
 using YAXArrayBase
 using Dates
@@ -241,7 +241,7 @@ a tuple input cubes if needed.
 """
 function mapCube(fu::Function,
     cdata::Tuple,addargs...;
-    max_cache=ESDL.ESDLDefaults.max_cache[],
+    max_cache=YAXArrays.YAXDefaults.max_cache[],
     indims=InDims(),
     outdims=OutDims(),
     inplace=true,
@@ -396,7 +396,7 @@ function runLoop(dc::DATConfig,showprog)
   #And start the workers
   if dc.ispar
     for p in workers()
-      remote_do(ESDL.DAT.loopworker, p, dcpass, inchan, outchan)
+      remote_do(YAXArrays.DAT.loopworker, p, dcpass, inchan, outchan)
     end
   else
     @async loopworker(dc, inchan, outchan)
@@ -491,7 +491,7 @@ function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co;kwargs
   newsize=map(length,oc.allAxes)
   outar=Array{eltype}(undef,newsize...)
   map!(_->_zero(eltype),outar,1:length(outar))
-  oc.cube = ESDLArray(oc.allAxes,outar)
+  oc.cube = YAXArray(oc.allAxes,outar)
 end
 _zero(T) = zero(T)
 _zero(T::Type{<:AbstractString}) = convert(T,"")

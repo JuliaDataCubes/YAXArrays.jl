@@ -4,7 +4,7 @@ using DataStructures: OrderedDict
 """
     savecube(cube,name::String)
 
-Save a [`ESDLArray`](@ref) to the folder `name` in the ESDL working directory.
+Save a [`YAXArray`](@ref) to the folder `name` in the YAXArray working directory.
 """
 function savecube(c::AbstractCubeData, name::AbstractString;
   chunksize = Dict(),

@@ -1,5 +1,5 @@
 import Base: /
-using ..ESDLTools: PickAxisArray
+using ..YAXTools: PickAxisArray
 struct YAXSlice{T,N,P}
     c::P
     sliceaxes
@@ -13,8 +13,8 @@ function YAXSlice(p,dims)
     iotherax = (filter(i->!in(i,isliceax),1:N)...,)
     YAXSlice{Array{eltype(p),length(dims)},N-length(dims),typeof(p)}(p,(isliceax,getindex.(Ref(ax),isliceax)), (iotherax,getindex.(Ref(ax),iotherax)))
 end
-/(c::ESDLArray, s::Union{String,Symbol}) = YAXSlice(c,(s,))
-/(c::ESDLArray, s) = YAXSlice(c,s)
+/(c::YAXArray, s::Union{String,Symbol}) = YAXSlice(c,(s,))
+/(c::YAXArray, s) = YAXSlice(c,s)
 
 dimvals(x::YAXSlice, i) = x.c.axes[x.otheraxes[1][i]].values
 
@@ -36,4 +36,4 @@ getCubeDes(s::YAXSlice) = string(join(axname.(s.sliceaxes[2]), " x "), " slices 
 cubesize(s::YAXSlice) = cubesize(s.c)
 Base.ndims(s::YAXSlice{<:Any,N}) where N = N
 
-Base.show(io::IO,s::YAXSlice) = ESDL.Cubes.show_yax(io,s)
+Base.show(io::IO,s::YAXSlice) = YAXArrays.Cubes.show_yax(io,s)

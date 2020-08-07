@@ -1,7 +1,7 @@
 export InDims, OutDims
 const AxisDescriptorAll = Union{AxisDescriptor,String,Type{T},CubeAxis,Function} where T<:CubeAxis
 using ..Cubes.Axes: get_descriptor, ByFunction
-using ...ESDL: workdir, ESDLDefaults
+using ...YAXArrays: workdir, YAXDefaults
 using DataFrames: DataFrame
 using YAXArrayBase: yaxcreate
 
@@ -99,7 +99,7 @@ function OutDims(axisdesc...;
            backend=:auto,
            update=false,
            artype=Array,
-           chunksize=ESDLDefaults.chunksize[],
+           chunksize=YAXDefaults.chunksize[],
            outtype=1,
            backendargs...)
   descs = get_descriptor.(axisdesc)

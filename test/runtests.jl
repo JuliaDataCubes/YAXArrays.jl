@@ -2,7 +2,7 @@ using ESDL, ESDC, NetCDF
 using Test
 
 newcubedir = mktempdir()
-ESDLdir(newcubedir)
+YAXdir(newcubedir)
 # Download Cube subset
 c = esdc()
 
@@ -13,7 +13,7 @@ cgermany = c[
 ]
 savecube(cgermany,"germanycube",
   chunksize=Dict("lon"=>20,"lat"=>20,"time"=>92))
-ESDL.ESDLDefaults.cubedir[] = joinpath(newcubedir,"germanycube")
+ESDL.YAXDefaults.cubedir[] = joinpath(newcubedir,"germanycube")
 include("access.jl")
 include("analysis.jl")
 #include("artype.jl")

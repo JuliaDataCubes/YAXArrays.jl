@@ -1,13 +1,13 @@
 export ConcatCube, concatenateCubes
 export mergeAxes
-import ..Cubes: ESDLArray, caxes, iscompressed, cubechunks, chunkoffset
+import ..Cubes: YAXArray, caxes, iscompressed, cubechunks, chunkoffset
 using DiskArrayTools: diskstack
 
-function Base.map(op, incubes::ESDLArray...)
+function Base.map(op, incubes::YAXArray...)
   axlist=copy(caxes(incubes[1]))
   all(i->caxes(i)==axlist,incubes) || error("All axes must match")
   props=merge(getattributes.(incubes)...)
-  ESDLArray(axlist,broadcast(op,map(c->c.data,incubes)...),props,map(i->i.cleaner,incubes))
+  YAXArray(axlist,broadcast(op,map(c->c.data,incubes)...),props,map(i->i.cleaner,incubes))
 end
 
 """
@@ -30,7 +30,7 @@ function concatenateCubes(cl,cataxis::CubeAxis)
     append!(cleaners,cl[i].cleaner)
   end
   props=mapreduce(getattributes,merge,cl,init=getattributes(cl[1]))
-  ESDLArray([axlist...,cataxis],diskstack([c.data for c in cl]),props, cleaners)
+  YAXArray([axlist...,cataxis],diskstack([c.data for c in cl]),props, cleaners)
 end
 function concatenateCubes(;kwargs...)
   cubenames = String[]
