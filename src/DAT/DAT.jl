@@ -744,4 +744,5 @@ end
 
 include("dciterators.jl")
 include("tablestats.jl")
+include("CubeIO.jl")
 end

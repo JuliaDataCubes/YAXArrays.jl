@@ -9,8 +9,8 @@ using Dates: TimeType
 using IntervalSets: Interval, (..)
 using Base.Iterators: take, drop
 using ..YAXArrays: workdir, YAXDefaults
-using YAXArrayBase
-import YAXArrayBase: iscompressed, getattributes
+using YAXArrayBase: YAXArrayBase, iscompressed
+import YAXArrayBase: getattributes
 
 """
     AbstractCubeData{T,N}
@@ -49,15 +49,13 @@ function _read end
 "Returns the axes of a Cube"
 caxes(c::AbstractCubeData)=error("Axes function not implemented for $(typeof(c))")
 
-getattributes(::AbstractCubeData)=Dict{String,Any}()
+YAXArrayBase.getattributes(::AbstractCubeData)=Dict{String,Any}()
 
 "Chunks, if given"
 cubechunks(c::AbstractCubeData) = (size(c,1),map(i->1,2:ndims(c))...)
 
 "Offset of the first chunk"
 chunkoffset(c::AbstractCubeData) = ntuple(i->0,ndims(c))
-
-function iscompressed end
 
 "Supertype of all subtypes of the original data cube"
 abstract type AbstractSubCube{T,N} <: AbstractCubeData{T,N} end
@@ -126,9 +124,6 @@ function caxes(x)
     iscontdim(x,i) ? RangeAxis(s,v) : CategoricalAxis(s,v)
   end
 end
-iscompressed(c::YAXArray)=iscompressed(c.data)
-iscompressed(c::DiskArrays.PermutedDiskArray) = iscompressed(c.a.parent)
-iscompressed(c::DiskArrays.SubDiskArray) = iscompressed(c.v.parent)
 cubechunks(c::YAXArray)=common_size(eachchunk(c.data))
 cubechunks(x) = common_size(eachchunk(x))
 common_size(a::DiskArrays.GridChunks) = a.chunksize
@@ -160,6 +155,30 @@ function common_offset(a)
   end
 end
 readcubedata(c::YAXArray)=YAXArray(c.axes,Array(c.data),c.properties,CleanMe[])
+
+# Implementation for YAXArrayBase interface
+YAXArrayBase.dimvals(x::YAXArray, i) = x.axes[i].values
+
+function YAXArrayBase.dimname(x::YAXArray, i)
+  axsym(x.axes[i])
+end
+
+YAXArrayBase.getattributes(x::YAXArray) = x.properties
+
+YAXArrayBase.iscontdim(x::YAXArray, i) = isa(x.axes[i], RangeAxis)
+
+YAXArrayBase.getdata(x::YAXArray) = x.data
+
+function YAXArrayBase.yaxcreate(::Type{YAXArray},data, dimnames, dimvals, atts)
+  axlist = map(dimnames, dimvals) do dn, dv
+    iscontdimval(dv) ? RangeAxis(dn,dv) : CategoricalAxis(dn,dv)
+  end
+  YAXArray(axlist, data, atts)
+end
+YAXArrayBase.iscompressed(c::YAXArray)=_iscompressed(c.data)
+_iscompressed(c::DiskArrays.PermutedDiskArray) = iscompressed(c.a.parent)
+_iscompressed(c::DiskArrays.SubDiskArray) = iscompressed(c.v.parent)
+_iscompressed(c) = YAXArrayBase.iscompressed(c)
 
 function renameaxis!(c::YAXArray,p::Pair)
   i = findAxis(p[1],c.axes)
@@ -235,7 +254,6 @@ function _subsetcube(z::AbstractCubeData, subs;kwargs...)
   newaxes, substuple
 end
 
-include(joinpath(@__DIR__,"../DatasetAPI/countrydict.jl"))
 
 Base.getindex(a::AbstractCubeData;kwargs...) = subsetcube(a;kwargs...)
 

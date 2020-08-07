@@ -30,7 +30,6 @@ include("YAXTools.jl")
 include("Cubes/Cubes.jl")
 include("DatasetAPI/Datasets.jl")
 include("DAT/DAT.jl")
-include("Proc/Proc.jl")
 
 using .YAXTools: @reexport
 
@@ -42,11 +41,7 @@ using .YAXTools: @reexport
   getAxis
 
 @reexport using .DAT: mapCube, getAxis, InDims, OutDims, Dataset,
-      CubeTable, cubefittable, fittable #From DAT module
-@reexport using .Proc: removeMSC, gapFillMSC,normalizeTS,
-  getMSC, filterTSFFT, getNpY,savecube,loadcube,rmcube,
-  getMedSC, extractLonLats, cubefromshape,
-  gapfillpoly, spatialinterp #From Proc module
+      CubeTable, cubefittable, fittable, savecube, loadcube, rmcube #From DAT module
 @reexport using .Datasets: Dataset, Cube, open_dataset
 @reexport using .YAXTools: @loadOrGenerate # from YAXTools
 
