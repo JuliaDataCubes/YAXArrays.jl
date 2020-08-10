@@ -32,11 +32,7 @@ Base.ndims(::AbstractCubeData{<:Any,N}) where N = N
 Given any type of `AbstractCubeData` returns a [`CubeMem`](@ref) from it.
 """
 function readcubedata(x)
-  s=size(x)
-  aout = zeros(eltype(x),s...)
-  r=CartesianIndices(s)
-  _read(x,aout,r)
-  CubeMem(collect(CubeAxis,caxes(x)),aout,getattributes(x))
+  YAXArray(collect(CubeAxis,caxes(x)),getindex_all(x),getattributes(x))
 end
 
 """
@@ -139,6 +135,7 @@ function common_size(a)
   end
 end
 
+getindex_all(a) = getindex(a,ntuple(_->Colon(),ndims(a))...)
 Base.getindex(x::YAXArray, i...) = x.data[i...]
 chunkoffset(c::YAXArray)=common_offset(eachchunk(c.data))
 chunkoffset(x) = common_offset(eachchunk(x))
@@ -154,7 +151,7 @@ function common_offset(a)
     length(allengths)<3 ? 0 : allengths[2]-allengths[1]
   end
 end
-readcubedata(c::YAXArray)=YAXArray(c.axes,Array(c.data),c.properties,CleanMe[])
+readcubedata(c::YAXArray)=YAXArray(c.axes,getindex_all(c.data),c.properties,CleanMe[])
 
 # Implementation for YAXArrayBase interface
 YAXArrayBase.dimvals(x::YAXArray, i) = x.axes[i].values

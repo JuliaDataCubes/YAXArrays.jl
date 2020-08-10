@@ -549,10 +549,10 @@ function analyzeAxes(dc::DATConfig{NIN,NOUT}) where {NIN,NOUT}
     outcube.allAxes=CubeAxis[outcube.axesSmall;LoopAxesAdd]
     dold = outcube.innerchunks
     newchunks = Union{Int,Nothing}[nothing for _ in 1:length(outcube.allAxes)]
-    for k in keys(dold)
+    for (k,v) in dold
       ii = findAxis(k,outcube.allAxes)
       if ii !== nothing
-        newchunks[ii] = dold[k]
+        newchunks[ii] = v
       end
     end
     outcube.innerchunks = newchunks
