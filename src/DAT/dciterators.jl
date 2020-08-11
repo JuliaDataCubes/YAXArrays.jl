@@ -150,7 +150,7 @@ end
 import DataStructures: OrderedDict
 export CubeTable
 """
-    CubeTable(c::AbstractCubeData...)
+    CubeTable()
 
 Function to turn a DataCube object into an iterable table. Takes a list of as arguments,
 specified as a `name=cube` expression. For example
@@ -169,7 +169,7 @@ time steps of the same location.
 """
 function CubeTable(;include_axes=(),expandaxes=(),cubes...)
   c = (map((k,v)->v,keys(cubes),values(cubes))...,)
-  all(i->isa(i,AbstractCubeData),c) || throw(ArgumentError("All inputs must be DataCubes"))
+  all(i->isa(i,Union{YAXArray,AbstractArray}),c) || throw(ArgumentError("All inputs must be DataCubes"))
   varnames = map(string,keys(cubes))
   expandaxes = isa(expandaxes,Tuple) ? expandaxes : (expandaxes,)
   inaxnames = Set{String}()
@@ -212,7 +212,7 @@ Tables.rows(x::CubeIterator) = x
 Tables.schema(x::CubeIterator) = Tables.schema(typeof(x))
 Tables.schema(x::Type{<:CubeIterator}) = Tables.Schema(fieldnames(eltype(x)),map(s->fieldtype(eltype(x),s),fieldnames(eltype(x))))
 
-Tables.istable(::Type{<:AbstractCubeData}) = true
-Tables.rowaccess(::Type{<:AbstractCubeData}) = true
-Tables.rows(x::AbstractCubeData) = CubeTable(value = x, include_axes=true)
-Tables.schema(x::AbstractCubeData) = Tables.schema(Tables.rows(x))
+Tables.istable(::Type{<:YAXArray}) = true
+Tables.rowaccess(::Type{<:YAXArray}) = true
+Tables.rows(x::YAXArray) = CubeTable(value = x, include_axes=true)
+Tables.schema(x::YAXArray) = Tables.schema(Tables.rows(x))

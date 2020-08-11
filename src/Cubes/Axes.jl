@@ -1,15 +1,15 @@
 module Axes
-import ..Cubes: caxes, Cubes, AbstractCubeData
+import ..Cubes: caxes, Cubes
 using Dates
 using Base.Iterators: take, drop
 
 """
-    abstract CubeAxis{T} <: AbstractCubeData{T,1}
+    abstract CubeAxis{T}
 
 Supertype of all axes. Every `CubeAxis` is an 1D Cube itself and can be passed
 to mapCube operations.
 """
-abstract type CubeAxis{T,S} <: AbstractCubeData{T,1} end
+abstract type CubeAxis{T,S} end
 
 Base.size(x::CubeAxis)=(length(x.values),)
 Base.size(x::CubeAxis,i)=i==1 ? length(x.values) : error("Axis has only a single dimension")
@@ -253,7 +253,7 @@ function getOutAxis(desc::Tuple{ByInference},axlist,incubes,pargs,f)
   return (outaxes...,)
 end
 """
-    getAxis(desc::String, c::AbstractCubeData)
+    getAxis(desc::String, c)
 
 Given the string of an axis name and a cube, returns this axis of the cube.
 """

@@ -7,7 +7,7 @@ using ..Datasets: getsavefolder, Cube
 
 Save a [`YAXArray`](@ref) to the folder `name` in the YAXArray working directory.
 """
-function savecube(c::AbstractCubeData, name::AbstractString;
+function savecube(c, name::AbstractString;
   chunksize = Dict(),
   max_cache = 1e8,
   backend = :zarr,

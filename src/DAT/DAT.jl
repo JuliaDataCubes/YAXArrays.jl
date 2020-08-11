@@ -6,7 +6,7 @@ using Distributed: RemoteChannel, nworkers,pmap,
   @everywhere, workers, remotecall_fetch,
   remote_do, myid, nprocs
 import ..Cubes: cubechunks, iscompressed, chunkoffset,
-  CubeAxis, AbstractCubeData, YAXArray,
+  CubeAxis, YAXArray,
   caxes, YAXSlice
 import ..Cubes.Axes: AxisDescriptor, axname, ByInference, axsym,
   getOutAxis, getAxis, findAxis
@@ -212,7 +212,7 @@ function mapCube(f, in_ds::Dataset, addargs...; indims=InDims(), outdims=OutDims
 end
 
 import Base.mapslices
-function mapslices(f,d::Union{AbstractCubeData, Dataset},addargs...;dims,kwargs...)
+function mapslices(f,d::Union{YAXArray, Dataset},addargs...;dims,kwargs...)
     isa(dims,String) && (dims=(dims,))
     mapCube(f,d,addargs...;indims = InDims(dims...),outdims = OutDims(ByInference()),inplace=false,kwargs...)
 end

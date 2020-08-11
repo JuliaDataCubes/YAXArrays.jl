@@ -117,7 +117,7 @@ ESDL.DAT.cubefittable
 
 ### Online Histograms and quantiles
 
-It is possible to estimate histograms and quantiles of larger-than-memory datasets using an adaptive-bin histogram algorithm. The `Base.quantile` method is overloaded for objects of type `AbstractCubeData`, so the following works to estimate the 10% and 90% quantiles of all datapoints for each variable:
+It is possible to estimate histograms and quantiles of larger-than-memory datasets using an adaptive-bin histogram algorithm. The `Base.quantile` method is overloaded for objects of type `YAXArray`, so the following works to estimate the 10% and 90% quantiles of all datapoints for each variable:
 
 ```julia
 using WeightedOnlineStats
