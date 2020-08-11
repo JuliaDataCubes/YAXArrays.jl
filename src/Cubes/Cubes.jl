@@ -40,8 +40,6 @@ This function calculates a subset of a cube's data
 """
 function subsetcube end
 
-function _read end
-
 "Returns the axes of a Cube"
 caxes(c::AbstractCubeData)=error("Axes function not implemented for $(typeof(c))")
 
@@ -189,12 +187,6 @@ function renameaxis!(c::YAXArray,p::Pair{<:Any,<:CubeAxis})
   c.axes[i]=p[2]
   c
 end
-
-# function getSubRange(c::AbstractArray,i...;write::Bool=true)
-#   length(i)==ndims(c) || error("Wrong number of view arguments to getSubRange. Cube is: $c \n indices are $i")
-#   return view(c,i...)
-# end
-# getSubRange(c::Tuple{AbstractArray{T,0},AbstractArray{UInt8,0}};write::Bool=true) where {T}=c
 
 function _subsetcube end
 

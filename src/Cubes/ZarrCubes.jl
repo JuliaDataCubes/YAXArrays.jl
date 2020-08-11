@@ -4,8 +4,8 @@ import Distributed: myid
 using Zarr: DirectoryStore, NoCompressor, S3Store, ZArray, ZGroup
 using Zarr: readblock!, zcreate, zgroup, zopen
 import ESDL.Cubes: cubechunks, iscompressed, AbstractCubeData, getCubeDes,
-  caxes,chunkoffset, gethandle, subsetcube, axVal2Index, findAxis, _read, S3Cube,
-  _write, cubeproperties, ConcatCube, concatenateCubes, _subsetcube, workdir, readcubedata, saveCube,
+  caxes,chunkoffset, gethandle, subsetcube, axVal2Index, findAxis, S3Cube,
+  cubeproperties, ConcatCube, concatenateCubes, _subsetcube, workdir, readcubedata, saveCube,
   getsavefolder, check_overwrite
 import ESDL.Cubes.Axes: axname, CubeAxis, CategoricalAxis, RangeAxis, TimeAxis,
   axVal2Index_lb, axVal2Index_ub, get_step, getAxis
@@ -183,10 +183,6 @@ function ZArrayCube(axlist;
   end
 end
 
-function _read(z::ZArrayCube{<:Any,N,<:Any,<:Nothing},thedata::AbstractArray{<:Any,N},r::CartesianIndices{N}) where N
-  readblock!(thedata,z.a,r)
-end
-
 propfromattr(attr) = filter(i->i[1]!=="_ARRAY_DIMENSIONS",attr)
 
 #Helper functions for subsetting indices
@@ -203,26 +199,6 @@ maybereshapedata(thedata::AbstractArray{<:Any,N},subinds::NTuple{N,<:Any}) where
 maybereshapedata(thedata,subinds) = reshape(thedata,map(length,subinds))
 
 using DiskArrays: toRanges
-
-function _read(z::ZArrayCube{<:Any,N,<:Any},thedata::AbstractArray{<:Any,N},r::CartesianIndices{N}) where N
-  allinds = CartesianIndices(map(Base.OneTo,size(z.a)))
-  subinds = map(getindex,allinds.indices,z.subset)
-  r2 = getsubinds(subinds,r.indices)
-  thedata = maybereshapedata(thedata,r2)
-  readblock!(thedata,z.a,CartesianIndices(toRanges(r2)))
-end
-
-function _write(y::ZArrayCube{<:Any,N,<:Any,<:Nothing},thedata::AbstractArray,r::CartesianIndices{N}) where N
-  readblock!(thedata,y.a,r,readmode=false)
-end
-
-function _write(z::ZArrayCube{<:Any,N,<:Any},thedata::AbstractArray{<:Any,N},r::CartesianIndices{N}) where N
-  allinds = CartesianIndices(map(Base.OneTo,size(z.a)))
-  subinds = map(getindex,allinds.indices,z.subset)
-  r2 = getsubinds(subinds,r.indices)
-  thedata = maybereshapedata(thedata,subinds)
-  readblock!(thedata,z.a,CartesianIndices(r2),readmode=false)
-end
 
 function toaxis(dimname,g,offs,len)
     axname = dimname in ("lon","lat","time") ? uppercasefirst(dimname) : dimname
