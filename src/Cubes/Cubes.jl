@@ -9,7 +9,7 @@ using Dates: TimeType
 using IntervalSets: Interval, (..)
 using Base.Iterators: take, drop
 using ..YAXArrays: workdir, YAXDefaults
-using YAXArrayBase: YAXArrayBase, iscompressed
+using YAXArrayBase: YAXArrayBase, iscompressed, dimnames
 import YAXArrayBase: getattributes
 
 """
@@ -27,9 +27,9 @@ Base.eltype(::AbstractCubeData{T}) where T = T
 Base.ndims(::AbstractCubeData{<:Any,N}) where N = N
 
 """
-    readCubeData(cube::AbstractCubeData)
+    readcubedata(cube)
 
-Given any type of `AbstractCubeData` returns a [`CubeMem`](@ref) from it.
+Given any array implementing the YAXArray interface it returns an in-memory [`YAXArray`](@ref) from it.
 """
 function readcubedata(x)
   YAXArray(collect(CubeAxis,caxes(x)),getindex_all(x),getattributes(x))
