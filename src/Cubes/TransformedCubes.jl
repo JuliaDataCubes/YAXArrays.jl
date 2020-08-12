@@ -7,7 +7,7 @@ function Base.map(op, incubes::YAXArray...)
   axlist=copy(caxes(incubes[1]))
   all(i->caxes(i)==axlist,incubes) || error("All axes must match")
   props=merge(getattributes.(incubes)...)
-  YAXArray(axlist,broadcast(op,map(c->c.data,incubes)...),props,map(i->i.cleaner,incubes))
+  YAXArray(axlist,broadcast(op,map(c->c.data,incubes)...),props,mapreduce(i->i.cleaner,append!,incubes))
 end
 
 """
