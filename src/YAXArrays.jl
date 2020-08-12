@@ -35,7 +35,7 @@ using .YAXTools: @reexport
 
 @reexport using Dates: Date, DateTime
 @reexport using IntervalSets: (..)
-@reexport using .Cubes: cubeinfo, concatenateCubes, caxes,
+@reexport using .Cubes: concatenateCubes, caxes,
   subsetcube, readcubedata,renameaxis!, YAXArray
 @reexport using .Cubes.Axes: CubeAxis, RangeAxis, CategoricalAxis,
   getAxis
