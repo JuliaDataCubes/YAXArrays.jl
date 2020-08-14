@@ -43,7 +43,7 @@ ProgressMeter = "1"
 Requires = "1.0"
 StatsBase = "0.32, 0.33"
 Tables = "0.2, 1.0"
-WeightedOnlineStats = "0.3, 0.4"
+WeightedOnlineStats = "0.3, 0.4, 0.5"
 julia = "1.3"
 
 [extras]
