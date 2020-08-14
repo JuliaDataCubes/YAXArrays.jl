@@ -1,6 +1,6 @@
 module Datasets
 import ..Cubes.Axes: axsym, axname, CubeAxis, findAxis, CategoricalAxis, RangeAxis, caxes
-import ..Cubes: YAXArray, concatenateCubes, CleanMe
+import ..Cubes: YAXArray, concatenatecubes, CleanMe
 using ...YAXArrays: YAXArrays, YAXDefaults
 using DataStructures: OrderedDict, counter
 using Dates: Day,Hour,Minute,Second,Month,Year, Date, DateTime, TimeType
@@ -35,7 +35,7 @@ function Base.show(io::IO,ds::Dataset)
 end
 function Base.propertynames(x::Dataset, private=false)
     if private
-        Symbol[:cubes; :axes; keys(x.cubes); keys(x.axes)]
+        Symbol[:cubes; :axes; collect(keys(x.cubes)); collect(keys(x.axes))]
     else
         Symbol[collect(keys(x.cubes)); collect(keys(x.axes))]
     end
@@ -51,7 +51,7 @@ function Base.getproperty(x::Dataset,k::Symbol)
 end
 Base.getindex(x::Dataset,i::Symbol) = haskey(x.cubes, i) ? x.cubes[i] : haskey(x.axes,i) ? x.axes[i] : throw(ArgumentError("$i not found in Dataset"))
 function Base.getindex(x::Dataset,i::Vector{Symbol})
-    cubesnew = Dict{Symbol, YAXArray}(j=>x.cubes[j] for j=i)
+  cubesnew = [j=>x.cubes[j] for j=i]
     Dataset(;cubesnew...)
 end
 
@@ -68,7 +68,7 @@ function Base.getindex(x::Dataset,i::Vector{String})
     istr = string.(keys(x.cubes))
     ids  = map(name->fuzzyfind(name,istr),i)
     syms   = map(j->Symbol(istr[j]),ids)
-    cubesnew = Dict{Symbol, YAXArray}(Symbol(i[j])=>x.cubes[syms[j]] for j=1:length(ids))
+    cubesnew = [Symbol(i[j])=>x.cubes[syms[j]] for j=1:length(ids)]
     Dataset(;cubesnew...)
 end
 Base.getindex(x::Dataset,i::String)=getproperty(x,Symbol(i))
@@ -207,7 +207,7 @@ function Cube(ds::Dataset; joinname="Variable")
     return ds.cubes[first(newkeys)]
   else
     varax = CategoricalAxis(joinname, string.(newkeys))
-    return concatenateCubes([ds.cubes[k] for k in newkeys], varax)
+    return concatenatecubes([ds.cubes[k] for k in newkeys], varax)
   end
 end
 
@@ -295,7 +295,7 @@ function createdataset(DS, axlist;
   if groupaxis===nothing
     return allcubes[1]
   else
-    return concatenateCubes(allcubes,groupaxis)
+    return concatenatecubes(allcubes,groupaxis)
   end
 end
 
