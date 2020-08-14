@@ -9,60 +9,18 @@ using Dates: TimeType
 using IntervalSets: Interval, (..)
 using Base.Iterators: take, drop
 using ..YAXArrays: workdir, YAXDefaults
-using YAXArrayBase: YAXArrayBase, iscompressed
-import YAXArrayBase: getattributes
+using YAXArrayBase: YAXArrayBase, iscompressed, dimnames, iscontdimval
+import YAXArrayBase: getattributes, iscontdim, dimnames, dimvals
 
-"""
-    AbstractCubeData{T,N}
-
-Supertype of all cubes. `T` is the data type of the cube and `N` the number of
-dimensions. Beware that an `AbstractCubeData` does not implement the `AbstractArray`
-interface. However, the `YAXArrays` functions [`mapCube`](@ref), [`reduceCube`](@ref),
-[`readcubedata`](@ref), [`plotMAP`](@ref) and [`plotXY`](@ref) will work on any subtype
-of `AbstractCubeData`
-"""
-abstract type AbstractCubeData{T,N} end
-
-Base.eltype(::AbstractCubeData{T}) where T = T
-Base.ndims(::AbstractCubeData{<:Any,N}) where N = N
-
-"""
-    readCubeData(cube::AbstractCubeData)
-
-Given any type of `AbstractCubeData` returns a [`CubeMem`](@ref) from it.
-"""
-function readcubedata(x)
-  s=size(x)
-  aout = zeros(eltype(x),s...)
-  r=CartesianIndices(s)
-  _read(x,aout,r)
-  CubeMem(collect(CubeAxis,caxes(x)),aout,getattributes(x))
-end
 
 """
 This function calculates a subset of a cube's data
 """
 function subsetcube end
 
-function _read end
-
 "Returns the axes of a Cube"
-caxes(c::AbstractCubeData)=error("Axes function not implemented for $(typeof(c))")
+function caxes end
 
-YAXArrayBase.getattributes(::AbstractCubeData)=Dict{String,Any}()
-
-"Chunks, if given"
-cubechunks(c::AbstractCubeData) = (size(c,1),map(i->1,2:ndims(c))...)
-
-"Offset of the first chunk"
-chunkoffset(c::AbstractCubeData) = ntuple(i->0,ndims(c))
-
-"Supertype of all subtypes of the original data cube"
-abstract type AbstractSubCube{T,N} <: AbstractCubeData{T,N} end
-
-
-"Supertype of all in-memory representations of a data cube"
-abstract type AbstractCubeMem{T,N} <: AbstractCubeData{T,N} end
 
 include("Axes.jl")
 using .Axes: CubeAxis, RangeAxis, CategoricalAxis, findAxis, getAxis, axVal2Index,
@@ -88,23 +46,30 @@ function clean(c::CleanMe)
 end
 
 """
-    YAXArray{T,N} <: AbstractCubeMem{T,N}
+    YAXArray{T,N}
 
-An in-memory data cube. It is returned by applying `mapCube` when
-the output cube is small enough to fit in memory or by explicitly calling
-[`readcubedata`](@ref) on any type of cube.
+An array labelled with named axes that have values associated with them.
+It can wrap normal arrays or, more typically DiskArrays.
 
 ### Fields
 
 * `axes` a `Vector{CubeAxis}` containing the Axes of the Cube
 * `data` N-D array containing the data
-
 """
-struct YAXArray{T,N,A<:AbstractArray{T,N},AT} <: AbstractCubeData{T,N}
+struct YAXArray{T,N,A<:AbstractArray{T,N},AT}
   axes::AT
   data::A
   properties::Dict{String}
   cleaner::Vector{CleanMe}
+  function YAXArray(axes,data,properties,cleaner)
+    if ndims(data) != length(axes)
+      throw(ArgumentError("Can not construct YAXArray"))
+    elseif ntuple(i->length(axes[i]),ndims(data)) != size(data)
+      throw(ArgumentError("Can not construct YAXArray"))
+    else
+      return new{eltype(data),ndims(data),typeof(data),typeof(axes)}(axes,data,properties,cleaner)
+    end
+  end
 end
 
 YAXArray(axes,data,properties=Dict{String,Any}(); cleaner=CleanMe[]) = YAXArray(axes,data,properties, cleaner)
@@ -115,30 +80,42 @@ function YAXArray(x::AbstractArray)
 end
 Base.size(a::YAXArray) = size(a.data)
 Base.size(a::YAXArray,i::Int) = size(a.data,i)
+Base.ndims(a::YAXArray{<:Any,N}) where N = N
+Base.eltype(a::YAXArray{T}) where T = T
 Base.permutedims(c::YAXArray,p)=YAXArray(c.axes[collect(p)],permutedims(c.data,p),c.properties,c.cleaner)
 caxes(c::YAXArray)=c.axes
 function caxes(x)
   map(enumerate(dimnames(x))) do a
     i,s = a
-    v = dimvals(x,i)
+    v = YAXArrayBase.dimvals(x,i)
     iscontdim(x,i) ? RangeAxis(s,v) : CategoricalAxis(s,v)
   end
 end
+
+"""
+    readcubedata(cube)
+
+Given any array implementing the YAXArray interface it returns an in-memory [`YAXArray`](@ref) from it.
+"""
+function readcubedata(x)
+  YAXArray(collect(CubeAxis,caxes(x)),getindex_all(x),getattributes(x))
+end
+
 cubechunks(c::YAXArray)=common_size(eachchunk(c.data))
 cubechunks(x) = common_size(eachchunk(x))
 common_size(a::DiskArrays.GridChunks) = a.chunksize
 function common_size(a)
-  ntuple(ndims(a)) do idim
-    otherdims = setdiff(1:ndims(a),idim)
+  ntuple(ndims(first(a))) do idim
+    otherdims = setdiff(1:ndims(first(a)),idim)
     allengths = map(i->length(i.indices[idim]),a)
     for od in otherdims
       allengths = unique(allengths,dims=od)
     end
-    @assert length(allengths) == size(a,idim)
     length(allengths)<3 ? allengths[1] : allengths[2]
   end
 end
 
+getindex_all(a) = getindex(a,ntuple(_->Colon(),ndims(a))...)
 Base.getindex(x::YAXArray, i...) = x.data[i...]
 chunkoffset(c::YAXArray)=common_offset(eachchunk(c.data))
 chunkoffset(x) = common_offset(eachchunk(x))
@@ -154,7 +131,6 @@ function common_offset(a)
     length(allengths)<3 ? 0 : allengths[2]-allengths[1]
   end
 end
-readcubedata(c::YAXArray)=YAXArray(c.axes,Array(c.data),c.properties,CleanMe[])
 
 # Implementation for YAXArrayBase interface
 YAXArrayBase.dimvals(x::YAXArray, i) = x.axes[i].values
@@ -193,12 +169,6 @@ function renameaxis!(c::YAXArray,p::Pair{<:Any,<:CubeAxis})
   c
 end
 
-# function getSubRange(c::AbstractArray,i...;write::Bool=true)
-#   length(i)==ndims(c) || error("Wrong number of view arguments to getSubRange. Cube is: $c \n indices are $i")
-#   return view(c,i...)
-# end
-# getSubRange(c::Tuple{AbstractArray{T,0},AbstractArray{UInt8,0}};write::Bool=true) where {T}=c
-
 function _subsetcube end
 
 function subsetcube(z::YAXArray{T};kwargs...) where T
@@ -223,7 +193,7 @@ interpretsubset(subexpr::Interval,ax)       = interpretsubset((subexpr.left,sube
 interpretsubset(subexpr::AbstractVector,ax::CategoricalAxis)      = axVal2Index.(Ref(ax),subexpr,fuzzy=true)
 
 
-function _subsetcube(z::AbstractCubeData, subs;kwargs...)
+function _subsetcube(z, subs;kwargs...)
   kwargs = Dict(kwargs)
   for f in YAXDefaults.subsetextensions
     f(kwargs)
@@ -255,9 +225,9 @@ function _subsetcube(z::AbstractCubeData, subs;kwargs...)
 end
 
 
-Base.getindex(a::AbstractCubeData;kwargs...) = subsetcube(a;kwargs...)
+Base.getindex(a::YAXArray;kwargs...) = subsetcube(a;kwargs...)
 
-Base.read(d::AbstractCubeData) = getindex(d,fill(Colon(),ndims(d))...)
+Base.read(d::YAXArray) = getindex_all(d)
 
 function formatbytes(x)
   exts=["bytes","KB","MB","GB","TB"]
@@ -268,13 +238,13 @@ function formatbytes(x)
   end
   return string(round(x, digits=2)," ",exts[i])
 end
-cubesize(c::AbstractCubeData{T}) where {T}=(sizeof(T)+1)*prod(map(length,caxes(c)))
-cubesize(c::AbstractCubeData{T,0}) where {T}=sizeof(T)+1
+cubesize(c::YAXArray{T}) where {T}=(sizeof(T))*prod(map(length,caxes(c)))
+cubesize(c::YAXArray{<:Any,0})=sizeof(T)
 
 getCubeDes(::CubeAxis)="Cube axis"
 getCubeDes(::YAXArray)="YAXArray"
 getCubeDes(::Type{T}) where T = string(T)
-Base.show(io::IO,c::AbstractCubeData) = show_yax(io,c)
+Base.show(io::IO,c::YAXArray) = show_yax(io,c)
 
 function show_yax(io::IO,c)
     println(io,getCubeDes(c), " with the following dimensions")
@@ -288,60 +258,6 @@ function show_yax(io::IO,c)
       end
     end
     println(io,"Total size: ",formatbytes(cubesize(c)))
-end
-
-
-using Markdown
-struct YAXVarInfo
-  project::String
-  longname::String
-  units::String
-  url::String
-  comment::String
-  reference::String
-end
-Base.isless(a::YAXVarInfo, b::YAXVarInfo) = isless(string(a.project, a.longname),string(b.project, b.longname))
-
-import Base.show
-function show(io::IO,::MIME"text/markdown",v::YAXVarInfo)
-    un=v.units
-    url=v.url
-    re=v.reference
-    pr = v.project
-    ln = v.longname
-    co = v.comment
-    mdt=md"""
-### $ln
-*$(co)*
-
-* **Project** $(pr)
-* **units** $(un)
-* **Link** $(url)
-* **Reference** $(re)
-"""
-    mdt[3].items[1][1].content[3]=[" $pr"]
-    mdt[3].items[2][1].content[3]=[" $un"]
-    mdt[3].items[3][1].content[3]=[" $url"]
-    mdt[3].items[4][1].content[3]=[" $re"]
-    show(io,MIME"text/markdown"(),mdt)
-end
-show(io::IO,::MIME"text/markdown",v::Vector{YAXVarInfo})=foreach(x->show(io,MIME"text/markdown"(),x),v)
-
-"""
-    cubeinfo(cube)
-
-Shows the metadata and citation information on variables contained in a cube.
-"""
-function cubeinfo(ds::YAXArray, variable="unknown")
-    p = ds.properties
-    vi=YAXVarInfo(
-      get(p,"project_name", "unknown"),
-      get(p,"long_name",variable),
-      get(p,"units","unknown"),
-      get(p,"url","no link"),
-      get(p,"comment",variable),
-      get(p,"references","no reference")
-    )
 end
 
 include("TransformedCubes.jl")

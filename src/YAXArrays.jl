@@ -32,10 +32,11 @@ include("DatasetAPI/Datasets.jl")
 include("DAT/DAT.jl")
 
 using .YAXTools: @reexport
+using YAXArrayBase: getattributes
 
 @reexport using Dates: Date, DateTime
 @reexport using IntervalSets: (..)
-@reexport using .Cubes: cubeinfo, concatenateCubes, caxes,
+@reexport using .Cubes: concatenatecubes, caxes,
   subsetcube, readcubedata,renameaxis!, YAXArray
 @reexport using .Cubes.Axes: CubeAxis, RangeAxis, CategoricalAxis,
   getAxis
@@ -50,6 +51,7 @@ using .YAXTools: @reexport
 @deprecate rmCube(filename) rmcube(filename)
 @deprecate exportcube(data, filename; kwargs...) savecube(data, filename; backend=:netcdf, kwargs...)
 @deprecate cubeproperties(x) getattributes(x)
+@deprecate concantenateCubes(args...) concatenatecubes(args...)
 
 #include("precompile.jl")
 #_precompile_()

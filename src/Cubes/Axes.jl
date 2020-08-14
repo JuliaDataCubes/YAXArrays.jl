@@ -1,15 +1,15 @@
 module Axes
-import ..Cubes: caxes, _read, Cubes, AbstractCubeData
+import ..Cubes: caxes, Cubes
 using Dates
 using Base.Iterators: take, drop
 
 """
-    abstract CubeAxis{T} <: AbstractCubeData{T,1}
+    abstract CubeAxis{T}
 
 Supertype of all axes. Every `CubeAxis` is an 1D Cube itself and can be passed
 to mapCube operations.
 """
-abstract type CubeAxis{T,S} <: AbstractCubeData{T,1} end
+abstract type CubeAxis{T,S} end
 
 Base.size(x::CubeAxis)=(length(x.values),)
 Base.size(x::CubeAxis,i)=i==1 ? length(x.values) : error("Axis has only a single dimension")
@@ -150,17 +150,23 @@ end
 axVal2Index(x,v::CartesianIndex{1};fuzzy::Bool=false)=min(max(v.I[1],1),length(x))
 function axVal2Index(x,v;fuzzy::Bool=false)
   i = findfirst(isequal(v),x.values)
-  isa(i,Nothing) && error("Value $v not found in x")
-  return i
+  if isa(i,Nothing)
+      if fuzzy==true
+          dd = map(i->abs(i-v),x.values)
+          mi,ind = findmin(dd)
+          return ind
+      else
+          error("Value $v not found in x")
+      end
+  else
+      return i
+  end
 end
 abstract type AxisDescriptor end
 struct ByName <: AxisDescriptor
   name::String
 end
 struct ByInference <: AxisDescriptor end
-struct ByType{T} <: AxisDescriptor
-  t::Type{T}
-end
 struct ByValue <: AxisDescriptor
   v::CubeAxis
 end
@@ -173,7 +179,6 @@ const VecOrTuple{S} = Union{Vector{<:S},Tuple{Vararg{<:S}}} where S
 #findAxis(a::Any,c::VecOrTuple{<:CubeAxis}) = findAxis(get_descriptor(desc),c)
 get_descriptor(a::String)=ByName(a)
 get_descriptor(a::Symbol)=ByName(String(a))
-get_descriptor(a::Type{T}) where {T<:CubeAxis}=ByType(a)
 get_descriptor(a::CubeAxis)=ByValue(a)
 get_descriptor(a::Function)=ByFunction(a)
 get_descriptor(a)=error("$a is not a valid axis description")
@@ -181,14 +186,6 @@ get_descriptor(a::AxisDescriptor)=a
 
 
 
-"Find a certain axis type in a vector of Cube axes and returns the index"
-function findAxis(bt::ByType,v::VecOrTuple{CubeAxis})
-  a=bt.t
-  for i=1:length(v)
-    isa(v[i],a) && return i
-  end
-  return nothing
-end
 function findAxis(bs::ByName,axlist::VecOrTuple{CubeAxis})
   matchstr=bs.name
   ism=findall(i->startswith(lowercase(axname(i)),lowercase(matchstr)),axlist)
@@ -256,7 +253,7 @@ function getOutAxis(desc::Tuple{ByInference},axlist,incubes,pargs,f)
   return (outaxes...,)
 end
 """
-    getAxis(desc::String, c::AbstractCubeData)
+    getAxis(desc::String, c)
 
 Given the string of an axis name and a cube, returns this axis of the cube.
 """
@@ -267,18 +264,8 @@ getAxis(desc::ByValue,axlist::Vector{T}) where {T<:CubeAxis}=desc.v
 findAxis(desc,c)=findAxis(desc,caxes(c))
 findAxis(a,axlist::VecOrTuple{CubeAxis}) = findAxis(get_descriptor(a),axlist)
 
-getSubRange(x::CubeAxis,i)=x.values[i],nothing
-
 renameaxis(r::RangeAxis{T,<:Any,V}, newname) where {T,V} = RangeAxis{T,Symbol(newname),V}(r.values)
 renameaxis(r::CategoricalAxis{T,<:Any,V}, newname) where {T,V} = CategoricalAxis{T,Symbol(newname),V}(r.values)
-
-function _read(ax::CubeAxis, ar::AbstractArray, I::CartesianIndices)
-  ar[:] .= ax.values[I.indices[1]]
-end
-
-macro caxis_str(s)
-  :(CategoricalAxis{String,$(QuoteNode(Symbol(s)))})
-end
 
 import Base.==
 import Base.isequal

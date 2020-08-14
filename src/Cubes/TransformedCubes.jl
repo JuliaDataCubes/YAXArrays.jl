@@ -7,7 +7,7 @@ function Base.map(op, incubes::YAXArray...)
   axlist=copy(caxes(incubes[1]))
   all(i->caxes(i)==axlist,incubes) || error("All axes must match")
   props=merge(getattributes.(incubes)...)
-  YAXArray(axlist,broadcast(op,map(c->c.data,incubes)...),props,map(i->i.cleaner,incubes))
+  YAXArray(axlist,broadcast(op,map(c->c.data,incubes)...),props,mapreduce(i->i.cleaner,append!,incubes))
 end
 
 """
@@ -16,7 +16,7 @@ end
 Concatenates a vector of datacubes that have identical axes to a new single cube along the new
 axis `cataxis`
 """
-function concatenateCubes(cl,cataxis::CubeAxis)
+function concatenatecubes(cl,cataxis::CubeAxis)
   length(cataxis.values)==length(cl) || error("cataxis must have same length as cube list")
   axlist=copy(caxes(cl[1]))
   T=eltype(cl[1])
@@ -32,7 +32,7 @@ function concatenateCubes(cl,cataxis::CubeAxis)
   props=mapreduce(getattributes,merge,cl,init=getattributes(cl[1]))
   YAXArray([axlist...,cataxis],diskstack([c.data for c in cl]),props, cleaners)
 end
-function concatenateCubes(;kwargs...)
+function concatenatecubes(;kwargs...)
   cubenames = String[]
   for (n,c) in kwargs
     push!(cubenames,string(n))

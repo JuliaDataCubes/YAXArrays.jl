@@ -1,12 +1,13 @@
 using Base.Iterators: Iterators, product
 using DataStructures: OrderedDict
+using ..Datasets: getsavefolder, Cube
 
 """
     savecube(cube,name::String)
 
 Save a [`YAXArray`](@ref) to the folder `name` in the YAXArray working directory.
 """
-function savecube(c::AbstractCubeData, name::AbstractString;
+function savecube(c, name::AbstractString;
   chunksize = Dict(),
   max_cache = 1e8,
   backend = :zarr,
