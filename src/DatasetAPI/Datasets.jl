@@ -9,6 +9,7 @@ using CFTime: timedecode, timeencode, DateTimeNoLeap, DateTime360Day, DateTimeAl
 using YAXArrayBase
 using YAXArrayBase: iscontdimval
 using DiskArrayTools: CFDiskArray, ConcatDiskArray
+using Glob: glob
 
 struct Dataset
     cubes::OrderedDict{Symbol,YAXArray}
@@ -124,7 +125,7 @@ function toaxis(dimname,g,offs,len)
       end
     end
 end
-propfromattr(attr) = Dict{String,Any}(filter(i->i[1]!=="_ARRAY_DIMENSIONS",attr))
+propfromattr(attr) = Dict{String,Any}(filter(i->i[1]!="_ARRAY_DIMENSIONS",attr))
 
 "Test if data in x can be approximated by a step range"
 function testrange(x)
@@ -134,32 +135,15 @@ end
 
 testrange(x::AbstractArray{<:AbstractString}) = x
 
-function resolve_stars(s, res=String[])
-    s2 = splitpath(s)
-    istar = findfirst(i->occursin('*',i),s2)
-    if istar===nothing
-        return push!(res,s)
-    end
-    p = joinpath(s2[1:istar-1]...)
-    allfiles = readdir(p)
-    allfiles = filter(i->match(wildcard_to_regex(s2[istar]), i)!==nothing, allfiles)
-    foreach(i->resolve_stars(joinpath(p,i,s2[istar+1:end]...),res),allfiles)
-    return res
-end
-function wildcard_to_regex(s)
-    if startswith(s,"*")
-        s = string("[^.]",s)
-    end
-    Regex(replace(s,'*'=>".*"))
-end
+_glob(x) = startswith(x,"/") ? _glob(x[2:end],"/") : glob(x)
 
-open_mfdataset(g::AbstractString; kwargs...) = open_mfdataset(resolve_stars(g); kwargs...)
+open_mfdataset(g::AbstractString; kwargs...) = open_mfdataset(_glob(g); kwargs...)
 open_mfdataset(g::Vector{<:AbstractString};kwargs...) =
   merge_datasets(map(i->open_dataset(i;kwargs...), g))
 
 function open_dataset(g; driver = :all)
   g = to_dataset(g, driver=driver)
-  isempty(get_varnames(g)) && throw(ArgumentError("Zarr Group does not contain datasets."))
+  isempty(get_varnames(g)) && throw(ArgumentError("Group does not contain datasets."))
   dimlist = collectdims(g)
   dnames  = string.(keys(dimlist))
   varlist = filter(get_varnames(g)) do vn
@@ -178,6 +162,9 @@ function open_dataset(g; driver = :all)
     end
     ar = get_var_handle(g,vname)
     att = get_var_attrs(g,vname)
+    if subs !== nothing
+      ar = view(ar,subs...)
+    end
     allcubes[Symbol(vname)] = YAXArray(iax,ar,propfromattr(att), cleaner=CleanMe[])
   end
   sdimlist = Dict(Symbol(k)=>v.ax for (k,v) in dimlist)
@@ -234,7 +221,7 @@ of `CubeAxis`. A new empty Zarr array will be created and can serve as a sink fo
 """
 function createdataset(DS, axlist;
   path="",
-  persist = false,
+  persist = nothing,
   T=Union{Float32,Missing},
   chunksize = ntuple(i->length(axlist[i]),length(axlist)),
   chunkoffset = ntuple(i->0,length(axlist)),
@@ -243,7 +230,10 @@ function createdataset(DS, axlist;
   datasetaxis = "Variable",
   kwargs...
   )
-  persist = !isempty(path) || persist
+  if persist === nothing
+    persist = !isempty(path)
+  end
+  @show persist
   path = getsavefolder(path, persist)
   check_overwrite(path, overwrite)
   splice_generic(x::AbstractArray,i) = [x[1:(i-1)];x[(i+1:end)]]
@@ -277,18 +267,20 @@ function createdataset(DS, axlist;
   cleaner = CleanMe[]
   persist || push!(cleaner,CleanMe(path,false))
   allcubes = map(cubenames) do cn
+    axnames = map(axname,axlist)
+    axlengths = map(i->length(get_var_handle(myar,i)),axnames)
     v = if allow_missings(myar) || !(T>:Missing)
-      add_var(myar, T, cn, map(length,axlist), map(axname,axlist), attr; chunksize = chunksize, kwargs...)
+      add_var(myar, T, cn, axlengths, axnames, attr; chunksize = chunksize, kwargs...)
     else
       S = Base.nonmissingtype(T)
       if !haskey(attr,"missing_value")
         attr["missing_value"] = YAXArrayBase.defaultfillval(S)
       end
-      v = add_var(myar, S, cn, map(length,axlist), map(axname,axlist), attr; chunksize = chunksize, kwargs...)
+      v = add_var(myar, S, cn, axlengths, axnames, attr; chunksize = chunksize, kwargs...)
       CFDiskArray(v,attr)
     end
     if subs !== nothing
-      za = view(za,subs...)
+      v = view(v,subs...)
     end
     YAXArray(axlist,v,propfromattr(attr),cleaner=cleaner)
   end

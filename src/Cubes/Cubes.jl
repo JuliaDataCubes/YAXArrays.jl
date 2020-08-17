@@ -37,7 +37,7 @@ mutable struct CleanMe
 end
 function clean(c::CleanMe)
   if !c.persist && myid()==1
-    if !isdir(c.path)
+    if !isdir(c.path) && !isfile(c.path)
       @warn "Cube directory $(c.path) does not exist. Can not clean"
     else
       rm(c.path,recursive=true)
@@ -63,9 +63,9 @@ struct YAXArray{T,N,A<:AbstractArray{T,N},AT}
   cleaner::Vector{CleanMe}
   function YAXArray(axes,data,properties,cleaner)
     if ndims(data) != length(axes)
-      throw(ArgumentError("Can not construct YAXArray"))
+      throw(ArgumentError("Can not construct YAXArray, supplied data size is $(size(data)) while axis lenghts are $(ntuple(i->length(axes[i]),ndims(data)))"))
     elseif ntuple(i->length(axes[i]),ndims(data)) != size(data)
-      throw(ArgumentError("Can not construct YAXArray"))
+      throw(ArgumentError("Can not construct YAXArray, supplied data size is $(size(data)) while axis lenghts are $(ntuple(i->length(axes[i]),ndims(data)))"))
     else
       return new{eltype(data),ndims(data),typeof(data),typeof(axes)}(axes,data,properties,cleaner)
     end

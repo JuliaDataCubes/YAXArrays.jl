@@ -20,8 +20,8 @@
     Time                Axis with 12 Elements from 2001-01-15 to 2001-12-15
     Variables: avar something smaller """
     s2 = split(s2,"\n")
-    @test s[[1,2,6]] == s2[[1,2,6]]
-    @test all(i->in(i,s2), s[3:5])
+#     @test s[[1,2,6]] == s2[[1,2,6]]
+#     @test all(i->in(i,s2), s[3:5])
     for n in [:avar, :something, :smaller, :XVals, :Time, :YVals]
       @test n in propertynames(ds)
       @test n in propertynames(ds, true)
@@ -58,26 +58,34 @@
     YAXArrayBase.get_varnames(d::MockDataset) = (keys(d.vars)...,)
     YAXArrayBase.get_var_dims(d::MockDataset,name) = d.dims[name]
     YAXArrayBase.get_var_attrs(d::MockDataset, name) = d.attrs[name]
-    YAXArrayBase.create_empty(::Type{MockDataset},path) = MockDataset(Dict(),Dict(),Dict(),path)
+    YAXArrayBase.allow_missings(d::MockDataset) = !occursin("nomissings",d.path)
+    function YAXArrayBase.create_empty(::Type{MockDataset},path)
+      touch(path)
+      MockDataset(Dict(),Dict(),Dict(),path)
+    end
     function YAXArrayBase.add_var(ds::MockDataset, T, name, s, dimlist, atts;kwargs...)
-      ds.vars[name] = zeros(T,s...)
+      data = zeros(T,s...)
+      ds.vars[name] = data
       ds.dims[name] = dimlist
-      ds.atts[name] = atts
+      ds.attrs[name] = atts
+      data
     end
     YAXArrayBase.backendlist[:mock] = MockDataset
     push!(YAXArrayBase.backendregex,r".mock$"=>MockDataset)
-    data1,data2,d1,d2,d3 = (rand(12,5,2),rand(12,5),1:12, 0.1:0.1:0.5, ["One","Two"])
+    data1,data2,data3,d1,d2,d3 = (rand(12,5,2),rand(12,5),rand(12,5,2),1:12, 0.1:0.1:0.5, ["One","Two"])
     att1 =  Dict("att1"=>5,"_ARRAY_OFFSET"=>(2,0,0))
     att2 =  Dict("att2"=>6,"_ARRAY_OFFSET"=>(2,0))
     attd1 = Dict("_ARRAY_OFFSET"=>2, "units"=>"days since 2001-01-01", "calendar"=>"gregorian")
     attd2 = Dict("attd"=>"d")
     attd3 = Dict("attd"=>"d")
-    m = MockDataset(
-    Dict("Var1"=>data1, "Var2"=>data2, "time"=>d1,"d2"=>d2, "d3"=>d3),
-    Dict("Var1"=>("time","d2","d3"),"Var2"=>("time","d2"),"time"=>("time",),"d2"=>["d2"],"d3"=>["d3"]),
-    Dict("Var1"=>att1,"Var2"=>att2,"time"=>attd1,"d2"=>attd2,"d3"=>attd3),
-    "testpath.mock"
-    )
+    function MockDataset(p)
+        MockDataset(
+        OrderedDict("Var1"=>data1, "Var2"=>data2, "Var3"=>data3, "time"=>d1,"d2"=>d2, "d3"=>d3),
+        Dict("Var1"=>("time","d2","d3"),"Var2"=>("time","d2"),"Var3"=>("time","d2","d3"),"time"=>("time",),"d2"=>["d2"],"d3"=>["d3"]),
+        Dict("Var1"=>att1,"Var2"=>att2,"Var3"=>att1,"time"=>attd1,"d2"=>attd2,"d3"=>attd3),
+        )
+    end
+    m = MockDataset("testpath.mock")
     @testset "collectdims" begin
       dcollect = YAXArrays.Datasets.collectdims(m)
       @test dcollect["time"].ax isa RangeAxis
@@ -92,7 +100,47 @@
       @test YAXArrays.Cubes.Axes.axname(dcollect["d3"].ax) == "d3"
       @test dcollect["d3"].ax.values == ["One","Two"]
       @test dcollect["d3"].offs == 0
+      a1 = [0.1,0.2,0.3,0.4]
+      a2 = [0.1,0.21,0.3,0.4]
+      @test YAXArrays.Datasets.testrange(a1)== 0.1:0.1:0.4
+      @test YAXArrays.Datasets.testrange(a2) isa Array
+      @test YAXArrays.Datasets.testrange(a2) == [0.1,0.21,0.3,0.4]
     end
-
+    @testset "open_dataset" begin
+      ds = open_dataset("test.mock")
+      @test size(ds.Var1) == (10,5,2)
+      @test size(ds.Var2) == (10,5)
+      @test all(in(keys(ds.axes)),(:time,:d2,:d3))
+      ar = Cube(ds)
+      @test ar isa YAXArray
+      @test size(ar) == (10,5,2,2)
+      @test YAXArrays.Cubes.Axes.axname.(ar.axes) == ["time","d2","d3","Variable"]
+      @test ar.axes[4].values == ["Var1","Var3"]
+    end
+    @testset "Dataset creation" begin
+      al = [RangeAxis("Time",Date(2001):Month(1):Date(2001,12,31)), CategoricalAxis("Variable",["A","B"]), RangeAxis("Xvals",1:10)]
+      #Basic
+      newds = YAXArrays.Datasets.createdataset(MockDataset,al)
+      @test YAXArrays.Cubes.axsym.(newds.axes) == [:Time, :Xvals, :Variable]
+      @test newds.axes[1].values == Date(2001):Month(1):Date(2001,12,31)
+      @test newds.axes[3].values == ["A","B"]
+      @test newds.axes[2].values == 1:10
+      @test newds.data isa DiskArrayTools.DiskArrayStack
+      # A bit more advanced
+      fn = string(tempname(),".mock")
+      newds = YAXArrays.Datasets.createdataset(MockDataset,al,path = fn, persist = false, 
+      chunksize = (4,2,4), chunkoffset = (2,0,3), properties = Dict("att1"=>5), datasetaxis="A")
+      @test size(newds.data) == (12,2,10)
+      @test size(newds.data.parent) == (14,2,13)
+      @test eltype(newds.data) <: Union{Float32,Missing}
+      @test newds.properties["att1"] == 5
+      @test isfile(fn)
+      newds = nothing
+      GC.gc()
+      @test !isfile(fn)
+      # Without missings
+      fn = string(tempname(),"nomissings.mock")
+      newds = YAXArrays.Datasets.createdataset(MockDataset,al,path = fn,datasetaxis="A")
+    end
   end
 end
