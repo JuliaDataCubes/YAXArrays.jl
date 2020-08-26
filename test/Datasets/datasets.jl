@@ -1,3 +1,5 @@
+using DataStructures: OrderedDict
+
 @testset "Datasets" begin
   data = [rand(4,5,12), rand(4,5,12), rand(4,5)]
   axlist1 = [RangeAxis("XVals",1.0:4.0), CategoricalAxis("YVals",[1,2,3,4,5]), RangeAxis("Time",Date(2001,1,15):Month(1):Date(2001,12,15))]
@@ -60,11 +62,12 @@
     YAXArrayBase.get_var_attrs(d::MockDataset, name) = d.attrs[name]
     YAXArrayBase.allow_missings(d::MockDataset) = !occursin("nomissings",d.path)
     function YAXArrayBase.create_empty(::Type{MockDataset},path)
-      touch(path)
+      mkpath(dirname(path))
+      open(_->nothing, path,"w")
       MockDataset(Dict(),Dict(),Dict(),path)
     end
     function YAXArrayBase.add_var(ds::MockDataset, T, name, s, dimlist, atts;kwargs...)
-      data = zeros(T,s...)
+      data = Array{T}(undef,s...)
       ds.vars[name] = data
       ds.dims[name] = dimlist
       ds.attrs[name] = atts
@@ -83,6 +86,7 @@
         OrderedDict("Var1"=>data1, "Var2"=>data2, "Var3"=>data3, "time"=>d1,"d2"=>d2, "d3"=>d3),
         Dict("Var1"=>("time","d2","d3"),"Var2"=>("time","d2"),"Var3"=>("time","d2","d3"),"time"=>("time",),"d2"=>["d2"],"d3"=>["d3"]),
         Dict("Var1"=>att1,"Var2"=>att2,"Var3"=>att1,"time"=>attd1,"d2"=>attd2,"d3"=>attd3),
+        p
         )
     end
     m = MockDataset("testpath.mock")
@@ -125,7 +129,7 @@
       @test newds.axes[1].values == Date(2001):Month(1):Date(2001,12,31)
       @test newds.axes[3].values == ["A","B"]
       @test newds.axes[2].values == 1:10
-      @test newds.data isa DiskArrayTools.DiskArrayStack
+      @test newds.data isa YAXArrays.Cubes.DiskArrayTools.DiskArrayStack
       # A bit more advanced
       fn = string(tempname(),".mock")
       newds = YAXArrays.Datasets.createdataset(MockDataset,al,path = fn, persist = false, 

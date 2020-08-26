@@ -1,7 +1,7 @@
 export ConcatCube, concatenateCubes
 export mergeAxes
 import ..Cubes: YAXArray, caxes, iscompressed, cubechunks, chunkoffset
-using DiskArrayTools: diskstack
+using DiskArrayTools: diskstack, DiskArrayTools
 
 function Base.map(op, incubes::YAXArray...)
   axlist=copy(caxes(incubes[1]))
