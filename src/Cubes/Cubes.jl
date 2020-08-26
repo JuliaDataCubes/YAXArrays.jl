@@ -63,7 +63,7 @@ struct YAXArray{T,N,A<:AbstractArray{T,N},AT}
   cleaner::Vector{CleanMe}
   function YAXArray(axes,data,properties,cleaner)
     if ndims(data) != length(axes)
-      throw(ArgumentError("Can not construct YAXArray, supplied data size is $(size(data)) while axis lenghts are $(ntuple(i->length(axes[i]),ndims(data)))"))
+      throw(ArgumentError("Can not construct YAXArray, supplied data dimension is $(ndims(data)) while the number of axes is $(length(axes))"))
     elseif ntuple(i->length(axes[i]),ndims(data)) != size(data)
       throw(ArgumentError("Can not construct YAXArray, supplied data size is $(size(data)) while axis lenghts are $(ntuple(i->length(axes[i]),ndims(data)))"))
     else
@@ -163,7 +163,7 @@ function renameaxis!(c::YAXArray,p::Pair)
 end
 function renameaxis!(c::YAXArray,p::Pair{<:Any,<:CubeAxis})
   i = findAxis(p[1],c.axes)
-  i === nothing && throw(ArgumentError("Axis not found"))
+  i === nothing && throw(ArgumentError("$(p[1]) Axis not found"))
   length(c.axes[i].values) == length(p[2].values) || throw(ArgumentError("Length of replacement axis must equal length of old axis"))
   c.axes[i]=p[2]
   c
