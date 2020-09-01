@@ -4,7 +4,7 @@ import ..Cubes
 using ..YAXTools
 using Distributed: RemoteChannel, nworkers,pmap,
   @everywhere, workers, remotecall_fetch,
-  remote_do, myid, nprocs
+  remote_do, myid, nprocs, RemoteException, remotecall
 import ..Cubes: cubechunks, iscompressed, chunkoffset,
   CubeAxis, YAXArray,
   caxes, YAXSlice
@@ -345,7 +345,14 @@ updateinars(dc,r,incaches)=updatears(dc.incubes,r,:read,incaches)
 writeoutars(dc,r, outcaches)=updatears(dc.outcubes,r,:write,outcaches)
 
 function loopworker(dcchan::RemoteChannel, ranchan, reschan)
-    loopworker(take!(dcchan), ranchan, reschan)
+    dc = try 
+      take!(dcchan)
+    catch e
+      println("Error serializing DATConfig:", e)
+      put!(reschan)
+    end
+    loopworker(dc, ranchan, reschan)
+    return 
 end
 function loopworker(dc::DATConfig, ranchan, reschan)
   incaches, outcaches, args = try
@@ -358,6 +365,8 @@ function loopworker(dc::DATConfig, ranchan, reschan)
     loopworker(dc,ranchan, reschan, incaches, outcaches, args)
   catch e
     if e isa InvalidStateException
+      return nothing
+    elseif e isa RemoteException && e.captured.ex isa InvalidStateException
       return nothing
     else
       println("Error during running loop: ", e)
@@ -378,9 +387,14 @@ end
 
 function runLoop(dc::DATConfig,showprog)
   allRanges=distributeLoopRanges((dc.loopcachesize...,),(map(length,dc.LoopAxes)...,),getchunkoffsets(dc))
-  chnlfunc() = Channel{eltype(allRanges)}(length(allRanges))
+  chnlfunc() = Channel{Union{eltype(allRanges),Nothing}}(length(allRanges))
   outchanfunc() = Channel(length(allRanges))
   inchan, outchan, dcpass = if dc.ispar
+    #Test if YAXArrays is loaded on all workers:
+    isloaded = fetch.(map(workers()) do w
+      remotecall(()->isdefined(Main,:YAXArrays),w)
+    end)
+    all(isloaded) || error("YAXArrays is not loaded on all workers. Please run `@everywhere using YAXArrays` to fix.")
     dcpass = RemoteChannel(()->Channel{DATConfig}(nworkers()))
     for i=1:nworkers()
       put!(dcpass, dc)
