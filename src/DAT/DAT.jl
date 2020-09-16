@@ -348,8 +348,9 @@ function loopworker(dcchan::RemoteChannel, ranchan, reschan)
     dc = try 
       take!(dcchan)
     catch e
-      println("Error serializing DATConfig:", e)
-      put!(reschan)
+      println("Error serializing DATConfig, make sure all required package are loaded on all workers. ")
+      put!(reschan,e)
+      return
     end
     loopworker(dc, ranchan, reschan)
     return 
@@ -385,16 +386,26 @@ function loopworker(dc,ranchan, reschan, incaches, outcaches, args)
   end
 end
 
+function moduleloadedeverywhere()
+  try 
+    isloaded = map(workers()) do w
+      #We try calling a function defined inside this module, thi will error when YAXArrays is not loaded on the remote workers
+      remotecall(()->true,w)
+    end
+    fetch.(isloaded)
+  catch e
+      return false
+  end
+  return true
+end
+
 function runLoop(dc::DATConfig,showprog)
   allRanges=distributeLoopRanges((dc.loopcachesize...,),(map(length,dc.LoopAxes)...,),getchunkoffsets(dc))
   chnlfunc() = Channel{Union{eltype(allRanges),Nothing}}(length(allRanges))
   outchanfunc() = Channel(length(allRanges))
   inchan, outchan, dcpass = if dc.ispar
     #Test if YAXArrays is loaded on all workers:
-    isloaded = fetch.(map(workers()) do w
-      remotecall(()->isdefined(Main,:YAXArrays),w)
-    end)
-    all(isloaded) || error("YAXArrays is not loaded on all workers. Please run `@everywhere using YAXArrays` to fix.")
+    moduleloadedeverywhere() || error("YAXArrays is not loaded on all workers. Please run `@everywhere using YAXArrays` to fix.")
     dcpass = RemoteChannel(()->Channel{DATConfig}(nworkers()))
     for i=1:nworkers()
       put!(dcpass, dc)
