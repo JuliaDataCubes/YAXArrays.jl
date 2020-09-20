@@ -239,7 +239,7 @@ function formatbytes(x)
   return string(round(x, digits=2)," ",exts[i])
 end
 cubesize(c::YAXArray{T}) where {T}=(sizeof(T))*prod(map(length,caxes(c)))
-cubesize(::YAXArray{T,0})=sizeof(T)
+cubesize(::YAXArray{T,0}) where T=sizeof(T)
 
 getCubeDes(::CubeAxis)="Cube axis"
 getCubeDes(::YAXArray)="YAXArray"
