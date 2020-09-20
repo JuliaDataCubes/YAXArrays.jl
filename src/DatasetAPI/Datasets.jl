@@ -135,7 +135,7 @@ end
 
 testrange(x::AbstractArray{<:AbstractString}) = x
 
-_glob(x) = startswith(x,"/") ? _glob(x[2:end],"/") : glob(x)
+_glob(x) = startswith(x,"/") ? glob(x[2:end], "/") : glob(x)
 
 open_mfdataset(g::AbstractString; kwargs...) = open_mfdataset(_glob(g); kwargs...)
 open_mfdataset(g::Vector{<:AbstractString};kwargs...) =
