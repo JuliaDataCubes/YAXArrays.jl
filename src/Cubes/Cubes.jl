@@ -194,7 +194,7 @@ interpretsubset(subexpr::AbstractVector,ax::CategoricalAxis)      = axVal2Index.
 
 
 function _subsetcube(z, subs;kwargs...)
-  kwargs = Dict(kwargs)
+  kwargs = Dict{Any,Any}(kwargs)
   for f in YAXDefaults.subsetextensions
     f(kwargs)
   end
