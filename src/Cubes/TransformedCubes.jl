@@ -18,7 +18,7 @@ axis `cataxis`
 """
 function concatenatecubes(cl,cataxis::CubeAxis)
   length(cataxis.values)==length(cl) || error("cataxis must have same length as cube list")
-  axlist=copy(caxes(cl[1]))
+  axlist=axcopy.(caxes(cl[1]))
   T=eltype(cl[1])
   N=ndims(cl[1])
   cleaners = CleanMe[]

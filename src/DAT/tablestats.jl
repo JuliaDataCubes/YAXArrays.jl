@@ -2,14 +2,14 @@ import OnlineStats: OnlineStat, Extrema, fit!, value
 import ...Cubes.Axes: CategoricalAxis, RangeAxis
 import IterTools
 using WeightedOnlineStats
-import ProgressMeter: next!, Progress
+import ProgressMeter: next!
 
 import WeightedOnlineStats: WeightedOnlineStat
 abstract type TableAggregator end
 struct OnlineAggregator{O,S}<:TableAggregator
     o::O
 end
-function OnlineAggregator(O::OnlineStat,s::Symbol) where N
+function OnlineAggregator(O::OnlineStat,s::Symbol)
     OnlineAggregator{typeof(O),s}(copy(O))
 end
 cubeeltype(t::OnlineAggregator)=Float64
@@ -22,7 +22,7 @@ struct WeightOnlineAggregator{O,S,W}<:TableAggregator
     o::O
     w::W
 end
-function WeightOnlineAggregator(O::WeightedOnlineStat,s::Symbol,w) where N
+function WeightOnlineAggregator(O::WeightedOnlineStat,s::Symbol,w)
     WeightOnlineAggregator{typeof(O),s,typeof(w)}(copy(O),w)
 end
 cubeeltype(t::WeightOnlineAggregator{T}) where T = cubeeltype(T)
@@ -56,7 +56,7 @@ cubeeltype(t::Type{<:WeightedCovMatrix{T}}) where T = T
 cubeeltype(t::Type{<:Extrema{T}}) where T = T
 
 
-function GroupedOnlineAggregator(O::OnlineStat,s::Symbol,by,w,iter) where N
+function GroupedOnlineAggregator(O::OnlineStat,s::Symbol,by,w,iter)
     ost = typeof(O)
     et = eltype(iter)
     bytypes = Tuple{map(i->Base.nonmissingtype(Base.return_types(i,Tuple{et})[1]),by)...}
@@ -72,7 +72,7 @@ function fitrow!(o::GroupedOnlineAggregator{T,S,BY,W},r) where {T,S,BY,W}
     v = getproperty(r,S)
     if !ismissing(v)
         w = o.w(r)
-        if w==nothing
+        if w===nothing
             bykey = map(i->actval(i(r)),o.by)
             if !any(ismissing,bykey)
                 if haskey(o.d,bykey)
@@ -101,11 +101,11 @@ export TableAggregator, fittable, cubefittable
 function TableAggregator(iter,O,fitsym;by=(),weight=nothing)
   !isa(by,Tuple) && (by=(by,))
   if !isempty(by)
-    weight==nothing && (weight=(i->nothing))
+    weight===nothing && (weight=(i->nothing))
     by = map(i->isa(i,Symbol) ? (SymType(i)) : i,by)
     GroupedOnlineAggregator(O,fitsym,by,weight,iter)
   else
-    if weight==nothing
+    if weight===nothing
       OnlineAggregator(O,fitsym)
     else
       WeightOnlineAggregator(O,fitsym,weight)
