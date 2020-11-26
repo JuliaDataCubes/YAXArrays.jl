@@ -61,6 +61,8 @@ Makes a copy of a `CubeAxis` with the values `vals`
 """
 axcopy(ax::RangeAxis,vals) = RangeAxis(axname(ax),vals)
 axcopy(ax::CategoricalAxis,vals) = CategoricalAxis(axname(ax),vals)
+axcopy(ax::RangeAxis) = RangeAxis(axname(ax),copy(ax.values))
+axcopy(ax::CategoricalAxis) = CategoricalAxis(axname(ax),copy(ax.values))
 
 
 Base.show(io::IO,a::RangeAxis)=print(io,rpad(Axes.axname(a),20," "),"Axis with ",length(a)," Elements from ",first(a.values)," to ",last(a.values))

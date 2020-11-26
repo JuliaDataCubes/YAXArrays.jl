@@ -135,7 +135,7 @@ end
 
 testrange(x::AbstractArray{<:AbstractString}) = x
 
-_glob(x) = startswith(x,"/") ? _glob(x[2:end],"/") : glob(x)
+_glob(x) = startswith(x,"/") ? glob(x[2:end], "/") : glob(x)
 
 open_mfdataset(g::AbstractString; kwargs...) = open_mfdataset(_glob(g); kwargs...)
 open_mfdataset(g::Vector{<:AbstractString};kwargs...) =
@@ -233,7 +233,6 @@ function createdataset(DS, axlist;
   if persist === nothing
     persist = !isempty(path)
   end
-  @show persist
   path = getsavefolder(path, persist)
   check_overwrite(path, overwrite)
   splice_generic(x::AbstractArray,i) = [x[1:(i-1)];x[(i+1:end)]]

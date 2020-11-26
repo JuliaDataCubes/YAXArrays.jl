@@ -4,7 +4,7 @@ import ..Cubes
 using ..YAXTools
 using Distributed: RemoteChannel, nworkers,pmap,
   @everywhere, workers, remotecall_fetch,
-  remote_do, myid, nprocs
+  remote_do, myid, nprocs, RemoteException, remotecall
 import ..Cubes: cubechunks, iscompressed, chunkoffset,
   CubeAxis, YAXArray,
   caxes, YAXSlice
@@ -345,7 +345,15 @@ updateinars(dc,r,incaches)=updatears(dc.incubes,r,:read,incaches)
 writeoutars(dc,r, outcaches)=updatears(dc.outcubes,r,:write,outcaches)
 
 function loopworker(dcchan::RemoteChannel, ranchan, reschan)
-    loopworker(take!(dcchan), ranchan, reschan)
+    dc = try 
+      take!(dcchan)
+    catch e
+      println("Error serializing DATConfig, make sure all required package are loaded on all workers. ")
+      put!(reschan,e)
+      return
+    end
+    loopworker(dc, ranchan, reschan)
+    return 
 end
 function loopworker(dc::DATConfig, ranchan, reschan)
   incaches, outcaches, args = try
@@ -358,6 +366,8 @@ function loopworker(dc::DATConfig, ranchan, reschan)
     loopworker(dc,ranchan, reschan, incaches, outcaches, args)
   catch e
     if e isa InvalidStateException
+      return nothing
+    elseif e isa RemoteException && e.captured.ex isa InvalidStateException
       return nothing
     else
       println("Error during running loop: ", e)
@@ -376,11 +386,26 @@ function loopworker(dc,ranchan, reschan, incaches, outcaches, args)
   end
 end
 
+function moduleloadedeverywhere()
+  try 
+    isloaded = map(workers()) do w
+      #We try calling a function defined inside this module, thi will error when YAXArrays is not loaded on the remote workers
+      remotecall(()->true,w)
+    end
+    fetch.(isloaded)
+  catch e
+      return false
+  end
+  return true
+end
+
 function runLoop(dc::DATConfig,showprog)
   allRanges=distributeLoopRanges((dc.loopcachesize...,),(map(length,dc.LoopAxes)...,),getchunkoffsets(dc))
-  chnlfunc() = Channel{eltype(allRanges)}(length(allRanges))
+  chnlfunc() = Channel{Union{eltype(allRanges),Nothing}}(length(allRanges))
   outchanfunc() = Channel(length(allRanges))
   inchan, outchan, dcpass = if dc.ispar
+    #Test if YAXArrays is loaded on all workers:
+    moduleloadedeverywhere() || error("YAXArrays is not loaded on all workers. Please run `@everywhere using YAXArrays` to fix.")
     dcpass = RemoteChannel(()->Channel{DATConfig}(nworkers()))
     for i=1:nworkers()
       put!(dcpass, dc)
@@ -515,7 +540,7 @@ function getCubeCache(dc::DATConfig)
   incaches, outcaches
 end
 
-function allocatecachebuf(ic::Union{InputCube,OutputCube},loopcachesize) where N
+function allocatecachebuf(ic::Union{InputCube,OutputCube},loopcachesize)
   s = size(ic.cube)
   indsall = getindsall(geticolon(ic), ic.loopinds, i->loopcachesize[i], i->s[i])
   zeros(eltype(ic.cube),indsall...)
