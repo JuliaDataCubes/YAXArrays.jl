@@ -81,9 +81,9 @@ end
 function Base.iterate(ci::CubeIterator,s)
     t1 = iterate(s.innerinds,s.innerstate)
     N = tuplelen(eltype(ci.r))
-    if t1 == nothing
+    if t1 === nothing
         t2 = iterate(ci.r,s.blockstate)
-        if t2 == nothing
+        if t2 === nothing
             return nothing
         else
             rnow = t2[1]
@@ -147,7 +147,6 @@ function Base.iterate(s::CubeRow,state=1)
 end
 
 
-import DataStructures: OrderedDict
 export CubeTable
 """
     CubeTable()

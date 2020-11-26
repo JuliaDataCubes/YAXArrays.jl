@@ -63,7 +63,7 @@ struct YAXArray{T,N,A<:AbstractArray{T,N},AT}
   cleaner::Vector{CleanMe}
   function YAXArray(axes,data,properties,cleaner)
     if ndims(data) != length(axes)
-      throw(ArgumentError("Can not construct YAXArray, supplied data size is $(size(data)) while axis lenghts are $(ntuple(i->length(axes[i]),ndims(data)))"))
+      throw(ArgumentError("Can not construct YAXArray, supplied data dimension is $(ndims(data)) while the number of axes is $(length(axes))"))
     elseif ntuple(i->length(axes[i]),ndims(data)) != size(data)
       throw(ArgumentError("Can not construct YAXArray, supplied data size is $(size(data)) while axis lenghts are $(ntuple(i->length(axes[i]),ndims(data)))"))
     else
@@ -163,7 +163,7 @@ function renameaxis!(c::YAXArray,p::Pair)
 end
 function renameaxis!(c::YAXArray,p::Pair{<:Any,<:CubeAxis})
   i = findAxis(p[1],c.axes)
-  i === nothing && throw(ArgumentError("Axis not found"))
+  i === nothing && throw(ArgumentError("$(p[1]) Axis not found"))
   length(c.axes[i].values) == length(p[2].values) || throw(ArgumentError("Length of replacement axis must equal length of old axis"))
   c.axes[i]=p[2]
   c
@@ -188,13 +188,13 @@ function interpretsubset(subexpr::NTuple{2,Any},ax)
   Colon()(sorted(axVal2Index_lb(ax,x),axVal2Index_ub(ax,y))...)
 end
 interpretsubset(subexpr::NTuple{2,Int},ax::RangeAxis{T}) where T<:TimeType = interpretsubset(map(T,subexpr),ax)
-interpretsubset(subexpr::UnitRange{Int64},ax::RangeAxis{T}) where T<:TimeType = interpretsubset(T(first(subexpr))..T(last(subexpr)+1),ax)
+interpretsubset(subexpr::UnitRange{<:Integer},ax::RangeAxis{T}) where T<:TimeType = interpretsubset(T(first(subexpr))..T(last(subexpr)+1),ax)
 interpretsubset(subexpr::Interval,ax)       = interpretsubset((subexpr.left,subexpr.right),ax)
 interpretsubset(subexpr::AbstractVector,ax::CategoricalAxis)      = axVal2Index.(Ref(ax),subexpr,fuzzy=true)
 
 
 function _subsetcube(z, subs;kwargs...)
-  kwargs = Dict(kwargs)
+  kwargs = Dict{Any,Any}(kwargs)
   for f in YAXDefaults.subsetextensions
     f(kwargs)
   end
@@ -239,7 +239,7 @@ function formatbytes(x)
   return string(round(x, digits=2)," ",exts[i])
 end
 cubesize(c::YAXArray{T}) where {T}=(sizeof(T))*prod(map(length,caxes(c)))
-cubesize(c::YAXArray{<:Any,0})=sizeof(T)
+cubesize(::YAXArray{T,0}) where T=sizeof(T)
 
 getCubeDes(::CubeAxis)="Cube axis"
 getCubeDes(::YAXArray)="YAXArray"
