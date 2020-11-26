@@ -540,7 +540,7 @@ function getCubeCache(dc::DATConfig)
   incaches, outcaches
 end
 
-function allocatecachebuf(ic::Union{InputCube,OutputCube},loopcachesize) where N
+function allocatecachebuf(ic::Union{InputCube,OutputCube},loopcachesize)
   s = size(ic.cube)
   indsall = getindsall(geticolon(ic), ic.loopinds, i->loopcachesize[i], i->s[i])
   zeros(eltype(ic.cube),indsall...)

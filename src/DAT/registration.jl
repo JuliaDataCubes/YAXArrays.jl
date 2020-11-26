@@ -1,7 +1,7 @@
 export InDims, OutDims
 const AxisDescriptorAll = Union{AxisDescriptor,String,Type{T},CubeAxis,Function} where T<:CubeAxis
 using ..Cubes.Axes: get_descriptor, ByFunction
-using ...YAXArrays: workdir, YAXDefaults
+using ...YAXArrays: YAXDefaults
 using DataFrames: DataFrame
 using YAXArrayBase: yaxcreate
 
