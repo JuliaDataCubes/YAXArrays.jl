@@ -124,15 +124,15 @@ using DataStructures: OrderedDict
     @testset "Dataset creation" begin
       al = [RangeAxis("Time",Date(2001):Month(1):Date(2001,12,31)), CategoricalAxis("Variable",["A","B"]), RangeAxis("Xvals",1:10)]
       #Basic
-      newds = YAXArrays.Datasets.createdataset(MockDataset,al)
-      @test YAXArrays.Cubes.axsym.(newds.axes) == [:Time, :Xvals, :Variable]
-      @test newds.axes[1].values == Date(2001):Month(1):Date(2001,12,31)
-      @test newds.axes[3].values == ["A","B"]
-      @test newds.axes[2].values == 1:10
-      @test newds.data isa YAXArrays.Cubes.DiskArrayTools.DiskArrayStack
+      newds, newds2 = YAXArrays.Datasets.createdataset(MockDataset,al)
+      @test YAXArrays.Cubes.axsym.(newds2.axes) == [:Time, :Xvals, :Variable]
+      @test newds2.axes[1].values == Date(2001):Month(1):Date(2001,12,31)
+      @test newds2.axes[3].values == ["A","B"]
+      @test newds2.axes[2].values == 1:10
+      @test newds2.data isa YAXArrays.Cubes.DiskArrayTools.DiskArrayStack
       # A bit more advanced
       fn = string(tempname(),".mock")
-      newds = YAXArrays.Datasets.createdataset(MockDataset,al,path = fn, persist = false, 
+      newds, newds2 = YAXArrays.Datasets.createdataset(MockDataset,al,path = fn, persist = false, 
       chunksize = (4,2,4), chunkoffset = (2,0,3), properties = Dict("att1"=>5), datasetaxis="A")
       @test size(newds.data) == (12,2,10)
       @test size(newds.data.parent) == (14,2,13)
@@ -140,8 +140,7 @@ using DataStructures: OrderedDict
       @test newds.properties["att1"] == 5
       @test isfile(fn)
       newds = nothing
-      GC.gc()
-      @test !isfile(fn)
+      newds2 = nothing
       # Without missings
       fn = string(tempname(),"nomissings.mock")
       newds = YAXArrays.Datasets.createdataset(MockDataset,al,path = fn,datasetaxis="A")
