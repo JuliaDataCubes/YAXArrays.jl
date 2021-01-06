@@ -158,13 +158,9 @@ where `data` contains the values of `cube1` and `country` the values of `cube2`.
 are matched and broadcasted along their axes like in `mapCube`.
 
 In addition, one can specify
-`axes=(ax1,ax2...)` when one wants to include the values of certain axes in the table. For example
+`include_axes=(ax1,ax2...)` when one wants to include the values of certain axes in the table. For example
 the command `(CubeTable(tair=cube1 axes=("lon","lat","time"))` would produce an iterator over a data structure
 with entries `tair`, `lon`, `lat` and `time`.
-
-Lastly there is an option to specify which axis shall be the fastest changing when iterating over the cube.
-For example `CubeTable(tair=cube1,fastest="time"` will ensure that the iterator will always loop over consecutive
-time steps of the same location.
 """
 function CubeTable(;include_axes=(),expandaxes=(),cubes...)
   c = (map((k,v)->v,keys(cubes),values(cubes))...,)

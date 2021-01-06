@@ -58,6 +58,7 @@ Internal representation of an output cube for DAT operations
 """
 mutable struct OutputCube
   cube::Any #The actual outcube cube, once it is generated
+  cube_unpermuted::Any #The unpermuted output cube
   desc::OutDims                 #The description of the output axes as given by users or registration
   axesSmall::Array{CubeAxis}       #The list of output axes determined through the description
   allAxes::Vector{CubeAxis}        #List of all the axes of the cube
@@ -102,7 +103,7 @@ function OutputCube(desc::OutDims,inAxes::Vector{CubeAxis},incubes,pargs,f)
   axesSmall     = getOutAxis(desc.axisdesc,inAxes,incubes,pargs,f)
   outtype       = getOuttype(desc.outtype,incubes)
   innerchunks   = interpretoutchunksizes(desc,axesSmall,incubes)
-  OutputCube(nothing,desc,collect(CubeAxis,axesSmall),CubeAxis[],Int[],innerchunks,outtype)
+  OutputCube(nothing,nothing,desc,collect(CubeAxis,axesSmall),CubeAxis[],Int[],innerchunks,outtype)
 end
 
 """
@@ -279,9 +280,9 @@ function mapCube(fu::Function,
   @debug_print "Finalizing Output Cube"
 
   if length(dc.outcubes)==1
-    return dc.outcubes[1].cube
+    return dc.outcubes[1].cube_unpermuted
   else
-    return (map(i->i.cube,dc.outcubes)...,)
+    return (map(i->i.cube_unpermuted,dc.outcubes)...,)
   end
 
 end
@@ -471,6 +472,7 @@ function getallargs(dc::DATConfig)
     if ic.colonperm === nothing
       pa = PickAxisArray(cache,allax)
     else
+
       pa = PickAxisArray(cache,allax,ic.colonperm)
     end
   end
@@ -510,13 +512,16 @@ function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co;kwargs
       cs = Base.setindex(cs,cc,i)
     end
   end
-  oc.cube=createdataset(T, oc.allAxes; chunksize=cs, chunkoffset=co, kwargs...)
+  cube1, cube2 = createdataset(T, oc.allAxes; chunksize=cs, chunkoffset=co, kwargs...)
+  oc.cube=cube1
+  oc.cube_unpermuted = cube2
 end
 function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co;kwargs...) where T<:Array
   newsize=map(length,oc.allAxes)
   outar=Array{eltype}(undef,newsize...)
   map!(_->_zero(eltype),outar,1:length(outar))
   oc.cube = YAXArray(oc.allAxes,outar)
+  oc.cube_unpermuted = oc.cube
 end
 _zero(T) = zero(T)
 _zero(T::Type{<:AbstractString}) = convert(T,"")

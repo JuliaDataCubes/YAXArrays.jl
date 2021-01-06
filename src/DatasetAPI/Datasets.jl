@@ -238,11 +238,14 @@ function createdataset(DS, axlist;
   splice_generic(x::AbstractArray,i) = [x[1:(i-1)];x[(i+1:end)]]
   splice_generic(x::Tuple,i)         = (x[1:(i-1)]...,x[(i+1:end)]...)
   myar = create_empty(DS, path)
-  if (iax = findAxis(datasetaxis,axlist)) !== nothing
-    groupaxis = axlist[iax]
-    axlist = splice_generic(axlist,iax)
-    chunksize = splice_generic(chunksize,iax)
-    chunkoffset = splice_generic(chunkoffset,iax)
+  finalperm = nothing
+  idatasetax = datasetaxis === nothing ? nothing : findAxis(datasetaxis,axlist)
+  if idatasetax !== nothing
+    groupaxis = axlist[idatasetax]
+    axlist = splice_generic(axlist,idatasetax)
+    chunksize = splice_generic(chunksize,idatasetax)
+    chunkoffset = splice_generic(chunkoffset,idatasetax)
+    finalperm = ((1:idatasetax-1)..., length(axlist)+1, (idatasetax:length(axlist))...)
   else
     groupaxis = nothing
   end
@@ -284,9 +287,10 @@ function createdataset(DS, axlist;
     YAXArray(axlist,v,propfromattr(attr),cleaner=cleaner)
   end
   if groupaxis===nothing
-    return allcubes[1]
+    return allcubes[1],allcubes[1]
   else
-    return concatenatecubes(allcubes,groupaxis)
+    cube = concatenatecubes(allcubes,groupaxis)
+    return permutedims(cube, finalperm), cube
   end
 end
 
