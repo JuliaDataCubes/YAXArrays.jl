@@ -34,7 +34,7 @@ function Base.show(io::IO,ds::Dataset)
     print(io,"Variables: ")
     foreach(i->print(io,i," "),keys(ds.cubes))
 end
-function Base.propertynames(x::Dataset, private=false)
+function Base.propertynames(x::Dataset, private::Bool=false)
     if private
         Symbol[:cubes; :axes; collect(keys(x.cubes)); collect(keys(x.axes))]
     else
