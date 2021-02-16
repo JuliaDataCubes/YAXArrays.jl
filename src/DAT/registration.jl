@@ -1,21 +1,32 @@
-export InDims, OutDims
-const AxisDescriptorAll = Union{AxisDescriptor,String,Type{T},CubeAxis,Function} where T<:CubeAxis
-using ..Cubes.Axes: get_descriptor, ByFunction
+export InDims, OutDims, MovingWindow
+using ..Cubes.Axes: get_descriptor, ByFunction, findAxis, Axes
 using ...YAXArrays: YAXDefaults
 using DataFrames: DataFrame
 using YAXArrayBase: yaxcreate
 
+
+"""
+    MovingWindow(desc, pre, after)
+
+Constructs a `MovingWindow` object to be passed to an `InDims` constructor to define that
+the axis in `desc` shall participate in broadcasting (i.e. shall be looped over), but inside
+the inner function `pre` values before and `after` values after the center value
+will be passed as well. 
+
+For example passing `MovingWindow("Time", 2, 0)` will loop over the time axis and 
+always pass the current time step plus the 2 previous steps. So in the inner function
+the array will have an additional dimension of size 3.    
+"""
+struct MovingWindow
+  desc
+  pre::Int
+  after::Int
+end
+Axes.get_descriptor(m::MovingWindow) = MovingWindow(get_descriptor(m.desc),m.pre,m.after)
+Axes.findAxis(m::MovingWindow,c) = findAxis(m.desc,c)
+
 wrapWorkArray(::Type{Array},a,axes) = a
 wrapWorkArray(T,a,axes) = yaxcreate(T,a,map(axname,axes),map(i->i.values,axes),nothing)
-# import DataFrames
-# function wrapWorkArray(t::AsDataFrame,a,cablabaxes)
-#   colnames = map(Symbol,cablabaxes[2].values)
-#   df = DataFrames.DataFrame(a,colnames)
-#   if t.dimcol
-#     df[Symbol(axname(cablabaxes[1]))]=collect(cablabaxes[1].values)
-#   end
-#   df
-# end
 
 abstract type ProcFilter end
 struct AllMissing <: ProcFilter end
@@ -46,27 +57,31 @@ getprocfilter(pf::ProcFilter) = (pf,)
 getprocfilter(pf::NTuple{N,<:ProcFilter}) where N = pf
 
 """
-    InDims(axisdesc;...)
+    InDims(axisdesc...;...)
 
 Creates a description of an Input Data Cube for cube operations. Takes a single
-  or a Vector/Tuple of axes as first argument. Axes can be specified by their
+  or multiple axis descriptions as first arguments. Alternatively a MovingWindow(@ref) struct can be passed to include
+  neighbour slices of one or more axes in the computation. 
+  Axes can be specified by their
   name (String), through an Axis type, or by passing a concrete axis.
 
 ### Keyword arguments
 
-* `artype` how shall the array be represented in the inner function. Defaults to `AsArray`, alternatives are `AsDataFrame` or `AsAxisArray`
+* `artype` how shall the array be represented in the inner function. Defaults to `Array`, alternatives are `DataFrame` or `AsAxisArray`
 * `filter` define some filter to skip the computation, e.g. when all values are missing. Defaults to
     `AllMissing()`, possible values are `AnyMissing()`, `AnyOcean()`, `StdZero()`, `NValid(n)`
     (for at least n non-missing elements). It is also possible to provide a custom one-argument function
     that takes the array and returns `true` if the compuation shall be skipped and `false` otherwise.
+* `window` key-value iterable of the form `dimname => (pre, after)` describing if the mapping operation shall be 
+    applied in moving windows (TODO: better explanation here)
 """
 mutable struct InDims
   axisdesc::Tuple
   artype
   procfilter::Tuple
 end
-function InDims(axisdesc::AxisDescriptorAll...; artype=Array, filter = AllMissing())
-  descs = map(get_descriptor,axisdesc)
+function InDims(axisdesc::Union{String,CubeAxis,Symbol, MovingWindow}...; artype=Array, filter = AllMissing())
+  descs = get_descriptor.(axisdesc)
   any(i->isa(i,ByFunction),descs) && error("Input cubes can not be specified through a function")
   InDims(descs,artype,getprocfilter(filter))
 end

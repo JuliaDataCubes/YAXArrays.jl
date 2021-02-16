@@ -251,7 +251,6 @@ function show_yax(io::IO,c)
     for a in caxes(c)
         println(io,a)
     end
-
     foreach(getattributes(c)) do p
       if p[1] in ("labels","name","units")
         println(io,p[1],": ",p[2])
