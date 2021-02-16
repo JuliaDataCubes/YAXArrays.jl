@@ -111,7 +111,11 @@ function toaxis(dimname,g,offs,len)
     ar = g[dimname]
     aratts = get_var_attrs(g,dimname)
     if uppercase(axname)=="TIME" && haskey(aratts,"units")
-        tsteps = timedecode(ar[:],aratts["units"],get(aratts,"calendar","standard"))
+        tsteps = try
+          timedecode(ar[:],aratts["units"],lowercase(get(aratts,"calendar","standard")))
+        catch
+          ar[:]
+        end
         RangeAxis(dimname,tsteps[offs+1:end])
     elseif haskey(aratts,"_ARRAYVALUES")
       vals = identity.(aratts["_ARRAYVALUES"])
@@ -340,10 +344,14 @@ defaultcal(::Type{<:DateTime360Day}) = "360_day"
 
 datetodatetime(vals::AbstractArray{<:Date}) = DateTime.(vals)
 datetodatetime(vals) = vals
+toaxistype(x) = x
+toaxistype(x::Array{<:AbstractString}) = string.(x)
+toaxistype(x::Array{String}) = x
 
 function dataattfromaxis(ax::CubeAxis,n)
-    prependrange(ax.values,n), Dict{String,Any}()
+    prependrange(toaxistype(ax.values),n), Dict{String,Any}()
 end
+
 # function dataattfromaxis(ax::CubeAxis,n)
 #     prependrange(1:length(ax.values),n), Dict{String,Any}("_ARRAYVALUES"=>collect(ax.values))
 # end

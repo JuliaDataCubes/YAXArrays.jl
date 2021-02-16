@@ -192,7 +192,7 @@ function match_axis(bs::ByName, ax)
 end
 
 function match_axis(bs::ByValue, ax)
-  isequal(bs, ax)
+  isequal(bs.v, ax)
 end
 
 
