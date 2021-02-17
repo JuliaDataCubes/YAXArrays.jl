@@ -1,4 +1,6 @@
 using Test
+
+using YAXArrays.YAXTools: PickAxisArray
 @testset "PickAxisArray" begin
 p = reshape(1:24,2,3,4)
 a = PickAxisArray(p,[:,true,false,true])

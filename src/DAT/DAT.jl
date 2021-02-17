@@ -839,7 +839,7 @@ using Base.Cartesian
     end
   else
     Threads.@threads for cI in CartesianIndices(map(i->1:length(i),loopRanges))
-      innercode(f,xinBC,xoutBC,filters,
+      innercode(f,cI,xinBC,xoutBC,filters,
       inwork,outwork,axvalcreator,addargs,kwargs)
     end
   end
