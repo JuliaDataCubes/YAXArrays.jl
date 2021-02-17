@@ -800,7 +800,7 @@ function generateworkarrays(dc::DATConfig)
 end
 
 function innercode(f,cI,xinBC,xoutBC,filters,
-  inwork,outwork,axvalcreator,addargs,kwargs)
+  inwork,outwork,axvalcreator,offscur,addargs,kwargs)
   ithr = Threads.threadid()
   #Pick the correct array according to thread
   myinwork = map(i->i[ithr],inwork)
@@ -835,12 +835,12 @@ using Base.Cartesian
   if length(inwork[1])==1
     for cI in CartesianIndices(map(i->1:length(i),loopRanges))
       innercode(f,cI,xinBC,xoutBC,filters,
-      inwork,outwork,axvalcreator,addargs,kwargs)
+      inwork,outwork,axvalcreator,offscur,addargs,kwargs)
     end
   else
     Threads.@threads for cI in CartesianIndices(map(i->1:length(i),loopRanges))
       innercode(f,cI,xinBC,xoutBC,filters,
-      inwork,outwork,axvalcreator,addargs,kwargs)
+      inwork,outwork,axvalcreator,offscur,addargs,kwargs)
     end
   end
 end
