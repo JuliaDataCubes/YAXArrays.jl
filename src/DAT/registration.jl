@@ -9,7 +9,7 @@ using YAXArrayBase: yaxcreate
     MovingWindow(desc, pre, after)
 
 Constructs a `MovingWindow` object to be passed to an `InDims` constructor to define that
-the axis in `desc` shall participate in broadcasting (i.e. shall be looped over), but inside
+the axis in `desc` shall participate in the inner function (i.e. shall be looped over), but inside
 the inner function `pre` values before and `after` values after the center value
 will be passed as well. 
 
