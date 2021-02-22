@@ -53,11 +53,10 @@ function InputCube(c, desc::InDims)
   axlist = caxes(c)
   axesSmall = map(i->axlist[i], fullaxes)
   colonperm = issorted(internalaxes) ? nothing : collect(Base.invperm(sortperm(collect(internalaxes))))
-  iaxessmall = collect(fullaxes)
   _window = findall(i->isa(i,MovingWindow), desc.axisdesc)
   iwindow = collect(internalaxes[_window])
   window = WindowDescriptor[(desc.axisdesc[i].pre,desc.axisdesc[i].after) for i in _window]
-  InputCube{ndims(c)}(c,desc,collect(CubeAxis,axesSmall),iaxessmall,colonperm,Int[],Int[],window,iwindow,Int[], collect(internalaxes))
+  InputCube{ndims(c)}(c,desc,collect(CubeAxis,axesSmall),collect(fullaxes),colonperm,Int[],Int[],window,iwindow,Int[], collect(internalaxes))
 end
 geticolon(ic::InputCube) = ic.icolon
 createworkarrays(T,s,ntr)=[Array{T}(undef,s...) for i=1:ntr]
@@ -98,7 +97,6 @@ geticolon(c::OutputCube)=1:length(c.axesSmall)
 getAxis(desc,c::InOutCube) = getAxis(desc,c.cube)
 
 has_window(c::InOutCube) = !isempty(getwindow(c))
-windowsize(c::InOutCube) = prod(i->sum(i[2])+1,getwindow(c))
 function getworksize(oc::OutputCube)
   (length.(oc.axesSmall)...,)
 end

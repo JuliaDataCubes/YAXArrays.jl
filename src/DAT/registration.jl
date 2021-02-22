@@ -72,8 +72,6 @@ Creates a description of an Input Data Cube for cube operations. Takes a single
     `AllMissing()`, possible values are `AnyMissing()`, `AnyOcean()`, `StdZero()`, `NValid(n)`
     (for at least n non-missing elements). It is also possible to provide a custom one-argument function
     that takes the array and returns `true` if the compuation shall be skipped and `false` otherwise.
-* `window` key-value iterable of the form `dimname => (pre, after)` describing if the mapping operation shall be 
-    applied in moving windows (TODO: better explanation here)
 """
 mutable struct InDims
   axisdesc::Tuple
