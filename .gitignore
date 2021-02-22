@@ -7,3 +7,6 @@ deps/build.jl
 Manifest.toml
 *.ipynb_checkpoints
 .DS_Store
+
+# Ignore the benchmarking results
+/benchmark/*.json
