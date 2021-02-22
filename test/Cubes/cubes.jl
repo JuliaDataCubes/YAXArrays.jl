@@ -17,12 +17,18 @@ using YAXArrays, YAXArrayBase, Test, Dates
         @test size(a,2) == 5
         @test eltype(a) == Int
         @test ndims(a) == 2
+        @test a.XVals == axlist[1]
+        @test a.YVals == axlist[2]
         pa = permutedims(a,(2,1))
         @test pa.axes == axlist[[2,1]]
         @test pa.data == transpose(data)
+        @test pa.XVals == axlist[1]
+        @test pa.YVals == axlist[2]
         @test a[2,3] == a.data[2,3]
         @test read(a) isa Array
         @test read(a) == collect(reshape(1:20,4,5))
+        @test propertynames(a) == (:XVals, :YVals, :axes, :data)
+        @test propertynames(a,true) == (:XVals, :YVals, :axes, :data, :properties)
     end
 
     @testset "YAXArray interface functions" begin

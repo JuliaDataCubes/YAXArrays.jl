@@ -89,7 +89,13 @@ function Base.getproperty(a::YAXArray,s::Symbol)
     return caxes(a)[i]
   end
 end
-Base.propertynames(a::YAXArray) = (axsym.(caxes(a))..., fieldnames(a))
+function Base.propertynames(a::YAXArray,private = false)
+  if private
+    (axsym.(caxes(a))..., :axes, :data, :properties)
+  else
+    (axsym.(caxes(a))..., :axes, :data)
+  end
+end
 
 
 Base.ndims(a::YAXArray{<:Any,N}) where N = N
