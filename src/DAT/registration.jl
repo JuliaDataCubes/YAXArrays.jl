@@ -72,16 +72,22 @@ Creates a description of an Input Data Cube for cube operations. Takes a single
     `AllMissing()`, possible values are `AnyMissing()`, `AnyOcean()`, `StdZero()`, `NValid(n)`
     (for at least n non-missing elements). It is also possible to provide a custom one-argument function
     that takes the array and returns `true` if the compuation shall be skipped and `false` otherwise.
+* `window_oob_value` if one of the input dimensions is a MowingWindow, this value will be used to fill out-of-bounds areas
 """
 mutable struct InDims
   axisdesc::Tuple
   artype
   procfilter::Tuple
+  window_oob_value
 end
-function InDims(axisdesc::Union{String,CubeAxis,Symbol, MovingWindow}...; artype=Array, filter = AllMissing())
+function InDims(axisdesc::Union{String,CubeAxis,Symbol, MovingWindow}...; 
+    artype=Array, 
+    filter = AllMissing(),
+    window_oob_value = missing,
+  )
   descs = get_descriptor.(axisdesc)
   any(i->isa(i,ByFunction),descs) && error("Input cubes can not be specified through a function")
-  InDims(descs,artype,getprocfilter(filter))
+  InDims(descs,artype,getprocfilter(filter), window_oob_value)
 end
 
 

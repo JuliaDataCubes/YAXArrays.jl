@@ -59,6 +59,7 @@ function InputCube(c, desc::InDims)
   InputCube{ndims(c)}(c,desc,collect(CubeAxis,axesSmall),collect(fullaxes),colonperm,Int[],Int[],window,iwindow,Int[], collect(internalaxes))
 end
 geticolon(ic::InputCube) = ic.icolon
+getwindowoob(ic::InputCube) = ic.desc.window_oob_value
 createworkarrays(T,s,ntr)=[Array{T}(undef,s...) for i=1:ntr]
 getwindow(ic::InputCube) = zip(ic.windowloopinds,ic.window)
 function getworksize(ic::InputCube{N}) where N
@@ -342,7 +343,7 @@ updatears(clist,r,f,caches) = foreach(clist, caches) do ic, ca
   if !has_window(ic)
     updatear(f,r, ic.cube,geticolon(ic),ic.loopinds, ca )
   else
-    updatear_window(r, ic.cube,geticolon(ic),ic.loopinds, ca, getwindow(ic))
+    updatear_window(r, ic.cube,geticolon(ic),ic.loopinds, ca, getwindow(ic),getwindowoob(ic))
   end
 end
 getindsall(indscol, loopinds, rfunc, colfunc = _->Colon()) = getindsall((),1,(sort(indscol)...,),(loopinds...,),rfunc,colfunc)
@@ -355,7 +356,7 @@ function getindsall(indsall,inow,indscol,loopinds,rfunc,colfunc)
 end
 getindsall(indsall,inow,::Tuple{},::Tuple{},r,c) = indsall
 
-function updatear_window(r,cube,indscol,loopinds,cache, windows)
+function updatear_window(r,cube,indscol,loopinds,cache, windows, windowoob)
   indsall = getindsall(indscol,loopinds,i->r[i])
   #@show indsall, "in window"
   for (iw,pa) in windows
@@ -374,7 +375,7 @@ function updatear_window(r,cube,indscol,loopinds,cache, windows)
   end
   hinds = first.(oo)
   indsall2 = last.(oo)
-  fill!(cache,missing)
+  fill!(cache,windowoob)
   #@show hinds, indsall2
   cache[hinds...] = data[indsall2...]
 end

@@ -108,7 +108,7 @@ function toaxis(dimname,g,offs,len)
     if !haskey(g,dimname)
       return RangeAxis(dimname, 1:len)
     end
-    ar = g[dimname]
+    ar = get_var_handle(g,dimname)
     aratts = get_var_attrs(g,dimname)
     if uppercase(axname)=="TIME" && haskey(aratts,"units")
         tsteps = try
