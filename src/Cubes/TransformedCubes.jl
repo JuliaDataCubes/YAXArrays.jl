@@ -7,7 +7,7 @@ function Base.map(op, incubes::YAXArray...)
   axlist=copy(caxes(incubes[1]))
   all(i->caxes(i)==axlist,incubes) || error("All axes must match")
   props=merge(getattributes.(incubes)...)
-  YAXArray(axlist,broadcast(op,map(c->c.data,incubes)...),props,mapreduce(i->i.cleaner,append!,incubes))
+  YAXArray(axlist,broadcast(op,map(c->getdata(c),incubes)...),props,mapreduce(i->i.cleaner,append!,incubes))
 end
 
 """
@@ -30,7 +30,7 @@ function concatenatecubes(cl,cataxis::CubeAxis)
     append!(cleaners,cl[i].cleaner)
   end
   props=mapreduce(getattributes,merge,cl,init=getattributes(cl[1]))
-  YAXArray([axlist...,cataxis],diskstack([c.data for c in cl]),props, cleaners)
+  YAXArray([axlist...,cataxis],diskstack([getdata(c) for c in cl]),props, cleaners)
 end
 function concatenatecubes(;kwargs...)
   cubenames = String[]

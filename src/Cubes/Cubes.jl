@@ -10,7 +10,7 @@ using IntervalSets: Interval, (..)
 using Base.Iterators: take, drop
 using ..YAXArrays: workdir, YAXDefaults
 using YAXArrayBase: YAXArrayBase, iscompressed, dimnames, iscontdimval
-import YAXArrayBase: getattributes, iscontdim, dimnames, dimvals
+import YAXArrayBase: getattributes, iscontdim, dimnames, dimvals, getdata
 
 
 """
@@ -78,12 +78,30 @@ function YAXArray(x::AbstractArray)
   props = getattributes(x)
   YAXArray(ax,x,props)
 end
-Base.size(a::YAXArray) = size(a.data)
-Base.size(a::YAXArray,i::Int) = size(a.data,i)
+Base.size(a::YAXArray) = size(getdata(a))
+Base.size(a::YAXArray,i::Int) = size(getdata(a),i)
+function Base.getproperty(a::YAXArray,s::Symbol)
+  ax = axsym.(caxes(a))
+  i = findfirst(isequal(s), ax)
+  if i === nothing
+    return getfield(a,s)
+  else
+    return caxes(a)[i]
+  end
+end
+function Base.propertynames(a::YAXArray,private = false)
+  if private
+    (axsym.(caxes(a))..., :axes, :data, :properties)
+  else
+    (axsym.(caxes(a))..., :axes, :data)
+  end
+end
+
+
 Base.ndims(a::YAXArray{<:Any,N}) where N = N
 Base.eltype(a::YAXArray{T}) where T = T
-Base.permutedims(c::YAXArray,p)=YAXArray(c.axes[collect(p)],permutedims(c.data,p),c.properties,c.cleaner)
-caxes(c::YAXArray)=c.axes
+Base.permutedims(c::YAXArray,p)=YAXArray(caxes(c)[collect(p)],permutedims(getdata(c),p),c.properties,c.cleaner)
+caxes(c::YAXArray)=getfield(c,:axes)
 function caxes(x)
   map(enumerate(dimnames(x))) do a
     i,s = a
@@ -101,7 +119,7 @@ function readcubedata(x)
   YAXArray(collect(CubeAxis,caxes(x)),getindex_all(x),getattributes(x))
 end
 
-cubechunks(c::YAXArray)=common_size(eachchunk(c.data))
+cubechunks(c::YAXArray)=common_size(eachchunk(getdata(c)))
 cubechunks(x) = common_size(eachchunk(x))
 common_size(a::DiskArrays.GridChunks) = a.chunksize
 function common_size(a)
@@ -116,8 +134,8 @@ function common_size(a)
 end
 
 getindex_all(a) = getindex(a,ntuple(_->Colon(),ndims(a))...)
-Base.getindex(x::YAXArray, i...) = x.data[i...]
-chunkoffset(c::YAXArray)=common_offset(eachchunk(c.data))
+Base.getindex(x::YAXArray, i...) = getdata(x)[i...]
+chunkoffset(c::YAXArray)=common_offset(eachchunk(getdata(c)))
 chunkoffset(x) = common_offset(eachchunk(x))
 common_offset(a::DiskArrays.GridChunks) = a.offset
 function common_offset(a)
@@ -133,17 +151,17 @@ function common_offset(a)
 end
 
 # Implementation for YAXArrayBase interface
-YAXArrayBase.dimvals(x::YAXArray, i) = x.axes[i].values
+YAXArrayBase.dimvals(x::YAXArray, i) = caxes(x)[i].values
 
 function YAXArrayBase.dimname(x::YAXArray, i)
-  axsym(x.axes[i])
+  axsym(caxes(x)[i])
 end
 
 YAXArrayBase.getattributes(x::YAXArray) = x.properties
 
-YAXArrayBase.iscontdim(x::YAXArray, i) = isa(x.axes[i], RangeAxis)
+YAXArrayBase.iscontdim(x::YAXArray, i) = isa(caxes(x)[i], RangeAxis)
 
-YAXArrayBase.getdata(x::YAXArray) = x.data
+YAXArrayBase.getdata(x::YAXArray) = getfield(x,:data)
 
 function YAXArrayBase.yaxcreate(::Type{YAXArray},data, dimnames, dimvals, atts)
   axlist = map(dimnames, dimvals) do dn, dv
@@ -151,21 +169,22 @@ function YAXArrayBase.yaxcreate(::Type{YAXArray},data, dimnames, dimvals, atts)
   end
   YAXArray(axlist, data, atts)
 end
-YAXArrayBase.iscompressed(c::YAXArray)=_iscompressed(c.data)
+YAXArrayBase.iscompressed(c::YAXArray)=_iscompressed(getdata(c))
 _iscompressed(c::DiskArrays.PermutedDiskArray) = iscompressed(c.a.parent)
 _iscompressed(c::DiskArrays.SubDiskArray) = iscompressed(c.v.parent)
 _iscompressed(c) = YAXArrayBase.iscompressed(c)
 
 function renameaxis!(c::YAXArray,p::Pair)
-  i = findAxis(p[1],c.axes)
-  c.axes[i]=renameaxis(c.axes[i],p[2])
+  axlist = caxes(c)
+  i = findAxis(p[1],axlist)
+  axlist[i]=renameaxis(axlist[i],p[2])
   c
 end
 function renameaxis!(c::YAXArray,p::Pair{<:Any,<:CubeAxis})
-  i = findAxis(p[1],c.axes)
+  i = findAxis(p[1],caxes(c))
   i === nothing && throw(ArgumentError("$(p[1]) Axis not found"))
-  length(c.axes[i].values) == length(p[2].values) || throw(ArgumentError("Length of replacement axis must equal length of old axis"))
-  c.axes[i]=p[2]
+  length(caxes(c)[i].values) == length(p[2].values) || throw(ArgumentError("Length of replacement axis must equal length of old axis"))
+  caxes(c)[i]=p[2]
   c
 end
 
@@ -173,7 +192,7 @@ function _subsetcube end
 
 function subsetcube(z::YAXArray{T};kwargs...) where T
   newaxes, substuple = _subsetcube(z,collect(Any,map(Base.OneTo,size(z)));kwargs...)
-  newdata = view(z.data,substuple...)
+  newdata = view(getdata(z),substuple...)
   YAXArray(newaxes,newdata,z.properties,cleaner = z.cleaner)
 end
 
@@ -251,7 +270,6 @@ function show_yax(io::IO,c)
     for a in caxes(c)
         println(io,a)
     end
-
     foreach(getattributes(c)) do p
       if p[1] in ("labels","name","units")
         println(io,p[1],": ",p[2])

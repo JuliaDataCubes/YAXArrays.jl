@@ -34,6 +34,6 @@ end
 
 getCubeDes(s::YAXSlice) = string(join(axname.(s.sliceaxes[2]), " x "), " slices over an ", getCubeDes(s.c))
 cubesize(s::YAXSlice) = cubesize(s.c)
-Base.ndims(s::YAXSlice{<:Any,N}) where N = N
+Base.ndims(::YAXSlice{<:Any,N}) where N = N
 
 Base.show(io::IO,s::YAXSlice) = YAXArrays.Cubes.show_yax(io,s)

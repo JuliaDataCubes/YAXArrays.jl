@@ -9,14 +9,18 @@ import ..Cubes: cubechunks, iscompressed, chunkoffset,
   CubeAxis, YAXArray,
   caxes, YAXSlice
 import ..Cubes.Axes: AxisDescriptor, axname, ByInference, axsym,
-  getOutAxis, getAxis, findAxis
+  getOutAxis, getAxis, findAxis, match_axis
 import ..Datasets: Dataset, createdataset
 import ...YAXArrays
 import ...YAXArrays.workdir
 import ProgressMeter: Progress, next!, progress_pmap
 using YAXArrayBase
+using OffsetArrays: OffsetArray
 using Dates
 global const debugDAT=[false]
+
+const WindowDescriptor = Tuple{Int,Int}
+
 #TODO use a logging package
 macro debug_print(e)
   debugDAT[1] && return(:(println($e)))
@@ -31,26 +35,44 @@ Internal representation of an input cube for DAT operations
 mutable struct InputCube{N}
   cube::Any   #The input data cube
   desc::InDims               #The input description given by the user/registration
-  axesSmall::Vector{CubeAxis} #List of axes that were actually selected through the desciption
+  axesSmall::Vector{CubeAxis} #List of axes that were actually selected through the description
   icolon::Vector{Int}
   colonperm::Union{Vector{Int},Nothing}
   loopinds::Vector{Int}        #Indices of loop axes that this cube does not contain, i.e. broadcasts
-  cachesize::Vector{Int}     #Number of elements to keep in cache along each axis
+  cachesize::Vector{Int}     #Number of elements to keep in cache along each axis TODO: delete
+  window::Vector{WindowDescriptor}
+  iwindow::Vector{Int}
+  windowloopinds::Vector{Int}
+  iall::Vector{Int}
 end
 
 function InputCube(c, desc::InDims)
-  iaxessmall = findAxis.(desc.axisdesc,Ref(c))
+  internalaxes = findAxis.(desc.axisdesc,Ref(c))
+  any(isequal(nothing),internalaxes) && error("One of the input axes not found in input cubes")
+  fullaxes = internalaxes[findall(i->!isa(i,MovingWindow), desc.axisdesc)]
   axlist = caxes(c)
-  axesSmall = map(i->axlist[i], iaxessmall)
-  colonperm = issorted(iaxessmall) ? nothing : collect(Base.invperm(sortperm(collect(iaxessmall))))
-  iaxessmall = collect(iaxessmall)
-  any(isequal(nothing),axesSmall) && error("One of the input axes not found in input cubes")
-  InputCube{ndims(c)}(c,desc,collect(CubeAxis,axesSmall),iaxessmall,colonperm,Int[],Int[])
+  axesSmall = map(i->axlist[i], fullaxes)
+  colonperm = issorted(internalaxes) ? nothing : collect(Base.invperm(sortperm(collect(internalaxes))))
+  _window = findall(i->isa(i,MovingWindow), desc.axisdesc)
+  iwindow = collect(internalaxes[_window])
+  window = WindowDescriptor[(desc.axisdesc[i].pre,desc.axisdesc[i].after) for i in _window]
+  InputCube{ndims(c)}(c,desc,collect(CubeAxis,axesSmall),collect(fullaxes),colonperm,Int[],Int[],window,iwindow,Int[], collect(internalaxes))
 end
 geticolon(ic::InputCube) = ic.icolon
+getwindowoob(ic::InputCube) = ic.desc.window_oob_value
 createworkarrays(T,s,ntr)=[Array{T}(undef,s...) for i=1:ntr]
+getwindow(ic::InputCube) = zip(ic.windowloopinds,ic.window)
+function getworksize(ic::InputCube{N}) where N
+  r = map(ic.iall) do i
+    i1 = findfirst(isequal(i),ic.icolon)
+    i1 === nothing || return size(ic.cube,i)
+    i2 = findfirst(isequal(i),ic.iwindow)
+    return sum(ic.window[i2])+1
+  end
+  (r...,)
+end
 
-
+    
 
 
 """
@@ -60,21 +82,29 @@ mutable struct OutputCube
   cube::Any #The actual outcube cube, once it is generated
   cube_unpermuted::Any #The unpermuted output cube
   desc::OutDims                 #The description of the output axes as given by users or registration
-  axesSmall::Array{CubeAxis}       #The list of output axes determined through the description
-  allAxes::Vector{CubeAxis}        #List of all the axes of the cube
-  loopinds::Vector{Int}              #Index of the loop axes that are broadcasted for this output cube
+  axesSmall::Array{CubeAxis}    #The list of output axes determined through the description
+  allAxes::Vector{CubeAxis}     #List of all the axes of the cube
+  loopinds::Vector{Int}         #Index of the loop axes that are broadcasted for this output cube
   innerchunks
   outtype
 end
+getwindow(::OutputCube) = []
 
 const InOutCube = Union{InputCube,OutputCube}
+
 
 getsmallax(c::InOutCube)=c.axesSmall
 geticolon(c::OutputCube)=1:length(c.axesSmall)
 getAxis(desc,c::InOutCube) = getAxis(desc,c.cube)
 
+has_window(c::InOutCube) = !isempty(getwindow(c))
+function getworksize(oc::OutputCube)
+  (length.(oc.axesSmall)...,)
+end
+
+
 function getworkarray(c::InOutCube,ntr)
-  wa = createworkarrays(eltype(c.cube),length.(c.axesSmall),ntr)
+  wa = createworkarrays(eltype(c.cube),getworksize(c),ntr)
   map(wa) do w
     wrapWorkArray(c.desc.artype,w,c.axesSmall)
   end
@@ -99,7 +129,7 @@ function interpretoutchunksizes(desc,axesSmall,incubes)
 end
 
 getOutAxis(desc::Tuple,inAxes,incubes,pargs,f)=map(i->getOutAxis(i,inAxes,incubes,pargs,f),desc)
-function OutputCube(desc::OutDims,inAxes::Vector{CubeAxis},incubes,pargs,f)
+function OutputCube(desc::OutDims,inAxes,incubes,pargs,f)
   axesSmall     = getOutAxis(desc.axisdesc,inAxes,incubes,pargs,f)
   outtype       = getOuttype(desc.outtype,incubes)
   innerchunks   = interpretoutchunksizes(desc,axesSmall,incubes)
@@ -310,7 +340,11 @@ function getchunkoffsets(dc::DATConfig)
 end
 
 updatears(clist,r,f,caches) = foreach(clist, caches) do ic, ca
-  updatear(f,r, ic.cube,geticolon(ic),ic.loopinds, ca )
+  if !has_window(ic)
+    updatear(f,r, ic.cube,geticolon(ic),ic.loopinds, ca )
+  else
+    updatear_window(r, ic.cube,geticolon(ic),ic.loopinds, ca, getwindow(ic),getwindowoob(ic))
+  end
 end
 getindsall(indscol, loopinds, rfunc, colfunc = _->Colon()) = getindsall((),1,(sort(indscol)...,),(loopinds...,),rfunc,colfunc)
 function getindsall(indsall,inow,indscol,loopinds,rfunc,colfunc)
@@ -322,6 +356,29 @@ function getindsall(indsall,inow,indscol,loopinds,rfunc,colfunc)
 end
 getindsall(indsall,inow,::Tuple{},::Tuple{},r,c) = indsall
 
+function updatear_window(r,cube,indscol,loopinds,cache, windows, windowoob)
+  indsall = getindsall(indscol,loopinds,i->r[i])
+  #@show indsall, "in window"
+  for (iw,pa) in windows
+    iold = indsall[iw]
+    indsall = Base.setindex(indsall,first(iold)-pa[1]:last(iold)+pa[2],iw)
+  end
+  data = getdata(cube)
+  l2 = map((i,s)->isa(i,Colon) ? s : length(i),indsall,size(cache))
+  oo = map(indsall,axes(cache),axes(data)) do i,c,d
+    if isa(i,Colon) 
+      return Base.OneTo(length(c)), Base.OneTo(length(c))
+    else
+      precut, aftercut = max(0,first(d)-first(i)), max(0,last(i)-last(d))
+      return (first(c)+precut:last(c)-aftercut), (first(i)+precut:last(i)-aftercut)
+    end
+  end
+  hinds = first.(oo)
+  indsall2 = last.(oo)
+  fill!(cache,windowoob)
+  #@show hinds, indsall2
+  cache[hinds...] = data[indsall2...]
+end
 
 function updatear(f,r,cube,indscol,loopinds,cache)
   indsall = getindsall(indscol,loopinds,i->r[i])
@@ -469,10 +526,14 @@ function getallargs(dc::DATConfig)
   end
   inarsbc = map(dc.incubes, incache) do ic, cache
     allax = getindsall(geticolon(ic), ic.loopinds, i->true)
+    if has_window(ic)
+      for (iw,pa) in getwindow(ic)
+        allax = Base.setindex(allax,pa,iw)
+      end
+    end
     if ic.colonperm === nothing
       pa = PickAxisArray(cache,allax)
     else
-
       pa = PickAxisArray(cache,allax,ic.colonperm)
     end
   end
@@ -548,7 +609,18 @@ end
 function allocatecachebuf(ic::Union{InputCube,OutputCube},loopcachesize)
   s = size(ic.cube)
   indsall = getindsall(geticolon(ic), ic.loopinds, i->loopcachesize[i], i->s[i])
-  zeros(eltype(ic.cube),indsall...)
+  if has_window(ic)
+    indsall = Base.OneTo.(indsall)
+    for (iw,(pre,after)) in getwindow(ic)
+      old = indsall[iw]
+      new = (first(old)-pre):(last(old)+after)
+      indsall = Base.setindex(indsall,new,iw)
+    end
+    #@show indsall
+    OffsetArray(zeros(eltype(ic.cube),length.(indsall)...), indsall...)
+  else
+    zeros(eltype(ic.cube),indsall...)
+  end
 end
 
 function init_DATworkers()
@@ -562,11 +634,19 @@ function analyzeAxes(dc::DATConfig{NIN,NOUT}) where {NIN,NOUT}
       in(a,cube.axesSmall) || in(a,dc.LoopAxes) || push!(dc.LoopAxes,a)
     end
   end
-  length(dc.LoopAxes)==length(unique(map(typeof,dc.LoopAxes))) || error("Make sure that cube axes of different cubes match")
-  for cube=dc.incubes
+  length(dc.LoopAxes)==length(unique(map(axsym,dc.LoopAxes))) || error("Make sure that cube axes of different cubes match")
+  for cube in dc.incubes
     myAxes = caxes(cube.cube)
     for (il,loopax) in enumerate(dc.LoopAxes)
-      in(typeof(loopax),map(typeof,myAxes)) && push!(cube.loopinds,il)
+      laxsym = axsym(loopax)
+      iax = findfirst(i->axsym(i) == laxsym, myAxes)
+      if iax !== nothing
+        push!(cube.loopinds,il)
+        #Check here if axis is windowed
+        if iax in cube.iwindow
+          push!(cube.windowloopinds,il)
+        end
+      end
     end
   end
   #Add output broadcast axes
@@ -626,6 +706,8 @@ function getCacheSizes(dc::DATConfig,loopchunksizes)
   foreach(dc.LoopAxes,1:length(dc.LoopAxes)) do lax,ilax
     haskey(userchunks,ilax) && return nothing
     for ic in dc.incubes
+      #@show lax
+      #@show ic.cube.axes
       ii = findAxis(lax,ic.cube)
       if !isa(ii,Nothing)
         inax = isempty(ic.axesSmall) ? 1 : prod(map(length,ic.axesSmall))
@@ -716,30 +798,32 @@ function generateworkarrays(dc::DATConfig)
   inwork, outwork
 end
 
-macro innercode()
-  esc(quote
-    ithr = Threads.threadid()
-    #Pick the correct array according to thread
-    myinwork = map(i->i[ithr],inwork)
-    myoutwork = map(i->i[ithr],outwork)
-    #Copy data into work arrays
-    foreach(myinwork,xinBC) do iw,x
-      iw.=view(x,cI.I...)
-    end
-    #Apply filters
-    mvs = map(docheck,filters,myinwork)
-    if any(mvs)
-      # Set all outputs to missing
-      foreach(ow->fill!(ow,missing),myoutwork)
-    else
-      #Compute loop axis values if necessary
-      laxval = getlaxvals(axvalcreator,cI,offscur)
-      #Finally call the function
-      f(myoutwork...,myinwork...,laxval...,addargs...;kwargs...)
-    end
-    #Copy data into output array
-    foreach((iw,x)->view(x,cI.I...).=iw,myoutwork,xoutBC)
-  end)
+function innercode(f,cI,xinBC,xoutBC,filters,
+  inwork,outwork,axvalcreator,offscur,addargs,kwargs)
+  ithr = Threads.threadid()
+  #Pick the correct array according to thread
+  myinwork = map(i->i[ithr],inwork)
+  myoutwork = map(i->i[ithr],outwork)
+  #Copy data into work arrays
+  foreach(myinwork,xinBC) do iw,x
+    #@show axes(iw)
+    #@show cI.I
+    #@show axes(view(x,cI.I...))
+    iw.=view(x,cI.I...)
+  end
+  #Apply filters
+  mvs = map(docheck,filters,myinwork)
+  if any(mvs)
+    # Set all outputs to missing
+    foreach(ow->fill!(ow,missing),myoutwork)
+  else
+    #Compute loop axis values if necessary
+    laxval = getlaxvals(axvalcreator,cI,offscur)
+    #Finally call the function
+    f(myoutwork...,myinwork...,laxval...,addargs...;kwargs...)
+  end
+  #Copy data into output array
+  foreach((iw,x)->view(x,cI.I...).=iw,myoutwork,xoutBC)
 end
 
 using DataStructures: OrderedDict
@@ -749,11 +833,13 @@ using Base.Cartesian
   offscur = map(i->(first(i)-1), loopRanges)
   if length(inwork[1])==1
     for cI in CartesianIndices(map(i->1:length(i),loopRanges))
-      @innercode
+      innercode(f,cI,xinBC,xoutBC,filters,
+      inwork,outwork,axvalcreator,offscur,addargs,kwargs)
     end
   else
     Threads.@threads for cI in CartesianIndices(map(i->1:length(i),loopRanges))
-      @innercode
+      innercode(f,cI,xinBC,xoutBC,filters,
+      inwork,outwork,axvalcreator,offscur,addargs,kwargs)
     end
   end
 end

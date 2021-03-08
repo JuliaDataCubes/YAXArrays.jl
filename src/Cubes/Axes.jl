@@ -178,7 +178,6 @@ end
 
 const VecOrTuple{S} = Union{Vector{<:S},Tuple{Vararg{<:S}}} where S
 
-#findAxis(a::Any,c::VecOrTuple{<:CubeAxis}) = findAxis(get_descriptor(desc),c)
 get_descriptor(a::String)=ByName(a)
 get_descriptor(a::Symbol)=ByName(String(a))
 get_descriptor(a::CubeAxis)=ByValue(a)
@@ -186,24 +185,29 @@ get_descriptor(a::Function)=ByFunction(a)
 get_descriptor(a)=error("$a is not a valid axis description")
 get_descriptor(a::AxisDescriptor)=a
 
+match_axis(a, ax) = match_axis(get_descriptor(a), ax)
+
+function match_axis(bs::ByName, ax)
+  startswith(lowercase(axname(ax)),lowercase(bs.name))
+end
+
+function match_axis(bs::ByValue, ax)
+  isequal(bs.v, ax)
+end
 
 
-function findAxis(bs::ByName,axlist::VecOrTuple{CubeAxis})
-  matchstr=bs.name
-  ism=findall(i->startswith(lowercase(axname(i)),lowercase(matchstr)),axlist)
-  isempty(ism) && return nothing
-  if length(ism)>1
-    f = axlist[ism[1]]
-    all(i->i==f,ism) || error("Multiple axes found matching string $matchstr")
-    return f
+
+function findAxis(bs::AxisDescriptor,axlist::VecOrTuple{CubeAxis})
+  m = findall(i->match_axis(bs, i), axlist)
+  if isempty(m)
+    return nothing
+  elseif length(m)>1
+    error("Multiple possible axis matches found for $bs")
   else
-    return ism[1]
+    return m[1]
   end
 end
-function findAxis(bv::ByValue,axlist::VecOrTuple{CubeAxis})
-  v=bv.v
-  return findfirst(i->i==v,axlist)
-end
+
 function getAxis(desc,axlist::VecOrTuple{CubeAxis})
   i = findAxis(desc,axlist)
   if isa(i,Nothing)

@@ -36,7 +36,8 @@ using YAXArrayBase: getattributes
   getAxis
 
 @reexport using .DAT: mapCube, getAxis, InDims, OutDims, Dataset,
-      CubeTable, cubefittable, fittable, savecube, loadcube, rmcube #From DAT module
+      CubeTable, cubefittable, fittable, savecube, loadcube, rmcube, 
+      MovingWindow #From DAT module
 @reexport using .Datasets: Dataset, Cube, open_dataset
 @reexport using .YAXTools: @loadOrGenerate # from YAXTools
 

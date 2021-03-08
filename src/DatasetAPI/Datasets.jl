@@ -108,10 +108,14 @@ function toaxis(dimname,g,offs,len)
     if !haskey(g,dimname)
       return RangeAxis(dimname, 1:len)
     end
-    ar = g[dimname]
+    ar = get_var_handle(g,dimname)
     aratts = get_var_attrs(g,dimname)
     if uppercase(axname)=="TIME" && haskey(aratts,"units")
-        tsteps = timedecode(ar[:],aratts["units"],get(aratts,"calendar","standard"))
+        tsteps = try
+          timedecode(ar[:],aratts["units"],lowercase(get(aratts,"calendar","standard")))
+        catch
+          ar[:]
+        end
         RangeAxis(dimname,tsteps[offs+1:end])
     elseif haskey(aratts,"_ARRAYVALUES")
       vals = identity.(aratts["_ARRAYVALUES"])
@@ -296,10 +300,10 @@ end
 
 function getsavefolder(name,persist)
   if isempty(name)
-    name = persist ? split(tempname(),"/")[end] : tempname()[2:end]
-    joinpath(YAXDefaults.workdir[],name)
+    name = persist ? [splitpath(tempname())[end]] : splitpath(tempname())[2:end]
+    joinpath(YAXDefaults.workdir[],name...)
   else
-    occursin("/",name) ? name : joinpath(YAXDefaults.workdir[],name)
+    (occursin("/",name) || occursin("\\", name)) ? name : joinpath(YAXDefaults.workdir[],name)
   end
 end
 
@@ -340,10 +344,14 @@ defaultcal(::Type{<:DateTime360Day}) = "360_day"
 
 datetodatetime(vals::AbstractArray{<:Date}) = DateTime.(vals)
 datetodatetime(vals) = vals
+toaxistype(x) = x
+toaxistype(x::Array{<:AbstractString}) = string.(x)
+toaxistype(x::Array{String}) = x
 
 function dataattfromaxis(ax::CubeAxis,n)
-    prependrange(ax.values,n), Dict{String,Any}()
+    prependrange(toaxistype(ax.values),n), Dict{String,Any}()
 end
+
 # function dataattfromaxis(ax::CubeAxis,n)
 #     prependrange(1:length(ax.values),n), Dict{String,Any}("_ARRAYVALUES"=>collect(ax.values))
 # end
