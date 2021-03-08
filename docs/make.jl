@@ -1,19 +1,4 @@
-using ImageMagick, Documenter, ESDL, ESDLPlots, Cairo
-
-
-newcubedir = mktempdir()
-YAXdir(newcubedir)
-# Download Cube subset
-if !isempty(ESDL.YAXDefaults.cubedir[])
-  c = S3Cube()
-  csa = c[
-    region = "South America",
-    var = ["country_mask","c_emissions","gross", "net_ecosystem", "air_temperature_2m", "terrestrial_ecosystem", "soil_moisture"],
-    time = 2003:2006
-  ]
-  saveCube(csa,"southamericacube", chunksize=(90,90,92,1))
-  ESDL.YAXDefaults.cubedir[] = joinpath(newcubedir,"southamericacube")
-end
+using YAXArrays, Documenter
 
 exampledir = joinpath(@__DIR__,"src","examples")
 allex = map(readdir(exampledir)) do fname
@@ -21,23 +6,22 @@ allex = map(readdir(exampledir)) do fname
   n => joinpath("examples",fname)
 end
 
-
 makedocs(
-    modules = [ESDL, ESDLPlots],
+    modules = [YAXArrays],
     clean   = true,
     format   = Documenter.HTML(),
-    sitename = "ESDL.jl",
+    sitename = "YAXArrays.jl",
     authors = "Fabian Gans",
     pages    = [ # Compat: `Any` for 0.4 compat
         "Home" => "index.md",
+        "Tutorial" => "man/tutorial.md",
         "Examples" => allex,
         "Manual" => Any[
-            "cube_access.md",
-            "analysis.md",
-            "plotting.md",
-            "iotools.md"
+            "man/datasets.md",
+            "man/yaxarrays.md",
+            "man/applying functions.md",
+            "man/iterators.md",
         ],
-        "Other functions" => "./lib/misc.md"
         ]
 )
 

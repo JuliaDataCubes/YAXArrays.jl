@@ -1,9 +1,3 @@
 [deps]
-ESDLPlots = "d555b242-3f29-57aa-84ea-3df92a135dfd"
-Cairo = "159f3aea-2a34-519c-b102-8c37f9878175"
-ColorTypes = "3da002f7-5984-5a60-b8a6-cbb66c0b333f"
 Documenter = "e30172f5-a6a5-5a46-863b-614d45cd2de4"
-Fontconfig = "186bb1d3-e1f7-5a2c-a377-96d770f13627"
-ImageMagick = "6218d12a-5da1-5696-b52f-db25d2ecc6d1"
-Polynomials = "f27b6e38-b328-58d1-80ce-0feddd5e7a45"
-WeightedOnlineStats = "bbac0a1f-7c9d-5672-960b-c6ca726e5d5d"
+YAXArrays = "c21b50f5-aa40-41ea-b809-c0f5e47bfa5c"
