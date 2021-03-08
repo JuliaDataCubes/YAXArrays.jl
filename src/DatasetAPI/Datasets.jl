@@ -300,10 +300,10 @@ end
 
 function getsavefolder(name,persist)
   if isempty(name)
-    name = persist ? split(tempname(),"/")[end] : tempname()[2:end]
-    joinpath(YAXDefaults.workdir[],name)
+    name = persist ? [splitpath(tempname())[end]] : splitpath(tempname())[2:end]
+    joinpath(YAXDefaults.workdir[],name...)
   else
-    occursin("/",name) ? name : joinpath(YAXDefaults.workdir[],name)
+    (occursin("/",name) || occursin("\\", name)) ? name : joinpath(YAXDefaults.workdir[],name)
   end
 end
 
