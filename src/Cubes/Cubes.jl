@@ -89,7 +89,7 @@ function Base.getproperty(a::YAXArray,s::Symbol)
     return caxes(a)[i]
   end
 end
-function Base.propertynames(a::YAXArray,private = false)
+function Base.propertynames(a::YAXArray,private::Bool = false)
   if private
     (axsym.(caxes(a))..., :axes, :data, :properties)
   else
