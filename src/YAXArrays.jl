@@ -25,7 +25,7 @@ include("Cubes/Cubes.jl")
 include("DatasetAPI/Datasets.jl")
 include("DAT/DAT.jl")
 
-using .YAXTools: @reexport
+using Reexport: @reexport
 using YAXArrayBase: getattributes
 
 @reexport using Dates: Date, DateTime
