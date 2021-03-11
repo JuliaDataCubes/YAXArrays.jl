@@ -9,7 +9,7 @@
 
 
 [docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
-[docs-dev-url]: https://meggart.github.io/ESDL.jl/latest
+[docs-dev-url]: https://meggart.github.io/YAXArrays.jl/dev/
 
 [codecov-img]: https://codecov.io/gh/meggart/YAXArrays.jl/branch/master/graph/badge.svg
 [codecov-url]: https://codecov.io/gh/meggart/YAXArrays.jl
