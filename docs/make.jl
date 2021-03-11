@@ -27,5 +27,5 @@ makedocs(
 
 deploydocs(
     #deps   = Deps.pip("mkdocs", "python-markdown-math"),
-    repo   = "github.com/esa-esdl/ESDL.jl.git",
+    repo   = "github.com/meggart/YAXArrays.jl.git",
 )
