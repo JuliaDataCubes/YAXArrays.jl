@@ -11,6 +11,9 @@ using YAXArrayBase: iscontdimval
 using DiskArrayTools: CFDiskArray, ConcatDiskArray
 using Glob: glob
 
+export Dataset, Cube, open_dataset
+
+
 struct Dataset
     cubes::OrderedDict{Symbol,YAXArray}
     axes::Dict{Symbol,CubeAxis}

@@ -3,6 +3,9 @@ import ..Cubes: caxes, Cubes
 using Dates
 using Base.Iterators: take, drop
 
+export CubeAxis, RangeAxis, CategoricalAxis,
+getAxis
+
 """
     abstract CubeAxis{T}
 
