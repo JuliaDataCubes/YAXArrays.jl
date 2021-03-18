@@ -9,7 +9,7 @@ end
 makedocs(
     modules = [YAXArrays],
     clean   = true,
-    format   = Documenter.HTML(),
+    format   = Documenter.HTML(prettyurls = get(ENV, "CI", nothing) == "true"),
     sitename = "YAXArrays.jl",
     authors = "Fabian Gans",
     pages    = [ # Compat: `Any` for 0.4 compat
@@ -22,6 +22,7 @@ makedocs(
             "man/applying functions.md",
             "man/iterators.md",
         ],
+        "Docstring Reference" => "api.md"
         ]
 )
 
