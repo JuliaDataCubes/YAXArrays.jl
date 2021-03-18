@@ -1,5 +1,4 @@
 module DAT
-export mapCube
 import ..Cubes
 using ..YAXTools
 using Distributed: RemoteChannel, nworkers,pmap,
@@ -17,6 +16,11 @@ import ProgressMeter: Progress, next!, progress_pmap
 using YAXArrayBase
 using OffsetArrays: OffsetArray
 using Dates
+
+export mapCube, getAxis, InDims, OutDims, Dataset,
+      CubeTable, cubefittable, fittable, savecube, loadcube, rmcube, 
+      MovingWindow 
+
 global const debugDAT=[false]
 
 const WindowDescriptor = Tuple{Int,Int}

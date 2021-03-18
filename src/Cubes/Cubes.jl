@@ -12,6 +12,8 @@ using ..YAXArrays: workdir, YAXDefaults
 using YAXArrayBase: YAXArrayBase, iscompressed, dimnames, iscontdimval
 import YAXArrayBase: getattributes, iscontdim, dimnames, dimvals, getdata
 
+export concatenatecubes, caxes,
+subsetcube, readcubedata,renameaxis!, YAXArray
 
 """
 This function calculates a subset of a cube's data

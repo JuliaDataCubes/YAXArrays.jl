@@ -30,15 +30,11 @@ using YAXArrayBase: getattributes
 
 @reexport using Dates: Date, DateTime
 @reexport using IntervalSets: (..)
-@reexport using .Cubes: concatenatecubes, caxes,
-  subsetcube, readcubedata,renameaxis!, YAXArray
-@reexport using .Cubes.Axes: CubeAxis, RangeAxis, CategoricalAxis,
-  getAxis
+@reexport using .Cubes
+@reexport using .Cubes.Axes
 
-@reexport using .DAT: mapCube, getAxis, InDims, OutDims, Dataset,
-      CubeTable, cubefittable, fittable, savecube, loadcube, rmcube, 
-      MovingWindow #From DAT module
-@reexport using .Datasets: Dataset, Cube, open_dataset
+@reexport using .DAT
+@reexport using .Datasets
 @reexport using .YAXTools: @loadOrGenerate # from YAXTools
 
 @deprecate saveCube(data, filename) savecube(data,filename)
