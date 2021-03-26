@@ -362,7 +362,6 @@ getindsall(indsall,inow,::Tuple{},::Tuple{},r,c) = indsall
 
 function updatear_window(r,cube,indscol,loopinds,cache, windows, windowoob)
   indsall = getindsall(indscol,loopinds,i->r[i])
-  #@show indsall, "in window"
   for (iw,pa) in windows
     iold = indsall[iw]
     indsall = Base.setindex(indsall,first(iold)-pa[1]:last(iold)+pa[2],iw)
@@ -374,13 +373,14 @@ function updatear_window(r,cube,indscol,loopinds,cache, windows, windowoob)
       return Base.OneTo(length(c)), Base.OneTo(length(c))
     else
       precut, aftercut = max(0,first(d)-first(i)), max(0,last(i)-last(d))
-      return (first(c)+precut:last(c)-aftercut), (first(i)+precut:last(i)-aftercut)
+      icube = first(i)+precut:last(i)-aftercut
+      icache = first(c)+precut:first(c)+precut+length(icube)-1
+      return icache, icube
     end
   end
   hinds = first.(oo)
   indsall2 = last.(oo)
   fill!(cache,windowoob)
-  #@show hinds, indsall2
   cache[hinds...] = data[indsall2...]
 end
 
@@ -577,7 +577,7 @@ function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co;kwargs
       cs = Base.setindex(cs,cc,i)
     end
   end
-  cube1, cube2 = createdataset(T, oc.allAxes; chunksize=cs, chunkoffset=co, kwargs...)
+  cube1, cube2 = createdataset(T, oc.allAxes; T = eltype, chunksize=cs, chunkoffset=co, kwargs...)
   oc.cube=cube1
   oc.cube_unpermuted = cube2
 end
