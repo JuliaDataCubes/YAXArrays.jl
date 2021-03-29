@@ -552,8 +552,8 @@ end
 
 
 function getbackend(oc,ispar,max_cache)
-  eltype=Union{oc.outtype,Missing}
-  outsize=sizeof(eltype)*(length(oc.allAxes)>0 ? prod(map(length,oc.allAxes)) : 1)
+  elementtype=Union{oc.outtype,Missing}
+  outsize=sizeof(elementtype)*(length(oc.allAxes)>0 ? prod(map(length,oc.allAxes)) : 1)
   rt = oc.desc.backend
   if rt == :auto
     if ispar[] || outsize>max_cache
@@ -566,10 +566,10 @@ function getbackend(oc,ispar,max_cache)
   if !allow_parallel_write(b)
     ispar[] = false
   end
-  eltype,b
+  elementtype,b
 end
 
-function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co;kwargs...) where T
+function generateOutCube(::Type{T},elementtype,oc::OutputCube,loopcachesize,co;kwargs...) where T
   cs_inner = (map(length,oc.axesSmall)...,)
   cs = (cs_inner..., loopcachesize...)
   for (i,cc) in enumerate(oc.innerchunks)
@@ -577,14 +577,14 @@ function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co;kwargs
       cs = Base.setindex(cs,cc,i)
     end
   end
-  cube1, cube2 = createdataset(T, oc.allAxes; T = eltype, chunksize=cs, chunkoffset=co, kwargs...)
+  cube1, cube2 = createdataset(T, oc.allAxes; T = elementtype, chunksize=cs, chunkoffset=co, kwargs...)
   oc.cube=cube1
   oc.cube_unpermuted = cube2
 end
-function generateOutCube(::Type{T},eltype,oc::OutputCube,loopcachesize,co;kwargs...) where T<:Array
+function generateOutCube(::Type{T},elementtype,oc::OutputCube,loopcachesize,co;kwargs...) where T<:Array
   newsize=map(length,oc.allAxes)
-  outar=Array{eltype}(undef,newsize...)
-  map!(_->_zero(eltype),outar,1:length(outar))
+  outar=Array{elementtype}(undef,newsize...)
+  map!(_->_zero(elementtype),outar,1:length(outar))
   oc.cube = YAXArray(oc.allAxes,outar)
   oc.cube_unpermuted = oc.cube
 end
@@ -600,8 +600,8 @@ function generateOutCubes(dc::DATConfig)
   end
 end
 function generateOutCube(oc::OutputCube,ispar::Ref{Bool},max_cache,loopcachesize,co)
-  eltype,cubetype = getbackend(oc,ispar,max_cache)
-  generateOutCube(cubetype,eltype,oc,loopcachesize,co;oc.desc.backendargs...)
+  elementtype,cubetype = getbackend(oc,ispar,max_cache)
+  generateOutCube(cubetype,elementtype,oc,loopcachesize,co;oc.desc.backendargs...)
 end
 
 function getCubeCache(dc::DATConfig)
