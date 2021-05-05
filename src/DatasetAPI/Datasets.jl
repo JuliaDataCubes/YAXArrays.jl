@@ -124,7 +124,8 @@ function toaxis(dimname,g,offs,len)
       vals = identity.(aratts["_ARRAYVALUES"])
       CategoricalAxis(axname,vals)
     else
-      axdata = testrange(ar[offs+1:end])
+      axdata = cleanaxiselement.(ar[offs+1:end])
+      axdata = testrange(axdata)
       if eltype(axdata)<:AbstractString || (!issorted(axdata) && !issorted(axdata,rev=true))
         CategoricalAxis(axname,axdata)
       else
@@ -134,10 +135,24 @@ function toaxis(dimname,g,offs,len)
 end
 propfromattr(attr) = Dict{String,Any}(filter(i->i[1]!="_ARRAY_DIMENSIONS",attr))
 
+#there are problems with saving custom string types to netcdf, so we clean this when creating the axis:
+cleanaxiselement(x::AbstractString) = String(x)
+cleanaxiselement(x::String) = x
+cleanaxiselement(x) = x
+
 "Test if data in x can be approximated by a step range"
 function testrange(x)
   r = range(first(x),last(x),length=length(x))
   all(i->isapprox(i...),zip(x,r)) ? r : x
+end
+
+function testrange(x::AbstractArray{<:Integer})
+  steps = diff(x)
+  if all(isequal(steps[1]), steps) && !iszero(steps[1])
+    return range(first(x), step = steps[1], length(x))
+  else
+    return x
+  end
 end
 
 testrange(x::AbstractArray{<:AbstractString}) = x
@@ -172,6 +187,9 @@ function open_dataset(g; driver = :all)
     if subs !== nothing
       ar = view(ar,subs...)
     end
+    if !haskey(att,"name")
+      att["name"] = vname
+    end
     allcubes[Symbol(vname)] = YAXArray(iax,ar,propfromattr(att), cleaner=CleanMe[])
   end
   sdimlist = Dict(Symbol(k)=>v.ax for (k,v) in dimlist)
@@ -201,7 +219,9 @@ function Cube(ds::Dataset; joinname="Variable")
     return ds.cubes[first(newkeys)]
   else
     varax = CategoricalAxis(joinname, string.(newkeys))
-    return concatenatecubes([ds.cubes[k] for k in newkeys], varax)
+    cubestomerge = [ds.cubes[k] for k in newkeys]
+    foreach(i->haskey(i.properties,"name") && delete!(i.properties,"name"), cubestomerge)
+    return concatenatecubes(cubestomerge, varax)
   end
 end
 
