@@ -1,19 +1,19 @@
-using DataStructures: OrderedDict
+using DataStructures:OrderedDict
 
 @testset "Datasets" begin
-  data = [rand(4,5,12), rand(4,5,12), rand(4,5)]
-  axlist1 = [RangeAxis("XVals",1.0:4.0), CategoricalAxis("YVals",[1,2,3,4,5]), RangeAxis("Time",Date(2001,1,15):Month(1):Date(2001,12,15))]
-  axlist2 = [RangeAxis("XVals",1.0:4.0), CategoricalAxis("YVals",[1,2,3,4,5])]
-  props = [Dict("att$i"=>i) for i=1:3]
-  c1,c2,c3 = (YAXArray(axlist1, data[1], props[1]),
+  data = [rand(4, 5, 12), rand(4, 5, 12), rand(4, 5)]
+  axlist1 = [RangeAxis("XVals", 1.0:4.0), CategoricalAxis("YVals", [1,2,3,4,5]), RangeAxis("Time", Date(2001, 1, 15):Month(1):Date(2001, 12, 15))]
+  axlist2 = [RangeAxis("XVals", 1.0:4.0), CategoricalAxis("YVals", [1,2,3,4,5])]
+  props = [Dict("att$i" => i) for i = 1:3]
+  c1, c2, c3 = (YAXArray(axlist1, data[1], props[1]),
   YAXArray(axlist1, data[2], props[2]),
   YAXArray(axlist2, data[3], props[3])
   )
-  ds = Dataset(avar = c1, something = c2, smaller = c3)
+  ds = Dataset(avar=c1, something=c2, smaller=c3)
   @testset "Basic functions" begin
     b = IOBuffer()
-    show(b,ds)
-    s = split(String(take!(b)),"\n")
+    show(b, ds)
+    s = split(String(take!(b)), "\n")
     s2 = """
     YAXArray Dataset
     Dimensions:
@@ -21,18 +21,18 @@ using DataStructures: OrderedDict
     YVals               Axis with 5 elements: 1 2 3 4 5
     Time                Axis with 12 Elements from 2001-01-15 to 2001-12-15
     Variables: avar something smaller """
-    s2 = split(s2,"\n")
+    s2 = split(s2, "\n")
 #     @test s[[1,2,6]] == s2[[1,2,6]]
 #     @test all(i->in(i,s2), s[3:5])
     for n in [:avar, :something, :smaller, :XVals, :Time, :YVals]
-      @test n in propertynames(ds)
-      @test n in propertynames(ds, true)
-    end
+    @test n in propertynames(ds)
+    @test n in propertynames(ds, true)
+end
     @test :axes ∉ propertynames(ds)
     @test :cubes ∉ propertynames(ds)
     @test :axes ∈ propertynames(ds, true)
-    #Test getproperty
-    @test all(i->in(i,values(ds.axes)),axlist1)
+    # Test getproperty
+    @test all(i -> in(i, values(ds.axes)), axlist1)
     @test collect(keys(ds.cubes)) == [:avar, :something, :smaller]
     @test collect(values(ds.cubes)) == [c1,c2,c3]
     @test ds.avar === c1
@@ -50,51 +50,51 @@ using DataStructures: OrderedDict
   end
   @testset "Dataset interface" begin
     struct MockDataset
-      vars
-      dims
-      attrs
-      path
-    end
-    Base.getindex(d::MockDataset,i) = d.vars[i]
-    Base.haskey(d::MockDataset,i) = haskey(d.vars,i)
+    vars
+    dims
+    attrs
+    path
+end
+    Base.getindex(d::MockDataset, i) = d.vars[i]
+    Base.haskey(d::MockDataset, i) = haskey(d.vars, i)
     YAXArrayBase.get_varnames(d::MockDataset) = (keys(d.vars)...,)
-    YAXArrayBase.get_var_dims(d::MockDataset,name) = d.dims[name]
+    YAXArrayBase.get_var_dims(d::MockDataset, name) = d.dims[name]
     YAXArrayBase.get_var_attrs(d::MockDataset, name) = d.attrs[name]
-    YAXArrayBase.allow_missings(d::MockDataset) = !occursin("nomissings",d.path)
-    function YAXArrayBase.create_empty(::Type{MockDataset},path)
-      mkpath(dirname(path))
-      open(_->nothing, path,"w")
-      MockDataset(Dict(),Dict(),Dict(),path)
-    end
+    YAXArrayBase.allow_missings(d::MockDataset) = !occursin("nomissings", d.path)
+    function YAXArrayBase.create_empty(::Type{MockDataset}, path)
+    mkpath(dirname(path))
+    open(_ -> nothing, path, "w")
+    MockDataset(Dict(), Dict(), Dict(), path)
+end
     function YAXArrayBase.add_var(ds::MockDataset, T, name, s, dimlist, atts;kwargs...)
-      data = Array{T}(undef,s...)
-      ds.vars[name] = data
-      ds.dims[name] = dimlist
-      ds.attrs[name] = atts
-      data
-    end
+    data = Array{T}(undef, s...)
+    ds.vars[name] = data
+    ds.dims[name] = dimlist
+    ds.attrs[name] = atts
+    data
+end
     YAXArrayBase.backendlist[:mock] = MockDataset
-    push!(YAXArrayBase.backendregex,r".mock$"=>MockDataset)
-    data1,data2,data3,d1,d2,d3 = (rand(12,5,2),rand(12,5),rand(12,5,2),1:12, 0.1:0.1:0.5, ["One","Two"])
-    att1 =  Dict("att1"=>5,"_ARRAY_OFFSET"=>(2,0,0))
-    att2 =  Dict("att2"=>6,"_ARRAY_OFFSET"=>(2,0))
-    attd1 = Dict("_ARRAY_OFFSET"=>2, "units"=>"days since 2001-01-01", "calendar"=>"gregorian")
-    attd2 = Dict("attd"=>"d")
-    attd3 = Dict("attd"=>"d")
+    push!(YAXArrayBase.backendregex, r".mock$" => MockDataset)
+    data1, data2, data3, d1, d2, d3 = (rand(12, 5, 2), rand(12, 5), rand(12, 5, 2), 1:12, 0.1:0.1:0.5, ["One","Two"])
+    att1 =  Dict("att1" => 5, "_ARRAY_OFFSET" => (2, 0, 0))
+    att2 =  Dict("att2" => 6, "_ARRAY_OFFSET" => (2, 0))
+    attd1 = Dict("_ARRAY_OFFSET" => 2, "units" => "days since 2001-01-01", "calendar" => "gregorian")
+    attd2 = Dict("attd" => "d")
+    attd3 = Dict("attd" => "d")
     function MockDataset(p)
-        MockDataset(
-        OrderedDict("Var1"=>data1, "Var2"=>data2, "Var3"=>data3, "time"=>d1,"d2"=>d2, "d3"=>d3),
-        Dict("Var1"=>("time","d2","d3"),"Var2"=>("time","d2"),"Var3"=>("time","d2","d3"),"time"=>("time",),"d2"=>["d2"],"d3"=>["d3"]),
-        Dict("Var1"=>att1,"Var2"=>att2,"Var3"=>att1,"time"=>attd1,"d2"=>attd2,"d3"=>attd3),
+    MockDataset(
+        OrderedDict("Var1" => data1, "Var2" => data2, "Var3" => data3, "time" => d1, "d2" => d2, "d3" => d3),
+        Dict("Var1" => ("time", "d2", "d3"), "Var2" => ("time", "d2"), "Var3" => ("time", "d2", "d3"), "time" => ("time",), "d2" => ["d2"], "d3" => ["d3"]),
+        Dict("Var1" => att1, "Var2" => att2, "Var3" => att1, "time" => attd1, "d2" => attd2, "d3" => attd3),
         p
         )
-    end
+end
     m = MockDataset("testpath.mock")
     @testset "collectdims" begin
       dcollect = YAXArrays.Datasets.collectdims(m)
       @test dcollect["time"].ax isa RangeAxis
       @test YAXArrays.Cubes.Axes.axname(dcollect["time"].ax) == "time"
-      @test dcollect["time"].ax.values == DateTime(2001,1,4):Day(1):DateTime(2001,1,13)
+      @test dcollect["time"].ax.values == DateTime(2001, 1, 4):Day(1):DateTime(2001, 1, 13)
       @test dcollect["time"].offs == 2
       @test dcollect["d2"].ax isa RangeAxis
       @test YAXArrays.Cubes.Axes.axname(dcollect["d2"].ax) == "d2"
@@ -106,44 +106,65 @@ using DataStructures: OrderedDict
       @test dcollect["d3"].offs == 0
       a1 = [0.1,0.2,0.3,0.4]
       a2 = [0.1,0.21,0.3,0.4]
-      @test YAXArrays.Datasets.testrange(a1)== 0.1:0.1:0.4
+      @test YAXArrays.Datasets.testrange(a1) == 0.1:0.1:0.4
       @test YAXArrays.Datasets.testrange(a2) isa Array
       @test YAXArrays.Datasets.testrange(a2) == [0.1,0.21,0.3,0.4]
     end
     @testset "open_dataset" begin
       ds = open_dataset("test.mock")
-      @test size(ds.Var1) == (10,5,2)
-      @test size(ds.Var2) == (10,5)
-      @test all(in(keys(ds.axes)),(:time,:d2,:d3))
+      @test size(ds.Var1) == (10, 5, 2)
+      @test size(ds.Var2) == (10, 5)
+      @test all(in(keys(ds.axes)), (:time, :d2, :d3))
       ar = Cube(ds)
       @test ar isa YAXArray
-      @test size(ar) == (10,5,2,2)
+      @test size(ar) == (10, 5, 2, 2)
       @test YAXArrays.Cubes.Axes.axname.(ar.axes) == ["time","d2","d3","Variable"]
       @test ar.axes[4].values == ["Var1","Var3"]
     end
     @testset "Dataset creation" begin
-      al = [RangeAxis("Time",Date(2001):Month(1):Date(2001,12,31)), CategoricalAxis("Variable",["A","B"]), RangeAxis("Xvals",1:10)]
-      #Basic
-      newds, newds2 = YAXArrays.Datasets.createdataset(MockDataset,al)
+      al = [RangeAxis("Time", Date(2001):Month(1):Date(2001, 12, 31)), CategoricalAxis("Variable", ["A","B"]), RangeAxis("Xvals", 1:10)]
+      # Basic
+      newds, newds2 = YAXArrays.Datasets.createdataset(MockDataset, al)
       @test YAXArrays.Cubes.axsym.(newds2.axes) == [:Time, :Xvals, :Variable]
-      @test newds2.axes[1].values == Date(2001):Month(1):Date(2001,12,31)
+      @test newds2.axes[1].values == Date(2001):Month(1):Date(2001, 12, 31)
       @test newds2.axes[3].values == ["A","B"]
       @test newds2.axes[2].values == 1:10
       @test newds2.data isa YAXArrays.Cubes.DiskArrayTools.DiskArrayStack
       # A bit more advanced
-      fn = string(tempname(),".mock")
-      newds, newds2 = YAXArrays.Datasets.createdataset(MockDataset,al,path = fn, persist = false, 
-      chunksize = (4,2,4), chunkoffset = (2,0,3), properties = Dict("att1"=>5), datasetaxis="A")
-      @test size(newds.data) == (12,2,10)
-      @test size(newds.data.parent) == (14,2,13)
+      fn = string(tempname(), ".mock")
+      newds, newds2 = YAXArrays.Datasets.createdataset(MockDataset,al,path=fn, persist=false, 
+      chunksize=(4, 2, 4), chunkoffset=(2, 0, 3), properties=Dict("att1" => 5), datasetaxis="A")
+      @test size(newds.data) == (12, 2, 10)
+      @test size(newds.data.parent) == (14, 2, 13)
       @test eltype(newds.data) <: Union{Float32,Missing}
       @test newds.properties["att1"] == 5
       @test isfile(fn)
       newds = nothing
       newds2 = nothing
       # Without missings
-      fn = string(tempname(),"nomissings.mock")
-      newds = YAXArrays.Datasets.createdataset(MockDataset,al,path = fn,datasetaxis="A")
+      fn = string(tempname(), "nomissings.mock")
+      newds = YAXArrays.Datasets.createdataset(MockDataset, al, path=fn, datasetaxis="A")
     end
   end
+end
+
+@testset "Saving and loading between different backends" begin
+  using NetCDF, Zarr
+  x = rand(10,5)
+  ax1 = CategoricalAxis("Ax1", string.(1:10))
+  ax2 = RangeAxis("Ax2", 1:5)
+  p = tempname()
+  savecube(YAXArray([ax1, ax2], x),p, backend = :zarr)
+  cube1 = Cube(p)
+  @test cube1.Ax1 == ax1
+  @test cube1.Ax2 == ax2
+  @test eltype(cube1.Ax2.values) <: Int64
+  @test cube1.data == x
+  p2 = string(tempname(), ".nc")
+  savecube(cube1, p2, backend = :netcdf)
+  cube2 = Cube(p2)
+  @test cube2.Ax1 == ax1
+  @test cube2.Ax2 == ax2
+  @test cube2.data == x
+  @test eltype(cube2.Ax2.values) <: Int64
 end
