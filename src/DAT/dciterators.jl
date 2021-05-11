@@ -180,6 +180,9 @@ function CubeTable(;include_axes=(),expandaxes=(),cubes...)
     end
   end
   axnames = map(i->axname.(caxes(i)),c)
+  if isempty(intersect(axnames...))
+    @warn "Input cubes to the table do not share a common axis, please check the axis names"
+  end
   allvars = union(axnames...)
   allnums = collect(1:length(allvars))
 
