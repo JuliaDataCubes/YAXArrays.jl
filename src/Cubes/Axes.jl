@@ -17,6 +17,7 @@ abstract type CubeAxis{T,S} end
 Base.size(x::CubeAxis)=(length(x.values),)
 Base.size(x::CubeAxis,i)=i==1 ? length(x.values) : error("Axis has only a single dimension")
 Base.ndims(x::CubeAxis)=1
+Base.hash(ax::CubeAxis{<:Any,S}, h::UInt) where S = hash(S, hash(ax.values, h))
 
 
 

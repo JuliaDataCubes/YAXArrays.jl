@@ -2,7 +2,7 @@ import OnlineStats: OnlineStat, Extrema, fit!, value
 import ...Cubes.Axes: CategoricalAxis, RangeAxis
 import IterTools
 using WeightedOnlineStats
-import ProgressMeter: next!
+import ProgressMeter: next!, Progress, ProgressUnknown
 
 import WeightedOnlineStats: WeightedOnlineStat
 abstract type TableAggregator end
@@ -236,14 +236,18 @@ function fittable(tab,o,fitsym;by=(),weight=nothing,showprog=false)
 end
 fittable(tab,o::Type{<:OnlineStat},fitsym;kwargs...)=fittable(tab,o(),fitsym;kwargs...)
 
+getmeter(tab) = getmeter(Base.IteratorSize(tab), tab)
+getmeter(::Union{Base.HasLength, Base.HasShape}, tab) = Progress(length(tab))
+getmeter(::Base.SizeUnknown, tab) = ProgressUnknown("Rows processed: ")
+
 @noinline function runfitrows_progress(agg,tab)
-  p = Progress(length(tab)÷100,1)
+  p = getmeter(tab)
   every = 0
   for row in tab
     fitrow!(agg,row)
     every += 1
     if every == 100
-      next!(p)
+      next!(p, step = 100)
       every=0
     end
   end
