@@ -11,6 +11,7 @@ using Base.Iterators: take, drop
 using ..YAXArrays: workdir, YAXDefaults
 using YAXArrayBase: YAXArrayBase, iscompressed, dimnames, iscontdimval
 import YAXArrayBase: getattributes, iscontdim, dimnames, dimvals, getdata
+using DiskArrayTools: CFDiskArray
 
 export concatenatecubes, caxes, subsetcube, readcubedata, renameaxis!, YAXArray
 
@@ -193,6 +194,9 @@ YAXArrayBase.getdata(x::YAXArray) = getfield(x, :data)
 function YAXArrayBase.yaxcreate(::Type{YAXArray}, data, dimnames, dimvals, atts)
     axlist = map(dimnames, dimvals) do dn, dv
         iscontdimval(dv) ? RangeAxis(dn, dv) : CategoricalAxis(dn, dv)
+    end
+    if any(in(keys(atts)), ["missing_value", "scale_factor", "add_offset"])
+        data = CFDiskArray(data, atts)
     end
     YAXArray(axlist, data, atts)
 end

@@ -196,7 +196,11 @@ function open_dataset(g; driver = :all)
         if !haskey(att, "name")
             att["name"] = vname
         end
-        allcubes[Symbol(vname)] = YAXArray(iax, ar, propfromattr(att), cleaner = CleanMe[])
+        atts = propfromattr(atts)
+        if any(in(keys(atts)), ["missing_value", "scale_factor", "add_offset"])
+            ar = CFDiskArray(ar, atts)
+        end
+        allcubes[Symbol(vname)] = YAXArray(iax, ar, atts, cleaner = CleanMe[])
     end
     sdimlist = Dict(Symbol(k) => v.ax for (k, v) in dimlist)
     Dataset(allcubes, sdimlist)

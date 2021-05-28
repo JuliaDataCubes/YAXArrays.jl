@@ -20,7 +20,9 @@ Pages = [
     "man/datasets.md",
     "man/yaxarrays.md",
     "man/applying function.md",
-    "man/iteratirs.md",
+    "man/iterators.md",
+    "man/chunking.md",
+    "man/performance.md",
     "examples/examples.md",
 ]
 Depth = 2
