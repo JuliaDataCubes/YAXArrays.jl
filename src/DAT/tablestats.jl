@@ -1,4 +1,4 @@
-import OnlineStats: OnlineStat, Extrema, fit!, value, HistogramStat
+import OnlineStats: OnlineStat, Extrema, fit!, value, HistogramStat, Ash
 import ...Cubes.Axes: CategoricalAxis, RangeAxis
 import IterTools
 using WeightedOnlineStats
@@ -169,7 +169,7 @@ function getStatOutAxes(tab,agg,::Type{<:WeightedCovMatrix})
     a2 = axtype(coname,copy(v))
     (a1,a2)
 end
-function getStatOutAxes(tab,agg,::Type{<:Union{HistogramStat, WeightedAdaptiveHist}})
+function getStatOutAxes(tab,agg,::Type{<:Union{Ash,HistogramStat, WeightedAdaptiveHist}})
     nbin = getnbins(agg)
     a1 = RangeAxis("Bin",1:nbin)
     a2 = CategoricalAxis("Hist",["MidPoints","Frequency"])
@@ -271,8 +271,8 @@ end
 
 getpostfunction(s::OnlineStat)=getpostfunction(typeof(s))
 getpostfunction(::Type{<:OnlineStat})=value
-function getpostfunction(hist::Union{HistogramStat, WeightedAdaptiveHist})
-    nb = getnbins(w)
+function getpostfunction(hist::Union{Ash, HistogramStat, WeightedAdaptiveHist})
+    nb = getnbins(hist)
     i->begin
         r = hcat(value(i)...)
         if size(r,1)<nb
@@ -285,6 +285,7 @@ getnbins(f::GroupedOnlineAggregator)=getnbins(f.cloneobj)
 getnbins(f::TableAggregator)=getnbins(f.o)
 getnbins(histogram::HistogramStat) = histogram.k
 getnbins(whist::WeightedAdaptiveHist) = whist.alg.b
+getnbins(a::Ash) = length(a.density)
 
 fitfun(o) = fitfun(typeof(o))
 fitfun(::Type{<:Any}) = fittable
