@@ -13,4 +13,8 @@ meancta = cubefittable(cta,Mean(),:data, by=(:YVals,))
 
 ashcta = cubefittable(cta, Ash(KHist(3)), :data, by=(:YVals,))
 @test all(ashcta[Hist="Frequency"][1,:] .== 0.2222222222222222)
+
+khistcta = cubefittable(cta, KHist(3), :data, by=(:YVals,))
+@test all(khistcta[Hist="Frequency"][1,:] .== 1.0)
+
 end
