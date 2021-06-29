@@ -159,6 +159,10 @@ function testrange(x::AbstractArray{<:Integer})
     end
 end
 
+using Dates: TimeType
+
+testrange(x::AbstractArray{<:TimeType}) = x
+
 testrange(x::AbstractArray{<:AbstractString}) = x
 
 _glob(x) = startswith(x, "/") ? glob(x[2:end], "/") : glob(x)
@@ -322,6 +326,7 @@ function createdataset(
     dshandle = YAXArrayBase.create_dataset(
         DS, 
         path, 
+        Dict{String,Any}(),
         getproperty.(axdata,:name), 
         getproperty.(axdata,:data),
         getproperty.(axdata,:attrs), 
@@ -329,8 +334,8 @@ function createdataset(
         cubenames, 
         fill(getproperty.(axdata,:name),length(cubenames)), 
         fill(attr,length(cubenames)), 
-        fill(chunksize, length(cubenames)),
-        kwargs
+        fill(chunksize, length(cubenames));
+        kwargs...
     )
     #This generates the YAXArrays
     allcubes = map(cubenames) do cn
