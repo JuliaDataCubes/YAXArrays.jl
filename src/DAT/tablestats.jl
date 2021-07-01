@@ -1,4 +1,4 @@
-import OnlineStats: OnlineStat, Extrema, fit!, value
+import OnlineStats: OnlineStat, Extrema, fit!, value, HistogramStat, Ash
 import ...Cubes.Axes: CategoricalAxis, RangeAxis
 import IterTools
 using WeightedOnlineStats
@@ -51,7 +51,7 @@ getbytypes(et, by) =
 cubeeltype(t::GroupedOnlineAggregator{T}) where {T} = cubeeltype(T)
 cubeeltype(t::Type{<:Dict{<:Any,T}}) where {T} = cubeeltype(T)
 cubeeltype(t::Type{<:WeightedOnlineStat{T}}) where {T} = T
-cubeeltype(t::Type{<:OnlineStat{Number}}) = Float64
+cubeeltype(t::Type{<:OnlineStat{<:Number}}) = Float64
 cubeeltype(t::Type{<:WeightedCovMatrix{T}}) where {T} = T
 cubeeltype(t::Type{<:Extrema{T}}) where {T} = T
 
@@ -73,14 +73,14 @@ function fitrow!(o::GroupedOnlineAggregator{T,S,BY,W}, r) where {T,S,BY,W}
     v = getproperty(r, S)
     if !ismissing(v)
         w = o.w(r)
-        if w === nothing
-            bykey = map(i -> actval(i(r)), o.by)
-            if !any(ismissing, bykey)
-                if haskey(o.d, bykey)
-                    fit!(o.d[bykey], v)
+        if w===nothing
+            bykey = map(i->actval(i(r)),o.by)
+            if !any(ismissing,bykey)
+                if haskey(o.d,bykey)
+                    fit!(o.d[bykey],actval(v))
                 else
                     o.d[bykey] = copy(o.cloneobj)
-                    fit!(o.d[bykey], v)
+                    fit!(o.d[bykey],actval(v))
                 end
             end
         else
@@ -175,7 +175,7 @@ function getStatOutAxes(tab, agg, ::Type{<:WeightedCovMatrix})
     a2 = axtype(coname, copy(v))
     (a1, a2)
 end
-function getStatOutAxes(tab, agg, ::Type{<:WeightedAdaptiveHist})
+function getStatOutAxes(tab,agg,::Type{<:Union{Ash,HistogramStat, WeightedAdaptiveHist}})
     nbin = getnbins(agg)
     a1 = RangeAxis("Bin", 1:nbin)
     a2 = CategoricalAxis("Hist", ["MidPoints", "Frequency"])
@@ -284,18 +284,21 @@ end
 
 getpostfunction(s::OnlineStat) = getpostfunction(typeof(s))
 getpostfunction(::Type{<:OnlineStat}) = value
-function getpostfunction(w::WeightedAdaptiveHist)
-    nb = w.alg.b
-    i -> begin
+function getpostfunction(hist::Union{Ash, HistogramStat, WeightedAdaptiveHist})
+    nb = getnbins(hist)
+    i->begin
         r = hcat(value(i)...)
-        if size(r, 1) < nb
-            r = vcat(r, zeros(eltype(r), nb - size(r, 1), 2))
+        if size(r,1)<nb
+            r = vcat(r,zeros(eltype(r),nb-size(r,1),2))
         end
         r
     end
 end
-getnbins(f::GroupedOnlineAggregator) = f.cloneobj.alg.b
-getnbins(f::TableAggregator) = f.o.alg.b
+getnbins(f::GroupedOnlineAggregator) = getnbins(f.cloneobj)
+getnbins(f::TableAggregator) = getnbins(f.o)
+getnbins(histogram::HistogramStat) = histogram.k
+getnbins(whist::WeightedAdaptiveHist) = whist.alg.b
+getnbins(a::Ash) = length(a.density)
 
 fitfun(o) = fitfun(typeof(o))
 fitfun(::Type{<:Any}) = fittable
