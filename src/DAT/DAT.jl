@@ -676,7 +676,7 @@ function getallargs(dc::DATConfig)
         dc.fu
     end
     inarsbc = map(dc.incubes, incache) do ic, cache
-        allax = getindsall(geticolon(ic), ic.loopinds, i -> true)
+        allax = getindsall(geticolon(ic), 1:length(dc.LoopAxes), i -> i in ic.loopinds ? true : false)
         if has_window(ic)
             for (iw, pa) in getwindow(ic)
                 allax = Base.setindex(allax, pa, iw)
