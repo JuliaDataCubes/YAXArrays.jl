@@ -8,9 +8,9 @@
     d = tempname()
     c = savecube(c, d, chunksize = Dict("Lon" => 7, "Lat" => 9), backend = :zarr)
 
-    indims = InDims("Time", MovingWindow("Lon", 1, 1), window_oob_value = -9999.0)
-    r1 = mapCube(c, indims = indims, outdims = OutDims("Time")) do xout, xin
-        xout[:] = xin[:, 1]
+    indims = InDims("Time",YAXArrays.MovingWindow("Lon",1,1),window_oob_value = -9999.0)
+    r1 = mapCube(c, indims=indims, outdims=OutDims("Time")) do xout,xin
+        xout[:] = xin[:,1]
     end
     r2 = mapCube(c, indims = indims, outdims = OutDims("Time")) do xout, xin
         xout[:] = xin[:, 2]
@@ -24,9 +24,9 @@
     @test r3.data[:, 1:39, :] == permutedims(a[2:40, :, :], (3, 1, 2))
     @test all(==(-9999.0), r3.data[:, 40, :])
 
-    indims = InDims("Time", MovingWindow("Lon", 1, 1), MovingWindow("Lat", 1, 1))
-    r1 = mapCube(c, indims = indims, outdims = OutDims("Time")) do xout, xin
-        xout[:] = xin[:, 1, 1]
+    indims = InDims("Time",YAXArrays.MovingWindow("Lon",1,1),YAXArrays.MovingWindow("Lat",1,1))
+    r1 = mapCube(c, indims=indims, outdims=OutDims("Time")) do xout,xin
+        xout[:] = xin[:,1,1]
     end
     r2 = mapCube(c, indims = indims, outdims = OutDims("Time")) do xout, xin
         xout[:] = xin[:, 2, 2]
