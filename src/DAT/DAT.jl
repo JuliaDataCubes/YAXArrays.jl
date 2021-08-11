@@ -414,6 +414,8 @@ function mapCube(
     )
     @debug_print "Analysing Axes"
     analyzeAxes(dc)
+    @debug_print "Permuting loop axes"
+    permuteloopaxes(dc)
     @debug_print "Calculating Cache Sizes"
     getCacheSizes(dc, loopchunksize)
     @debug_print "Generating Output Cube"
@@ -452,6 +454,16 @@ function getchunkoffsets(dc::DATConfig)
         end
     end
     (co...,)
+end
+
+function permuteloopaxes(dc)
+    foreach(dc.incubes) do ic
+        if !issorted(ic.loopinds)
+            p = sortperm(ic.loopinds)
+            ic.cube = permutedims(ic.cube,[1:length(ic.axesSmall);p .+ length(ic.axesSmall)])
+            ic.loopinds = ic.loopinds[p]
+        end
+    end
 end
 
 updatears(clist, r, f, caches) =
@@ -803,23 +815,22 @@ end
 
 function analyzeAxes(dc::DATConfig{NIN,NOUT}) where {NIN,NOUT}
 
+    loopaxsyms = Symbol[]
     for cube in dc.incubes
-        for a in caxes(cube.cube)
-            in(a, cube.axesSmall) || in(a, dc.LoopAxes) || push!(dc.LoopAxes, a)
-        end
-    end
-    length(dc.LoopAxes) == length(unique(map(axsym, dc.LoopAxes))) ||
-        error("Make sure that cube axes of different cubes match")
-    for cube in dc.incubes
-        myAxes = caxes(cube.cube)
-        for (il, loopax) in enumerate(dc.LoopAxes)
-            laxsym = axsym(loopax)
-            iax = findfirst(i -> axsym(i) == laxsym, myAxes)
-            if iax !== nothing
-                push!(cube.loopinds, il)
-                #Check here if axis is windowed
+        for (iax,a) in enumerate(caxes(cube.cube))
+            if !in(a, cube.axesSmall)
+                s = axsym(a)
+                is = findfirst(isequal(s), loopaxsyms) 
+                if is === nothing
+                    push!(dc.LoopAxes, a)
+                    push!(loopaxsyms, s)
+                    is = length(loopaxsyms)
+                else
+                    a == dc.LoopAxes[is] || error("Axes $a and $(dc.LoopAxes[is]) have the same name but are note identical")
+                end
+                push!(cube.loopinds,is)
                 if iax in cube.iwindow
-                    push!(cube.windowloopinds, il)
+                    push!(cube.windowloopinds, is)
                 end
             end
         end
