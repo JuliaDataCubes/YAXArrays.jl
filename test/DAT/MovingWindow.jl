@@ -42,4 +42,17 @@
     @test all(ismissing, r3.data[:, end, :])
     @test all(ismissing, r3.data[:, :, end])
 
+    a = Array{Union{Float64,Missing}}(rand(10,4,  40, 20));
+    varax = CategoricalAxis("Variable", 'a':'d')
+    tim = RangeAxis("Time", 1:10)
+    lon = RangeAxis("Lon", 1:40)
+    lat = RangeAxis("Lat", 1:20)
+    c = YAXArray([tim, varax, lon,lat], a)
+    indims = InDims("Time",YAXArrays.MovingWindow("Lon",1,1))
+    r1 = mapCube(c, indims=indims, outdims=OutDims("Time")) do xout,xin
+        xout[:] = xin[:,1]
+    end
+    @test all(ismissing,r1[:,:,1,:])
+    @test r1[:,:,2:40,:] == a[:,:,1:end-1,:]
+
 end
