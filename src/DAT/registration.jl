@@ -27,7 +27,7 @@ Axes.findAxis(m::MovingWindow, c) = findAxis(m.desc, c)
 
 wrapWorkArray(::Type{Array}, a, axes) = a
 wrapWorkArray(T, a, axes) =
-    yaxcreate(T, a, map(axname, axes), map(i -> i.values, axes), nothing)
+    yaxcreate(T, a, map(axname, axes), map(i -> i.values, axes), Dict{String, Any}())
 
 abstract type ProcFilter end
 struct AllMissing <: ProcFilter end
@@ -43,16 +43,12 @@ struct UserFilter{F} <: ProcFilter
 end
 
 checkskip(::NoFilter, x) = false
-checkskip(::AllMissing, x::AbstractArray) = all(ismissing, x)
-checkskip(::AllMissing, df::DataFrame) =
-    any(map(i -> all(ismissing, getindex(df, i)), names(df)))
-checkskip(::AnyMissing, x::AbstractArray) = any(ismissing, x)
-checkskip(::AnyMissing, df::DataFrame) =
-    any(map(i -> any(ismissing, getindex(df, i)), names(df)))
-checkskip(nv::NValid, x::AbstractArray) = count(!ismissing, x) <= nv.n
+checkskip(::AllMissing, x) = all(ismissing, x)
+checkskip(::AnyMissing, x) = any(ismissing, x)
+checkskip(nv::NValid, x) = count(!ismissing, x) <= nv.n
 checkskip(uf::UserFilter, x) = uf.f(x)
 checkskip(::StdZero, x) = all(i -> i == x[1], x)
-docheck(pf::ProcFilter, x)::Bool = checkskip(pf, x)
+docheck(pf::ProcFilter, x)::Bool = checkskip(pf, YAXArrayBase.getdata(x))
 docheck(pf::Tuple, x) = reduce(|, map(i -> docheck(i, x), pf))
 
 getprocfilter(f::Function) = (UserFilter(f),)
