@@ -150,7 +150,7 @@ function getworkarray(c::InOutCube, ntr)
                 i1 = findfirst(isequal(i), c.icolon)
                 i1 === nothing || return caxes(c.cube)[c.icolon[i1]]
                 i2 = findfirst(isequal(i), c.iwindow)
-                RangeAxis(axname(caxes(c.cube)[i2]), UnitRange(-c.window[i2][1], c.window[i2][2]))
+                RangeAxis(axname(caxes(c.cube)[c.iwindow[i2]]), UnitRange(-c.window[i2][1], c.window[i2][2]))
             end
             wrapWorkArray(c.desc.artype, w, axes)
         end
@@ -488,7 +488,7 @@ updatears(clist, r, f, caches) =
                 geticolon(ic),
                 ic.loopinds,
                 ca,
-                getwindow(ic),
+                zip(ic.iwindow, ic.window),
                 getwindowoob(ic),
             )
         end
@@ -660,7 +660,7 @@ function getallargs(dc::DATConfig)
     inarsbc = map(dc.incubes, incache) do ic, cache
         allax = getindsall(geticolon(ic), 1:length(dc.LoopAxes), i -> i in ic.loopinds ? true : false)
         if has_window(ic)
-            for (iw, pa) in getwindow(ic)
+            for (iw, pa) in zip(ic.iwindow, ic.window)
                 allax = Base.setindex(allax, pa, iw)
             end
         end
@@ -767,7 +767,7 @@ function allocatecachebuf(ic::Union{InputCube,OutputCube}, loopcachesize)
     indsall = getindsall(geticolon(ic), ic.loopinds, i -> loopcachesize[i], i -> s[i])
     if has_window(ic)
         indsall = Base.OneTo.(indsall)
-        for (iw, (pre, after)) in getwindow(ic)
+        for (iw, (pre, after)) in zip(ic.iwindow, ic.window)
             old = indsall[iw]
             new = (first(old)-pre):(last(old)+after)
             indsall = Base.setindex(indsall, new, iw)
