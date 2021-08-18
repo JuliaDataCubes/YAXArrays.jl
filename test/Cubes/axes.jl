@@ -71,4 +71,14 @@
     @test findAxis(RangeAxis("FloatRange", 1.0:-0.1:0.1), axlist) == 3
     @test getAxis(RangeAxis("FloatRange", 1.0:-0.1:0.1), axlist) ==
           RangeAxis("FloatRange", 1.0:-0.1:0.1)
+
+    @testset "Hashtests" begin
+        catax = CategoricalAxis("Catax", [1,2])
+        catay = CategoricalAxis("Catay", [1,2])
+        catax2 = CategoricalAxis("Catax", [2,2])
+        cataxfloat = CategoricalAxis("Catax", [1.0,2.0])
+        @test hash(catax) == hash(cataxfloat)
+        @test hash(catax) != hash(catay)
+        @test hash(catax) != hash(catax2)
+    end
 end
