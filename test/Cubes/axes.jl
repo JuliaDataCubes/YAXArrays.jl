@@ -22,6 +22,8 @@
             Hour(24),
         ),
         (RangeAxis, "PureArray", [0.0, 0.2, 0.4, 0.6], 0.2),
+        (CategoricalAxis, "CatAxis", ["One", "Two", "Three", "Four", "Five",
+         "Six", "Seven", "Eight", "Nine", "Ten", "Eleven"], nothing),
     ]
 
     for (axt, axn, axv, axstep) in axestotest
@@ -31,12 +33,16 @@
         @test ndims(ax) == 1
         @test length(ax) == length(axv)
         ax2 = YAXArrays.Cubes.Axes.axcopy(ax, axv)
+        ax3 = YAXArrays.Cubes.Axes.axcopy(ax)
         @test typeof(ax2) == typeof(ax)
         @test ax2.values == ax.values
+        @test typeof(ax3) == typeof(ax3)
+        @test ax3.values == ax.values
         b = IOBuffer()
         show(b, ax)
         @test caxes(ax) == [ax]
         @test YAXArrays.Cubes.Axes.axname(ax) == axn
+        @test YAXArrays.Cubes.Axes.axname(typeof(ax)) == axn
         @test YAXArrays.Cubes.axsym(ax) == Symbol(axn)
         @test dimname(ax, 1) == axn
         @test dimvals(ax, 1) == axv
