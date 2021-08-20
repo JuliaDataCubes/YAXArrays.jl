@@ -36,7 +36,7 @@
         ax3 = YAXArrays.Cubes.Axes.axcopy(ax)
         @test typeof(ax2) == typeof(ax)
         @test ax2.values == ax.values
-        @test typeof(ax3) == typeof(ax3)
+        @test typeof(ax3) == typeof(ax)
         @test ax3.values == ax.values
         b = IOBuffer()
         show(b, ax)
