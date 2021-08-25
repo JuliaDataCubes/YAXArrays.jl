@@ -52,7 +52,7 @@ using DataStructures: OrderedDict
         @test collect(keys(ds3.cubes)) == [:av, :some]
         @test collect(values(ds3.cubes)) == [c1, c2]
         @test ds["avar"] === c1
-        @test length(ds[Time=(Date(2001,2,1),Date(2001,8,1))].Time[:]) == 6 
+        @test length(ds3[Time=(Date(2001,2,1),Date(2001,8,1))].Time) == 6 
     end
     @testset "Dataset interface" begin
         struct MockDataset
