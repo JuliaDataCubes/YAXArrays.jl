@@ -161,6 +161,10 @@ function testrange(x::AbstractArray{<:Integer})
     end
 end
 
+using Dates: TimeType
+
+testrange(x::AbstractArray{<:TimeType}) = x
+
 testrange(x::AbstractArray{<:AbstractString}) = x
 
 _glob(x) = startswith(x, "/") ? glob(x[2:end], "/") : glob(x)
@@ -198,7 +202,11 @@ function open_dataset(g; driver = :all)
         if !haskey(att, "name")
             att["name"] = vname
         end
-        allcubes[Symbol(vname)] = YAXArray(iax, ar, propfromattr(att), cleaner = CleanMe[])
+        atts = propfromattr(att)
+        if any(in(keys(atts)), ["missing_value", "scale_factor", "add_offset"])
+            ar = CFDiskArray(ar, atts)
+        end
+        allcubes[Symbol(vname)] = YAXArray(iax, ar, atts, cleaner = CleanMe[])
     end
     sdimlist = Dict(Symbol(k) => v.ax for (k, v) in dimlist)
     Dataset(allcubes, sdimlist)
@@ -273,11 +281,11 @@ function createdataset(
     if persist === nothing
         persist = !isempty(path)
     end
+    attr = copy(properties)
     path = getsavefolder(path, persist)
     check_overwrite(path, overwrite)
     splice_generic(x::AbstractArray, i) = [x[1:(i-1)]; x[(i+1:end)]]
     splice_generic(x::Tuple, i) = (x[1:(i-1)]..., x[(i+1:end)]...)
-    myar = create_empty(DS, path)
     finalperm = nothing
     idatasetax = datasetaxis === nothing ? nothing : findAxis(datasetaxis, axlist)
     if idatasetax !== nothing
@@ -290,14 +298,11 @@ function createdataset(
     else
         groupaxis = nothing
     end
-    foreach(axlist, chunkoffset) do ax, co
-        arrayfromaxis(myar, ax, co)
-    end
-    attr = properties
+    axdata = arrayfromaxis.(axlist, chunkoffset)
     s = map(length, axlist) .+ chunkoffset
-    if all(iszero, chunkoffset)
-        subs = nothing
-    else
+    subs = nothing
+    #Potentially create a view
+    if !all(iszero, chunkoffset)
         subs = ntuple(length(axlist)) do i
             (chunkoffset[i]+1):(length(axlist[i].values)+chunkoffset[i])
         end
@@ -309,30 +314,39 @@ function createdataset(
     end
     cleaner = CleanMe[]
     persist || push!(cleaner, CleanMe(path, false))
-    allcubes = map(cubenames) do cn
-        axnames = map(axname, axlist)
-        axlengths = map(i -> length(get_var_handle(myar, i)), axnames)
-        v = if allow_missings(myar) || !(T >: Missing)
-            add_var(myar, T, cn, axlengths, axnames, attr; chunksize = chunksize, kwargs...)
-        else
-            S = Base.nonmissingtype(T)
-            if !haskey(attr, "missing_value")
-                attr["missing_value"] = YAXArrayBase.defaultfillval(S)
-            end
-            v = add_var(
-                myar,
-                S,
-                cn,
-                axlengths,
-                axnames,
-                attr;
-                chunksize = chunksize,
-                kwargs...,
-            )
-            CFDiskArray(v, attr)
+    missallowed = allow_missings(DS) || !(T >: Missing)
+    S = if missallowed
+        T
+    else
+        S = Base.nonmissingtype(T)
+        if !haskey(attr, "missing_value")
+            attr["missing_value"] = YAXArrayBase.defaultfillval(S)
         end
-        if subs !== nothing
+        S
+    end
+    axlengths = length.(getproperty.(axdata, :data))
+    dshandle = YAXArrayBase.create_dataset(
+        DS, 
+        path, 
+        Dict{String,Any}(),
+        getproperty.(axdata,:name), 
+        getproperty.(axdata,:data),
+        getproperty.(axdata,:attrs), 
+        fill(S, length(cubenames)), 
+        cubenames, 
+        fill(getproperty.(axdata,:name),length(cubenames)), 
+        fill(attr,length(cubenames)), 
+        fill(chunksize, length(cubenames));
+        kwargs...
+    )
+    #This generates the YAXArrays
+    allcubes = map(cubenames) do cn
+        v = get_var_handle(dshandle, cn)
+        if !isnothing(subs)
             v = view(v, subs...)
+        end
+        if !missallowed
+            v = CFDiskArray(v, attr)
         end
         YAXArray(axlist, v, propfromattr(attr), cleaner = cleaner)
     end
@@ -366,11 +380,10 @@ function check_overwrite(newfolder, overwrite)
     end
 end
 
-function arrayfromaxis(p, ax::CubeAxis, offs)
+function arrayfromaxis(ax::CubeAxis, offs)
     data, attr = dataattfromaxis(ax, offs)
     attr["_ARRAY_OFFSET"] = offs
-    za = add_var(p, data, axname(ax), (axname(ax),), attr)
-    za
+    return (name = axname(ax), data = data, attrs = attr)
 end
 
 prependrange(r::AbstractRange, n) =
