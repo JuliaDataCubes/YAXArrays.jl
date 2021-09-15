@@ -66,10 +66,10 @@ using DataStructures: OrderedDict
         YAXArrayBase.get_var_dims(d::MockDataset, name) = d.dims[name]
         YAXArrayBase.get_var_attrs(d::MockDataset, name) = d.attrs[name]
         YAXArrayBase.allow_missings(d::MockDataset) = !occursin("nomissings", d.path)
-        function YAXArrayBase.create_empty(::Type{MockDataset}, path)
+        function YAXArrayBase.create_empty(::Type{MockDataset}, path, gatts)
             mkpath(dirname(path))
             open(_ -> nothing, path, "w")
-            MockDataset(Dict(), Dict(), Dict(), path)
+            MockDataset(Dict(), Dict(), gatts, path)
         end
         function YAXArrayBase.add_var(ds::MockDataset, T, name, s, dimlist, atts; kwargs...)
             data = Array{T}(undef, s...)
