@@ -9,3 +9,5 @@ include("Datasets/datasets.jl")
 
 include("DAT/PickAxisArray.jl")
 include("DAT/MovingWindow.jl")
+include("DAT/tablestats.jl")
+include("DAT/mapcube.jl")

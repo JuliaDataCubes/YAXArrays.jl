@@ -3,7 +3,7 @@ import ..Cubes.Axes: axsym, axname, CubeAxis, findAxis, CategoricalAxis, RangeAx
 import ..Cubes: YAXArray, concatenatecubes, CleanMe
 using ...YAXArrays: YAXArrays, YAXDefaults
 using DataStructures: OrderedDict, counter
-using Dates: Day, Hour, Minute, Second, Month, Year, Date, DateTime, TimeType
+using Dates: Day, Hour, Minute, Second, Month, Year, Date, DateTime, TimeType, AbstractDateTime
 using IntervalSets: Interval, (..)
 using CFTime: timedecode, timeencode, DateTimeNoLeap, DateTime360Day, DateTimeAllLeap
 using YAXArrayBase
@@ -142,6 +142,8 @@ propfromattr(attr) = Dict{String,Any}(filter(i -> i[1] != "_ARRAY_DIMENSIONS", a
 #there are problems with saving custom string types to netcdf, so we clean this when creating the axis:
 cleanaxiselement(x::AbstractString) = String(x)
 cleanaxiselement(x::String) = x
+cleanaxiselement(x::TimeType) = DateTime(x)
+cleanaxiselement(x::Union{Date, DateTime}) = x
 cleanaxiselement(x) = x
 
 "Test if data in x can be approximated by a step range"

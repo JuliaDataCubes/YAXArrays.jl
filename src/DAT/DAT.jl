@@ -2,24 +2,25 @@ module DAT
 import ..Cubes
 using ..YAXTools
 using Distributed:
-    RemoteChannel,
     nworkers,
     pmap,
     @everywhere,
     workers,
     remotecall_fetch,
-    remote_do,
     myid,
     nprocs,
-    RemoteException,
-    remotecall
+    remotecall, 
+    @spawn, 
+    AbstractWorkerPool, 
+    default_worker_pool
 import ..Cubes: cubechunks, iscompressed, chunkoffset, CubeAxis, YAXArray, caxes, YAXSlice
 import ..Cubes.Axes:
     AxisDescriptor, axname, ByInference, axsym, getOutAxis, getAxis, findAxis, match_axis
 import ..Datasets: Dataset, createdataset
 import ...YAXArrays
 import ...YAXArrays.workdir
-import ProgressMeter: Progress, next!, progress_pmap
+import YAXArrayBase
+import ProgressMeter: Progress, next!, progress_pmap, progress_map
 using YAXArrayBase
 using OffsetArrays: OffsetArray
 using Dates
@@ -142,7 +143,17 @@ end
 function getworkarray(c::InOutCube, ntr)
     wa = createworkarrays(eltype(c.cube), getworksize(c), ntr)
     map(wa) do w
-        wrapWorkArray(c.desc.artype, w, c.axesSmall)
+        if !has_window(c)
+            wrapWorkArray(c.desc.artype, w, c.axesSmall)
+        else
+            axes = map(c.iall) do i
+                i1 = findfirst(isequal(i), c.icolon)
+                i1 === nothing || return caxes(c.cube)[c.icolon[i1]]
+                i2 = findfirst(isequal(i), c.iwindow)
+                RangeAxis(axname(caxes(c.cube)[c.iwindow[i2]]), UnitRange(-c.window[i2][1], c.window[i2][2]))
+            end
+            wrapWorkArray(c.desc.artype, w, axes)
+        end
     end
 end
 
@@ -414,6 +425,8 @@ function mapCube(
     )
     @debug_print "Analysing Axes"
     analyzeAxes(dc)
+    @debug_print "Permuting loop axes"
+    permuteloopaxes(dc)
     @debug_print "Calculating Cache Sizes"
     getCacheSizes(dc, loopchunksize)
     @debug_print "Generating Output Cube"
@@ -454,6 +467,16 @@ function getchunkoffsets(dc::DATConfig)
     (co...,)
 end
 
+function permuteloopaxes(dc)
+    foreach(dc.incubes) do ic
+        if !issorted(ic.loopinds)
+            p = sortperm(ic.loopinds)
+            ic.cube = permutedims(ic.cube,[1:length(ic.axesSmall);p .+ length(ic.axesSmall)])
+            ic.loopinds = ic.loopinds[p]
+        end
+    end
+end
+
 updatears(clist, r, f, caches) =
     foreach(clist, caches) do ic, ca
         if !has_window(ic)
@@ -465,7 +488,7 @@ updatears(clist, r, f, caches) =
                 geticolon(ic),
                 ic.loopinds,
                 ca,
-                getwindow(ic),
+                zip(ic.iwindow, ic.window),
                 getwindowoob(ic),
             )
         end
@@ -541,49 +564,21 @@ end
 updateinars(dc, r, incaches) = updatears(dc.incubes, r, :read, incaches)
 writeoutars(dc, r, outcaches) = updatears(dc.outcubes, r, :write, outcaches)
 
-function loopworker(dcchan::RemoteChannel, ranchan, reschan)
-    dc = try
-        take!(dcchan)
-    catch e
-        println(
-            "Error serializing DATConfig, make sure all required package are loaded on all workers. ",
-        )
-        put!(reschan, e)
-        return
+function pmap_with_data(f, p::AbstractWorkerPool, c...; initfunc, progress=nothing, kwargs...)
+    d = Dict(ip=>remotecall(initfunc, ip) for ip in workers(p))
+    allrefs = @spawn d
+    function fnew(args...,)
+        refdict = fetch(allrefs)
+        myargs = fetch(refdict[myid()])
+        f(args..., myargs)
     end
-    loopworker(dc, ranchan, reschan)
-    return
-end
-function loopworker(dc::DATConfig, ranchan, reschan)
-    incaches, outcaches, args = try
-        getallargs(dc)
-    catch e
-        println("Error during initialization: ", e)
-        put!(reschan, e)
-    end
-    try
-        loopworker(dc, ranchan, reschan, incaches, outcaches, args)
-    catch e
-        if e isa InvalidStateException
-            return nothing
-        elseif e isa RemoteException && e.captured.ex isa InvalidStateException
-            return nothing
-        else
-            println("Error during running loop: ", e)
-            put!(reschan, e)
-        end
+    if progress !==nothing
+        progress_pmap(fnew,p,c...;progress=progress,kwargs...)
+    else
+        pmap(fnew,p,c...;kwargs...)
     end
 end
-
-function loopworker(dc, ranchan, reschan, incaches, outcaches, args)
-    while true
-        r = take!(ranchan)
-        updateinars(dc, r, incaches)
-        innerLoop(r, args...)
-        writeoutars(dc, r, outcaches)
-        @async put!(reschan, r)
-    end
-end
+pmap_with_data(f,c...;initfunc,kwargs...) = pmap_with_data(f,default_worker_pool(),c...;initfunc,kwargs...) 
 
 function moduleloadedeverywhere()
     try
@@ -604,42 +599,29 @@ function runLoop(dc::DATConfig, showprog)
         (map(length, dc.LoopAxes)...,),
         getchunkoffsets(dc),
     )
-    chnlfunc() = Channel{Union{eltype(allRanges),Nothing}}(length(allRanges))
-    outchanfunc() = Channel(length(allRanges))
-    inchan, outchan, dcpass = if dc.ispar
+    if dc.ispar
         #Test if YAXArrays is loaded on all workers:
         moduleloadedeverywhere() || error(
             "YAXArrays is not loaded on all workers. Please run `@everywhere using YAXArrays` to fix.",
         )
-        dcpass = RemoteChannel(() -> Channel{DATConfig}(nworkers()))
-        for i = 1:nworkers()
-            put!(dcpass, dc)
-        end
-        RemoteChannel(chnlfunc), RemoteChannel(outchanfunc), dcpass
-    else
-        chnlfunc(), outchanfunc(), dc
-    end
-    #Now distribute the jobs
-    for r in allRanges
-        put!(inchan, r)
-    end
-    #And start the workers
-    if dc.ispar
-        for p in workers()
-            remote_do(YAXArrays.DAT.loopworker, p, dcpass, inchan, outchan)
+        dcref = @spawn dc
+        prepfunc = ()->getallargs(fetch(dcref))
+        prog = showprog ? Progress(length(allRanges)) : nothing
+        pmap_with_data(allRanges, initfunc=prepfunc, progress=prog) do r, prep
+            incaches, outcaches, args = prep
+            updateinars(dc, r, incaches)
+            innerLoop(r, args...)
+            writeoutars(dc, r, outcaches)
         end
     else
-        @async loopworker(dc, inchan, outchan)
-    end
-    showprog && (pm = Progress(length(allRanges)))
-    for i = 1:length(allRanges)
-        r = take!(outchan)
-        if isa(r, Exception)
-            throw(r)
+        incaches, outcaches, args = getallargs(dc)
+        mapfun = showprog ? progress_map : map
+        mapfun(allRanges) do r
+            updateinars(dc, r, incaches)
+            innerLoop(r, args...)
+            writeoutars(dc, r, outcaches)
         end
-        showprog && next!(pm)
     end
-    close(inchan)
     dc.outcubes
 end
 
@@ -676,9 +658,9 @@ function getallargs(dc::DATConfig)
         dc.fu
     end
     inarsbc = map(dc.incubes, incache) do ic, cache
-        allax = getindsall(geticolon(ic), ic.loopinds, i -> true)
+        allax = getindsall(geticolon(ic), 1:length(dc.LoopAxes), i -> i in ic.loopinds ? true : false)
         if has_window(ic)
-            for (iw, pa) in getwindow(ic)
+            for (iw, pa) in zip(ic.iwindow, ic.window)
                 allax = Base.setindex(allax, pa, iw)
             end
         end
@@ -785,7 +767,7 @@ function allocatecachebuf(ic::Union{InputCube,OutputCube}, loopcachesize)
     indsall = getindsall(geticolon(ic), ic.loopinds, i -> loopcachesize[i], i -> s[i])
     if has_window(ic)
         indsall = Base.OneTo.(indsall)
-        for (iw, (pre, after)) in getwindow(ic)
+        for (iw, (pre, after)) in zip(ic.iwindow, ic.window)
             old = indsall[iw]
             new = (first(old)-pre):(last(old)+after)
             indsall = Base.setindex(indsall, new, iw)
@@ -803,23 +785,22 @@ end
 
 function analyzeAxes(dc::DATConfig{NIN,NOUT}) where {NIN,NOUT}
 
+    loopaxsyms = Symbol[]
     for cube in dc.incubes
-        for a in caxes(cube.cube)
-            in(a, cube.axesSmall) || in(a, dc.LoopAxes) || push!(dc.LoopAxes, a)
-        end
-    end
-    length(dc.LoopAxes) == length(unique(map(axsym, dc.LoopAxes))) ||
-        error("Make sure that cube axes of different cubes match")
-    for cube in dc.incubes
-        myAxes = caxes(cube.cube)
-        for (il, loopax) in enumerate(dc.LoopAxes)
-            laxsym = axsym(loopax)
-            iax = findfirst(i -> axsym(i) == laxsym, myAxes)
-            if iax !== nothing
-                push!(cube.loopinds, il)
-                #Check here if axis is windowed
+        for (iax,a) in enumerate(caxes(cube.cube))
+            if !in(a, cube.axesSmall)
+                s = axsym(a)
+                is = findfirst(isequal(s), loopaxsyms) 
+                if is === nothing
+                    push!(dc.LoopAxes, a)
+                    push!(loopaxsyms, s)
+                    is = length(loopaxsyms)
+                else
+                    a == dc.LoopAxes[is] || error("Axes $a and $(dc.LoopAxes[is]) have the same name but are note identical")
+                end
+                push!(cube.loopinds,is)
                 if iax in cube.iwindow
-                    push!(cube.windowloopinds, il)
+                    push!(cube.windowloopinds, is)
                 end
             end
         end
@@ -1032,10 +1013,7 @@ function innercode(
     myoutwork = map(i -> i[ithr], outwork)
     #Copy data into work arrays
     foreach(myinwork, xinBC) do iw, x
-        #@show axes(iw)
-        #@show cI.I
-        #@show axes(view(x,cI.I...))
-        iw .= view(x, cI.I...)
+        YAXArrayBase.getdata(iw) .= view(x, cI.I...)
     end
     #Apply filters
     mvs = map(docheck, filters, myinwork)
@@ -1049,7 +1027,7 @@ function innercode(
         f(myoutwork..., myinwork..., laxval..., addargs...; kwargs...)
     end
     #Copy data into output array
-    foreach((iw, x) -> view(x, cI.I...) .= iw, myoutwork, xoutBC)
+    foreach((iw, x) -> view(x, cI.I...) .= YAXArrayBase.getdata(iw), myoutwork, xoutBC)
 end
 
 using DataStructures: OrderedDict
