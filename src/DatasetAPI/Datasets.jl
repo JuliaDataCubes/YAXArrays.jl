@@ -1,6 +1,6 @@
 module Datasets
 import ..Cubes.Axes: axsym, axname, CubeAxis, findAxis, CategoricalAxis, RangeAxis, caxes
-import ..Cubes: YAXArray, concatenatecubes, CleanMe
+import ..Cubes: Cubes, YAXArray, concatenatecubes, CleanMe, subsetcube
 using ...YAXArrays: YAXArrays, YAXDefaults
 using DataStructures: OrderedDict, counter
 using Dates: Day, Hour, Minute, Second, Month, Year, Date, DateTime, TimeType, AbstractDateTime
