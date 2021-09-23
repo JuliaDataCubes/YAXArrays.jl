@@ -155,7 +155,7 @@ end
 function testrange(x::AbstractArray{<:Integer})
     steps = diff(x)
     if all(isequal(steps[1]), steps) && !iszero(steps[1])
-        return range(first(x), step = steps[1], length(x))
+        return range(first(x), step = steps[1], length = length(x))
     else
         return x
     end
