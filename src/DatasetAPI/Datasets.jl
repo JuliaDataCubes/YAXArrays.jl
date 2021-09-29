@@ -17,8 +17,9 @@ export Dataset, Cube, open_dataset
 struct Dataset
     cubes::OrderedDict{Symbol,YAXArray}
     axes::Dict{Symbol,CubeAxis}
+    properties::Dict{String,Any}
 end
-function Dataset(; cubesnew...)
+function Dataset(; properties = Dict{String,Any}(),cubesnew...)
     axesall = Set{CubeAxis}()
     foreach(values(cubesnew)) do c
         ax = caxes(c)
@@ -27,7 +28,7 @@ function Dataset(; cubesnew...)
     axesall = collect(axesall)
     axnameall = axsym.(axesall)
     axesnew = Dict{Symbol,CubeAxis}(axnameall[i] => axesall[i] for i = 1:length(axesall))
-    Dataset(OrderedDict(cubesnew), axesnew)
+    Dataset(OrderedDict(cubesnew), axesnew, properties)
 end
 
 function Base.show(io::IO, ds::Dataset)
@@ -39,9 +40,9 @@ function Base.show(io::IO, ds::Dataset)
 end
 function Base.propertynames(x::Dataset, private::Bool = false)
     if private
-        Symbol[:cubes; :axes; collect(keys(x.cubes)); collect(keys(x.axes))]
+        Symbol[:cubes; :axes; :properties; collect(keys(x.cubes)); collect(keys(x.axes))]
     else
-        Symbol[collect(keys(x.cubes)); collect(keys(x.axes))]
+        Symbol[collect(keys(x.cubes)); collect(keys(x.axes)); :properties]
     end
 end
 function Base.getproperty(x::Dataset, k::Symbol)
@@ -49,6 +50,8 @@ function Base.getproperty(x::Dataset, k::Symbol)
         return getfield(x, :cubes)
     elseif k === :axes
         return getfield(x, :axes)
+    elseif k === :properties
+        return getfield(x,:properties)
     else
         x[k]
     end
@@ -58,7 +61,7 @@ Base.getindex(x::Dataset, i::Symbol) =
     haskey(x.axes, i) ? x.axes[i] : throw(ArgumentError("$i not found in Dataset"))
 function Base.getindex(x::Dataset, i::Vector{Symbol})
     cubesnew = [j => x.cubes[j] for j in i]
-    Dataset(; cubesnew...)
+    Dataset(; properties = x.properties, cubesnew...)
 end
 
 function fuzzyfind(s::String, comp::Vector{String})
@@ -75,18 +78,18 @@ function Base.getindex(x::Dataset, i::Vector{String})
     ids = map(name -> fuzzyfind(name, istr), i)
     syms = map(j -> Symbol(istr[j]), ids)
     cubesnew = [Symbol(i[j]) => x.cubes[syms[j]] for j = 1:length(ids)]
-    Dataset(; cubesnew...)
+    Dataset(; properties = x.properties , cubesnew...)
 end
 Base.getindex(x::Dataset, i::String) = getproperty(x, Symbol(i))
 function subsetcube(x::Dataset; var = nothing, kwargs...)
     if var === nothing
         cc = x.cubes
-        Dataset(; map(ds -> ds => subsetcube(cc[ds]; kwargs...), collect(keys(cc)))...)
+        Dataset(;properties = x.properties, map(ds -> ds => subsetcube(cc[ds]; kwargs...), collect(keys(cc)))...)
     elseif isa(var, String) || isa(var, Symbol)
         subsetcube(getproperty(x, Symbol(var)); kwargs...)
     else
         cc = x[var].cubes
-        Dataset(; map(ds -> ds => subsetcube(cc[ds]; kwargs...), collect(keys(cc)))...)
+        Dataset(; properties = x.properties, map(ds -> ds => subsetcube(cc[ds]; kwargs...), collect(keys(cc)))...)
     end
 end
 function collectdims(g)
@@ -155,7 +158,7 @@ end
 function testrange(x::AbstractArray{<:Integer})
     steps = diff(x)
     if all(isequal(steps[1]), steps) && !iszero(steps[1])
-        return range(first(x), step = steps[1], length(x))
+        return range(first(x), step = steps[1], length = length(x))
     else
         return x
     end
@@ -209,7 +212,8 @@ function open_dataset(g; driver = :all)
         allcubes[Symbol(vname)] = YAXArray(iax, ar, atts, cleaner = CleanMe[])
     end
     sdimlist = Dict(Symbol(k) => v.ax for (k, v) in dimlist)
-    Dataset(allcubes, sdimlist)
+    atts = YAXArrayBase.get_global_attrs(g)
+    Dataset(allcubes, sdimlist,atts)
 end
 Base.getindex(x::Dataset; kwargs...) = subsetcube(x; kwargs...)
 YAXDataset(; kwargs...) = Dataset(YAXArrays.YAXDefaults.cubedir[]; kwargs...)
