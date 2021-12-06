@@ -910,7 +910,7 @@ function getCacheSizes(dc::DATConfig, loopchunksizes)
             end
         end
     end
-    sort!(cmisses, lt = cmpcachmisses)
+    cmisses = sort(unique(cmisses), lt = cmpcachmisses)
     loopcachesize, nopar = getLoopCacheSize(
         max(inblocksize, outblocksize),
         map(length, dc.LoopAxes),
@@ -938,7 +938,6 @@ function getLoopCacheSize(preblocksize, loopaxlengths, max_cache, cmisses, userc
     incfac < 1 && error(
         "The requested slices do not fit into the specified cache. Please consider increasing max_cache",
     )
-
     # Go through list of cache misses first and decide
     imiss = 1
     while imiss <= length(cmisses)

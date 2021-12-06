@@ -195,14 +195,14 @@ function YAXArrayBase.yaxcreate(::Type{YAXArray}, data, dimnames, dimvals, atts)
     axlist = map(dimnames, dimvals) do dn, dv
         iscontdimval(dv) ? RangeAxis(dn, dv) : CategoricalAxis(dn, dv)
     end
-    if any(in(keys(atts)), ["missing_value", "scale_factor", "add_offset"])
+    if any(in(keys(atts)), ["missing_value", "scale_factor", "add_offset"]) && !(eltype(data) >: Missing)
         data = CFDiskArray(data, atts)
     end
     YAXArray(axlist, data, atts)
 end
 YAXArrayBase.iscompressed(c::YAXArray) = _iscompressed(getdata(c))
-_iscompressed(c::DiskArrays.PermutedDiskArray) = iscompressed(c.a.parent)
-_iscompressed(c::DiskArrays.SubDiskArray) = iscompressed(c.v.parent)
+_iscompressed(c::DiskArrays.PermutedDiskArray) = _iscompressed(c.a.parent)
+_iscompressed(c::DiskArrays.SubDiskArray) = _iscompressed(c.v.parent)
 _iscompressed(c) = YAXArrayBase.iscompressed(c)
 
 function renameaxis!(c::YAXArray, p::Pair)

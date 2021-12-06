@@ -1,177 +1,123 @@
-include("SentinelMissings.jl")
-import .SentinelMissings
 import YAXArrays.DAT: DATConfig
 import YAXArrays.YAXTools: PickAxisArray
+using YAXArrays.Cubes.Axes: axcopy
+using Tables: Tables, Schema, AbstractColumns
 
-struct CubeIterator{R,ART,ARTBC,LAX,ILAX,S}
+struct CubeIterator{R,LAX,S<:Schema}
     dc::DATConfig
     r::R
-    inars::ART
-    inarsBC::ARTBC
     loopaxes::LAX
+    schema::S
 end
-Base.IteratorSize(::Type{<:CubeIterator}) = Base.HasLength()
-Base.IteratorEltype(::Type{<:CubeIterator}) = Base.HasEltype()
-Base.eltype(i::Type{<:CubeIterator{A,B,C,D,E,F}}) where {A,B,C,D,E,F} = F
-
-tuplelen(::Type{<:NTuple{N,<:Any}}) where {N} = N
-
-lift64(::Type{Float32}) = Float64
-lift64(::Type{Int32}) = Int64
-lift64(T) = T
-
-defaultval(t::Type{<:AbstractFloat}) = convert(t, NaN)
-defaultval(t::Type{<:Signed}) = typemin(t) + 1
-defaultval(t::Type{<:Unsigned}) = typemax(t) - 1
+Tables.schema(t::CubeIterator) = t.schema
+Base.length(ci::CubeIterator) = length(ci.r)
 
 function CubeIterator(
     dc,
     r;
     varnames::Tuple = ntuple(i -> Symbol("x$i"), length(dc.incubes)),
-    include_loopvars = (),
 )
-    loopaxes = ntuple(i -> dc.LoopAxes[i], length(dc.LoopAxes))
-    inars, _ = getCubeCache(dc)
+    loopaxes = (dc.LoopAxes...,)
     length(varnames) == length(dc.incubes) ||
         error("Supplied $(length(varnames)) varnames and $(length(dc.incubes)) cubes.")
-    inarsbc = map(dc.incubes, inars) do ic, cache
-        allax = getindsall(geticolon(ic), ic.loopinds, i -> true)
-        if ic.colonperm === nothing
-            pa = PickAxisArray(cache, allax)
-        else
-            pa = PickAxisArray(cache, allax, ic.colonperm)
-        end
+    et = map(dc.incubes) do ic
+        eltype(ic.cube)
     end
-    et = map(inarsbc) do ibc
-        ti = eltype(ibc)
-        if ti <: AbstractArray
-            ti
-        else
-            ti = Base.nonmissingtype(ti)
-            SentinelMissings.SentinelMissing{ti,defaultval(ti)}
-        end
-    end
-    if include_loopvars == true
-        include_loopvars = map(axname, (loopaxes...,))
-    end
-    if isa(include_loopvars, Tuple) && !isempty(include_loopvars)
-        ilax = map(i -> findAxis(i, collect(loopaxes)), include_loopvars)
-        any(isequal(nothing), ilax) && error("Axis not found in cubes")
-        et = (et..., map(i -> eltype(loopaxes[i]), ilax)...)
-    else
-        ilax = ()
-    end
-
-    elt = NamedTuple{
-        (map(Symbol, varnames)..., map(Symbol, include_loopvars)...),
-        Tuple{et...},
-    }
-    CubeIterator{typeof(r),typeof(inars),typeof(inarsbc),typeof(loopaxes),ilax,elt}(
+    et = (et..., map(i->eltype(i.values), loopaxes)...)
+    axnames = axsym.(loopaxes)
+    colnames = (map(Symbol, varnames)..., axnames...)
+    CubeIterator(
         dc,
         r,
-        inars,
-        inarsbc,
         loopaxes,
+        Tables.Schema(colnames,et)
     )
 end
-iternames(::CubeIterator{<:Any,<:Any,<:Any,<:Any,<:Any,E}) where {E} = E
-tuplenames(t::Type{<:NamedTuple{N}}) where {N} = string.(N)
-function Base.show(io::IO, ci::CubeIterator{<:Any,<:Any,<:Any,<:Any,<:Any,E}) where {E}
+
+"""
+    YAXColumn
+
+A struct representing a single column of a YAXArray partitioned Table
+"""
+struct YAXColumn{T,A,IT} <: AbstractVector{T}
+    inarBC::A
+    inds::IT
+end
+Base.getindex(a::YAXColumn,i) = a.inarBC[a.inds[i]]
+Base.length(a::YAXColumn) = length(a.inds)
+Base.size(a::YAXColumn) = (length(a.inds),)
+
+
+struct YAXTableChunk{CI<:CubeIterator, LAX, IC} <: AbstractColumns
+    ci::CI
+    loopaxes::LAX
+    ichunk::IC
+    cols::Vector{Union{Nothing,YAXColumn}}
+end
+function Tables.getcolumn(t::YAXTableChunk, i::Int) 
+    cols = getfield(t,:cols)
+    if cols[i] === nothing
+        cols[i] = YAXColumn(t,i)
+    end
+    cols[i]
+end
+function Tables.getcolumn(t::YAXTableChunk, s::Symbol)
+    n = Tables.schema(t).names
+    i = findfirst(==(s), n)
+    Tables.getcolumn(t,i)
+end
+Tables.columnnames(t::YAXTableChunk) = getfield(t,:ci).schema.names
+Tables.schema(t::YAXTableChunk) = getfield(t,:ci).schema
+
+function YAXColumn(t::YAXTableChunk,ivar)
+    ci = getfield(t,:ci)
+    rnow = getfield(t,:ichunk)
+    println("Accessing $ivar at $rnow")
+    if ivar > length(ci.dc.incubes)
+        iax = ivar-length(ci.dc.incubes)
+        axvals = getfield(t,:loopaxes)[iax].values
+        allax = map(_->false, getfield(t,:loopaxes))
+        allax = Base.setindex(allax, true, iax)
+        inarbc = PickAxisArray(axvals, allax)
+        inds = CartesianIndices(Base.OneTo.(length.(rnow)))
+        return YAXColumn{eltype(inarbc),typeof(inarbc), typeof(inds)}(inarbc, inds)
+    else
+        ic = ci.dc.incubes[ivar]
+        buf = allocatecachebuf(ic, ci.dc.loopcachesize)
+        updatear(:read, rnow, ic.cube, geticolon(ic), ic.loopinds, buf)
+        allax = map(_->false, getfield(t,:loopaxes))
+        for il in ic.loopinds
+            allax = Base.setindex(allax,true,il)
+        end
+        inarbc = if ic.colonperm === nothing
+            pa = PickAxisArray(buf, allax)
+        else
+            pa = PickAxisArray(buf, allax, ic.colonperm)
+        end
+        inds = CartesianIndices(Base.OneTo.(length.(rnow)))
+        return YAXColumn{eltype(inarbc),typeof(inarbc), typeof(inds)}(inarbc, inds)
+    end
+end
+
+function Base.iterate(t::CubeIterator, state=1)
+    state > length(t.r) && return nothing
+    rnow = t.r[state]
+    laxsmall = map(t.loopaxes, rnow) do ax,ir
+        axcopy(ax,ax.values[ir])
+    end
+    cols = Union{Nothing,YAXColumn}[nothing for i in t.schema.names]
+    return YAXTableChunk(t,laxsmall,rnow,cols), state+1
+end
+
+
+function Base.show(io::IO, ci::CubeIterator)
     print(
         io,
         "Datacube iterator with ",
-        length(ci),
-        " elements with fields: ",
-        tuplenames(E),
+        length(ci.r),
+        " subtables with fields: ",
+        ci.schema.names,
     )
-end
-Base.length(ci::CubeIterator) = prod(length.(ci.loopaxes))
-function Base.iterate(ci::CubeIterator)
-    rnow, blockstate = iterate(ci.r)
-    updatears(ci.dc.incubes, rnow, :read, ci.inars)
-    innerinds = CartesianIndices(length.(rnow))
-    indnow, innerstate = iterate(innerinds)
-    offs = map(i -> first(i) - 1, rnow)
-    getrow(ci, ci.inarsBC, indnow, offs),
-    (rnow = rnow, blockstate = blockstate, innerinds = innerinds, innerstate = innerstate)
-end
-function Base.iterate(ci::CubeIterator, s)
-    t1 = iterate(s.innerinds, s.innerstate)
-    N = tuplelen(eltype(ci.r))
-    if t1 === nothing
-        t2 = iterate(ci.r, s.blockstate)
-        if t2 === nothing
-            return nothing
-        else
-            rnow = t2[1]
-            blockstate = t2[2]
-            updatears(ci.dc.incubes, rnow, :read, ci.inars)
-            innerinds = CartesianIndices(length.(rnow))
-            indnow, innerstate = iterate(innerinds)
-
-        end
-    else
-        rnow, blockstate = s.rnow, s.blockstate
-        innerinds = s.innerinds
-        indnow, innerstate = iterate(innerinds, s.innerstate)
-    end
-    offs = map(i -> first(i) - 1, rnow)
-    getrow(ci, ci.inarsBC, indnow, offs),
-    (
-        rnow = rnow::NTuple{N,UnitRange{Int64}},
-        blockstate = blockstate::Int64,
-        innerinds = innerinds::CartesianIndices{N,NTuple{N,Base.OneTo{Int64}}},
-        innerstate = innerstate::CartesianIndex{N},
-    )
-end
-abstract type CubeRow end
-abstract type CubeRowAx <: CubeRow end
-
-function getrow(
-    ci::CubeIterator{<:Any,<:Any,<:Any,<:Any,ILAX,S},
-    inarsBC,
-    indnow,
-    offs,
-) where {ILAX,S}
-    axvalsall = map((ax, i, o) -> ax.values[i+o], ci.loopaxes, indnow.I, offs)
-    axvals = map(i -> axvalsall[i], ILAX)
-    cvals = map(i -> i[indnow], inarsBC)
-    S((cvals..., axvals...))
-end
-function getrow(
-    ci::CubeIterator{<:Any,<:Any,<:Any,<:Any,(),S},
-    inarsBC,
-    indnow,
-    offs,
-) where {S}
-    cvals = map(i -> i[indnow], inarsBC)
-    S(cvals)
-end
-
-function Base.show(io::IO, s::CubeRow)
-    print(io, "Cube Row: ")
-    for n in propertynames(s)
-        print(io, string(n), "=", getproperty(s, n), " ")
-    end
-end
-function Base.show(io::IO, s::CubeRowAx)
-    print(io, "Cube Row: ")
-    for n in propertynames(s)
-        print(io, string(n), "=", getproperty(s, n), " ")
-    end
-end
-function Base.show(io::IO, s::Type{<:CubeRow})
-    foreach(fieldnames(s)) do fn
-        print(io, fn, "::", fieldtype(s, fn), ", ")
-    end
-end
-function Base.iterate(s::CubeRow, state = 1)
-    allnames = propertynames(s)
-    if state <= length(allnames)
-        (getproperty(s, allnames[state]), state + 1)
-    else
-        nothing
-    end
 end
 
 
@@ -184,13 +130,8 @@ specified as a `name=cube` expression. For example
 `CubeTable(data=cube1,country=cube2)` would generate a Table with the entries `data` and `country`,
 where `data` contains the values of `cube1` and `country` the values of `cube2`. The cubes
 are matched and broadcasted along their axes like in `mapCube`.
-
-In addition, one can specify
-`include_axes=(ax1,ax2...)` when one wants to include the values of certain axes in the table. For example
-the command `(CubeTable(tair=cube1 axes=("lon","lat","time"))` would produce an iterator over a data structure
-with entries `tair`, `lon`, `lat` and `time`.
 """
-function CubeTable(; include_axes = (), expandaxes = (), cubes...)
+function CubeTable(; expandaxes = (), cubes...)
     c = (map((k, v) -> v, keys(cubes), values(cubes))...,)
     all(i -> isa(i, Union{YAXArray,AbstractArray}), c) ||
         throw(ArgumentError("All inputs must be DataCubes"))
@@ -209,8 +150,11 @@ function CubeTable(; include_axes = (), expandaxes = (), cubes...)
         end
     end
     axnames = map(i -> axname.(caxes(i)), c)
-    if isempty(intersect(axnames...))
-        @warn "Input cubes to the table do not share a common axis, please check the axis names"
+    foreach(1:length(axnames)) do i
+        others = union(axnames[[1:i-1;i+1:length(axnames)]]...)
+        if isempty(intersect(axnames[i], others))
+            @warn "Input cube $i with axes $(axnames[i]) does not share any axis with other cubes from the iterator, please check the axis names"
+        end
     end
     allvars = union(axnames...)
     allnums = collect(1:length(allvars))
@@ -236,20 +180,7 @@ function CubeTable(; include_axes = (), expandaxes = (), cubes...)
             getchunkoffsets(configiter),
         ),
     )
-    ci = CubeIterator(configiter, r, include_loopvars = include_axes, varnames = varnames)
+    ci = CubeIterator(configiter, r, varnames = varnames)
 end
 
 import Tables
-Tables.istable(::Type{<:CubeIterator}) = true
-Tables.rowaccess(::Type{<:CubeIterator}) = true
-Tables.rows(x::CubeIterator) = x
-Tables.schema(x::CubeIterator) = Tables.schema(typeof(x))
-Tables.schema(x::Type{<:CubeIterator}) = Tables.Schema(
-    fieldnames(eltype(x)),
-    map(s -> fieldtype(eltype(x), s), fieldnames(eltype(x))),
-)
-
-Tables.istable(::Type{<:YAXArray}) = true
-Tables.rowaccess(::Type{<:YAXArray}) = true
-Tables.rows(x::YAXArray) = CubeTable(value = x, include_axes = true)
-Tables.schema(x::YAXArray) = Tables.schema(Tables.rows(x))
