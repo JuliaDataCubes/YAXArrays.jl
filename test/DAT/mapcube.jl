@@ -15,4 +15,11 @@
         end
         @test r.data == a2.data .+ reshape(a3.data,(4,1,5))
     end
+
+    @testset "Reduction to empty outputs" begin
+        yax = YAXArray([RangeAxis("axis1", 1:10)], rand(10))
+        r = mapslices(sum, yax, dims="axis1")
+        @test r.data[] == sum(yax.data)
+
+    end
 end
