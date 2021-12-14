@@ -557,10 +557,14 @@ function updatear(f, r, cube, indscol, loopinds, cache)
             d = getdata(cube)[indsall...]
             cache[:] = d
         else
-            getdata(cube)[indsall...] = cache
+            _writedata(getdata(cube), cache, indsall)
         end
     end
 end
+_writedata(d,cache,indsall) = d[indsall...] = cache
+_writedata(d::Array{<:Any,0},cache::Array{<:Any,0},::Tuple{}) = d[] = cache[]
+
+
 updateinars(dc, r, incaches) = updatears(dc.incubes, r, :read, incaches)
 writeoutars(dc, r, outcaches) = updatears(dc.outcubes, r, :write, outcaches)
 
