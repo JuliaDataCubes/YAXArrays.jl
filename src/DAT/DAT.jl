@@ -54,9 +54,9 @@ include("registration.jl")
 Internal representation of an input cube for DAT operations
 """
 mutable struct InputCube{N}
-    cube::Any   #The input data cube
+    cube::Any                  #The input data cube
     desc::InDims               #The input description given by the user/registration
-    axesSmall::Vector{CubeAxis} #List of axes that were actually selected through the description
+    axesSmall::Vector          #List of axes that were actually selected through the description
     icolon::Vector{Int}
     colonperm::Union{Vector{Int},Nothing}
     loopinds::Vector{Int}        #Indices of loop axes that this cube does not contain, i.e. broadcasts
@@ -457,7 +457,7 @@ function getchunkoffsets(dc::DATConfig)
     lc = dc.loopcachesize
     for ic in dc.incubes
         for (ax, cocur, cs) in
-            zip(caxes(ic.cube), chunkoffset(ic.cube), cubechunks(ic.cube))
+            zip(dimnames(ic.cube), chunkoffset(ic.cube), cubechunks(ic.cube))
             ii = findAxis(ax, dc.LoopAxes)
             if !isa(ii, Nothing) && iszero(co[ii]) && cocur > 0 && mod(lc[ii], cs) == 0
                 co[ii] = cocur

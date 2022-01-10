@@ -1,6 +1,7 @@
 import YAXArrays.DAT: DATConfig
 import YAXArrays.YAXTools: PickAxisArray
 using YAXArrays.Cubes.Axes: axcopy
+using YAXArrayBase: YAXArrayBase
 using Tables: Tables, Schema, AbstractColumns
 
 struct CubeIterator{R,LAX,S<:Schema}
@@ -149,11 +150,14 @@ function CubeTable(; expandaxes = (), cubes...)
             InDims(axn...)
         end
     end
-    axnames = map(i -> axname.(caxes(i)), c)
+    axnames = map(i -> YAXArrayBase.dimnames(i), c)
     foreach(1:length(axnames)) do i
-        others = union(axnames[[1:i-1;i+1:length(axnames)]]...)
-        if isempty(intersect(axnames[i], others))
-            @warn "Input cube $i with axes $(axnames[i]) does not share any axis with other cubes from the iterator, please check the axis names"
+        otherinds = [1:i-1;i+1:length(axnames)]
+        if !isempty(otherinds)
+            others = union(axnames[otherinds]...)
+            if isempty(intersect(axnames[i], others))
+                @warn "Input cube $i with axes $(axnames[i]) does not share any axis with other cubes from the iterator, please check the axis names"
+            end
         end
     end
     allvars = union(axnames...)
