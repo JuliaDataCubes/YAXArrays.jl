@@ -229,7 +229,7 @@ function _subsetcube(z, subs; kwargs...)
     for f in YAXDefaults.subsetextensions
         f(kwargs)
     end
-    newaxes = deepcopy(collect(caxes(z)))
+    newaxes = deepcopy(collect(CubeAxis,caxes(z)))
     foreach(kwargs) do kw
         axdes, subexpr = kw
         axdes = string(axdes)
