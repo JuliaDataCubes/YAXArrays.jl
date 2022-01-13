@@ -73,4 +73,25 @@ ch = YAXArrays.DAT.getloopchunks(dc)
 @test ch == (RegularChunks(300,0,4000), RegularChunks(100,0,2000))
 incubes, outcubes = YAXArrays.DAT.getCubeCache(dc);
 @test 0.5 < (sum(sizeof,incubes) + sum(sizeof,outcubes))/YAXArrays.YAXDefaults.max_cache[] <= 1.0# Test that the allocated buffer is close to what the prescribes size
+
+#Now a completely different test, this is more for DataFrame functionality
+# and tests if we can proagate irregular axes into the cubes
+using Dates
+yearchunks = map(y->isleapyear(y) ? 366 : 365, 2001:2008)
+c = GridChunks(RegularChunks(100,0,4000), RegularChunks(100,0,2000), IrregularChunks(chunksizes=yearchunks))
+s = last.(last(c))
+YAXArrays.YAXDefaults.max_cache[] = 1.0e8
+a1 = YAXArray(LargeDiskArray(s, c,true))
+
+dc = mapCube(identity, a1, indims = InDims(), outdims = (), debug=true)
+ch = YAXArrays.DAT.getloopchunks(dc)
+@test ch == (RegularChunks(300,0,4000), RegularChunks(100,0,2000), RegularChunks(365,0,2922))
+incubes, outcubes = YAXArrays.DAT.getCubeCache(dc);
+@test 0.5 < sum(sizeof,incubes)/YAXArrays.YAXDefaults.max_cache[] <= 1.0#
+
+dc = mapCube(identity, a1, indims = InDims(), outdims = (), debug=true,irregular_loopranges = true)
+ch = YAXArrays.DAT.getloopchunks(dc)
+@test ch == (RegularChunks(300,0,4000), RegularChunks(100,0,2000), IrregularChunks(chunksizes=yearchunks))
+incubes, outcubes = YAXArrays.DAT.getCubeCache(dc);
+@test 0.5 < sum(sizeof,incubes)/YAXArrays.YAXDefaults.max_cache[] <= 1.0#
 end

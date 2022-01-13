@@ -167,7 +167,7 @@ function interpretoutchunksizes(desc, axesSmall, incubes)
             for cc in incubes
                 i = findAxis(axname(ax), cc)
                 if i !== nothing
-                    return axname(ax) => eachchunk(cc.cube.data).chunks[i]
+                    return axname(ax) => eachchunk(cc.data).chunks[i]
                 end
             end
             return axname(ax) => length(ax)
@@ -459,8 +459,8 @@ function makeinplace(f)
     end
 end
 
-to_chunksize(c::RegularChunks, cs) = RegularChunks(cs, c.offset, c.s)
-function to_chunksize(c::IrregularChunks, cs)
+to_chunksize(c::RegularChunks, cs, _ = true) = RegularChunks(cs, c.offset, c.s)
+function to_chunksize(c::IrregularChunks, cs, allow_irregular=true)
     fac = cs ÷ approx_chunksize(c)
     ll = length.(c)
     newchunks = sum.(Iterators.partition(ll,fac))
@@ -469,7 +469,11 @@ function to_chunksize(c::IrregularChunks, cs)
     elseif length(newchunks) == 2 || all(==(cs),newchunks[2:end-1])
         RegularChunks(cs, cs-newchunks[1], sum(newchunks))
     else
-        IrregularChunks(chunksize = newchunks)
+        if allow_irregular
+            IrregularChunks(chunksizes = newchunks)
+        else
+            RegularChunks(cs, 0, last(last(c)))
+        end
     end
 end
 
@@ -481,12 +485,12 @@ function getloopchunks(dc::DATConfig)
             eachchunk(ic.cube.data).chunks[ii]
         end
         if length(allchunks) == 1
-            return to_chunksize(allchunks[1],cs)
+            return to_chunksize(allchunks[1],cs,dc.allow_irregular_chunks)
         end
         # check if one of the chunks should determine the offset
         allchunks = filter(i->mod(cs,approx_chunksize(i))==0, allchunks)
         if length(allchunks) == 1
-            return to_chunksize(allchunks[1],cs)
+            return to_chunksize(allchunks[1],cs,dc.allow_irregular_chunks)
         end
         if !dc.allow_irregular_chunks
             allchunks = filter(i->isa(i,RegularChunks),allchunks)
@@ -748,7 +752,7 @@ function generateOutCube(
             cs = Base.setindex(cs, cc, i)
         end
     end
-    co = grid_offset.(loopcachesize)
+    co = (map(_->0, oc.axesSmall)...,grid_offset.(loopcachesize)...)
     cube1, cube2 = createdataset(
         T,
         oc.allAxes;
@@ -879,7 +883,7 @@ function cmpcachmisses(x1, x2)
     end
 end
 
-function getCacheSizes(dc::DATConfig, loopchunksizes; allow_irregular=false)
+function getCacheSizes(dc::DATConfig, loopchunksizes)
 
     inAxlengths = Vector{Int}[Int.(length.(cube.axesSmall)) for cube in dc.incubes]
     inblocksizes = map(
