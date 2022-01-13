@@ -747,12 +747,13 @@ function generateOutCube(
 ) where {T}
     cs_inner = (map(length, oc.axesSmall)...,)
     cs = (cs_inner..., approx_chunksize.(loopcachesize)...)
+    co = (map(_->0, oc.axesSmall)...,grid_offset.(loopcachesize)...)
     for (i, cc) in enumerate(oc.innerchunks)
-        if cc !== nothing
-            cs = Base.setindex(cs, cc, i)
+        if cc !== nothing && i <= length(oc.axesSmall)
+            cs = Base.setindex(cs, approx_chunksize(cc), i)
+            co = Base.setindex(co,grid_offset(cc), i)
         end
     end
-    co = (map(_->0, oc.axesSmall)...,grid_offset.(loopcachesize)...)
     cube1, cube2 = createdataset(
         T,
         oc.allAxes;
@@ -854,11 +855,11 @@ function analyzeAxes(dc::DATConfig{NIN,NOUT}) where {NIN,NOUT}
         end
         outcube.allAxes = CubeAxis[outcube.axesSmall; LoopAxesAdd]
         dold = outcube.innerchunks
-        newchunks = Union{Int,Nothing}[nothing for _ = 1:length(outcube.allAxes)]
+        newchunks = ntuple(_->nothing, length(outcube.allAxes))
         for (k, v) in dold
             ii = findAxis(k, outcube.allAxes)
             if ii !== nothing
-                newchunks[ii] = v
+                Base.setindex(newchunks, v, ii)
             end
         end
         outcube.innerchunks = newchunks
