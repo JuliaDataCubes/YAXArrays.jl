@@ -482,8 +482,9 @@ function getloopchunks(dc::DATConfig)
     co = map(lc,dc.LoopAxes) do cs, ax
         allchunks = map(dc.incubes) do ic
             ii = findAxis(ax, caxes(ic.cube))
-            eachchunk(ic.cube.data).chunks[ii]
+            ii === nothing ? nothing : eachchunk(ic.cube.data).chunks[ii]
         end
+        allchunks = filter(!isnothing, allchunks)
         if length(allchunks) == 1
             return to_chunksize(allchunks[1],cs,dc.allow_irregular_chunks)
         end
