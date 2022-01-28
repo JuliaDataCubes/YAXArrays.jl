@@ -1,6 +1,6 @@
 
 @testset "Loop chunk distribution" begin
-using DiskArrays: DiskArrays, GridChunks, RegularChunks, IrregularChunks
+using DiskArrays: DiskArrays, GridChunks, RegularChunks, IrregularChunks, AbstractDiskArray
 using YAXArrayBase: YAXArrayBase
 struct LargeDiskArray{N,CT<:GridChunks{N}} <: AbstractDiskArray{Float64,N}
     size::NTuple{N,Int}
@@ -43,7 +43,7 @@ YAXArrays.YAXDefaults.max_cache[] = 2.0e8
 dc = mapslices(sum, a2, dims="Dim_1", debug = true)
 ch = YAXArrays.DAT.getloopchunks(dc)
 #Test loop chunk sizes
-@test ch == (RegularChunks(8,0,2000), RegularChunks(700,200,1100))
+@test ch == (RegularChunks(5,0,2000), RegularChunks(700,200,1100))
 # Test that the allocated buffer is close to what the prescribes size
 incubes, outcubes = YAXArrays.DAT.getCubeCache(dc);
 @test 0.5 < (sum(sizeof,incubes) + sum(sizeof,outcubes))/YAXArrays.YAXDefaults.max_cache[] <= 1.0# Test that the allocated buffer is close to what the prescribes size
