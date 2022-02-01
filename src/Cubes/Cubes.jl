@@ -3,7 +3,7 @@ The functions provided by YAXArrays are supposed to work on different types of c
 Data types that
 """
 module Cubes
-using DiskArrays: DiskArrays, eachchunk
+using DiskArrays: DiskArrays, eachchunk, approx_chunksize, max_chunksize, grid_offset
 using Distributed: myid
 using Dates: TimeType
 using IntervalSets: Interval, (..)
@@ -147,36 +147,12 @@ function readcubedata(x)
     YAXArray(collect(CubeAxis, caxes(x)), getindex_all(x), getattributes(x))
 end
 
-cubechunks(c::YAXArray) = common_size(eachchunk(getdata(c)))
-cubechunks(x) = common_size(eachchunk(x))
-common_size(a::DiskArrays.GridChunks) = a.chunksize
-function common_size(a)
-    ntuple(ndims(first(a))) do idim
-        otherdims = setdiff(1:ndims(first(a)), idim)
-        allengths = map(i -> length(i.indices[idim]), a)
-        for od in otherdims
-            allengths = unique(allengths, dims = od)
-        end
-        length(allengths) < 3 ? allengths[1] : allengths[2]
-    end
-end
+cubechunks(c) = approx_chunksize(eachchunk(getdata(c)))
 
 getindex_all(a) = getindex(a, ntuple(_ -> Colon(), ndims(a))...)
 Base.getindex(x::YAXArray, i...) = getdata(x)[i...]
-chunkoffset(c::YAXArray) = common_offset(eachchunk(getdata(c)))
-chunkoffset(x) = common_offset(eachchunk(x))
-common_offset(a::DiskArrays.GridChunks) = a.offset
-function common_offset(a)
-    ntuple(ndims(a)) do idim
-        otherdims = setdiff(1:ndims(a), idim)
-        allengths = map(i -> length(i[idim]), a)
-        for od in otherdims
-            allengths = unique(allengths, dims = od)
-        end
-        @assert length(allengths) == size(a, idim)
-        length(allengths) < 3 ? 0 : allengths[2] - allengths[1]
-    end
-end
+chunkoffset(c) = grid_offset(eachchunk(getdata(c)))
+
 
 # Implementation for YAXArrayBase interface
 YAXArrayBase.dimvals(x::YAXArray, i) = caxes(x)[i].values
@@ -195,14 +171,14 @@ function YAXArrayBase.yaxcreate(::Type{YAXArray}, data, dimnames, dimvals, atts)
     axlist = map(dimnames, dimvals) do dn, dv
         iscontdimval(dv) ? RangeAxis(dn, dv) : CategoricalAxis(dn, dv)
     end
-    if any(in(keys(atts)), ["missing_value", "scale_factor", "add_offset"])
+    if any(in(keys(atts)), ["missing_value", "scale_factor", "add_offset"]) && !(eltype(data) >: Missing)
         data = CFDiskArray(data, atts)
     end
     YAXArray(axlist, data, atts)
 end
 YAXArrayBase.iscompressed(c::YAXArray) = _iscompressed(getdata(c))
-_iscompressed(c::DiskArrays.PermutedDiskArray) = iscompressed(c.a.parent)
-_iscompressed(c::DiskArrays.SubDiskArray) = iscompressed(c.v.parent)
+_iscompressed(c::DiskArrays.PermutedDiskArray) = _iscompressed(c.a.parent)
+_iscompressed(c::DiskArrays.SubDiskArray) = _iscompressed(c.v.parent)
 _iscompressed(c) = YAXArrayBase.iscompressed(c)
 
 function renameaxis!(c::YAXArray, p::Pair)
@@ -253,7 +229,7 @@ function _subsetcube(z, subs; kwargs...)
     for f in YAXDefaults.subsetextensions
         f(kwargs)
     end
-    newaxes = deepcopy(collect(caxes(z)))
+    newaxes = deepcopy(collect(CubeAxis,caxes(z)))
     foreach(kwargs) do kw
         axdes, subexpr = kw
         axdes = string(axdes)

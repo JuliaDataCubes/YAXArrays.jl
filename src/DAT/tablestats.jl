@@ -68,7 +68,6 @@ end
 dicteltype(::Type{<:Dict{K,V}}) where {K,V} = V
 dictktype(::Type{<:Dict{K,V}}) where {K,V} = K
 actval(v) = v
-actval(v::SentinelMissings.SentinelMissing) = v[]
 function fitrow!(o::GroupedOnlineAggregator{T,S,BY,W}, r) where {T,S,BY,W}
     v = getproperty(r, S)
     if !ismissing(v)
@@ -116,7 +115,7 @@ end
 
 function tooutaxis(
     ::SymType{s},
-    iter::CubeIterator{<:Any,<:Any,<:Any,<:Any,<:Any,S},
+    iter::CubeIterator{<:Any,<:Any,S},
     k,
     ibc,
 ) where {s,S}
@@ -140,7 +139,7 @@ function tooutaxis(
     end
     outAxis, convertdict
 end
-function tooutaxis(f, iter::CubeIterator{<:Any,<:Any,<:Any,<:Any,<:Any,S}, k, ibc) where {S}
+function tooutaxis(f, iter::CubeIterator{<:Any,<:Any,S}, k, ibc) where {S}
     sort!(k)
     outAxis = CategoricalAxis("Category$(ibc)", k)
     convertdict = Dict(k => i for (i, k) in enumerate(k))

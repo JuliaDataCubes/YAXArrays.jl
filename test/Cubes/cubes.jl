@@ -47,9 +47,6 @@ using YAXArrays, YAXArrayBase, Test, Dates
         @test YAXArrays.Cubes.cubechunks(a) == (4, 5)
 
         cs = CartesianIndices.(collect(Iterators.product([1:2, 3:5, 6:6], [1:2, 3:4])))
-        @test YAXArrays.Cubes.common_size(cs) == (3, 2)
-
-        @test YAXArrays.Cubes.chunkoffset(a) == (0, 0)
 
         renameaxis!(a2, "XVals" => "Ax1")
 

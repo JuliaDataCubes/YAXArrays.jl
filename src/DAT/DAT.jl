@@ -22,6 +22,8 @@ import ...YAXArrays.workdir
 import YAXArrayBase
 import ProgressMeter: Progress, next!, progress_pmap, progress_map
 using YAXArrayBase
+using DiskArrays: grid_offset, approx_chunksize, max_chunksize, RegularChunks, 
+  IrregularChunks, GridChunks, eachchunk, ChunkType
 using OffsetArrays: OffsetArray
 using Dates
 
@@ -54,9 +56,9 @@ include("registration.jl")
 Internal representation of an input cube for DAT operations
 """
 mutable struct InputCube{N}
-    cube::Any   #The input data cube
+    cube::Any                  #The input data cube
     desc::InDims               #The input description given by the user/registration
-    axesSmall::Vector{CubeAxis} #List of axes that were actually selected through the description
+    axesSmall::Vector          #List of axes that were actually selected through the description
     icolon::Vector{Int}
     colonperm::Union{Vector{Int},Nothing}
     loopinds::Vector{Int}        #Indices of loop axes that this cube does not contain, i.e. broadcasts
@@ -159,13 +161,13 @@ end
 
 function interpretoutchunksizes(desc, axesSmall, incubes)
     if desc.chunksize == :max
-        map(ax -> axname(ax) => length(ax), axesSmall)
+        map(ax -> axname(ax) => RegularChunks(length(ax),0,length(ax)), axesSmall)
     elseif desc.chunksize == :input
         map(axesSmall) do ax
             for cc in incubes
                 i = findAxis(axname(ax), cc)
                 if i !== nothing
-                    return axname(ax) => min(length(ax), cubechunks(cc)[i])
+                    return axname(ax) => eachchunk(cc.data).chunks[i]
                 end
             end
             return axname(ax) => length(ax)
@@ -220,6 +222,7 @@ mutable struct DATConfig{NIN,NOUT}
     LoopAxes::Vector
     ispar::Bool
     loopcachesize::Vector{Int}
+    allow_irregular_chunks::Bool
     max_cache::Any
     fu::Any
     inplace::Bool
@@ -237,6 +240,7 @@ function DATConfig(
     fu,
     ispar,
     include_loopvars,
+    allow_irregular,
     nthreads,
     addargs,
     kwargs,
@@ -262,6 +266,7 @@ function DATConfig(
         CubeAxis[],                                 # LoopAxes
         ispar,
         Int[],
+        allow_irregular,
         max_cache,                                  # max_cache
         fu,                                         # fu                                      # loopcachesize
         inplace,                                    # inplace
@@ -382,6 +387,7 @@ function mapCube(
     debug = false,
     include_loopvars = false,
     showprog = true,
+    irregular_loopranges = false, 
     nthreads = ispar ? Dict(i => remotecall_fetch(Threads.nthreads, i) for i in workers()) :
                [Threads.nthreads()],
     loopchunksize = Dict(),
@@ -404,6 +410,7 @@ function mapCube(
             ispar = ispar,
             debug = debug,
             include_loopvars = include_loopvars,
+            irregular_loopranges = irregular_loopranges,
             showprog = showprog,
             nthreads = nthreads,
             kwargs...,
@@ -419,6 +426,7 @@ function mapCube(
         fu,
         ispar,
         include_loopvars,
+        irregular_loopranges,
         nthreads,
         addargs,
         kwargs,
@@ -451,18 +459,52 @@ function makeinplace(f)
     end
 end
 
-
-function getchunkoffsets(dc::DATConfig)
-    co = zeros(Int, length(dc.LoopAxes))
-    lc = dc.loopcachesize
-    for ic in dc.incubes
-        for (ax, cocur, cs) in
-            zip(caxes(ic.cube), chunkoffset(ic.cube), cubechunks(ic.cube))
-            ii = findAxis(ax, dc.LoopAxes)
-            if !isa(ii, Nothing) && iszero(co[ii]) && cocur > 0 && mod(lc[ii], cs) == 0
-                co[ii] = cocur
-            end
+to_chunksize(c::RegularChunks, cs, _ = true) = RegularChunks(cs, c.offset, c.s)
+function to_chunksize(c::IrregularChunks, cs, allow_irregular=true)
+    fac = cs ÷ approx_chunksize(c)
+    ll = length.(c)
+    newchunks = sum.(Iterators.partition(ll,fac))
+    if length(newchunks)==1 
+        RegularChunks(cs, 0, newchunks[1])
+    elseif length(newchunks) == 2 || all(==(cs),newchunks[2:end-1])
+        RegularChunks(cs, cs-newchunks[1], sum(newchunks))
+    else
+        if allow_irregular
+            IrregularChunks(chunksizes = newchunks)
+        else
+            RegularChunks(cs, 0, last(last(c)))
         end
+    end
+end
+
+function getloopchunks(dc::DATConfig)
+    lc = dc.loopcachesize
+    co = map(lc,dc.LoopAxes) do cs, ax
+        allchunks = map(dc.incubes) do ic
+            ii = findAxis(ax, caxes(ic.cube))
+            ii === nothing ? nothing : eachchunk(ic.cube.data).chunks[ii]
+        end
+        allchunks = filter(!isnothing, allchunks)
+        if length(allchunks) == 1
+            return to_chunksize(allchunks[1],cs,dc.allow_irregular_chunks)
+        end
+        # check if one of the chunks should determine the offset
+        allchunks = filter(i->mod(cs,approx_chunksize(i))==0, allchunks)
+        if length(allchunks) == 1
+            return to_chunksize(allchunks[1],cs,dc.allow_irregular_chunks)
+        end
+        if !dc.allow_irregular_chunks
+            allchunks = filter(i->isa(i,RegularChunks),allchunks)
+        end
+        if length(allchunks) == 1
+            return to_chunksize(allchunks[1],cs)
+        end
+        allchunks = to_chunksize.(allchunks,cs)
+        allchunks = unique(allchunks)
+        if length(allchunks)>1
+            @warn "Multiple chunk offset resolutions possible: $allchunks for dim $(axname(ax))"
+        end
+        first(allchunks)
     end
     (co...,)
 end
@@ -598,11 +640,7 @@ function moduleloadedeverywhere()
 end
 
 function runLoop(dc::DATConfig, showprog)
-    allRanges = distributeLoopRanges(
-        (dc.loopcachesize...,),
-        (map(length, dc.LoopAxes)...,),
-        getchunkoffsets(dc),
-    )
+    allRanges = GridChunks(getloopchunks(dc)...)
     if dc.ispar
         #Test if YAXArrays is loaded on all workers:
         moduleloadedeverywhere() || error(
@@ -713,10 +751,12 @@ function generateOutCube(
     kwargs...,
 ) where {T}
     cs_inner = (map(length, oc.axesSmall)...,)
-    cs = (cs_inner..., loopcachesize...)
+    cs = (cs_inner..., approx_chunksize.(loopcachesize)...)
+    co = (map(_->0, oc.axesSmall)...,grid_offset.(loopcachesize)...)
     for (i, cc) in enumerate(oc.innerchunks)
-        if cc !== nothing
-            cs = Base.setindex(cs, cc, i)
+        if cc !== nothing && i <= length(oc.axesSmall)
+            cs = Base.setindex(cs, approx_chunksize(cc), i)
+            co = Base.setindex(co,grid_offset(cc), i)
         end
     end
     cube1, cube2 = createdataset(
@@ -740,7 +780,7 @@ function generateOutCube(
 ) where {T<:Array}
     newsize = map(length, oc.allAxes)
     outar = Array{elementtype}(undef, newsize...)
-    map!(_ -> _zero(elementtype), outar, 1:length(outar))
+    fill!(outar,_zero(elementtype))
     oc.cube = YAXArray(oc.allAxes, outar)
     oc.cube_unpermuted = oc.cube
 end
@@ -749,10 +789,11 @@ _zero(T::Type{<:AbstractString}) = convert(T, "")
 
 
 function generateOutCubes(dc::DATConfig)
-    co = getchunkoffsets(dc)
+    rr = getloopchunks(dc)
+    cs = approx_chunksize.(rr)
+    offs = grid_offset.(rr)
     foreach(dc.outcubes) do c
-        co2 = (zeros(Int, length(c.axesSmall))..., co...)
-        generateOutCube(c, Ref(dc.ispar), dc.max_cache, dc.loopcachesize, co2)
+        generateOutCube(c, Ref(dc.ispar), dc.max_cache, cs, offs)
     end
 end
 function generateOutCube(oc::OutputCube, ispar::Ref{Bool}, max_cache, loopcachesize, co)
@@ -761,8 +802,9 @@ function generateOutCube(oc::OutputCube, ispar::Ref{Bool}, max_cache, loopcaches
 end
 
 function getCubeCache(dc::DATConfig)
-    outcaches = map(i -> allocatecachebuf(i, dc.loopcachesize), dc.outcubes)
-    incaches = map(i -> allocatecachebuf(i, dc.loopcachesize), dc.incubes)
+    allranges = getloopchunks(dc)
+    outcaches = map(i -> allocatecachebuf(i, max_chunksize.(allranges)), dc.outcubes)
+    incaches = map(i -> allocatecachebuf(i, max_chunksize.(allranges)), dc.incubes)
     incaches, outcaches
 end
 
@@ -818,11 +860,11 @@ function analyzeAxes(dc::DATConfig{NIN,NOUT}) where {NIN,NOUT}
         end
         outcube.allAxes = CubeAxis[outcube.axesSmall; LoopAxesAdd]
         dold = outcube.innerchunks
-        newchunks = Union{Int,Nothing}[nothing for _ = 1:length(outcube.allAxes)]
+        newchunks = ntuple(_->nothing, length(outcube.allAxes))
         for (k, v) in dold
             ii = findAxis(k, outcube.allAxes)
             if ii !== nothing
-                newchunks[ii] = v
+                Base.setindex(newchunks, v, ii)
             end
         end
         outcube.innerchunks = newchunks
@@ -843,7 +885,7 @@ function cmpcachmisses(x1, x2)
         return x1.iscompressed
         #Now compare the size of the miss multiplied with the inner size
     else
-        return x1.cs * x1.innerleap > x2.cs * x2.innerleap
+        return approx_chunksize(x1.cs) * x1.innerleap > approx_chunksize(x2.cs) * x2.innerleap
     end
 end
 
@@ -856,23 +898,24 @@ function getCacheSizes(dc::DATConfig, loopchunksizes)
         inAxlengths,
         dc.incubes,
     )
-    inblocksize, imax = findmax(inblocksizes)
+    inblocksize = sum(inblocksizes)
     outblocksizes = map(
         C ->
             length(C.axesSmall) > 0 ?
             sizeof(C.outtype) * prod(map(Int ∘ length, C.axesSmall)) : 1,
         dc.outcubes,
     )
-    outblocksize = length(outblocksizes) > 0 ? findmax(outblocksizes)[1] : 1
+    outblocksize = length(outblocksizes) > 0 ? sum(outblocksizes) : 1
     #Now add cache miss information for each input cube to every loop axis
     cmisses = NamedTuple{
         (:iloopax, :cs, :iscompressed, :innerleap, :preventpar),
-        Tuple{Int64,Int64,Bool,Int64,Bool},
+        Tuple{Int64,ChunkType,Bool,Int64,Bool},
     }[]
     userchunks = Dict{Int,Int}()
     for (k, v) in loopchunksizes
         ii = findAxis(k, dc.LoopAxes)
         if ii !== nothing
+            v isa ChunkType || error("Loop chunks must be provided as ChunkType object")
             userchunks[ii] = v
         end
     end
@@ -888,7 +931,7 @@ function getCacheSizes(dc::DATConfig, loopchunksizes)
                     cmisses,
                     (
                         iloopax = ilax,
-                        cs = cubechunks(ic.cube)[ii],
+                        cs = eachchunk(ic.cube.data).chunks[ii],
                         iscompressed = iscompressed(ic.cube),
                         innerleap = inax,
                         preventpar = false,
@@ -914,20 +957,20 @@ function getCacheSizes(dc::DATConfig, loopchunksizes)
             end
         end
     end
-    sort!(cmisses, lt = cmpcachmisses)
+    cmisses = sort(unique(cmisses), lt = cmpcachmisses)
     loopcachesize, nopar = getLoopCacheSize(
-        max(inblocksize, outblocksize),
+        inblocksize + outblocksize,
         map(length, dc.LoopAxes),
         dc.max_cache,
         cmisses,
         userchunks,
     )
-    for cube in dc.incubes
-        cube.cachesize = map(length, cube.axesSmall)
-        for (cs, loopAx) in zip(loopcachesize, dc.LoopAxes)
-            in(typeof(loopAx), map(typeof, caxes(cube.cube))) && push!(cube.cachesize, cs)
-        end
-    end
+    # for cube in dc.incubes
+    #     cube.cachesize = map(i->RegularChunks(length(i), 0, length(i)), cube.axesSmall)
+    #     for (cs, loopAx) in zip(loopcachesize, dc.LoopAxes)
+    #         in(axsym(loopAx), axsym.(caxes(cube.cube))) && push!(cube.cachesize, cs)
+    #     end
+    # end
     nopar && (dc.ispar = false)
     dc.loopcachesize = loopcachesize
     return dc
@@ -942,23 +985,24 @@ function getLoopCacheSize(preblocksize, loopaxlengths, max_cache, cmisses, userc
     incfac < 1 && error(
         "The requested slices do not fit into the specified cache. Please consider increasing max_cache",
     )
-
     # Go through list of cache misses first and decide
     imiss = 1
     while imiss <= length(cmisses)
         il = cmisses[imiss].iloopax
-        s = min(cmisses[imiss].cs, loopaxlengths[il]) / loopcachesize[il]
+        s = min(approx_chunksize(cmisses[imiss].cs), loopaxlengths[il]) / loopcachesize[il]
         #Check if cache size is already set for this axis
         if loopcachesize[il] == 1
             if s < incfac
-                loopcachesize[il] = min(cmisses[imiss].cs, loopaxlengths[il])
+                loopcachesize[il] = min(approx_chunksize(cmisses[imiss].cs), loopaxlengths[il])
                 incfac = totcachesize / preblocksize / prod(loopcachesize)
             else
                 ii = floor(Int, incfac)
+                
                 while ii > 1 && rem(s, ii) != 0
                     ii = ii - 1
                 end
                 loopcachesize[il] = ii
+                incfac = incfac/ii
                 break
             end
         end
