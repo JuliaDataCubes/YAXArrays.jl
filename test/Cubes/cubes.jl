@@ -17,8 +17,10 @@ using YAXArrays, YAXArrayBase, Test, Dates
 
     @testset "Basic array Functions" begin
         @test size(a) == (4, 5)
-        @test size(a, 1) == 4
+        @test size(a, 1) == 4     
+        @test size(a, "XVals") == 4
         @test size(a, 2) == 5
+        @test size(a, :YVals) == 5
         @test eltype(a) == Int
         @test ndims(a) == 2
         @test a.XVals == axlist[1]
