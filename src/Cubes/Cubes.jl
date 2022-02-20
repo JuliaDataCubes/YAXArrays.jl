@@ -107,6 +107,7 @@ function YAXArray(x::AbstractArray)
 end
 Base.size(a::YAXArray) = size(getdata(a))
 Base.size(a::YAXArray, i::Int) = size(getdata(a), i)
+Base.size(a::YAXArray, desc) = size(a, findAxis(desc, a))
 function Base.getproperty(a::YAXArray, s::Symbol)
     ax = axsym.(caxes(a))
     i = findfirst(isequal(s), ax)
