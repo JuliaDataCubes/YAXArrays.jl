@@ -97,7 +97,11 @@ function collectdims(g)
         v = get_var_handle(g, k)
         for (len, dname) in zip(size(v), d)
             if !occursin("bnd", dname) && !occursin("bounds", dname)
-                datts = get_var_attrs(g, dname)
+                datts = if dname in varnames
+                    get_var_attrs(g, dname)
+                else
+                    Dict()
+                end
                 offs = get(datts, "_ARRAY_OFFSET", 0)
                 push!(dlist, (dname, offs, len))
             end
