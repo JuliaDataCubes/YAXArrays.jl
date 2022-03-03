@@ -293,7 +293,10 @@ Given the string of an axis name and a cube, returns this axis of the cube.
 getAxis(desc, c) = getAxis(desc, caxes(c))
 getAxis(desc::ByValue, axlist::Vector{T}) where {T<:CubeAxis} = desc.v
 
-"Fallback method"
+"""
+    findAxis(desc, c)
+Given an Axis description and a cube return the index of the Axis.
+"""
 findAxis(desc, c) = findAxis(desc, caxes(c))
 findAxis(a, axlist::VecOrTuple{CubeAxis}) = findAxis(get_descriptor(a), axlist)
 
