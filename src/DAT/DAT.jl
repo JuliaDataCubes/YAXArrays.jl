@@ -819,9 +819,9 @@ function allocatecachebuf(ic::Union{InputCube,OutputCube}, loopcachesize)
             indsall = Base.setindex(indsall, new, iw)
         end
         #@show indsall
-        OffsetArray(zeros(eltype(ic.cube), length.(indsall)...), indsall...)
+        OffsetArray(Array{eltype(ic.cube)}(undef, length.(indsall)...), indsall...)
     else
-        zeros(eltype(ic.cube), indsall...)
+        Array{eltype(ic.cube)}(undef,indsall...)
     end
 end
 

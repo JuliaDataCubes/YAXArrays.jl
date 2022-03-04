@@ -4,7 +4,7 @@ using YAXArrays.Cubes.Axes: axcopy
 using DiskArrays: GridChunks, AbstractDiskArray
 using Tables: Tables, Schema, AbstractColumns
 
-struct CubeIterator{R,LAX,S<:Schema} <: AbstractDiskArray{Any,1}
+struct CubeIterator{R,LAX,S<:Schema} <: AbstractVector{Any}
     dc::DATConfig
     r::R
     loopaxes::LAX
@@ -23,6 +23,19 @@ function Base.getindex(t::CubeIterator, i::Int)
     cols = Union{Nothing,YAXColumn}[nothing for i in t.schema.names]
     return YAXTableChunk(t,laxsmall,rnow,cols)
 end
+function Base.show(io::IO, ci::CubeIterator)
+    print(
+        io,
+        "Datacube iterator with ",
+        length(ci.r),
+        " subtables with fields: ",
+        ci.schema.names,
+    )
+end
+function Base.show(io::IO, ::MIME"text/plain", X::CubeIterator)
+  show(io,X)    
+end
+
 
 """
     YAXColumn
@@ -58,11 +71,16 @@ function Tables.getcolumn(t::YAXTableChunk, s::Symbol)
 end
 Tables.columnnames(t::YAXTableChunk) = getfield(t,:ci).schema.names
 Tables.schema(t::YAXTableChunk) = getfield(t,:ci).schema
+function Base.show(io::IO, X::YAXTableChunk)
+    println(io,"Table chunk with schema:")
+    print(io,getfield(X,:ci).schema)
+end
+Base.show(io::IO, ::MIME"text/plain", X::YAXTableChunk) = show(io,X)
 
 function YAXColumn(t::YAXTableChunk,ivar)
     ci = getfield(t,:ci)
     rnow = getfield(t,:ichunk)
-    @debug "Accessing $ivar at $rnow"
+    println("Accessing $(ci.schema.names[ivar]) at $rnow")
     if ivar > length(ci.dc.incubes)
         iax = ivar-length(ci.dc.incubes)
         axvals = getfield(t,:loopaxes)[iax].values
@@ -91,15 +109,6 @@ end
 
 
 
-function Base.show(io::IO, ci::CubeIterator)
-    print(
-        io,
-        "Datacube iterator with ",
-        length(ci.r),
-        " subtables with fields: ",
-        ci.schema.names,
-    )
-end
 
 
 export CubeTable

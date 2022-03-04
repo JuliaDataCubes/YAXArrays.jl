@@ -2,6 +2,8 @@ import OnlineStats: OnlineStat, Extrema, fit!, value, HistogramStat, Ash
 import ...Cubes.Axes: CategoricalAxis, RangeAxis
 import IterTools
 using WeightedOnlineStats
+using Distributed: nworkers
+using ParallelUtilities: pmapreduce
 import ProgressMeter: next!, Progress, ProgressUnknown
 
 import WeightedOnlineStats: WeightedOnlineStat
@@ -13,6 +15,10 @@ function OnlineAggregator(O::OnlineStat, s::Symbol)
     OnlineAggregator{typeof(O),s}(copy(O))
 end
 cubeeltype(t::OnlineAggregator) = Float64
+function Base.merge!(t1::OnlineAggregator,t2::OnlineAggregator)
+    merge!(t1.o,t2.o)
+    t1
+end
 function fitrow!(o::OnlineAggregator{T,S}, r) where {T<:OnlineStat,S}
     v = getproperty(r, S)
     !ismissing(v) && fit!(o.o, v)
@@ -33,6 +39,10 @@ function fitrow!(o::WeightOnlineAggregator{T,S}, r) where {T<:OnlineStat,S}
     if !checkmiss(v) && !ismissing(w)
         fit!(o.o, v, w)
     end
+end
+function Base.merge!(t1::WeightOnlineAggregator, t2::WeightOnlineAggregator)
+    merge!(t1.o,t2.o)
+    t1
 end
 checkmiss(v) = ismissing(v)
 checkmiss(v::AbstractVector) = any(ismissing, v)
@@ -67,24 +77,23 @@ end
 
 dicteltype(::Type{<:Dict{K,V}}) where {K,V} = V
 dictktype(::Type{<:Dict{K,V}}) where {K,V} = K
-actval(v) = v
 function fitrow!(o::GroupedOnlineAggregator{T,S,BY,W}, r) where {T,S,BY,W}
     v = getproperty(r, S)
     if !ismissing(v)
         w = o.w(r)
         if w===nothing
-            bykey = map(i->actval(i(r)),o.by)
+            bykey = map(i->i(r),o.by)
             if !any(ismissing,bykey)
                 if haskey(o.d,bykey)
-                    fit!(o.d[bykey],actval(v))
+                    fit!(o.d[bykey],v)
                 else
                     o.d[bykey] = copy(o.cloneobj)
-                    fit!(o.d[bykey],actval(v))
+                    fit!(o.d[bykey],v)
                 end
             end
         else
             if !ismissing(w)
-                bykey = map(i -> actval(i(r)), o.by)
+                bykey = map(i -> i(r), o.by)
                 if !any(ismissing, bykey)
                     if haskey(o.d, bykey)
                         fit!(o.d[bykey], v, w)
@@ -97,6 +106,11 @@ function fitrow!(o::GroupedOnlineAggregator{T,S,BY,W}, r) where {T,S,BY,W}
         end
     end
 end
+function Base.merge!(t1::GroupedOnlineAggregator, t2::GroupedOnlineAggregator)
+    merge!(merge!,t1.d,t2.d)
+    t1
+end
+
 export TableAggregator, fittable, cubefittable
 function TableAggregator(iter, O, fitsym; by = (), weight = nothing)
     !isa(by, Tuple) && (by = (by,))
@@ -115,12 +129,12 @@ end
 
 function tooutaxis(
     ::SymType{s},
-    iter::CubeIterator{<:Any,<:Any,S},
+    iter::CubeIterator,
     k,
     ibc,
-) where {s,S}
-    ichosen = findfirst(i -> i === s, fieldnames(S))
-    if ichosen <= length(iter.inars)
+) where {s}
+    ichosen = findfirst(i -> i === s, iter.schema.names)
+    if ichosen <= length(iter.dc.incubes)
         bycube = iter.dc.incubes[ichosen].cube
         if haskey(bycube.properties, "labels")
             idict = bycube.properties["labels"]
@@ -129,7 +143,7 @@ function tooutaxis(
             convertdict = Dict(k => i for (i, k) in enumerate(keys(idict)))
         else
             sort!(k)
-            outAxis = CategoricalAxis("Label$(ibc)", k)
+            outAxis = CategoricalAxis(string(s), k)
             convertdict = Dict(k => i for (i, k) in enumerate(k))
         end
     else
@@ -139,7 +153,7 @@ function tooutaxis(
     end
     outAxis, convertdict
 end
-function tooutaxis(f, iter::CubeIterator{<:Any,<:Any,S}, k, ibc) where {S}
+function tooutaxis(f, iter::CubeIterator, k, ibc)
     sort!(k)
     outAxis = CategoricalAxis("Category$(ibc)", k)
     convertdict = Dict(k => i for (i, k) in enumerate(k))
@@ -233,16 +247,15 @@ area and grouped by country and month:
 fittable(iter,WeightedMean,:tair,weight=(i->abs(cosd(i.lat))),by=(i->month(i.time),:country))
 ````
 """
-function fittable(tab, o, fitsym; by = (), weight = nothing, showprog = false)
-    agg = TableAggregator(tab, o, fitsym, by = by, weight = weight)
-    if showprog
-        runfitrows_progress(agg, tab)
-    else
-        foreach(i -> fitrow!(agg, i), tab)
+function fittable(tab::CubeIterator, o, fitsym; by = (), weight = nothing, showprog = false)
+    func = nworkers() > 1 ? pmapreduce : mapreduce
+    func(merge!,tab) do t
+        agg = TableAggregator(t, o, fitsym, by = by, weight = weight)
+        foreach(i -> fitrow!(agg, i), Tables.rows(t))
+        agg
     end
-    agg
 end
-fittable(tab, o::Type{<:OnlineStat}, fitsym; kwargs...) =
+fittable(tab::CubeIterator, o::Type{<:OnlineStat}, fitsym; kwargs...) =
     fittable(tab, o(), fitsym; kwargs...)
 
 getmeter(tab) = getmeter(Base.IteratorSize(tab), tab)
