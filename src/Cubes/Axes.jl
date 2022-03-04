@@ -201,6 +201,13 @@ end
 
 const VecOrTuple{S} = Union{Vector{<:S},Tuple{Vararg{<:S}}} where {S}
 
+"""
+# Internal 
+    get_descriptor(a)
+
+Get the descriptor of an Axis. 
+This is used to dispatch on the descriptor. 
+"""
 get_descriptor(a::String) = ByName(a)
 get_descriptor(a::Symbol) = ByName(String(a))
 get_descriptor(a::CubeAxis) = ByValue(a)
