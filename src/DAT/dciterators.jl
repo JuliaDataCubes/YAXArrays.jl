@@ -1,10 +1,10 @@
 import YAXArrays.DAT: DATConfig
 import YAXArrays.YAXTools: PickAxisArray
 using YAXArrays.Cubes.Axes: axcopy
-using YAXArrayBase: YAXArrayBase
+using DiskArrays: GridChunks, AbstractDiskArray
 using Tables: Tables, Schema, AbstractColumns
 
-struct CubeIterator{R,LAX,S<:Schema}
+struct CubeIterator{R,LAX,S<:Schema} <: AbstractVector{Any}
     dc::DATConfig
     r::R
     loopaxes::LAX
@@ -12,28 +12,30 @@ struct CubeIterator{R,LAX,S<:Schema}
 end
 Tables.schema(t::CubeIterator) = t.schema
 Base.length(ci::CubeIterator) = length(ci.r)
-
-function CubeIterator(
-    dc,
-    r;
-    varnames::Tuple = ntuple(i -> Symbol("x$i"), length(dc.incubes)),
-)
-    loopaxes = (dc.LoopAxes...,)
-    length(varnames) == length(dc.incubes) ||
-        error("Supplied $(length(varnames)) varnames and $(length(dc.incubes)) cubes.")
-    et = map(dc.incubes) do ic
-        eltype(ic.cube)
+Base.size(ci::CubeIterator) = (length(ci.r),)
+Base.eltype(ci::Type{<:CubeIterator{<:R,<:LAX}}) where {R,LAX} = YAXTableChunk{ci, LAX, eltype(R)}
+Base.eltype(ci::CubeIterator)  = eltype(typeof(ci))
+function Base.getindex(t::CubeIterator, i::Int)
+    rnow = t.r[i]
+    laxsmall = map(t.loopaxes, rnow) do ax,ir
+        axcopy(ax,ax.values[ir])
     end
-    et = (et..., map(i->eltype(i.values), loopaxes)...)
-    axnames = axsym.(loopaxes)
-    colnames = (map(Symbol, varnames)..., axnames...)
-    CubeIterator(
-        dc,
-        r,
-        loopaxes,
-        Tables.Schema(colnames,et)
+    cols = Union{Nothing,YAXColumn}[nothing for i in t.schema.names]
+    return YAXTableChunk(t,laxsmall,rnow,cols)
+end
+function Base.show(io::IO, ci::CubeIterator)
+    print(
+        io,
+        "Datacube iterator with ",
+        length(ci.r),
+        " subtables with fields: ",
+        ci.schema.names,
     )
 end
+function Base.show(io::IO, ::MIME"text/plain", X::CubeIterator)
+  show(io,X)    
+end
+
 
 """
     YAXColumn
@@ -69,11 +71,16 @@ function Tables.getcolumn(t::YAXTableChunk, s::Symbol)
 end
 Tables.columnnames(t::YAXTableChunk) = getfield(t,:ci).schema.names
 Tables.schema(t::YAXTableChunk) = getfield(t,:ci).schema
+function Base.show(io::IO, X::YAXTableChunk)
+    println(io,"Table chunk with schema:")
+    print(io,getfield(X,:ci).schema)
+end
+Base.show(io::IO, ::MIME"text/plain", X::YAXTableChunk) = show(io,X)
 
 function YAXColumn(t::YAXTableChunk,ivar)
     ci = getfield(t,:ci)
     rnow = getfield(t,:ichunk)
-    println("Accessing $ivar at $rnow")
+    println("Accessing $(ci.schema.names[ivar]) at $rnow")
     if ivar > length(ci.dc.incubes)
         iax = ivar-length(ci.dc.incubes)
         axvals = getfield(t,:loopaxes)[iax].values
@@ -100,26 +107,8 @@ function YAXColumn(t::YAXTableChunk,ivar)
     end
 end
 
-function Base.iterate(t::CubeIterator, state=1)
-    state > length(t.r) && return nothing
-    rnow = t.r[state]
-    laxsmall = map(t.loopaxes, rnow) do ax,ir
-        axcopy(ax,ax.values[ir])
-    end
-    cols = Union{Nothing,YAXColumn}[nothing for i in t.schema.names]
-    return YAXTableChunk(t,laxsmall,rnow,cols), state+1
-end
 
 
-function Base.show(io::IO, ci::CubeIterator)
-    print(
-        io,
-        "Datacube iterator with ",
-        length(ci.r),
-        " subtables with fields: ",
-        ci.schema.names,
-    )
-end
 
 
 export CubeTable
@@ -150,14 +139,11 @@ function CubeTable(; expandaxes = (), cubes...)
             InDims(axn...)
         end
     end
-    axnames = map(i -> YAXArrayBase.dimnames(i), c)
+    axnames = map(i -> axname.(caxes(i)), c)
     foreach(1:length(axnames)) do i
-        otherinds = [1:i-1;i+1:length(axnames)]
-        if !isempty(otherinds)
-            others = union(axnames[otherinds]...)
-            if isempty(intersect(axnames[i], others))
-                @warn "Input cube $i with axes $(axnames[i]) does not share any axis with other cubes from the iterator, please check the axis names"
-            end
+        otheraxes = axnames[[1:i-1;i+1:length(axnames)]]
+        if !isempty(otheraxes) && isempty(intersect(axnames[i], union(otheraxes...)))
+            @warn "Input cube $i with axes $(axnames[i]) does not share any axis with other cubes from the iterator, please check the axis names"
         end
     end
     allvars = union(axnames...)
@@ -177,14 +163,35 @@ function CubeTable(; expandaxes = (), cubes...)
     #     end
     #   end
     # end
-    r = collect(
-        distributeLoopRanges(
-            (configiter.loopcachesize...,),
-            (map(length, configiter.LoopAxes)...,),
-            getchunkoffsets(configiter),
-        ),
+    r = GridChunks(
+        getloopchunks(configiter)...
     )
     ci = CubeIterator(configiter, r, varnames = varnames)
+end
+
+
+
+
+function CubeIterator(
+    dc,
+    r;
+    varnames::Tuple = ntuple(i -> Symbol("x$i"), length(dc.incubes)),
+)
+    loopaxes = (dc.LoopAxes...,)
+    length(varnames) == length(dc.incubes) ||
+        error("Supplied $(length(varnames)) varnames and $(length(dc.incubes)) cubes.")
+    et = map(dc.incubes) do ic
+        eltype(ic.cube)
+    end
+    et = (et..., map(i->eltype(i.values), loopaxes)...)
+    axnames = axsym.(loopaxes)
+    colnames = (map(Symbol, varnames)..., axnames...)
+    CubeIterator(
+        dc,
+        r,
+        loopaxes,
+        Tables.Schema(colnames,et)
+    )
 end
 
 import Tables
