@@ -1,5 +1,5 @@
 export InDims, OutDims, MovingWindow
-using ..Cubes.Axes: get_descriptor, ByFunction, findAxis, Axes
+using ..Cubes.Axes: get_descriptor, findAxis, Axes
 using ...YAXArrays: YAXDefaults
 using DataFrames: DataFrame
 using YAXArrayBase: yaxcreate
@@ -86,8 +86,6 @@ function InDims(
     window_oob_value = missing,
 )
     descs = get_descriptor.(axisdesc)
-    any(i -> isa(i, ByFunction), descs) &&
-        error("Input cubes can not be specified through a function")
     InDims(descs, artype, getprocfilter(filter), window_oob_value)
 end
 
