@@ -141,8 +141,8 @@ function CubeTable(; expandaxes = (), cubes...)
     end
     axnames = map(i -> axname.(caxes(i)), c)
     foreach(1:length(axnames)) do i
-        others = union(axnames[[1:i-1;i+1:length(axnames)]]...)
-        if isempty(intersect(axnames[i], others))
+        otheraxes = axnames[[1:i-1;i+1:length(axnames)]]
+        if !isempty(otheraxes) && isempty(intersect(axnames[i], union(otheraxes...)))
             @warn "Input cube $i with axes $(axnames[i]) does not share any axis with other cubes from the iterator, please check the axis names"
         end
     end
