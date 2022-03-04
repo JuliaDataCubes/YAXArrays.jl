@@ -12,6 +12,7 @@ using ..YAXArrays: workdir, YAXDefaults
 using YAXArrayBase: YAXArrayBase, iscompressed, dimnames, iscontdimval
 import YAXArrayBase: getattributes, iscontdim, dimnames, dimvals, getdata
 using DiskArrayTools: CFDiskArray
+using DocStringExtensions
 
 export concatenatecubes, caxes, subsetcube, readcubedata, renameaxis!, YAXArray
 
@@ -39,6 +40,13 @@ using .Axes:
     renameaxis,
     axcopy
 
+    """
+    The `Axes` module handles the Axes of a data cube. 
+    It provides the following exports:
+    
+    $(EXPORTS)
+    """
+    Axes
 mutable struct CleanMe
     path::String
     persist::Bool

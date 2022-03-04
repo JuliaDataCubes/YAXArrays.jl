@@ -201,6 +201,13 @@ end
 
 const VecOrTuple{S} = Union{Vector{<:S},Tuple{Vararg{<:S}}} where {S}
 
+"""
+# Internal 
+    get_descriptor(a)
+
+Get the descriptor of an Axis. 
+This is used to dispatch on the descriptor. 
+"""
 get_descriptor(a::String) = ByName(a)
 get_descriptor(a::Symbol) = ByName(String(a))
 get_descriptor(a::CubeAxis) = ByValue(a)
@@ -285,15 +292,25 @@ function getOutAxis(desc::Tuple{ByInference}, axlist, incubes, pargs, f)
     end
     return (outaxes...,)
 end
-"""
-    getAxis(desc::String, c)
 
-Given the string of an axis name and a cube, returns this axis of the cube.
+"""
+    getAxis(desc, c)
+
+Given an Axis description and a cube, returns the corresponding axis of the cube.
+The Axis description can be:
+  - the name as a string or symbol.
+  - an Axis object
 """
 getAxis(desc, c) = getAxis(desc, caxes(c))
 getAxis(desc::ByValue, axlist::Vector{T}) where {T<:CubeAxis} = desc.v
 
-"Fallback method"
+"""
+    findAxis(desc, c)
+Given an Axis description and a cube return the index of the Axis.
+The Axis description can be:
+  - the name as a string or symbol.
+  - an Axis object
+"""
 findAxis(desc, c) = findAxis(desc, caxes(c))
 findAxis(a, axlist::VecOrTuple{CubeAxis}) = findAxis(get_descriptor(a), axlist)
 
