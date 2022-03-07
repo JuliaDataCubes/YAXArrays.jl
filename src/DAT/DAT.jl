@@ -751,8 +751,8 @@ function generateOutCube(
     kwargs...,
 ) where {T}
     cs_inner = (map(length, oc.axesSmall)...,)
-    cs = (cs_inner..., approx_chunksize.(loopcachesize)...)
-    co = (map(_->0, oc.axesSmall)...,grid_offset.(loopcachesize)...)
+    cs = (cs_inner..., loopcachesize...)
+    co = (map(_->0, oc.axesSmall)...,co...)
     for (i, cc) in enumerate(oc.innerchunks)
         if cc !== nothing && i <= length(oc.axesSmall)
             cs = Base.setindex(cs, approx_chunksize(cc), i)
