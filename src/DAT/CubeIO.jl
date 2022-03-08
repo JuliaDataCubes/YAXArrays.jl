@@ -65,33 +65,6 @@ function rmcube(s)
     end
 end
 
-function writefun(
-    xout,
-    xin::AbstractArray{Union{Missing,T}},
-    a,
-    nd,
-    cont_loop,
-    filename,
-) where {T}
-
-    #TODO replace -9999.0 this with a default missing value
-    x = map(ix -> ismissing(ix) ? convert(T, -9999.0) : ix, xin)
-
-    count_vec = fill(-1, nd)
-    start_vec = fill(1, nd)
-
-    used_syms = Symbol[]
-    for (k, v) in cont_loop
-        count_vec[k] = 1
-        start_vec[k] = a[Symbol(v)][1]
-        push!(used_syms, Symbol(v))
-    end
-
-    splinds = Iterators.filter(i -> !in(i, used_syms), keys(a))
-    vn = join(string.([a[s][2] for s in splinds]), "_")
-    isempty(vn) && (vn = "layer")
-    ncwrite(x, filename, vn, start = start_vec, count = count_vec)
-end
 
 global const projection = Dict(
     "grid_mapping_name" => "transverse_mercator",
