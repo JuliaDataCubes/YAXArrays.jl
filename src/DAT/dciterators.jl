@@ -67,6 +67,9 @@ end
 function Tables.getcolumn(t::YAXTableChunk, s::Symbol)
     n = Tables.schema(t).names
     i = findfirst(==(s), n)
+    if i === nothing
+        error("Could not find $s in table with columns $n")
+    end
     Tables.getcolumn(t,i)
 end
 Tables.columnnames(t::YAXTableChunk) = getfield(t,:ci).schema.names
@@ -93,9 +96,12 @@ function YAXColumn(t::YAXTableChunk,ivar)
         ic = ci.dc.incubes[ivar]
         buf = allocatecachebuf(ic, ci.dc.loopcachesize)
         updatear(:read, rnow, ic.cube, geticolon(ic), ic.loopinds, buf)
-        allax = map(_->false, getfield(t,:loopaxes))
+        allax = ntuple(_->false, ndims(ic.cube))
         for il in ic.loopinds
             allax = Base.setindex(allax,true,il)
+        end
+        for il in ic.icolon
+            allax = Base.setindex(allax,Colon(),il)
         end
         inarbc = if ic.colonperm === nothing
             pa = PickAxisArray(buf, allax)

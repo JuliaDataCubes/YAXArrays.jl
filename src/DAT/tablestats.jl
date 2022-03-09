@@ -176,7 +176,7 @@ function getStatOutAxes(tab, agg, ::Type{<:Extrema})
     (CategoricalAxis(:Extrema, ["min", "max"]),)
 end
 function getStatOutAxes(tab, agg, ::Type{<:WeightedCovMatrix})
-    varn = fieldnames(eltype(tab))
+    varn = tab.schema.names
     s = varsym(agg)
     icube = findfirst(isequal(s), varn)
     ax = tab.dc.incubes[icube].axesSmall[1]
