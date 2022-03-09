@@ -195,9 +195,6 @@ struct ByInference <: AxisDescriptor end
 struct ByValue <: AxisDescriptor
     v::CubeAxis
 end
-struct ByFunction <: AxisDescriptor
-    f::Function
-end
 
 const VecOrTuple{S} = Union{Vector{<:S},Tuple{Vararg{<:S}}} where {S}
 
@@ -211,7 +208,6 @@ This is used to dispatch on the descriptor.
 get_descriptor(a::String) = ByName(a)
 get_descriptor(a::Symbol) = ByName(String(a))
 get_descriptor(a::CubeAxis) = ByValue(a)
-get_descriptor(a::Function) = ByFunction(a)
 get_descriptor(a) = error("$a is not a valid axis description")
 get_descriptor(a::AxisDescriptor) = a
 
@@ -247,12 +243,6 @@ function getAxis(desc, axlist::VecOrTuple{CubeAxis})
     end
 end
 getOutAxis(desc, axlist, incubes, pargs, f) = getAxis(desc, unique(axlist))
-function getOutAxis(desc::ByFunction, axlist, incubes, pargs, f)
-    outax = desc.f(incubes, pargs)
-    isa(outax, CubeAxis) ||
-        error("Axis Generation function $(desc.f) did not return an axis")
-    outax
-end
 import DataStructures: counter
 function getOutAxis(desc::Tuple{ByInference}, axlist, incubes, pargs, f)
     inAxes = map(caxes, incubes)
