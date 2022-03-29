@@ -28,6 +28,6 @@ makedocs(
 
 deploydocs(
     #deps   = Deps.pip("mkdocs", "python-markdown-math"),
-    repo   = "github.com/meggart/YAXArrays.jl.git",
+    repo   = "github.com/JuliaDataCubes/YAXArrays.jl.git",
     push_preview = true
 )
