@@ -9,13 +9,13 @@
 
 
 [docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
-[docs-dev-url]: https://meggart.github.io/YAXArrays.jl/dev/
+[docs-dev-url]: https://JuliaDataCubes.github.io/YAXArrays.jl/dev/
 
-[codecov-img]: https://codecov.io/gh/meggart/YAXArrays.jl/branch/master/graph/badge.svg
-[codecov-url]: https://codecov.io/gh/meggart/YAXArrays.jl
+[codecov-img]: https://codecov.io/gh/JuliaDataCubes/YAXArrays.jl/branch/master/graph/badge.svg
+[codecov-url]: https://codecov.io/gh/JuliaDataCubes/YAXArrays.jl
 
-[ci-img]: https://github.com/meggart/YAXArrays.jl/workflows/CI/badge.svg
-[ci-url]: https://github.com/meggart/YAXArrays.jl/actions?query=workflow%3ACI
+[ci-img]: https://github.com/JuliaDataCubes/YAXArrays.jl/workflows/CI/badge.svg
+[ci-url]: https://github.com/JuliaDataCubes/YAXArrays.jl/actions?query=workflow%3ACI
 
-[coveralls-img]: https://coveralls.io/repos/github/meggart/YAXArrays.jl/badge.svg?branch=master
-[coveralls-url]: https://coveralls.io/github/meggart/YAXArrays.jl?branch=master
+[coveralls-img]: https://coveralls.io/repos/github/JuliaDataCubes/YAXArrays.jl/badge.svg?branch=master
+[coveralls-url]: https://coveralls.io/github/JuliaDataCubes/YAXArrays.jl?branch=master
