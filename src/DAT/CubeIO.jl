@@ -34,6 +34,7 @@ function savecube(
         backend = backend,
         chunksize = chunksize,
         path = name;
+        properties=getattributes(c),
         backendargs...,
     )
     function cop(xout, xin)

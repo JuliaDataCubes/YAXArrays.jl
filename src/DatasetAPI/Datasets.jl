@@ -332,7 +332,7 @@ function createdataset(
     dshandle = YAXArrayBase.create_dataset(
         DS, 
         path, 
-        Dict{String,Any}(),
+        attr,
         getproperty.(axdata,:name), 
         getproperty.(axdata,:data),
         getproperty.(axdata,:attrs), 

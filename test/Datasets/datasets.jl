@@ -204,12 +204,13 @@ end
     ax1 = CategoricalAxis("Ax1", string.(1:10))
     ax2 = RangeAxis("Ax2", 1:5)
     p = tempname()
-    savecube(YAXArray([ax1, ax2], x), p, backend = :zarr)
+    savecube(YAXArray([ax1, ax2], x, Dict("some" =>"thing")), p, backend = :zarr)
     cube1 = Cube(p)
     @test cube1.Ax1 == ax1
     @test cube1.Ax2 == ax2
     @test eltype(cube1.Ax2.values) <: Int64
     @test cube1.data == x
+    #@test getattributes(cube1)["some"] == "thing"
     p2 = string(tempname(), ".nc")
     savecube(cube1, p2, backend = :netcdf)
     cube2 = Cube(p2)
