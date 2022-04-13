@@ -59,24 +59,25 @@ using DataStructures: OrderedDict
             vars::Any
             dims::Any
             attrs::Any
+            varattrs::Any
             path::Any
         end
         Base.getindex(d::MockDataset, i) = d.vars[i]
         Base.haskey(d::MockDataset, i) = haskey(d.vars, i)
         YAXArrayBase.get_varnames(d::MockDataset) = (keys(d.vars)...,)
         YAXArrayBase.get_var_dims(d::MockDataset, name) = d.dims[name]
-        YAXArrayBase.get_var_attrs(d::MockDataset, name) = d.attrs[name]
+        YAXArrayBase.get_var_attrs(d::MockDataset, name) = d.varattrs[name]
         YAXArrayBase.allow_missings(d::MockDataset) = !occursin("nomissings", d.path)
         function YAXArrayBase.create_empty(::Type{MockDataset}, path, gatts)
             mkpath(dirname(path))
             open(_ -> nothing, path, "w")
-            MockDataset(Dict(), Dict(), gatts, path)
+            MockDataset(Dict(), Dict(), gatts, Dict(), path)
         end
         function YAXArrayBase.add_var(ds::MockDataset, T, name, s, dimlist, atts; kwargs...)
             data = Array{T}(undef, s...)
             ds.vars[name] = data
             ds.dims[name] = dimlist
-            ds.attrs[name] = atts
+            ds.varattrs[name] = copy(atts)
             data
         end
         YAXArrayBase.backendlist[:mock] = MockDataset
@@ -109,6 +110,9 @@ using DataStructures: OrderedDict
                     "time" => ("time",),
                     "d2" => ["d2"],
                     "d3" => ["d3"],
+                ),
+                Dict(
+                    "Global att" => "Somethingglobal",
                 ),
                 Dict(
                     "Var1" => att1,
