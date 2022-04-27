@@ -229,7 +229,7 @@ interpretsubset(subexpr::NTuple{2,Int}, ax::RangeAxis{T}) where {T<:TimeType} =
 interpretsubset(subexpr::UnitRange{<:Integer}, ax::RangeAxis{T}) where {T<:TimeType} =
     interpretsubset(T(first(subexpr))..T(last(subexpr) + 1), ax)
 interpretsubset(subexpr::Interval, ax) = interpretsubset((subexpr.left, subexpr.right), ax)
-interpretsubset(subexpr::AbstractVector, ax::CategoricalAxis) =
+interpretsubset(subexpr::AbstractVector, ax) =
     axVal2Index.(Ref(ax), subexpr, fuzzy = true)
 
 

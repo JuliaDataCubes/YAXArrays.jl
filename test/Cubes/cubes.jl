@@ -115,6 +115,9 @@ using YAXArrays, YAXArrayBase, Test, Dates
         @test s2.data == [1 17 13; 2 18 14; 3 19 15]
         @test s2.axes[1] == RangeAxis("XVals", 1.0:3.0)
         @test s2.axes[2] == CategoricalAxis("YVals", [1, 5, 4])
+
+        svec = a[X=[1,2]]
+        @test svec.axes[1] == RangeAxis("XVals", 1.0:2.0)
     end
 
 end
