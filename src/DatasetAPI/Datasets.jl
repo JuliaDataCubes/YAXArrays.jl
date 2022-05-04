@@ -1,14 +1,15 @@
 module Datasets
 import ..Cubes.Axes: axsym, axname, CubeAxis, findAxis, CategoricalAxis, RangeAxis, caxes
-import ..Cubes: Cubes, YAXArray, concatenatecubes, CleanMe, subsetcube
+import ..Cubes: Cubes, YAXArray, concatenatecubes, CleanMe, subsetcube, copy_diskarray, setchunks
 using ...YAXArrays: YAXArrays, YAXDefaults
 using DataStructures: OrderedDict, counter
 using Dates: Day, Hour, Minute, Second, Month, Year, Date, DateTime, TimeType, AbstractDateTime
 using IntervalSets: Interval, (..)
 using CFTime: timedecode, timeencode, DateTimeNoLeap, DateTime360Day, DateTimeAllLeap
 using YAXArrayBase
-using YAXArrayBase: iscontdimval
+using YAXArrayBase: iscontdimval, add_var
 using DiskArrayTools: CFDiskArray, ConcatDiskArray
+using DiskArrays: DiskArrays
 using Glob: glob
 
 export Dataset, Cube, open_dataset, to_dataset
@@ -269,8 +270,10 @@ function open_dataset(g; driver = :all)
         end
         allcubes[Symbol(vname)] = YAXArray(iax, ar, atts, cleaner = CleanMe[])
     end
+    gatts = YAXArrayBase.get_global_attrs(g)
+    gatts = Dict(string(k)=>v for (k,v) in gatts)
     sdimlist = Dict(Symbol(k) => v.ax for (k, v) in dimlist)
-    Dataset(allcubes, sdimlist)
+    Dataset(allcubes, sdimlist,gatts)
 end
 Base.getindex(x::Dataset; kwargs...) = subsetcube(x; kwargs...)
 YAXDataset(; kwargs...) = Dataset(YAXArrays.YAXDefaults.cubedir[]; kwargs...)
@@ -313,9 +316,9 @@ Extract necessary information to create a YAXArrayBase dataset from a name and Y
 function getarrayinfo(entry,backend)
     k,c = entry
     axlist = caxes(c)
-    chunks = eachchunk(c)
+    chunks = DiskArrays.eachchunk(c)
     cs = DiskArrays.approx_chunksize(chunks)
-    co = DiskArrays.chunkoffset(chunks)
+    co = DiskArrays.grid_offset(chunks)
     offs = Dict(axsym(ax)=>o for (ax,o) in zip(axlist,co))
     s = map(length, axlist) .+ co
     #Potentially create a view
@@ -338,7 +341,7 @@ function getarrayinfo(entry,backend)
         end
         S
     end
-    (name = k, t = S, chunks = cs,axes = axlist,attr = attr, subs = subs,missallowed=missallowed, offs=offs)
+    (name = string(k), t = S, chunks = cs,axes = axlist,attr = attr, subs = subs,missallowed=missallowed, offs=offs)
 end
 
 """
@@ -356,11 +359,11 @@ function collectfromhandle(e,dshandle, cleaner)
 end
 
 function append_dataset(backend, path, ds, axdata, arrayinfo; skeleton_only)
-    dshandle = YAXArrayBase.to_dataset(backend,path)
+    dshandle = YAXArrayBase.to_dataset(backend,path,mode="w")
     existing_vars = YAXArrayBase.get_varnames(dshandle)
     for d in axdata
         if (d.name in existing_vars) && length(d.data) != length(YAXArrayBase.get_var_handle(dshandle,d.name)) 
-                throw(ArgumentError("Can not write into existing dataset because of size mismatch in $(d.name)"))
+            throw(ArgumentError("Can not write into existing dataset because of size mismatch in $(d.name)"))
         end
     end
     if any(i->i.name in existing_vars, arrayinfo)
@@ -372,35 +375,99 @@ function append_dataset(backend, path, ds, axdata, arrayinfo; skeleton_only)
         add_var(dshandle, d.data, d.name, (d.name,), d.attrs)
     end
     for a in arrayinfo
-        s = length.(arrayinfo.axes)
-        dn = axname.(arrayinfo.axes)
-        add_var(dshandle, a.t, a.name, (s...,), dn, a.attr; chunksize = a.cs)
+        s = length.(a.axes)
+        dn = axname.(a.axes)
+        add_var(dshandle, a.t, a.name, (s...,), dn, a.attr; chunksize = a.chunks)
     end
+    
     dshandle
 end
 
+function copydataset!(diskds, ds;writefac=4.0, maxbuf=5e8)
+    for (name,outds) in diskds.cubes
+        inds = getproperty(ds,name)
+        copy_diskarray(inds.data,outds.data;writefac, maxbuf)
+    end
+end
+
+hasaxis(cube,k) = !isnothing(findAxis(k,cube))
+function interpretchunks(chunks, ds)
+    allaxes = collect(values(ds.axes))
+    if chunks === nothing
+        return NamedTuple()
+    end
+    if !isa(chunks,Union{NamedTuple,AbstractDict})
+        chunks = Dict(k=>chunks for k in keys(ds.cubes))
+    end
+    allkeys = keys(chunks)
+    if all(k->hasaxis(allaxes,k),allkeys)
+        #Chunks are defined by axes
+        Dict(k=>chunks for k in keys(ds.cubes))
+    else
+        #convert everything to Symbol keys
+        Dict(Symbol(k)=>v for (k,v) in chunks)
+    end
+end
+
+
+"""
+    setchunks(c::Dataset,chunks)
+
+Resets the chunks of all or a subset YAXArrays in the dataset and returns a new Dataset. Note that this will not change the chunking of the underlying data itself, 
+it will just make the data "look" like it had a different chunking. If you need a persistent on-disk representation
+of this chunking, use `savedataset` on the resulting array. The `chunks` argument can take one of the following forms:
+
+- a NamedTuple or AbstractDict mapping from variable name to a description of the desired variable chunks
+- a NamedTuple or AbstractDict mapping from dimension name to a description of the desired variable chunks
+- a description of the desired variable chunks applied to all members of the Dataset
+
+where a description of the desired variable chunks can take one of the following forms:
+
+- a `DiskArrays.GridChunks` object
+- a tuple specifying the chunk size along each dimension
+- an AbstractDict or NamedTuple mapping one or more axis names to chunk sizes
+"""
+function setchunks(ds::Dataset, chunks)
+    newchunks = interpretchunks(chunks, ds)
+    newds = deepcopy(ds)
+    for k in keys(newds.cubes)
+        if k in keys(newchunks)
+            newds.cubes[k] = setchunks(newds.cubes[k],newchunks[k])
+        end
+    end
+    newds
+end
+
+
 function savedataset(
-    backend,
     ds::Dataset;
     path = "",
     persist = nothing,
-    mode = "w",
-    skeleton_only=false)
+    overwrite = false,
+    append = false,
+    skeleton_only=false,
+    driver = :all)
     if persist === nothing
         persist = !isempty(path)
     end
     path = getsavefolder(path, persist)
-    if mode == "w" && ispath(w)
-        throw(ArgumentError("Path $p already exists. Consider switch to overwrite mode (w+) or append mode (a)"))
+
+    if ispath(path)
+        if overwrite
+            rm(path, recursive = true)
+        elseif !append
+            throw(ArgumentError("Path $path already exists. Consider setting `overwrite` or `append` keyword arguments"))
+        end
     end
+    backend = YAXArrayBase.backendfrompath(path;driver)
     
     cleaner = CleanMe[]
     persist || push!(cleaner, CleanMe(path, false))
-    
-    arrayinfo = map(c->getarrayinfo(c,backend),collect(ds.cubes))
 
-    alloffsets = reduce(arrayinfo,init=Dict{Symbol,Int}()) do d1,d2
-        mergewith!(d1,d2) do x1,x2
+    arrayinfo = map(c->getarrayinfo(c,backend),collect(ds.cubes))
+    
+    alloffsets = foldl(arrayinfo,init=Dict{Symbol,Int}()) do d1,d2
+        mergewith!(d1,d2.offs) do x1,x2
             if x1 == x2
                 x1
             else
@@ -408,36 +475,36 @@ function savedataset(
             end
         end
     end
-
-    axesall = ds.axes
-    chunkoffset = [alloffsets[k] for k in keys(axesall)]
+    
+    axesall = values(ds.axes)
+    chunkoffset = [alloffsets[k] for k in keys(ds.axes)]
     axdata = arrayfromaxis.(axesall, chunkoffset)
-
-    if ispath(path)
+    
+    dshandle = if ispath(path)
         # We go into append mode
-        return append_dataset(backend, path, ds, axdata, arrayinfo; skeleton_only)
+        append_dataset(backend, path, ds, axdata, arrayinfo; skeleton_only)
+    else
+        #axlengths = length.(getproperty.(axdata, :data))
+        YAXArrayBase.create_dataset(
+            backend, 
+            path, 
+            ds.properties,
+            getproperty.(axdata,:name), 
+            getproperty.(axdata,:data),
+            getproperty.(axdata,:attrs), 
+            getproperty.(arrayinfo, :t), 
+            getproperty.(arrayinfo, :name),
+            map(e -> axname.(e.axes), arrayinfo), 
+            getproperty.(arrayinfo, :attr), 
+            getproperty.(arrayinfo, :chunks)
+        )
     end
-
-    #axlengths = length.(getproperty.(axdata, :data))
-    dshandle = YAXArrayBase.create_dataset(
-    backend, 
-    path, 
-    ds.properties,
-    getproperty.(axdata,:name), 
-    getproperty.(axdata,:data),
-    getproperty.(axdata,:attrs), 
-    getproperty.(arrayinfo, :t), 
-    getproperty.(arrayinfo, :name),
-    map(e -> axname.(e.axes), arrayinfo), 
-    getproperty.(arrayinfo, :attr), 
-    getproperty.(arrayinfo, :chunks)
-    )
     #Generate back a Dataset from the generated structure on disk
     
-    allnames = getproperty.(arrayinfo, :name)
-
+    allnames = Symbol.(getproperty.(arrayinfo, :name))
+    
     allcubes = map(e->collectfromhandle(e,dshandle,cleaner), arrayinfo)
-
+    
     diskds = Dataset(OrderedDict(zip(allnames,allcubes)), copy(ds.axes),YAXArrayBase.get_global_attrs(dshandle))
     
     if !skeleton_only
