@@ -127,7 +127,7 @@ function YAXArray(x::AbstractArray)
     ax = caxes(x)
     props = getattributes(x)
     chunks = eachchunk(x)
-    YAXArray(ax, x, chunks, props)
+    YAXArray(ax, x, props,chunks=chunks)
 end
 
 # Base utility overloads
@@ -152,19 +152,16 @@ function Base.propertynames(a::YAXArray, private::Bool=false)
         (axsym.(caxes(a))..., :axes, :data)
     end
 end
-Base.ndims(a::YAXArray{<:Any,NumberOfAxes}) where {NumberOfAxes} = NumberOfAxes
-Base.eltype(a::YAXArray{TypeOfData}) where {TypeOfData} = TypeOfData
-# really needed? it sounds like bad performance to permute the raw data?
-Base.permutedims(c::YAXArray, p) =
-    YAXArray(caxes(c)[collect(p)], permutedims(getdata(c), p), c.properties, c.cleaner)
-Base.getindex(x::YAXArray, i...) = getdata(x)[i...]
 
-"""
-    caxes(x)
 
-returns the axes of a cube
-"""
-#TODO: is the general version really needed?
+Base.ndims(a::YAXArray{<:Any,N}) where {N} = N
+Base.eltype(a::YAXArray{T}) where {T} = T
+function Base.permutedims(c::YAXArray, p) 
+    newaxes = caxes(c)[collect(p)]
+    newchunks = DiskArrays.GridChunks(c.chunks.chunks[collect(p)])
+    YAXArray(newaxes, permutedims(getdata(c), p), c.properties, newchunks, c.cleaner)
+end
+caxes(c::YAXArray) = getfield(c, :axes)
 function caxes(x)
     map(enumerate(dimnames(x))) do a
         index, symbol = a
@@ -183,11 +180,6 @@ function readcubedata(x)
     YAXArray(collect(CubeAxis, caxes(x)), getindex_all(x), getattributes(x))
 end
 
-<<<<<<< HEAD
-cubechunks(c) = approx_chunksize(eachchunk(getdata(c)))
-getindex_all(a) = getindex(a, ntuple(_ -> Colon(), ndims(a))...)
-chunkoffset(c) = grid_offset(eachchunk(getdata(c)))
-=======
 interpret_cubechunks(cs::NTuple{N,Int},cube) where N = DiskArrays.GridChunks(cube.data,cs)
 interpret_cubechunks(cs::DiskArrays.GridChunks,_) = cs
 interpret_dimchunk(cs::Integer,s) = DiskArrays.RegularChunks(cs,0,s)
@@ -223,7 +215,6 @@ DiskArrays.eachchunk(c) = c.chunks
 getindex_all(a) = getindex(a, ntuple(_ -> Colon(), ndims(a))...)
 Base.getindex(x::YAXArray, i...) = getdata(x)[i...]
 chunkoffset(c) = grid_offset(c.chunks)
->>>>>>> 561d611 (New model to save cubes)
 
 # Implementation for YAXArrayBase interface
 YAXArrayBase.dimvals(x::YAXArray, i) = caxes(x)[i].values
@@ -356,11 +347,9 @@ function show_yax(io::IO, c)
     println(io, "Total size: ", formatbytes(cubesize(c)))
 end
 
+
+
 include("TransformedCubes.jl")
 include("Slices.jl")
-<<<<<<< HEAD
-end #module
-=======
 include("Rechunker.jl")
-end
->>>>>>> 561d611 (New model to save cubes)
+end #module

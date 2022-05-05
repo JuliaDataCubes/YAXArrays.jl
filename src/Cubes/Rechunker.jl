@@ -41,6 +41,9 @@ end
 function get_copy_buffer_size(incube, outcube;writefac=4.0, maxbuf = 1e9, align_output=true)
     maxbuf = round(Int,maxbuf/sizeof(eltype(incube)))
     nd = ndims(incube)
+    if nd == 1
+        return (min(maxbuf,length(incube)),)
+    end
     init = fill(maxbuf^(1/nd),nd-1)
     incs = DiskArrays.approx_chunksize(eachchunk(incube))
     outcs = DiskArrays.approx_chunksize(eachchunk(outcube))

@@ -9,23 +9,23 @@ using CFTime: timedecode, timeencode, DateTimeNoLeap, DateTime360Day, DateTimeAl
 using YAXArrayBase
 using YAXArrayBase: iscontdimval, add_var
 using DiskArrayTools: CFDiskArray, ConcatDiskArray
-using DiskArrays: DiskArrays
+using DiskArrays: DiskArrays, GridChunks
 using Glob: glob
 
-export Dataset, Cube, open_dataset, to_dataset
+export Dataset, Cube, open_dataset, to_dataset, savecube, savedataset
 
 
 struct Dataset
     cubes::OrderedDict{Symbol,YAXArray}
     axes::Dict{Symbol,CubeAxis}
-    properties::Dict{String}
+    properties::Dict
 end
 """
 Dataset(; properties = Dict{String,Any}, cubes...)
 
 Construct a YAXArray Dataset with global attributes `properties` a and a list of named YAXArrays cubes...
 """
-function Dataset(; properties = Dict{String,Any}, cubes...)
+function Dataset(; properties = Dict{String,Any}(), cubes...)
     axesall = Set{CubeAxis}()
     foreach(values(cubes)) do c
         ax = caxes(c)
@@ -46,7 +46,7 @@ different parts that become variables in the Dataset. If no such
 axis is specified or found, there will only be a single variable 
 in the dataset with the name `name`
 """
-function to_dataset(c;datasetaxis = "Variable", name = "layer")
+function to_dataset(c;datasetaxis = "Variable", name = get(c.properties,"name","layer"))
     axlist = caxes(c)
     splice_generic(x::AbstractArray, i) = [x[1:(i-1)]; x[(i+1:end)]]
     splice_generic(x::Tuple, i) = (x[1:(i-1)]..., x[(i+1:end)]...)
@@ -72,8 +72,11 @@ function to_dataset(c;datasetaxis = "Variable", name = "layer")
     allcubes = map(enumerate(cubenames)) do (i,cn)
         if idatasetax !== nothing
             viewinds = Base.setindex(viewinds,i,idatasetax)
+            Symbol(cn)=>YAXArray(axlist, view(getdata(c),viewinds...), copy(atts),chunks=GridChunks(chunks),cleaner=c.cleaner)
+        else
+            Symbol(cn)=>YAXArray(axlist, getdata(c), copy(atts),chunks=GridChunks(chunks),cleaner=c.cleaner)
         end
-        Symbol(cn)=>YAXArray(axlist, view(getdata(c),viewinds...), copy(atts))
+        
     end
     axlist = Dict(YAXArrays.Axes.axsym(ax)=>ax for ax in axlist)
     attrs = Dict{String,Any}()
@@ -139,12 +142,12 @@ Base.getindex(x::Dataset, i::String) = getproperty(x, Symbol(i))
 function subsetcube(x::Dataset; var = nothing, kwargs...)
     if var === nothing
         cc = x.cubes
-        Dataset(; map(ds -> ds => subsetcube(cc[ds]; kwargs...), collect(keys(cc)))...)
+        Dataset(; properties=x.properties, map(ds -> ds => subsetcube(cc[ds]; kwargs...), collect(keys(cc)))...)
     elseif isa(var, String) || isa(var, Symbol)
         subsetcube(getproperty(x, Symbol(var)); kwargs...)
     else
         cc = x[var].cubes
-        Dataset(; map(ds -> ds => subsetcube(cc[ds]; kwargs...), collect(keys(cc)))...)
+        Dataset(; properties=x.properties, map(ds -> ds => subsetcube(cc[ds]; kwargs...), collect(keys(cc)))...)
     end
 end
 function collectdims(g)
@@ -271,7 +274,7 @@ function open_dataset(g; driver = :all)
         allcubes[Symbol(vname)] = YAXArray(iax, ar, atts, cleaner = CleanMe[])
     end
     gatts = YAXArrayBase.get_global_attrs(g)
-    gatts = Dict(string(k)=>v for (k,v) in gatts)
+    gatts = Dict{String,Any}(string(k)=>v for (k,v) in gatts)
     sdimlist = Dict(Symbol(k) => v.ax for (k, v) in dimlist)
     Dataset(allcubes, sdimlist,gatts)
 end
@@ -446,7 +449,9 @@ function savedataset(
     overwrite = false,
     append = false,
     skeleton_only=false,
-    driver = :all)
+    backend = :all,
+    driver = backend, 
+    max_cache = 5e8,)
     if persist === nothing
         persist = !isempty(path)
     end
@@ -479,6 +484,7 @@ function savedataset(
     axesall = values(ds.axes)
     chunkoffset = [alloffsets[k] for k in keys(ds.axes)]
     axdata = arrayfromaxis.(axesall, chunkoffset)
+
     
     dshandle = if ispath(path)
         # We go into append mode
@@ -508,9 +514,30 @@ function savedataset(
     diskds = Dataset(OrderedDict(zip(allnames,allcubes)), copy(ds.axes),YAXArrayBase.get_global_attrs(dshandle))
     
     if !skeleton_only
-        copydataset!(diskds, ds)
+        copydataset!(diskds, ds, maxbuf = max_cache)
     end
     return diskds
+end
+
+function savecube(
+    c,
+    path::AbstractString;
+    name = get(c.properties,"name","layer"),
+    datasetaxis = "Variable",
+    max_cache = 5e8,
+    backend = :all,
+    driver = backend,
+    chunks = nothing,
+    overwrite = false, 
+    append = false,
+    skeleton_only=true,
+)
+    if chunks !== nothing
+        error("Setting chunks in savecube is not supported anymore. Rechunk using `setchunks` before saving. ")
+    end
+    ds = to_dataset(c; name, datasetaxis)
+    ds = savedataset(ds; path, max_cache, driver, overwrite, append,skeleton_only)
+    Cube(ds, joinname = datasetaxis)
 end
 
 
