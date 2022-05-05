@@ -115,3 +115,35 @@ true
 
 The `skeleton_only` argument is also available for `savedataset`. 
 
+### Saving a YAXArray with user-defined chunks
+
+To determine the chunk size of the array representation on disk, call the `setchunks` function prior to saving:
+
+````@jldoctest chunks1
+julia> using YAXArrays, Zarr, NetCDF
+
+julia> a = YAXArray(rand(10,20));
+
+julia> f = tempname();
+
+julia> a_chunked = setchunks(a,(5,10));
+
+julia> savecube(a_chunked,f,backend=:zarr);
+
+julia> Cube(f).chunks
+2×2 DiskArrays.GridChunks{2}:
+ (1:5, 1:10)   (1:5, 11:20)
+ (6:10, 1:10)  (6:10, 11:20)
+````
+
+Alternatively chunk sizes can be given by dimension name, so the following results in the same chunks:
+
+````@jldoctest chunks1
+a_chunked = setchunks(a,(Dim_2=10, Dim_1=5));
+````
+
+### Rechunking Datasets
+
+
+
+

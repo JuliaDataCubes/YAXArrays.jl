@@ -186,7 +186,7 @@ interpret_dimchunk(cs::Integer,s) = DiskArrays.RegularChunks(cs,0,s)
 interpret_dimchunk(cs::DiskArrays.ChunkType, _) = cs
 
 function interpret_cubechunks(cs,cube)
-    oldchunks = DiskArrays.eachchunk(cube)
+    oldchunks = DiskArrays.eachchunk(cube).chunks
     for k in keys(cs)
         i = findAxis(k,cube)
         if i !== nothing
@@ -194,7 +194,7 @@ function interpret_cubechunks(cs,cube)
             oldchunks = Base.setindex(oldchunks,dimchunk,i)
         end
     end
-    oldchunks
+    GridChunks(oldchunks)
 end
 
 """
