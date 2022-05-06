@@ -58,6 +58,7 @@ using DataStructures: OrderedDict
         struct MockDataset
             vars::Any
             dims::Any
+            gattrs::Any
             attrs::Any
             path::Any
         end
@@ -66,11 +67,12 @@ using DataStructures: OrderedDict
         YAXArrayBase.get_varnames(d::MockDataset) = (keys(d.vars)...,)
         YAXArrayBase.get_var_dims(d::MockDataset, name) = d.dims[name]
         YAXArrayBase.get_var_attrs(d::MockDataset, name) = d.attrs[name]
+        YAXArrayBase.get_global_attrs(d::MockDataset) = d.gattrs
         YAXArrayBase.allow_missings(d::MockDataset) = !occursin("nomissings", d.path)
         function YAXArrayBase.create_empty(::Type{MockDataset}, path, gatts)
             mkpath(dirname(path))
             open(_ -> nothing, path, "w")
-            MockDataset(Dict(), Dict(), gatts, path)
+            MockDataset(Dict(), Dict(), gatts, Dict(), path)
         end
         function YAXArrayBase.add_var(ds::MockDataset, T, name, s, dimlist, atts; kwargs...)
             data = Array{T}(undef, s...)
@@ -109,6 +111,10 @@ using DataStructures: OrderedDict
                     "time" => ("time",),
                     "d2" => ["d2"],
                     "d3" => ["d3"],
+                ),
+                Dict(
+                    "global_att1"=>5,
+                    "global_att2"=>"Hi",
                 ),
                 Dict(
                     "Var1" => att1,
@@ -199,12 +205,13 @@ using DataStructures: OrderedDict
 end
 
 @testset "Saving and loading between different backends" begin
-    using NetCDF, Zarr
+    using NetCDF, Zarr, YAXArrays
     x = rand(10, 5)
     ax1 = CategoricalAxis("Ax1", string.(1:10))
     ax2 = RangeAxis("Ax2", 1:5)
-    p = tempname()
+    p = string(tempname(),".zarr")
     savecube(YAXArray([ax1, ax2], x), p, backend = :zarr)
+    @test ispath(p)
     cube1 = Cube(p)
     @test cube1.Ax1 == ax1
     @test cube1.Ax2 == ax2
@@ -212,9 +219,15 @@ end
     @test cube1.data == x
     p2 = string(tempname(), ".nc")
     savecube(cube1, p2, backend = :netcdf)
+    @test ispath(p2)
     cube2 = Cube(p2)
     @test cube2.Ax1 == ax1
     @test cube2.Ax2 == ax2
     @test cube2.data == x
     @test eltype(cube2.Ax2.values) <: Int64
+end
+
+@testset "Saving, loading and appending" begin
+    
+
 end
