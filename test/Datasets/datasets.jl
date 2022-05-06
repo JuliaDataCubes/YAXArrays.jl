@@ -228,6 +228,117 @@ end
 end
 
 @testset "Saving, loading and appending" begin
-    
+    using YAXArrays, Zarr, NetCDF, DiskArrays
+    x,y,z = rand(10,20),rand(10),rand(10,20,5)
+    a,b,c = YAXArray.((x,y,z))
+    f = tempname()*".zarr"
+    savecube(a,f,backend=:zarr)
+    c = Cube(f)
+    @test c.axes == a.axes
+    @test c.data == x
+    @test c.chunks == a.chunks
+
+    f = tempname()*".nc";
+    savecube(a,f,backend=:netcdf)
+    c = Cube(f)
+    @test c.axes == a.axes
+    @test c.data == x
+    @test c.chunks == a.chunks
+
+    ds = Dataset(;a,b);
+    f = tempname();
+    savedataset(ds,path=f,driver=:zarr)
+    ds = open_dataset(f,driver=:zarr)
+    @test ds.a.axes == a.axes
+    @test ds.a.data == x
+    @test ds.a.chunks == a.chunks
+
+    @test ds.b.axes == b.axes
+    @test ds.b.data == y
+    @test ds.b.chunks == b.chunks
+
+    ds2 = Dataset(c = c);
+    savedataset(ds2,path=f,backend=:zarr,append=true);
+    ds = open_dataset(f, driver=:zarr)
+
+    @test ds.a.axes == a.axes
+    @test ds.a.data == x
+    @test ds.a.chunks == a.chunks
+
+    @test ds.b.axes == b.axes
+    @test ds.b.data == y
+    @test ds.b.chunks == b.chunks
+
+    @test ds.c.axes == c.axes
+    @test ds.c.data == z
+    @test ds.c.chunks == c.chunks
+
+
+    d = YAXArray(zeros(Union{Missing, Int32},10,20))
+    f = tempname()
+    r = savecube(d,f,driver=:zarr,skeleton_only=true)
+    @test all(ismissing,r[:,:])
+
+
+    f = tempname()*".zarr"
+    a_chunked = setchunks(a,(5,10))
+    savecube(a_chunked,f,backend=:zarr)
+    @test Cube(f).chunks == DiskArrays.GridChunks(size(a),(5,10))
+
+
+    ds = Dataset(;a,b,c);
+    dschunked = setchunks(ds,Dict("Dim_1"=>5, "Dim_2"=>10, "Dim_3"=>2));
+    f = tempname();
+    savedataset(dschunked,path=f,driver=:zarr)
+    ds = open_dataset(f, driver=:zarr)
+    @test ds.a.axes == a.axes
+    @test ds.a.data[:,:] == x
+    @test ds.a.chunks == DiskArrays.GridChunks(size(a),(5,10))
+
+    @test ds.b.axes == b.axes
+    @test ds.b.data[:] == y
+    @test ds.b.chunks == DiskArrays.GridChunks(size(b),(5,))
+
+    @test ds.c.axes == c.axes
+    @test ds.c.data[:,:,:] == z
+    @test ds.c.chunks == DiskArrays.GridChunks(size(c),(5,10,2))
+
+
+    ds = Dataset(;a,b,c);
+    dschunked = setchunks(ds,(a = (5,10), b = Dict("Dim_1"=>5), c = (Dim_1 = 5, Dim_2 = 10, Dim_3 = 2)));
+    f = tempname();
+    savedataset(dschunked,path=f,driver=:zarr)
+    ds = open_dataset(f,driver=:zarr)
+
+    @test ds.a.axes == a.axes
+    @test ds.a.data[:,:] == x
+    @test ds.a.chunks == DiskArrays.GridChunks(size(a),(5,10))
+
+    @test ds.b.axes == b.axes
+    @test ds.b.data[:] == y
+    @test ds.b.chunks == DiskArrays.GridChunks(size(b),(5,))
+
+    @test ds.c.axes == c.axes
+    @test ds.c.data[:,:,:] == z
+    @test ds.c.chunks == DiskArrays.GridChunks(size(c),(5,10,2))
+
+
+    ds = Dataset(a = YAXArray(rand(10,20)), b = YAXArray(rand(10,20)), c = YAXArray(rand(10,20)));
+    dschunked = setchunks(ds,(5,10));
+    f = tempname();
+    savedataset(dschunked,path=f,driver=:zarr)
+    ds2 = open_dataset(f,driver=:zarr)
+
+    @test ds2.a.axes == ds.a.axes
+    @test ds2.a.data[:,:] == ds.a.data
+    @test ds2.a.chunks == DiskArrays.GridChunks(size(a),(5,10))
+
+    @test ds2.b.axes == ds.b.axes
+    @test ds2.b.data[:,:] == ds.b.data
+    @test ds2.b.chunks == DiskArrays.GridChunks(size(a),(5,10))
+
+    @test ds2.c.axes == ds.c.axes
+    @test ds2.c.data[:,:] == ds.c.data
+    @test ds2.c.chunks == DiskArrays.GridChunks(size(a),(5,10))
 
 end
