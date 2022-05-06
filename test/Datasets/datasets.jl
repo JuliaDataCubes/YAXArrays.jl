@@ -233,17 +233,17 @@ end
     a,b,c = YAXArray.((x,y,z))
     f = tempname()*".zarr"
     savecube(a,f,backend=:zarr)
-    c = Cube(f)
-    @test c.axes == a.axes
-    @test c.data == x
-    @test c.chunks == a.chunks
+    cube = Cube(f)
+    @test cube.axes == a.axes
+    @test cube.data == x
+    @test cube.chunks == a.chunks
 
     f = tempname()*".nc";
     savecube(a,f,backend=:netcdf)
-    c = Cube(f)
-    @test c.axes == a.axes
-    @test c.data == x
-    @test c.chunks == a.chunks
+    cube = Cube(f)
+    @test cube.axes == a.axes
+    @test cube.data == x
+    @test cube.chunks == a.chunks
 
     ds = Dataset(;a,b);
     f = tempname();
