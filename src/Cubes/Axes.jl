@@ -159,12 +159,12 @@ function axVal2Index(axis::CategoricalAxis{String}, v::String; fuzzy::Bool = fal
     if r === nothing
         if fuzzy
             r = findall(axis.values) do i
-                startswith(lowercase(i), lowercase(v[1:min(length(i), length(v))]))
+                occursin(lowercase(v), lowercase(i))#, lowercase(v[1:min(length(i), length(v))]))
             end
             if length(r) == 1
                 return (r[1])
             else
-                error("Could not find unique value of $v in $axis")
+                error("Could not find unique value of $v in $axis found $(length(r)) occurences.")
             end
         else
             error("$v not found in $axis")

@@ -65,4 +65,5 @@
     @test findAxis(RangeAxis("FloatRange", 1.0:-0.1:0.1), axlist) == 3
     @test getAxis(RangeAxis("FloatRange", 1.0:-0.1:0.1), axlist) ==
           RangeAxis("FloatRange", 1.0:-0.1:0.1)
+    @test axVal2Index(axlist[1], "wo", fuzzy=true) == 2
 end
