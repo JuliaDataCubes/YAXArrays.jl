@@ -51,4 +51,9 @@
     end
 
     @test all(d.data .=== d2[:, :])
+
+    rm("a.zarr", recursive = true)
+    rm("b.zarr", recursive = true)
+    rm("c.zarr", recursive = true)
+    rm("d.zarr", recursive = true)
 end
