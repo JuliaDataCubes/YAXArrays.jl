@@ -270,7 +270,7 @@ end
     @test ds.b.chunks == b.chunks
 
     @test ds.c.axes == c.axes
-    @test ds.c.data == z
+    @test ds.c.data[:,:,:] == z
     @test ds.c.chunks == c.chunks
 
 
