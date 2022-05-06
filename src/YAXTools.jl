@@ -122,7 +122,7 @@ macro loadOrGenerate(x...)
     end
     rmEx = Expr(:block, rmEx...)
     esc(quote
-        if !YAXArrays.recalculate() && all(i -> isdir(joinpath(YAXdir(), i)), $xnames)
+        if !YAXArrays.recalculate() && all(i -> isdir(joinpath(YAXdir(), i)), ($(xnames...), ))
             $loadEx
         else
             $rmEx
