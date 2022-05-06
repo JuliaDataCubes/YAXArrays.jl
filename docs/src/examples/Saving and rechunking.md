@@ -1,4 +1,6 @@
-# Saving and Loading Datasets and YAXArrays
+# Saving and and Rechunking Datasets and YAXArrays
+
+## Saving 
 
 ### Saving a YAXArray to Zarr
 
@@ -115,6 +117,8 @@ true
 
 The `skeleton_only` argument is also available for `savedataset`. 
 
+## Rechunking
+
 ### Saving a YAXArray with user-defined chunks
 
 To determine the chunk size of the array representation on disk, call the `setchunks` function prior to saving:
@@ -142,8 +146,40 @@ Alternatively chunk sizes can be given by dimension name, so the following resul
 a_chunked = setchunks(a,(Dim_2=10, Dim_1=5));
 ````
 
-### Rechunking Datasets
+## Rechunking Datasets
 
+### Set Chunks by Axis
 
+Set chunk size for each axis occuring in a dataset. This will be applied to all variables in the dataset:
 
+````@jldoctest
+using YAXArrays, Zarr
+ds = Dataset(x = YAXArray(rand(10,20)), y = YAXArray(rand(10)), z = YAXArray(rand(10,20,5)));
+dschunked = setchunks(ds,Dict("Dim_1"=>5, "Dim_2"=>10, "Dim_3"=>2));
+f = tempname();
+savedataset(dschunked,path=f,driver=:zarr)
+````
 
+### Set chunking by Variable
+
+The following will set the chunk size for each Variable separately and results in exactly the same chunkg as the example above
+
+````@jldoctest
+using YAXArrays, Zarr
+ds = Dataset(x = YAXArray(rand(10,20)), y = YAXArray(rand(10)), z = YAXArray(rand(10,20,5)));
+dschunked = setchunks(ds,(x = (5,10), y = Dict("Dim_1"=>5), z = (Dim_1 = 5, Dim_2 = 10, Dim_3 = 2)));
+f = tempname();
+savedataset(dschunked,path=f,driver=:zarr)
+````
+
+### Set chunking for all variables
+
+The following code snippet only works when all member variables of the dataset have the same shape and sets the output chunks for all arrays. 
+
+````@jldoctest
+using YAXArrays, Zarr
+ds = Dataset(x = YAXArray(rand(10,20)), y = YAXArray(rand(10,20)), z = YAXArray(rand(10,20)));
+dschunked = setchunks(ds,(5,10));
+f = tempname();
+savedataset(dschunked,path=f,driver=:zarr)
+````

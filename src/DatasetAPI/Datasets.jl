@@ -408,7 +408,7 @@ function interpretchunks(chunks, ds)
         Dict(k=>chunks for k in keys(ds.cubes))
     else
         #convert everything to Symbol keys
-        Dict(Symbol(k)=>v for (k,v) in chunks)
+        Dict(Symbol(k)=>chunks[k] for k in allkeys)
     end
 end
 
