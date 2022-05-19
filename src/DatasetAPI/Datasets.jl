@@ -519,6 +519,24 @@ function savedataset(
     return diskds
 end
 
+
+"""
+    savecube(cube,name::String)
+Save a [`YAXArray`](@ref) to the `path`. 
+
+# Extended Help
+
+The keyword arguments are:
+
+* `name`:
+* `datasetaxis="Variable"` special treatment of a categorical axis that gets written into separate zarr arrays
+* `max_cache`: The number of bits that are used as cache for the data handling.
+* `backend`: The backend, that is used to save the data. Fallsback to searching the backend according to the extension of the path.
+* `driver` 
+* `overwrite::Bool=false` overwrite cube if it already exists
+
+
+"""
 function savecube(
     c,
     path::AbstractString;
