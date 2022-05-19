@@ -451,7 +451,8 @@ function savedataset(
     skeleton_only=false,
     backend = :all,
     driver = backend, 
-    max_cache = 5e8,)
+    max_cache = 5e8,
+    writefac=4.0)
     if persist === nothing
         persist = !isempty(path)
     end
@@ -513,7 +514,7 @@ function savedataset(
     
     diskds = Dataset(OrderedDict(zip(allnames,allcubes)), copy(ds.axes),YAXArrayBase.get_global_attrs(dshandle))
     if !skeleton_only
-        copydataset!(diskds, ds, maxbuf = max_cache)
+        copydataset!(diskds, ds; maxbuf = max_cache, writefac)
     end
     return diskds
 end
@@ -530,12 +531,13 @@ function savecube(
     overwrite = false, 
     append = false,
     skeleton_only=false,
+    writefac=4.0
 )
     if chunks !== nothing
         error("Setting chunks in savecube is not supported anymore. Rechunk using `setchunks` before saving. ")
     end
     ds = to_dataset(c; name, datasetaxis)
-    ds = savedataset(ds; path, max_cache, driver, overwrite, append,skeleton_only)
+    ds = savedataset(ds; path, max_cache, driver, overwrite, append,skeleton_only, writefac)
     Cube(ds, joinname = datasetaxis)
 end
 

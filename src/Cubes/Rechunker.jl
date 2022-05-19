@@ -1,21 +1,26 @@
 using Optim
 
-function readsperchunk(buf_i, cs_i) 
+function readsperchunk(buf_i, cs_i, fullsize_i) 
     #Make the function very shallow for >1
     fac = cs_i/buf_i
     if fac<1
         fac = 1 - (1-fac)/1000
     end
+    if buf_i>fullsize_i
+        fac = fac + (buf_i -fullsize_i)^2
+    elseif buf_i < 1
+        fac = fac + (1-buf_i)^2
+    end
     fac
 end
 
-function optifunc(s,maxbuf,incs,outcs,writefac)
+function optifunc(s,maxbuf,incs,outcs, insize, outsize, writefac)
     p1 = prod(s)
     s2 = push!(Float64.(s),maxbuf/p1)
-    readoverhead(s2,incs,outcs,writefac)
+    readoverhead(s2,incs,outcs,insize, outsize, writefac)
 end
-function readoverhead(bufnow,incs,outcs,writefac)
-    prod(readsperchunk.(bufnow,incs)) .+ writefac * prod(readsperchunk.(bufnow,outcs))
+function readoverhead(bufnow,incs,outcs, insize, outsize,writefac)
+    prod(readsperchunk.(bufnow,incs,insize)) .+ writefac * prod(readsperchunk.(bufnow,outcs, outsize))
 end
 
 
@@ -47,7 +52,9 @@ function get_copy_buffer_size(incube, outcube;writefac=4.0, maxbuf = 1e9, align_
     init = fill(maxbuf^(1/nd),nd-1)
     incs = DiskArrays.approx_chunksize(eachchunk(incube))
     outcs = DiskArrays.approx_chunksize(eachchunk(outcube))
-    r = optimize(sz->optifunc(sz,maxbuf,incs,outcs,writefac),init)
+    insize = size(incube)
+    outsize = size(outcube)
+    r = optimize(sz->optifunc(sz,maxbuf,incs,outcs,insize, outsize,writefac),init, iterations=100)
     bufnow = (r.minimizer...,maxbuf/prod(r.minimizer))
 
     bufcorrected = if align_output
