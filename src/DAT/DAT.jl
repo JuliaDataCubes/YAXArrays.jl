@@ -488,7 +488,6 @@ function getloopchunks(dc::DATConfig)
         if length(allchunks) == 1
             return to_chunksize(allchunks[1],cs,dc.allow_irregular_chunks)
         end
-        @show mod.(cs,approx_chunksize.(allchunks))
         allchunks_offset = filter(i->mod(cs,approx_chunksize(i))==0, allchunks)
         allchunks = isempty(allchunks_offset) ? allchunks : allchunks_offset
         if length(allchunks) == 1
