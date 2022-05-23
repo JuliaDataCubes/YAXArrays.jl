@@ -484,12 +484,13 @@ function getloopchunks(dc::DATConfig)
             ii = findAxis(ax, caxes(ic.cube))
             ii === nothing ? nothing : eachchunk(ic.cube.data).chunks[ii]
         end
-        allchunks = filter(!isnothing, allchunks)
+        allchunks = unique(filter(!isnothing, allchunks))
         if length(allchunks) == 1
             return to_chunksize(allchunks[1],cs,dc.allow_irregular_chunks)
         end
-        # check if one of the chunks should determine the offset
-        allchunks = filter(i->mod(cs,approx_chunksize(i))==0, allchunks)
+        @show mod.(cs,approx_chunksize.(allchunks))
+        allchunks_offset = filter(i->mod(cs,approx_chunksize(i))==0, allchunks)
+        allchunks = isempty(allchunks_offset) ? allchunks : allchunks_offset
         if length(allchunks) == 1
             return to_chunksize(allchunks[1],cs,dc.allow_irregular_chunks)
         end
