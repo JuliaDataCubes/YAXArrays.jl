@@ -27,7 +27,7 @@ Axes.findAxis(m::MovingWindow, c) = findAxis(m.desc, c)
 
 wrapWorkArray(::Type{Array}, a, axes) = a
 wrapWorkArray(T, a, axes) =
-    yaxcreate(T, a, map(axname, axes), map(i -> i.values, axes), Dict{String, Any}())
+    yaxcreate(T, a, map(axsym, axes), map(i -> i.values, axes), Dict{String, Any}())
 
 abstract type ProcFilter end
 struct AllMissing <: ProcFilter end
