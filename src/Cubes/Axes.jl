@@ -128,7 +128,7 @@ end
 
 # Implement interfaces
 
-# Basic
+# Basics: AbstractArray and more
 Base.size(x::CubeAxis) = (length(x.values),)
 Base.size(x::CubeAxis, i) =
     i == 1 ? length(x.values) : error("Axis has only a single dimension")
@@ -138,12 +138,9 @@ Base.IndexStyle(x::CubeAxis) = IndexLinear()
 function Base.getindex(x::CubeAxis, i::Int)
     return x.values[i]
 end
-function Base.setindex!(x::CubeAxis, value, i::Int)
+function Base.setindex!(x::CategoricalAxis, value, i::Int)
     x.values[i] = value
 end
-# function Base.iterate(x::CubeAxis)
-#     iterate(x.values)
-# end
 
 # YAXArrayBase
 YAXArrayBase.dimname(x::CubeAxis, _) = axname(x)
