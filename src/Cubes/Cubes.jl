@@ -88,13 +88,13 @@ It can wrap normal arrays or, more typically DiskArrays.
 * `axes` a `Vector{CubeAxis}` containing the Axes of the Cube
 * `data` N-D array containing the data
 """
-struct YAXArray{TypeOfData,NumberOfAxes,A<:AbstractArray{TypeOfData,NumberOfAxes},AxesTypes}
+struct YAXArray{T,N,A<:AbstractArray{T,N},AxesTypes}
     axes::AxesTypes
     data::A
     properties::Dict{String}
     chunks::GridChunks{N}
     cleaner::Vector{CleanMe}
-    function YAXArray(axes, data, properties, cleaner)
+    function YAXArray(axes, data, properties, chunks, cleaner)
         if ndims(data) != length(axes) # case: mismatched Arguments
             throw(
                 ArgumentError(
@@ -123,6 +123,7 @@ end
 
 YAXArray(axes, data, properties = Dict{String,Any}(); cleaner = CleanMe[], chunks = eachchunk(data)) =
     YAXArray(axes, data, properties, chunks, cleaner)
+YAXArray(axes,data,properties,cleaner) = YAXArray(axes,data,properties,eachchunk(data),cleaner)
 function YAXArray(x::AbstractArray)
     ax = caxes(x)
     props = getattributes(x)
@@ -161,7 +162,6 @@ function Base.permutedims(c::YAXArray, p)
     newchunks = DiskArrays.GridChunks(c.chunks.chunks[collect(p)])
     YAXArray(newaxes, permutedims(getdata(c), p), c.properties, newchunks, c.cleaner)
 end
-caxes(c::YAXArray) = getfield(c, :axes)
 function caxes(x)
     map(enumerate(dimnames(x))) do a
         index, symbol = a

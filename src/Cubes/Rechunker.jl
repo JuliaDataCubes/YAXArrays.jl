@@ -68,6 +68,7 @@ end
 using ProgressMeter
 function copydata(outar,inar,copybuf)
     @showprogress for ii in copybuf
+        @show ii
         outar[ii...] = inar[ii...]
     end
 end
@@ -75,7 +76,9 @@ end
 function copy_diskarray(incube,outcube;writefac=4.0, maxbuf = 1e9, align_output=true)
     size(incube) == size(outcube) || throw(ArgumentError("Input and output cubes must have the same size"))
     bufcorrected = get_copy_buffer_size(incube, outcube;writefac,maxbuf,align_output)
+    @show bufcorrected
     copybuf = DiskArrays.GridChunks(size(outcube),bufcorrected)
+    @show copybuf
     copydata(outcube,incube,copybuf)
 end
 
