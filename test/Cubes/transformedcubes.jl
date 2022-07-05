@@ -20,7 +20,7 @@
         props = [Dict("att$i" => i) for i = 1:3]
         singlecubes = [YAXArray(axlist, data[i], props[i]) for i = 1:3]
         newcube = concatenatecubes(singlecubes, CategoricalAxis("ZVals", ["A", "B", "C"]))
-        @test caxes(newcube) == [axlist; CategoricalAxis("ZVals", ["A", "B", "C"])]
+        @test caxes(newcube) == [RangeAxis("XVals", 1.0:4.0), CategoricalAxis("YVals", [1, 2, 3, 4, 5]), CategoricalAxis("ZVals", ["A", "B", "C"])]
         @test ndims(newcube) == 3
         @test size(newcube) == (4, 5, 3)
         @test newcube[:, :, :] == cat(data..., dims = 3)

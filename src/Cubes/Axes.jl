@@ -15,15 +15,9 @@ export CubeAxis, RangeAxis, CategoricalAxis, getAxis
     abstract type CubeAxis{T,S}
 
 Supertype of all axes. Every `CubeAxis` is an 1D Cube itself and can be passed
-to mapCube operations.
+to mapCube operations. In detail CubeAxis is an `AbstractArray{Int, 1}`
 """
-abstract type CubeAxis{T,S} end
-
-Base.size(x::CubeAxis) = (length(x.values),)
-Base.size(x::CubeAxis, i) =
-    i == 1 ? length(x.values) : error("Axis has only a single dimension")
-Base.ndims(x::CubeAxis) = 1
-Base.hash(ax::CubeAxis{<:Any,S}, h::UInt) where {S} = hash(S, hash(ax.values, h))
+abstract type CubeAxis{T,S} <: AbstractArray{T, 1} end
 
 """
     struct CategoricalAxis{T,S,RT}
@@ -132,7 +126,23 @@ function getAxis(desc, axlist::VecOrTuple{CubeAxis})
     end
 end
 
-#Implement yaxarray interface
+# Implement interfaces
+
+# Basics: AbstractArray and more
+Base.size(x::CubeAxis) = (length(x.values),)
+Base.size(x::CubeAxis, i) =
+    i == 1 ? length(x.values) : error("Axis has only a single dimension")
+Base.ndims(x::CubeAxis) = 1
+Base.hash(ax::CubeAxis{<:Any,S}, h::UInt) where {S} = hash(S, hash(ax.values, h))
+Base.IndexStyle(x::CubeAxis) = IndexLinear()
+function Base.getindex(x::CubeAxis, i::Int)
+    return x.values[i]
+end
+function Base.setindex!(x::CategoricalAxis, value, i::Int)
+    x.values[i] = value
+end
+
+# YAXArrayBase
 YAXArrayBase.dimname(x::CubeAxis, _) = axname(x)
 YAXArrayBase.dimvals(x::CubeAxis, _) = x.values
 YAXArrayBase.iscontdim(::RangeAxis, _) = true
