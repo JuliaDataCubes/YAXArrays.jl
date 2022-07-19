@@ -14,14 +14,9 @@ makedocs(
     authors = "Fabian Gans",
     pages    = [ # Compat: `Any` for 0.4 compat
         "Home" => "index.md",
-        "Tutorial" => "man/tutorial.md",
+        "Tutorial" => "tutorials/tutorial.md",
         "Examples" => allex,
-        "Manual" => Any[
-            "man/datasets.md",
-            "man/yaxarrays.md",
-            "man/applying functions.md",
-            "man/iterators.md",
-        ],
+        "How Tos" => "howtos/howtos.md",
         "Docstring Reference" => "api.md"
         ]
 )
