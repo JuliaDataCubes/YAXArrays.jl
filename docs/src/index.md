@@ -2,13 +2,13 @@
 
 *Yet another xarray-like Julia package*
 
-A package for operating on out-of-core labeled arrays, based on stores like NetCDF or Zarr.  
+A package for operating on out-of-core labeled arrays, based on stores like NetCDF, Zarr or GDAL.  
 
 ## Package Features
 
 - open datasets from a variety of sources (NetCDF, Zarr, ArchGDAL)
 - interoperability with other named axis packages through YAXArrayBase
-- efficient `mapslices` operations on huge multiple arrays, optimized for high-latency data access (object storage, compressed datasets) 
+- efficient `mapslices(x)` operations on huge multiple arrays, optimized for high-latency data access (object storage, compressed datasets) 
 
 The [YAXArray tutorial](@ref) provides a tutorial explaining how to get started using YAXArrays.
 
@@ -16,18 +16,12 @@ The [YAXArray tutorial](@ref) provides a tutorial explaining how to get started 
 
 ```@contents
 Pages = [
-    "man/tutorial.md",
-    "man/datasets.md",
-    "man/yaxarrays.md",
-    "man/applying function.md",
-    "man/iterators.md",
-    "man/chunking.md",
-    "man/performance.md",
-    "examples/examples.md",
+    "tutorials/tutorial.md",
+    "howtos/howtos.md",
+    "exp/exp.md"
 ]
 Depth = 2
 ```
-<!-- 
 ## Library Outline
 
 ```@contents
