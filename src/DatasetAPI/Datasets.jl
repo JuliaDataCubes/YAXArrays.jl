@@ -629,15 +629,10 @@ function createdataset(DS::Type,axlist; kwargs...)
         end
         cleaner = CleanMe[]
         persist || push!(cleaner, CleanMe(path, false))
-        missallowed = allow_missings(DS) || !(T >: Missing)
-        S = if missallowed
-            T
-        else
-            S = Base.nonmissingtype(T)
-            if !haskey(attr, "missing_value")
+        hasmissings =  (T >: Missing)
+        S = Base.nonmissingtype(T)
+        if hasmissings && !haskey(attr, "missing_value")
                 attr["missing_value"] = YAXArrayBase.defaultfillval(S)
-            end
-            S
         end
         axlengths = length.(getproperty.(axdata, :data))
         dshandle = YAXArrayBase.create_dataset(
@@ -660,7 +655,7 @@ function createdataset(DS::Type,axlist; kwargs...)
             if !isnothing(subs)
                 v = view(v, subs...)
             end
-            if !missallowed
+            if hasmissings
                 v = CFDiskArray(v, attr)
             end
             YAXArray(axlist, v, propfromattr(attr), cleaner = cleaner)
@@ -811,6 +806,9 @@ function createdataset(DS::Type,axlist; kwargs...)
         allmerges
     end
     function merge_datasets(dslist)
+        if length(dslist) == 1
+            return dslist[1]
+        end
         allaxnames = counter(Symbol)
         for ds in dslist, k in keys(ds.axes)
             push!(allaxnames, k)
