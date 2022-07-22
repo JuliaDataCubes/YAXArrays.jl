@@ -186,7 +186,7 @@ using DataStructures: OrderedDict
                 datasetaxis = "A",
             )
             @test size(newds.data) == (12, 2, 10)
-            @test size(newds.data.parent) == (14, 2, 13)
+            @test size(newds.data.a.parent) == (14, 2, 13)
             @test eltype(newds.data) <: Union{Float32,Missing}
             @test newds.properties["att1"] == 5
             @test isfile(fn)

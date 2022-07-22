@@ -593,7 +593,7 @@ function createdataset(DS::Type,axlist; kwargs...)
         if persist === nothing
             persist = !isempty(path)
         end
-        attr = copy(properties)
+        attr = Dict{String,Any}(properties)
         path = getsavefolder(path, persist)
         check_overwrite(path, overwrite)
         splice_generic(x::AbstractArray, i) = [x[1:(i-1)]; x[(i+1:end)]]
@@ -632,6 +632,7 @@ function createdataset(DS::Type,axlist; kwargs...)
                 attr["missing_value"] = YAXArrayBase.defaultfillval(S)
         end
         axlengths = length.(getproperty.(axdata, :data))
+        @show cubenames
         dshandle = YAXArrayBase.create_dataset(
         DS, 
         path, 
@@ -646,6 +647,7 @@ function createdataset(DS::Type,axlist; kwargs...)
         fill(chunksize, length(cubenames));
         kwargs...
         )
+        @show "Done"
         #This generates the YAXArrays
         allcubes = map(cubenames) do cn
             v = get_var_handle(dshandle, cn)
