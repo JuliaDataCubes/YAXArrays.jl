@@ -333,18 +333,15 @@ function getarrayinfo(entry,backend)
         nothing
     end
     T = eltype(c)
-    missallowed = allow_missings(backend) || !(T >: Missing)
+    hasmiss = T >: Missing
     attr = copy(c.properties)
-    S = if missallowed
-        T
-    else
-        S = Base.nonmissingtype(T)
+    if hasmiss
+        T = Base.nonmissingtype(T)
         if !haskey(attr, "missing_value")
-            attr["missing_value"] = YAXArrayBase.defaultfillval(S)
+            attr["missing_value"] = YAXArrayBase.defaultfillval(T)
         end
-        S
     end
-    (name = string(k), t = S, chunks = cs,axes = axlist,attr = attr, subs = subs,missallowed=missallowed, offs=offs)
+    (name = string(k), t = T, chunks = cs,axes = axlist,attr = attr, subs = subs, require_CF = hasmiss, offs=offs)
 end
 
 """
@@ -355,7 +352,7 @@ function collectfromhandle(e,dshandle, cleaner)
     if !isnothing(e.subs)
         v = view(v, e.subs...)
     end
-    if !e.missallowed
+    if e.require_CF
         v = CFDiskArray(v, e.attr)
     end
     YAXArray(e.axes, v, propfromattr(e.attr), cleaner = cleaner)
