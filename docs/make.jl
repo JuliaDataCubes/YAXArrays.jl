@@ -15,8 +15,10 @@ makedocs(
     pages    = [ # Compat: `Any` for 0.4 compat
         "Home" => "index.md",
         "Tutorial" => "tutorials/tutorial.md",
+        "How Tos" => ["howtos/howtos.md",
+                "howtos/applyingfunctions.md"],
         "Examples" => allex,
-        "How Tos" => "howtos/howtos.md",
+        "Explanation" => "expl/expl.md",
         "Docstring Reference" => "api.md"
         ]
 )
