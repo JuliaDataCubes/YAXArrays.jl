@@ -41,7 +41,9 @@ end
     YAXColumn
 
 A struct representing a single column of a YAXArray partitioned Table
-"""
+    # Fields 
+        $(FIELDS)
+    """
 struct YAXColumn{T,A,IT} <: AbstractVector{T}
     inarBC::A
     inds::IT

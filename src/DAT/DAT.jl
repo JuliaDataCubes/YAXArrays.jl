@@ -1,4 +1,5 @@
 module DAT
+using DocStringExtensions
 import ..Cubes
 using ..YAXTools
 using Distributed:
@@ -51,14 +52,19 @@ include("registration.jl")
 
 """
 Internal representation of an input cube for DAT operations
+    $(FIELDS)
 """
 mutable struct InputCube{N}
-    cube::Any                  #The input data cube
-    desc::InDims               #The input description given by the user/registration
-    axesSmall::Vector          #List of axes that were actually selected through the description
+    "The input data"
+    cube::Any
+    "The input description given by the user/registration"
+    desc::InDims
+    "List of axes that were actually selected through the description"
+    axesSmall::Vector
     icolon::Vector{Int}
     colonperm::Union{Vector{Int},Nothing}
-    loopinds::Vector{Int}        #Indices of loop axes that this cube does not contain, i.e. broadcasts
+    "Indices of loop axes that this cube does not contain, i.e. broadcasts"
+    loopinds::Vector{Int}
     cachesize::Vector{Int}     #Number of elements to keep in cache along each axis TODO: delete
     window::Vector{WindowDescriptor}
     iwindow::Vector{Int}
@@ -113,15 +119,24 @@ end
 
 """
 Internal representation of an output cube for DAT operations
+## Fields
+    $(FIELDS)
 """
 mutable struct OutputCube
-    cube::Any #The actual outcube cube, once it is generated
-    cube_unpermuted::Any #The unpermuted output cube
-    desc::OutDims                 #The description of the output axes as given by users or registration
-    axesSmall::Array{CubeAxis}    #The list of output axes determined through the description
-    allAxes::Vector{CubeAxis}     #List of all the axes of the cube
-    loopinds::Vector{Int}         #Index of the loop axes that are broadcasted for this output cube
+    "The actual outcube cube, once it is generated"
+    cube::Any
+    "The unpermuted output cube"
+    cube_unpermuted::Any
+    "The description of the output axes as given by users or registration"
+    desc::OutDims
+    "The list of output axes determined through the description"
+    axesSmall::Array{CubeAxis}
+    "List of all the axes of the cube"
+    allAxes::Vector{CubeAxis}
+    "Index of the loop axes that are broadcasted for this output cube"
+    loopinds::Vector{Int}
     innerchunks::Any
+    "Elementtype of the outputcube"
     outtype::Any
 end
 getwindow(::OutputCube) = []
@@ -213,7 +228,7 @@ kwargs
 mutable struct DATConfig{NIN,NOUT}
     "The input data cubes"
     incubes::NTuple{NIN,InputCube}
-
+    "The output data cubes"
     outcubes::NTuple{NOUT,OutputCube}
     allInAxes::Vector
     LoopAxes::Vector
@@ -353,24 +368,26 @@ end
 
 
 """
-    mapCube(fun, cube, addargs...;kwargs)
+    mapCube(fun, cube, addargs...;kwargs...)
 
-Map a given function `fun` over slices of the data cube `cube`.
+Map a given function `fun` over slices of the data cube `cube`. 
+    The additional arguments `addargs` will be forwarded to the inner function `fun`.
 
 ### Keyword arguments
 
-* `max_cache=1e7` maximum size of blocks that are read into memory, defaults to approx 10Mb
+* `max_cache=YAXDefaults.max_cache` maximum size of blocks that are read into memory, defaults to approx 10Mb
 * `indims::InDims` List of input cube descriptors of type [`InDims`](@ref) for each input data cube
 * `outdims::OutDims` List of output cube descriptors of type [`OutDims`](@ref) for each output cube
 * `inplace` does the function write to an output array inplace or return a single value> defaults to `true`
 * `ispar` boolean to determine if parallelisation should be applied, defaults to `true` if workers are available.
 * `showprog` boolean indicating if a ProgressMeter shall be shown
 * `include_loopvars` boolean to indicate if the varoables looped over should be added as function arguments
+* `nthreads` number of threads for the computation, defaults to Threads.nthreads for every worker.
 * `loopchunksize` determines the chunk sizes of variables which are looped over, a dict
-* `kwargs` additional keyword arguments passed to the inner function
+* `kwargs` additional keyword arguments are passed to the inner function
 
 The first argument is always the function to be applied, the second is the input cube or
-a tuple input cubes if needed.
+a tuple of input cubes if needed.
 """
 function mapCube(
     fu::Function,
