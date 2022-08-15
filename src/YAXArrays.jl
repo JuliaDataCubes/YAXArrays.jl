@@ -1,4 +1,15 @@
 module YAXArrays
+
+"""
+Default configuration for YAXArrays, has the following fields:
+
+- `workdir[]::String = "./"` The default location for temporary cubes.
+- `recal[]::Bool = false` set to true if you want `@loadOrGenerate` to always recalculate the results.
+- `chunksize[]::Any = :input` Set the default output chunksize.
+- `max_cache[]::Float64 = 1e8` The maximum cache used by mapCube.
+- `cubedir[]::""` the default location for `Cube()` without an argument.
+- `subsetextensions::Array{Any} = []` List of registered functions, that convert subsetting input into dimension boundaries. 
+"""
 global const YAXDefaults = (
     workdir = Ref("./"),
     recal = Ref(false),
@@ -7,6 +18,8 @@ global const YAXDefaults = (
     cubedir = Ref(""),
     subsetextensions = [],
 )
+
+
 global const workdir = YAXDefaults.workdir
 global const recal = YAXDefaults.recal
 function __init__()
