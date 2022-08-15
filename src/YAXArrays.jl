@@ -8,7 +8,7 @@ Default configuration for YAXArrays, has the following fields:
 - `chunksize[]::Any = :input` Set the default output chunksize.
 - `max_cache[]::Float64 = 1e8` The maximum cache used by mapCube.
 - `cubedir[]::""` the default location for `Cube()` without an argument.
-- `subsetextension::Array{Any} = []` TODO
+- `subsetextensions::Array{Any} = []` List of registered functions, that convert subsetting input into dimension boundaries. 
 """
 global const YAXDefaults = (
     workdir = Ref("./"),
