@@ -5,7 +5,7 @@ Default configuration for YAXArrays, has the following fields:
 
 - `workdir[]::String = "./"` The default location for temporary cubes.
 - `recal[]::Bool = false` set to true if you want `@loadOrGenerate` to always recalculate the results.
-- `chunksize[]::Any = :input` TODO
+- `chunksize[]::Any = :input` Set the default output chunksize.
 - `max_cache[]::Float64 = 1e8` The maximum cache used by mapCube.
 - `cubedir[]::""` the default location for `Cube()` without an argument.
 - `subsetextension::Array{Any} = []` TODO
