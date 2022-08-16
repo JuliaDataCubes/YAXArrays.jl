@@ -488,7 +488,6 @@ function savedataset(
         # We go into append mode
         append_dataset(backend, path, ds, axdata, arrayinfo; skeleton_only)
     else
-        #axlengths = length.(getproperty.(axdata, :data))
         YAXArrayBase.create_dataset(
             backend, 
             path, 
@@ -631,8 +630,6 @@ function createdataset(DS::Type,axlist; kwargs...)
         if hasmissings && !haskey(attr, "missing_value")
                 attr["missing_value"] = YAXArrayBase.defaultfillval(S)
         end
-        axlengths = length.(getproperty.(axdata, :data))
-        @show cubenames
         dshandle = YAXArrayBase.create_dataset(
         DS, 
         path, 
@@ -647,7 +644,6 @@ function createdataset(DS::Type,axlist; kwargs...)
         fill(chunksize, length(cubenames));
         kwargs...
         )
-        @show "Done"
         #This generates the YAXArrays
         allcubes = map(cubenames) do cn
             v = get_var_handle(dshandle, cn)
