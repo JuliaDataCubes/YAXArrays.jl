@@ -45,7 +45,7 @@ Dimensions:
    Dim_2               Axis with 20 Elements from 1 to 20
    Dim_1               Axis with 10 Elements from 1 to 10
    Dim_3               Axis with 5 Elements from 1 to 5
-Variables: x z y </code></pre><h3 id="Creating-a-Dataset-without-writing-the-actual-data"><a class="docs-heading-anchor" href="#Creating-a-Dataset-without-writing-the-actual-data">Creating a Dataset without writing the actual data</a><a id="Creating-a-Dataset-without-writing-the-actual-data-1"></a><a class="docs-heading-anchor-permalink" href="#Creating-a-Dataset-without-writing-the-actual-data" title="Permalink"></a></h3><p>Sometimes one merely wants to create a datacube  &quot;Skeleton&quot; on disk and gradually fill it with data. Here we create Dataset and write only the axis data and array metadata, while no actual array data is copied:</p><pre><code class="language- hljs">julia&gt; using YAXArrays, Zarr
+Variables: x z y </code></pre><h3 id="Creating-a-Datacube-without-writing-the-actual-data"><a class="docs-heading-anchor" href="#Creating-a-Datacube-without-writing-the-actual-data">Creating a Datacube without writing the actual data</a><a id="Creating-a-Datacube-without-writing-the-actual-data-1"></a><a class="docs-heading-anchor-permalink" href="#Creating-a-Datacube-without-writing-the-actual-data" title="Permalink"></a></h3><p>Sometimes one merely wants to create a datacube  &quot;Skeleton&quot; on disk and gradually fill it with data. Here we create Dataset and write only the axis data and array metadata, while no actual array data is copied:</p><pre><code class="language- hljs">julia&gt; using YAXArrays, Zarr
 
 julia&gt; a = YAXArray(zeros(Union{Missing, Int32},10,20))
 YAXArray with the following dimensions
