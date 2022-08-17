@@ -94,7 +94,7 @@ Variables: x z y
 ### Creating a Datacube without writing the actual data
 
 Sometimes one merely wants to create a datacube  "Skeleton" on disk and gradually fill it with data.
-Here we create Dataset and write only the axis data and array metadata, while no actual array data is
+Here we create YAXArray and write only the axis data and array metadata to disk, while no actual array data is
 copied:
 
 ````@jldoctest
