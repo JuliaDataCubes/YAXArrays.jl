@@ -21,7 +21,7 @@ Total size: 1.56 KB
 ````
 
 
-If case the pathname ends with ".zarr", the driver argument can be omitted. 
+If the pathname ends with ".zarr", the driver argument can be omitted. 
 
 ### Saving a YAXArray to NetCDF
 
