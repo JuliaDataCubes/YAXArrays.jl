@@ -162,7 +162,7 @@ savedataset(dschunked,path=f,driver=:zarr)
 
 ### Set chunking by Variable
 
-The following will set the chunk size for each Variable separately and results in exactly the same chunkg as the example above
+The following will set the chunk size for each Variable separately and results in exactly the same chunking as the example above
 
 ````@jldoctest
 using YAXArrays, Zarr
