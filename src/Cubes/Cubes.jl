@@ -211,7 +211,7 @@ of this chunking, use `savecube` on the resulting array. The `chunks` argument c
 """
 setchunks(c::YAXArray,chunks) = YAXArray(c.axes,c.data,c.properties,interpret_cubechunks(chunks,c),c.cleaner)
 cubechunks(c) = approx_chunksize(c.chunks)
-DiskArrays.eachchunk(c) = c.chunks
+DiskArrays.eachchunk(c::YAXArray) = c.chunks
 getindex_all(a) = getindex(a, ntuple(_ -> Colon(), ndims(a))...)
 Base.getindex(x::YAXArray, i...) = getdata(x)[i...]
 chunkoffset(c) = grid_offset(c.chunks)
