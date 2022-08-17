@@ -72,6 +72,10 @@ function get_copy_buffer_size(incube, outcube;writefac=4.0, maxbuf = 1e9, align_
 end
 
 using ProgressMeter
+"""
+    copydata(outar, inar, copybuf)
+Internal function which copies the data from the input `inar` into the output `outar` at the `copybuf` positions.
+"""
 function copydata(outar,inar,copybuf)
     @showprogress for ii in copybuf
         outar[ii...] = inar[ii...]
