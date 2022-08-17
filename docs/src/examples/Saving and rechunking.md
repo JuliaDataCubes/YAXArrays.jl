@@ -7,7 +7,7 @@
 One can save any `YAXArray` using the `savecube` function. Simply add a path as an argument and the cube will be saved. 
 
 ````@jldoctest
-julia> using YAXArrays, Zarr, NetCDF
+julia> using YAXArrays, Zarr
 
 julia> a = YAXArray(rand(10,20));
 
