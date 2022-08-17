@@ -1,4 +1,4 @@
-using Optim
+using Optim: optimize
 
 function readsperchunk(buf_i, cs_i, fullsize_i) 
     #Make the function very shallow for >1
