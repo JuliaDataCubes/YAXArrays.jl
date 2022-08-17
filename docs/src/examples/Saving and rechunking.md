@@ -62,7 +62,7 @@ Variables: x y
 
 ### Overwriting a Dataset
 
-If a path already exists, an error will be thrown. Set `overwrite=true` to delete the existing dataset>
+If a path already exists, an error will be thrown. Set `overwrite=true` to delete the existing dataset
 
 ````@jldoctest saveds
 julia> savedataset(ds,path=f,driver=:zarr, overwrite=true)
