@@ -180,7 +180,7 @@ function readcubedata(x)
     YAXArray(collect(CubeAxis, caxes(x)), getindex_all(x), getattributes(x))
 end
 
-interpret_cubechunks(cs::NTuple{N,Int},cube) where N = DiskArrays.GridChunks(cube.data,cs)
+interpret_cubechunks(cs::NTuple{N,Int},cube) where N = DiskArrays.GridChunks(getdata(cube),cs)
 interpret_cubechunks(cs::DiskArrays.GridChunks,_) = cs
 interpret_dimchunk(cs::Integer,s) = DiskArrays.RegularChunks(cs,0,s)
 interpret_dimchunk(cs::DiskArrays.ChunkType, _) = cs
