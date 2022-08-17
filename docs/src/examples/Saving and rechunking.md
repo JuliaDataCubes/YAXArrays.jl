@@ -91,7 +91,7 @@ Dimensions:
 Variables: x z y 
 ````
 
-### Creating a Dataset without writing the actual data
+### Creating a Datacube without writing the actual data
 
 Sometimes one merely wants to create a datacube  "Skeleton" on disk and gradually fill it with data.
 Here we create Dataset and write only the axis data and array metadata, while no actual array data is
