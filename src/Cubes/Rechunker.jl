@@ -14,6 +14,12 @@ function readsperchunk(buf_i, cs_i, fullsize_i)
     fac
 end
 
+"""
+    optifunc(s, maxbuf, incs, outcs, insize, outsize, writefac)
+    
+# Internal 
+This function is going to be minimized to detect the best possible chunk setting for the rechunking of the data.
+"""
 function optifunc(s,maxbuf,incs,outcs, insize, outsize, writefac)
     p1 = prod(s)
     s2 = push!(Float64.(s),maxbuf/p1)
