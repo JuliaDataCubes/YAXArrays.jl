@@ -358,7 +358,7 @@ function collectfromhandle(e,dshandle, cleaner)
     YAXArray(e.axes, v, propfromattr(e.attr), cleaner = cleaner)
 end
 
-function append_dataset(backend, path, ds, axdata, arrayinfo; skeleton_only)
+function append_dataset(backend, path, ds, axdata, arrayinfo)
     dshandle = YAXArrayBase.to_dataset(backend,path,mode="w")
     existing_vars = YAXArrayBase.get_varnames(dshandle)
     for d in axdata
@@ -445,7 +445,7 @@ function savedataset(
     persist = nothing,
     overwrite = false,
     append = false,
-    skeleton_only=false,
+    skeleton=false,
     backend = :all,
     driver = backend, 
     max_cache = 5e8,
@@ -486,7 +486,7 @@ function savedataset(
     
     dshandle = if ispath(path)
         # We go into append mode
-        append_dataset(backend, path, ds, axdata, arrayinfo; skeleton_only)
+        append_dataset(backend, path, ds, axdata, arrayinfo; skeleton)
     else
         YAXArrayBase.create_dataset(
             backend, 
@@ -509,7 +509,7 @@ function savedataset(
     allcubes = map(e->collectfromhandle(e,dshandle,cleaner), arrayinfo)
     
     diskds = Dataset(OrderedDict(zip(allnames,allcubes)), copy(ds.axes),YAXArrayBase.get_global_attrs(dshandle))
-    if !skeleton_only
+    if !skeleton
         copydataset!(diskds, ds; maxbuf = max_cache, writefac)
     end
     return diskds
@@ -544,14 +544,14 @@ function savecube(
     chunks = nothing,
     overwrite = false, 
     append = false,
-    skeleton_only=false,
+    skeleton=false,
     writefac=4.0
 )
     if chunks !== nothing
         error("Setting chunks in savecube is not supported anymore. Rechunk using `setchunks` before saving. ")
     end
     ds = to_dataset(c; name, datasetaxis)
-    ds = savedataset(ds; path, max_cache, driver, overwrite, append,skeleton_only, writefac)
+    ds = savedataset(ds; path, max_cache, driver, overwrite, append,skeleton, writefac)
     Cube(ds, joinname = datasetaxis)
 end
 

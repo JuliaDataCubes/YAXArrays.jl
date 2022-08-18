@@ -276,7 +276,7 @@ end
 
     d = YAXArray(zeros(Union{Missing, Int32},10,20))
     f = tempname()
-    r = savecube(d,f,driver=:zarr,skeleton_only=true)
+    r = savecube(d,f,driver=:zarr,skeleton=true)
     @test all(ismissing,r[:,:])
 
 

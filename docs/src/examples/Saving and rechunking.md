@@ -109,13 +109,13 @@ Total size: 800.0 bytes
 
 julia> f = tempname();
 
-julia> r = savecube(a,f,driver=:zarr,skeleton_only=true);
+julia> r = savecube(a,f,driver=:zarr,skeleton=true);
 
 julia> all(ismissing,r[:,:])
 true
 ````
 
-The `skeleton_only` argument is also available for `savedataset`. 
+The `skeleton` argument is also available for `savedataset`. 
 
 ## Rechunking
 
