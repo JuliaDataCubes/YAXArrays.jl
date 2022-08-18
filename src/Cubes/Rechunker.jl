@@ -1,4 +1,6 @@
 using Optim: optimize
+using ProgressMeter: @showprogress
+
 
 function readsperchunk(buf_i, cs_i, fullsize_i) 
     #Make the function very shallow for >1
@@ -71,7 +73,6 @@ function get_copy_buffer_size(incube, outcube;writefac=4.0, maxbuf = YAXDefaults
     bufcorrected
 end
 
-using ProgressMeter
 """
     copydata(outar, inar, copybuf)
 Internal function which copies the data from the input `inar` into the output `outar` at the `copybuf` positions.
