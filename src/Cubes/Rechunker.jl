@@ -49,7 +49,7 @@ function outalign(buf,sout)
     end
 end
 
-function get_copy_buffer_size(incube, outcube;writefac=4.0, maxbuf = 1e9, align_output=true)
+function get_copy_buffer_size(incube, outcube;writefac=4.0, maxbuf = YAXDefaults.max_cache[], align_output=true)
     maxbuf = round(Int,maxbuf/sizeof(eltype(incube)))
     nd = ndims(incube)
     if nd == 1
@@ -82,7 +82,7 @@ function copydata(outar,inar,copybuf)
     end
 end
 
-function copy_diskarray(incube,outcube;writefac=4.0, maxbuf = 1e9, align_output=true)
+function copy_diskarray(incube,outcube;writefac=4.0, maxbuf = YAXDefaults.max_cache[], align_output=true)
     size(incube) == size(outcube) || throw(ArgumentError("Input and output cubes must have the same size"))
     bufcorrected = get_copy_buffer_size(incube, outcube;writefac,maxbuf,align_output)
     copybuf = DiskArrays.GridChunks(size(outcube),bufcorrected)
