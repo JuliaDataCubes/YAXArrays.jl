@@ -358,7 +358,7 @@ function collectfromhandle(e,dshandle, cleaner)
     YAXArray(e.axes, v, propfromattr(e.attr), cleaner = cleaner)
 end
 
-function append_dataset(backend, path, ds, axdata, arrayinfo)
+function append_dataset(backend, path, ds, axdata, arrayinfo; skeleton)
     dshandle = YAXArrayBase.to_dataset(backend,path,mode="w")
     existing_vars = YAXArrayBase.get_varnames(dshandle)
     for d in axdata
