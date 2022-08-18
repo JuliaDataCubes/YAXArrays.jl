@@ -279,6 +279,11 @@ end
     r = savecube(d,f,driver=:zarr,skeleton=true)
     @test all(ismissing,r[:,:])
 
+    d = YAXArray(zeros(Int32,10,20))
+    f = tempname()
+    r = savecube(d,f,driver=:zarr,skeleton=true)
+    @test all(==(YAXArrayBase.defaultfillval(Int32)),r[:,:])
+
 
     f = tempname()*".zarr"
     a_chunked = setchunks(a,(5,10))
