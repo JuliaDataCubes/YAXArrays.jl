@@ -6,7 +6,7 @@ using DiskArrayTools: diskstack, DiskArrayTools
 function Base.map(op, incubes::YAXArray...)
     axlist = copy(caxes(incubes[1]))
     chunks = incubes[1].chunks
-    all(i-> i.chunks == chunks, incubes) || error("All chunk sizes must match, consider resetting the chunks to a common size using `setchunks`")
+    all(i-> eachchunk(i) == chunks, incubes) || error("All chunk sizes must match, consider resetting the chunks to a common size using `setchunks`")
     all(i -> caxes(i) == axlist, incubes) || error("All axes must match")
     props = merge(getattributes.(incubes)...)
     YAXArray(

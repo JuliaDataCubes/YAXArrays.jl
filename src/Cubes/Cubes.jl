@@ -159,7 +159,7 @@ Base.ndims(a::YAXArray{<:Any,N}) where {N} = N
 Base.eltype(a::YAXArray{T}) where {T} = T
 function Base.permutedims(c::YAXArray, p) 
     newaxes = caxes(c)[collect(p)]
-    newchunks = DiskArrays.GridChunks(c.chunks.chunks[collect(p)])
+    newchunks = DiskArrays.GridChunks(eachchunk(c).chunks[collect(p)])
     YAXArray(newaxes, permutedims(getdata(c), p), c.properties, newchunks, c.cleaner)
 end
 function caxes(x)
@@ -210,11 +210,11 @@ of this chunking, use `savecube` on the resulting array. The `chunks` argument c
 
 """
 setchunks(c::YAXArray,chunks) = YAXArray(c.axes,c.data,c.properties,interpret_cubechunks(chunks,c),c.cleaner)
-cubechunks(c) = approx_chunksize(c.chunks)
+cubechunks(c) = approx_chunksize(eachchunk(c))
 DiskArrays.eachchunk(c::YAXArray) = c.chunks
 getindex_all(a) = getindex(a, ntuple(_ -> Colon(), ndims(a))...)
 Base.getindex(x::YAXArray, i...) = getdata(x)[i...]
-chunkoffset(c) = grid_offset(c.chunks)
+chunkoffset(c) = grid_offset(eachchunk(c))
 
 # Implementation for YAXArrayBase interface
 YAXArrayBase.dimvals(x::YAXArray, i) = caxes(x)[i].values
