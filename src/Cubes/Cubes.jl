@@ -3,7 +3,7 @@ The functions provided by YAXArrays are supposed to work on different types of c
 Data types that
 """
 module Cubes
-using DiskArrays: DiskArrays, eachchunk, approx_chunksize, max_chunksize, grid_offset
+using DiskArrays: DiskArrays, eachchunk, approx_chunksize, max_chunksize, grid_offset, GridChunks
 using Distributed: myid
 using Dates: TimeType
 using IntervalSets: Interval, (..)
@@ -14,7 +14,7 @@ import YAXArrayBase: getattributes, iscontdim, dimnames, dimvals, getdata
 using DiskArrayTools: CFDiskArray
 using DocStringExtensions
 
-export concatenatecubes, caxes, subsetcube, readcubedata, renameaxis!, YAXArray
+export concatenatecubes, caxes, subsetcube, readcubedata, renameaxis!, YAXArray, setchunks
 
 """
 This function calculates a subset of a cube's data
@@ -88,12 +88,13 @@ It can wrap normal arrays or, more typically DiskArrays.
 * `axes` a `Vector{CubeAxis}` containing the Axes of the Cube
 * `data` N-D array containing the data
 """
-struct YAXArray{TypeOfData,NumberOfAxes,A<:AbstractArray{TypeOfData,NumberOfAxes},AxesTypes}
+struct YAXArray{T,N,A<:AbstractArray{T,N},AxesTypes}
     axes::AxesTypes
     data::A
     properties::Dict{String}
+    chunks::GridChunks{N}
     cleaner::Vector{CleanMe}
-    function YAXArray(axes, data, properties, cleaner)
+    function YAXArray(axes, data, properties, chunks, cleaner)
         if ndims(data) != length(axes) # case: mismatched Arguments
             throw(
                 ArgumentError(
@@ -106,22 +107,28 @@ struct YAXArray{TypeOfData,NumberOfAxes,A<:AbstractArray{TypeOfData,NumberOfAxes
                     "Can not construct YAXArray, supplied data size is $(size(data)) while axis lenghts are $(ntuple(i->length(axes[i]),ndims(data)))",
                 ),
             )
-        else # case: create new YAXArray
+        elseif ndims(chunks) != ndims(data)
+            throw(ArgumentError("Can not construct YAXArray, supplied chunk dimension is $(ndims(chunks)) while the number of dims is $(length(axes))"))
+        else
             return new{eltype(data),ndims(data),typeof(data),typeof(axes)}(
                 axes,
                 data,
                 properties,
+                chunks,
                 cleaner,
             )
         end
     end
 end
-YAXArray(axes, data, properties=Dict{String,Any}(); cleaner=CleanMe[]) =
-    YAXArray(axes, data, properties, cleaner)
+
+YAXArray(axes, data, properties = Dict{String,Any}(); cleaner = CleanMe[], chunks = eachchunk(data)) =
+    YAXArray(axes, data, properties, chunks, cleaner)
+YAXArray(axes,data,properties,cleaner) = YAXArray(axes,data,properties,eachchunk(data),cleaner)
 function YAXArray(x::AbstractArray)
     ax = caxes(x)
     props = getattributes(x)
-    return YAXArray(ax, x, props)
+    chunks = eachchunk(x)
+    YAXArray(ax, x, props,chunks=chunks)
 end
 
 # Base utility overloads
@@ -146,19 +153,15 @@ function Base.propertynames(a::YAXArray, private::Bool=false)
         (axsym.(caxes(a))..., :axes, :data)
     end
 end
-Base.ndims(a::YAXArray{<:Any,NumberOfAxes}) where {NumberOfAxes} = NumberOfAxes
-Base.eltype(a::YAXArray{TypeOfData}) where {TypeOfData} = TypeOfData
-# really needed? it sounds like bad performance to permute the raw data?
-Base.permutedims(c::YAXArray, p) =
-    YAXArray(caxes(c)[collect(p)], permutedims(getdata(c), p), c.properties, c.cleaner)
-Base.getindex(x::YAXArray, i...) = getdata(x)[i...]
 
-"""
-    caxes(x)
 
-returns the axes of a cube
-"""
-#TODO: is the general version really needed?
+Base.ndims(a::YAXArray{<:Any,N}) where {N} = N
+Base.eltype(a::YAXArray{T}) where {T} = T
+function Base.permutedims(c::YAXArray, p) 
+    newaxes = caxes(c)[collect(p)]
+    newchunks = DiskArrays.GridChunks(eachchunk(c).chunks[collect(p)])
+    YAXArray(newaxes, permutedims(getdata(c), p), c.properties, newchunks, c.cleaner)
+end
 function caxes(x)
     map(enumerate(dimnames(x))) do a
         index, symbol = a
@@ -177,9 +180,41 @@ function readcubedata(x)
     YAXArray(collect(CubeAxis, caxes(x)), getindex_all(x), getattributes(x))
 end
 
-cubechunks(c) = approx_chunksize(eachchunk(getdata(c)))
+interpret_cubechunks(cs::NTuple{N,Int},cube) where N = DiskArrays.GridChunks(getdata(cube),cs)
+interpret_cubechunks(cs::DiskArrays.GridChunks,_) = cs
+interpret_dimchunk(cs::Integer,s) = DiskArrays.RegularChunks(cs,0,s)
+interpret_dimchunk(cs::DiskArrays.ChunkType, _) = cs
+
+function interpret_cubechunks(cs,cube)
+    oldchunks = DiskArrays.eachchunk(cube).chunks
+    for k in keys(cs)
+        i = findAxis(k,cube)
+        if i !== nothing
+            dimchunk = interpret_dimchunk(cs[k],size(cube.data,i))
+            oldchunks = Base.setindex(oldchunks,dimchunk,i)
+        end
+    end
+    GridChunks(oldchunks)
+end
+
+"""
+    setchunks(c::YAXArray,chunks)
+
+Resets the chunks of a YAXArray and returns a new YAXArray. Note that this will not change the chunking of the underlying data itself, 
+it will just make the data "look" like it had a different chunking. If you need a persistent on-disk representation
+of this chunking, use `savecube` on the resulting array. The `chunks` argument can take one of the following forms:
+
+- a `DiskArrays.GridChunks` object
+- a tuple specifying the chunk size along each dimension
+- an AbstractDict or NamedTuple mapping one or more axis names to chunk sizes
+
+"""
+setchunks(c::YAXArray,chunks) = YAXArray(c.axes,c.data,c.properties,interpret_cubechunks(chunks,c),c.cleaner)
+cubechunks(c) = approx_chunksize(eachchunk(c))
+DiskArrays.eachchunk(c::YAXArray) = c.chunks
 getindex_all(a) = getindex(a, ntuple(_ -> Colon(), ndims(a))...)
-chunkoffset(c) = grid_offset(eachchunk(getdata(c)))
+Base.getindex(x::YAXArray, i...) = getdata(x)[i...]
+chunkoffset(c) = grid_offset(eachchunk(c))
 
 # Implementation for YAXArrayBase interface
 YAXArrayBase.dimvals(x::YAXArray, i) = caxes(x)[i].values
@@ -312,6 +347,9 @@ function show_yax(io::IO, c)
     println(io, "Total size: ", formatbytes(cubesize(c)))
 end
 
+
+
 include("TransformedCubes.jl")
 include("Slices.jl")
+include("Rechunker.jl")
 end #module

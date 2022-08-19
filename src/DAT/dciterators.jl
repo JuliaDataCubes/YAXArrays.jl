@@ -83,7 +83,6 @@ Base.show(io::IO, ::MIME"text/plain", X::YAXTableChunk) = show(io,X)
 function YAXColumn(t::YAXTableChunk,ivar)
     ci = getfield(t,:ci)
     rnow = getfield(t,:ichunk)
-    println("Accessing $(ci.schema.names[ivar]) at $rnow")
     if ivar > length(ci.dc.incubes)
         iax = ivar-length(ci.dc.incubes)
         axvals = getfield(t,:loopaxes)[iax].values

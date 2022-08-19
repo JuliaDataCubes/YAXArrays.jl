@@ -35,9 +35,6 @@ export mapCube,
     CubeTable,
     cubefittable,
     fittable,
-    savecube,
-    loadcube,
-    rmcube,
     MovingWindow
 
 global const debugDAT = [false]
@@ -851,7 +848,6 @@ function analyzeAxes(dc::DATConfig{NIN,NOUT}) where {NIN,NOUT}
             end
         end
     end
-    #Add output broadcast axes
     for outcube in dc.outcubes
         LoopAxesAdd = CubeAxis[]
         for (il, loopax) in enumerate(dc.LoopAxes)
@@ -864,7 +860,10 @@ function analyzeAxes(dc::DATConfig{NIN,NOUT}) where {NIN,NOUT}
         for (k, v) in dold
             ii = findAxis(k, outcube.allAxes)
             if ii !== nothing
-                Base.setindex(newchunks, v, ii)
+                if v isa Integer
+                    v = RegularChunks(v,0,length(outcube.allAxes[ii]))
+                end
+                newchunks = Base.setindex(newchunks, v, ii)
             end
         end
         outcube.innerchunks = newchunks
@@ -1148,5 +1147,4 @@ end
 
 include("dciterators.jl")
 include("tablestats.jl")
-include("CubeIO.jl")
 end

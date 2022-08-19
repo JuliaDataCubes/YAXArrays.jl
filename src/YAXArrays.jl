@@ -24,7 +24,7 @@ global const workdir = YAXDefaults.workdir
 global const recal = YAXDefaults.recal
 function __init__()
     YAXDefaults.workdir[] = get(ENV, "YAXARRAY_WORKDIR", "./")
-    YAXDefaults.max_cache[] = parse(Float64, get(ENV, "YAXARRAY_MAX_CACHE", "100")) * 1e6
+    YAXDefaults.max_cache[] = parse(Float64, get(ENV, "YAXARRAY_MAX_CACHE", "500")) * 1e6
     YAXDefaults.cubedir[] = get(ENV, "YAXARRAY_CUBEDIR", "")
 end
 YAXdir(x::String) = YAXDefaults.workdir[] = x
@@ -48,7 +48,7 @@ using YAXArrayBase: getattributes
 
 @reexport using .DAT
 @reexport using .Datasets
-@reexport using .YAXTools: @loadOrGenerate # from YAXTools
+# from YAXTools
 
 # include("precompile.jl")
 # _precompile_()
