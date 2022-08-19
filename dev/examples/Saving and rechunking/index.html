@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><title>Saving and rechunking · YAXArrays.jl</title><script data-outdated-warner src="../../assets/warner.js"></script><link href="https://cdnjs.cloudflare.com/ajax/libs/lato-font/3.0.0/css/lato-font.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/juliamono/0.045/juliamono.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/fontawesome.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/solid.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/brands.min.css" rel="stylesheet" type="text/css"/><link href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.13.24/katex.min.css" rel="stylesheet" type="text/css"/><script>documenterBaseURL="../.."</script><script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" data-main="../../assets/documenter.js"></script><script src="../../siteinfo.js"></script><script src="../../../versions.js"></script><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-dark.css" data-theme-name="documenter-dark" data-theme-primary-dark/><link class="docs-theme-link" rel="stylesheet" type="text/css" href="../../assets/themes/documenter-light.css" data-theme-name="documenter-light" data-theme-primary/><script src="../../assets/themeswap.js"></script></head><body><div id="documenter"><nav class="docs-sidebar"><a class="docs-logo" href="../../"><img src="../../assets/logo.png" alt="YAXArrays.jl logo"/></a><div class="docs-package-name"><span class="docs-autofit"><a href="../../">YAXArrays.jl</a></span></div><form class="docs-search" action="../../search/"><input class="docs-search-query" id="documenter-search-query" name="q" type="text" placeholder="Search docs"/></form><ul class="docs-menu"><li><a class="tocitem" href="../../">Home</a></li><li><a class="tocitem" href="../../man/tutorial/">Tutorial</a></li><li><span class="tocitem">Examples</span><ul><li class="is-active"><a class="tocitem" href>Saving and rechunking</a><ul class="internal"><li><a class="tocitem" href="#Saving"><span>Saving</span></a></li><li><a class="tocitem" href="#Rechunking"><span>Rechunking</span></a></li><li><a class="tocitem" href="#Rechunking-Datasets"><span>Rechunking Datasets</span></a></li></ul></li><li><a class="tocitem" href="../Time Mean/">Time Mean</a></li></ul></li><li><span class="tocitem">Manual</span><ul><li><a class="tocitem" href="../../man/datasets/">-</a></li><li><a class="tocitem" href="../../man/yaxarrays/">-</a></li><li><a class="tocitem" href="../../man/applying functions/">Mapping functions over YAXArrays</a></li><li><a class="tocitem" href="../../man/iterators/">Table-style iteration over YAXArrays</a></li></ul></li><li><a class="tocitem" href="../../api/">Docstring Reference</a></li></ul><div class="docs-version-selector field has-addons"><div class="control"><span class="docs-label button is-static is-size-7">Version</span></div><div class="docs-selector control is-expanded"><div class="select is-fullwidth is-size-7"><select id="documenter-version-selector"></select></div></div></div></nav><div class="docs-main"><header class="docs-navbar"><nav class="breadcrumb"><ul class="is-hidden-mobile"><li><a class="is-disabled">Examples</a></li><li class="is-active"><a href>Saving and rechunking</a></li></ul><ul class="is-hidden-tablet"><li class="is-active"><a href>Saving and rechunking</a></li></ul></nav><div class="docs-right"><a class="docs-edit-link" href="https://github.com/JuliaDataCubes/YAXArrays.jl/blob/master/docs/src/examples/Saving and rechunking.md" title="Edit on GitHub"><span class="docs-icon fab"></span><span class="docs-label is-hidden-touch">Edit on GitHub</span></a><a class="docs-settings-button fas fa-cog" id="documenter-settings-button" href="#" title="Settings"></a><a class="docs-sidebar-button fa fa-bars is-hidden-desktop" id="documenter-sidebar-button" href="#"></a></div></header><article class="content" id="documenter-page"><h1 id="Saving-and-and-Rechunking-Datasets-and-YAXArrays"><a class="docs-heading-anchor" href="#Saving-and-and-Rechunking-Datasets-and-YAXArrays">Saving and and Rechunking Datasets and YAXArrays</a><a id="Saving-and-and-Rechunking-Datasets-and-YAXArrays-1"></a><a class="docs-heading-anchor-permalink" href="#Saving-and-and-Rechunking-Datasets-and-YAXArrays" title="Permalink"></a></h1><h2 id="Saving"><a class="docs-heading-anchor" href="#Saving">Saving</a><a id="Saving-1"></a><a class="docs-heading-anchor-permalink" href="#Saving" title="Permalink"></a></h2><h3 id="Saving-a-YAXArray-to-Zarr"><a class="docs-heading-anchor" href="#Saving-a-YAXArray-to-Zarr">Saving a YAXArray to Zarr</a><a id="Saving-a-YAXArray-to-Zarr-1"></a><a class="docs-heading-anchor-permalink" href="#Saving-a-YAXArray-to-Zarr" title="Permalink"></a></h3><p>One can save any <code>YAXArray</code> using the <code>savecube</code> function. Simply add a path as an argument and the cube will be saved. </p><pre><code class="language- hljs">julia&gt; using YAXArrays, Zarr
+
+julia&gt; a = YAXArray(rand(10,20));
+
+julia&gt; f = tempname();
+
+julia&gt; savecube(a,f,driver=:zarr)
+YAXArray with the following dimensions
+Dim_1               Axis with 10 Elements from 1 to 10
+Dim_2               Axis with 20 Elements from 1 to 20
+Total size: 1.56 KB</code></pre><p>If the pathname ends with &quot;.zarr&quot;, the driver argument can be omitted. </p><h3 id="Saving-a-YAXArray-to-NetCDF"><a class="docs-heading-anchor" href="#Saving-a-YAXArray-to-NetCDF">Saving a YAXArray to NetCDF</a><a id="Saving-a-YAXArray-to-NetCDF-1"></a><a class="docs-heading-anchor-permalink" href="#Saving-a-YAXArray-to-NetCDF" title="Permalink"></a></h3><p>Saving to NetCDF works exactly the same way. The <code>driver</code> argument can be omitted when the filename ends with &quot;.nc&quot;</p><pre><code class="language- hljs">julia&gt; using YAXArrays, Zarr, NetCDF
+
+julia&gt; a = YAXArray(rand(10,20));
+
+julia&gt; f = tempname();
+
+julia&gt; savecube(a,f,driver=:netcdf)
+YAXArray with the following dimensions
+Dim_1               Axis with 10 Elements from 1 to 10
+Dim_2               Axis with 20 Elements from 1 to 20
+Total size: 1.56 KB</code></pre><h3 id="Saving-a-Dataset"><a class="docs-heading-anchor" href="#Saving-a-Dataset">Saving a Dataset</a><a id="Saving-a-Dataset-1"></a><a class="docs-heading-anchor-permalink" href="#Saving-a-Dataset" title="Permalink"></a></h3><p>Saving Datasets can be done using the <code>savedataset</code> function.</p><pre><code class="language- hljs">julia&gt; using YAXArrays, Zarr
+
+julia&gt; ds = Dataset(x = YAXArray(rand(10,20)), y = YAXArray(rand(10)));
+
+julia&gt; f = tempname();
+
+julia&gt; savedataset(ds,path=f,driver=:zarr)
+YAXArray Dataset
+Dimensions: 
+   Dim_2               Axis with 20 Elements from 1 to 20
+   Dim_1               Axis with 10 Elements from 1 to 10
+Variables: x y</code></pre><h3 id="Overwriting-a-Dataset"><a class="docs-heading-anchor" href="#Overwriting-a-Dataset">Overwriting a Dataset</a><a id="Overwriting-a-Dataset-1"></a><a class="docs-heading-anchor-permalink" href="#Overwriting-a-Dataset" title="Permalink"></a></h3><p>If a path already exists, an error will be thrown. Set <code>overwrite=true</code> to delete the existing dataset</p><pre><code class="language- hljs">julia&gt; savedataset(ds,path=f,driver=:zarr, overwrite=true)
+YAXArray Dataset
+Dimensions: 
+   Dim_2               Axis with 20 Elements from 1 to 20
+   Dim_1               Axis with 10 Elements from 1 to 10
+Variables: x y</code></pre><h3 id="Appending-to-a-Dataset"><a class="docs-heading-anchor" href="#Appending-to-a-Dataset">Appending to a Dataset</a><a id="Appending-to-a-Dataset-1"></a><a class="docs-heading-anchor-permalink" href="#Appending-to-a-Dataset" title="Permalink"></a></h3><p>New variables can be added to an existing dataset using the <code>append=true</code> keyword. </p><pre><code class="language- hljs">julia&gt; ds2 = Dataset(z = YAXArray(rand(10,20,5)));
+
+julia&gt; savedataset(ds2,path=f,backend=:zarr,append=true);
+
+julia&gt; open_dataset(f, driver=:zarr)
+YAXArray Dataset
+Dimensions: 
+   Dim_2               Axis with 20 Elements from 1 to 20
+   Dim_1               Axis with 10 Elements from 1 to 10
+   Dim_3               Axis with 5 Elements from 1 to 5
+Variables: x z y </code></pre><h3 id="Creating-a-Datacube-without-writing-the-actual-data"><a class="docs-heading-anchor" href="#Creating-a-Datacube-without-writing-the-actual-data">Creating a Datacube without writing the actual data</a><a id="Creating-a-Datacube-without-writing-the-actual-data-1"></a><a class="docs-heading-anchor-permalink" href="#Creating-a-Datacube-without-writing-the-actual-data" title="Permalink"></a></h3><p>Sometimes one merely wants to create a datacube  &quot;Skeleton&quot; on disk and gradually fill it with data. Here we create YAXArray and write only the axis data and array metadata to disk, while no actual array data is copied:</p><pre><code class="language- hljs">julia&gt; using YAXArrays, Zarr
+
+julia&gt; a = YAXArray(zeros(Union{Missing, Int32},10,20))
+YAXArray with the following dimensions
+Dim_1               Axis with 10 Elements from 1 to 10
+Dim_2               Axis with 20 Elements from 1 to 20
+Total size: 800.0 bytes
+
+
+julia&gt; f = tempname();
+
+julia&gt; r = savecube(a,f,driver=:zarr,skeleton=true);
+
+julia&gt; all(ismissing,r[:,:])
+true</code></pre><p>The <code>skeleton</code> argument is also available for <code>savedataset</code>. </p><h2 id="Rechunking"><a class="docs-heading-anchor" href="#Rechunking">Rechunking</a><a id="Rechunking-1"></a><a class="docs-heading-anchor-permalink" href="#Rechunking" title="Permalink"></a></h2><h3 id="Saving-a-YAXArray-with-user-defined-chunks"><a class="docs-heading-anchor" href="#Saving-a-YAXArray-with-user-defined-chunks">Saving a YAXArray with user-defined chunks</a><a id="Saving-a-YAXArray-with-user-defined-chunks-1"></a><a class="docs-heading-anchor-permalink" href="#Saving-a-YAXArray-with-user-defined-chunks" title="Permalink"></a></h3><p>To determine the chunk size of the array representation on disk, call the <code>setchunks</code> function prior to saving:</p><pre><code class="language- hljs">julia&gt; using YAXArrays, Zarr, NetCDF
+
+julia&gt; a = YAXArray(rand(10,20));
+
+julia&gt; f = tempname();
+
+julia&gt; a_chunked = setchunks(a,(5,10));
+
+julia&gt; savecube(a_chunked,f,backend=:zarr);
+
+julia&gt; Cube(f).chunks
+2×2 DiskArrays.GridChunks{2}:
+ (1:5, 1:10)   (1:5, 11:20)
+ (6:10, 1:10)  (6:10, 11:20)</code></pre><p>Alternatively chunk sizes can be given by dimension name, so the following results in the same chunks:</p><pre><code class="language- hljs">a_chunked = setchunks(a,(Dim_2=10, Dim_1=5));</code></pre><h2 id="Rechunking-Datasets"><a class="docs-heading-anchor" href="#Rechunking-Datasets">Rechunking Datasets</a><a id="Rechunking-Datasets-1"></a><a class="docs-heading-anchor-permalink" href="#Rechunking-Datasets" title="Permalink"></a></h2><h3 id="Set-Chunks-by-Axis"><a class="docs-heading-anchor" href="#Set-Chunks-by-Axis">Set Chunks by Axis</a><a id="Set-Chunks-by-Axis-1"></a><a class="docs-heading-anchor-permalink" href="#Set-Chunks-by-Axis" title="Permalink"></a></h3><p>Set chunk size for each axis occuring in a dataset. This will be applied to all variables in the dataset:</p><pre><code class="language- hljs">using YAXArrays, Zarr
+ds = Dataset(x = YAXArray(rand(10,20)), y = YAXArray(rand(10)), z = YAXArray(rand(10,20,5)));
+dschunked = setchunks(ds,Dict(&quot;Dim_1&quot;=&gt;5, &quot;Dim_2&quot;=&gt;10, &quot;Dim_3&quot;=&gt;2));
+f = tempname();
+savedataset(dschunked,path=f,driver=:zarr)</code></pre><h3 id="Set-chunking-by-Variable"><a class="docs-heading-anchor" href="#Set-chunking-by-Variable">Set chunking by Variable</a><a id="Set-chunking-by-Variable-1"></a><a class="docs-heading-anchor-permalink" href="#Set-chunking-by-Variable" title="Permalink"></a></h3><p>The following will set the chunk size for each Variable separately and results in exactly the same chunking as the example above</p><pre><code class="language- hljs">using YAXArrays, Zarr
+ds = Dataset(x = YAXArray(rand(10,20)), y = YAXArray(rand(10)), z = YAXArray(rand(10,20,5)));
+dschunked = setchunks(ds,(x = (5,10), y = Dict(&quot;Dim_1&quot;=&gt;5), z = (Dim_1 = 5, Dim_2 = 10, Dim_3 = 2)));
+f = tempname();
+savedataset(dschunked,path=f,driver=:zarr)</code></pre><h3 id="Set-chunking-for-all-variables"><a class="docs-heading-anchor" href="#Set-chunking-for-all-variables">Set chunking for all variables</a><a id="Set-chunking-for-all-variables-1"></a><a class="docs-heading-anchor-permalink" href="#Set-chunking-for-all-variables" title="Permalink"></a></h3><p>The following code snippet only works when all member variables of the dataset have the same shape and sets the output chunks for all arrays. </p><pre><code class="language- hljs">using YAXArrays, Zarr
+ds = Dataset(x = YAXArray(rand(10,20)), y = YAXArray(rand(10,20)), z = YAXArray(rand(10,20)));
+dschunked = setchunks(ds,(5,10));
+f = tempname();
+savedataset(dschunked,path=f,driver=:zarr)</code></pre></article><nav class="docs-footer"><a class="docs-footer-prevpage" href="../../man/tutorial/">« Tutorial</a><a class="docs-footer-nextpage" href="../Time Mean/">Time Mean »</a><div class="flexbox-break"></div><p class="footer-message">Powered by <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> and the <a href="https://julialang.org/">Julia Programming Language</a>.</p></nav></div><div class="modal" id="documenter-settings"><div class="modal-background"></div><div class="modal-card"><header class="modal-card-head"><p class="modal-card-title">Settings</p><button class="delete"></button></header><section class="modal-card-body"><p><label class="label">Theme</label><div class="select"><select id="documenter-themepicker"><option value="documenter-light">documenter-light</option><option value="documenter-dark">documenter-dark</option></select></div></p><hr/><p>This document was generated with <a href="https://github.com/JuliaDocs/Documenter.jl">Documenter.jl</a> version 0.27.22 on <span class="colophon-date" title="Friday 19 August 2022 09:22">Friday 19 August 2022</span>. Using Julia version 1.7.3.</p></section><footer class="modal-card-foot"></footer></div></div></div></body></html>
