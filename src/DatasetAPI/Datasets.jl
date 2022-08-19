@@ -486,7 +486,7 @@ function savedataset(
     
     dshandle = if ispath(path)
         # We go into append mode
-        append_dataset(backend, path, ds, axdata, arrayinfo; skeleton)
+        append_dataset(backend, path, ds, axdata, arrayinfo)
     else
         YAXArrayBase.create_dataset(
             backend, 
