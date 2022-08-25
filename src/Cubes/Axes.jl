@@ -241,13 +241,9 @@ axVal2Index(x, v::CartesianIndex{1}; fuzzy::Bool=false) = min(max(v.I[1], 1), le
 function axVal2Index(x, v; fuzzy::Bool=false)
     i = findfirst(isequal(v), x.values)
     if isa(i, Nothing)
-        if fuzzy == true
-            dd = map(i -> abs(i - v), x.values)
-            mi, ind = findmin(dd)
-            return ind
-        else
-            error("Value $v not found in x")
-        end
+        dd = map(i -> abs(i - v), x.values)
+        mi, ind = findmin(dd)
+        return ind
     else
         return i
     end
