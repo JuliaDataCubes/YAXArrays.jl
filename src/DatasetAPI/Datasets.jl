@@ -284,6 +284,11 @@ YAXDataset(; kwargs...) = Dataset(YAXArrays.YAXDefaults.cubedir[]; kwargs...)
 
 to_array(ds::Dataset; joinname = "Variable") = Cube(ds;joinname)
 
+"""
+    Cube(ds::Dataset; joinname="Variable")
+Construct a single YAXArray from the dataset `ds`
+ by concatenating the cubes in the datset on the `joinname` dimension.
+"""
 function Cube(ds::Dataset; joinname = "Variable")
     
     dl = collect(keys(ds.axes))
@@ -558,53 +563,52 @@ end
 
 """
 function createdataset(DS::Type,axlist; kwargs...)
-    
-    Creates a new datacube with axes specified in `axlist`. Each axis must be a subtype
-    of `CubeAxis`. A new empty Zarr array will be created and can serve as a sink for
-    `mapCube` operations.
-    
-    ### Keyword arguments
-    
-    * `folder=tempname()` location where the new cube is stored
-    * `T=Union{Float32,Missing}` data type of the target cube
-    * `chunksize = ntuple(i->length(axlist[i]),length(axlist))` chunk sizes of the array
-    * `chunkoffset = ntuple(i->0,length(axlist))` offsets of the chunks
-    * `persist::Bool=true` shall the disk data be garbage-collected when the cube goes out of scope?
-    * `overwrite::Bool=false` overwrite cube if it already exists
-    * `properties=Dict{String,Any}()` additional cube properties
-    * `fillvalue= T>:Missing ? defaultfillval(Base.nonmissingtype(T)) : nothing` fill value
-    * `datasetaxis="Variable"` special treatment of a categorical axis that gets written into separate zarr arrays
-    """
-    function createdataset(
-        DS,
-        axlist;
-        path = "",
-        persist = nothing,
-        T = Union{Float32,Missing},
-        chunksize = ntuple(i -> length(axlist[i]), length(axlist)),
-        chunkoffset = ntuple(i -> 0, length(axlist)),
-        overwrite::Bool = false,
-        properties = Dict{String,Any}(),
-        datasetaxis = "Variable",
-        kwargs...,
-        )
-        
-        if persist === nothing
-            persist = !isempty(path)
-        end
-        attr = Dict{String,Any}(properties)
-        path = getsavefolder(path, persist)
-        check_overwrite(path, overwrite)
-        splice_generic(x::AbstractArray, i) = [x[1:(i-1)]; x[(i+1:end)]]
-        splice_generic(x::Tuple, i) = (x[1:(i-1)]..., x[(i+1:end)]...)
-        finalperm = nothing
-        idatasetax = datasetaxis === nothing ? nothing : findAxis(datasetaxis, axlist)
-        if idatasetax !== nothing
-            groupaxis = axlist[idatasetax]
-            axlist = splice_generic(axlist, idatasetax)
-            chunksize = splice_generic(chunksize, idatasetax)
-            chunkoffset = splice_generic(chunkoffset, idatasetax)
-            finalperm =
+  
+  Creates a new dataset with axes specified in `axlist`. Each axis must be a subtype
+  of `CubeAxis`. A new empty Zarr array will be created and can serve as a sink for
+  `mapCube` operations.
+  
+  ### Keyword arguments
+  
+  * `path=""` location where the new cube is stored
+  * `T=Union{Float32,Missing}` data type of the target cube
+  * `chunksize = ntuple(i->length(axlist[i]),length(axlist))` chunk sizes of the array
+  * `chunkoffset = ntuple(i->0,length(axlist))` offsets of the chunks
+  * `persist::Bool=true` shall the disk data be garbage-collected when the cube goes out of scope?
+  * `overwrite::Bool=false` overwrite cube if it already exists
+  * `properties=Dict{String,Any}()` additional cube properties
+  * `fillvalue= T>:Missing ? defaultfillval(Base.nonmissingtype(T)) : nothing` fill value
+  * `datasetaxis="Variable"` special treatment of a categorical axis that gets written into separate zarr arrays
+  """
+function createdataset(
+    DS,
+    axlist;
+    path = "",
+    persist = nothing,
+    T = Union{Float32,Missing},
+    chunksize = ntuple(i -> length(axlist[i]), length(axlist)),
+    chunkoffset = ntuple(i -> 0, length(axlist)),
+    overwrite::Bool = false,
+    properties = Dict{String,Any}(),
+    datasetaxis = "Variable",
+    kwargs...,
+)
+    if persist === nothing
+        persist = !isempty(path)
+    end
+    attr = Dict{String,Any}(properties)
+    path = getsavefolder(path, persist)
+    check_overwrite(path, overwrite)
+    splice_generic(x::AbstractArray, i) = [x[1:(i-1)]; x[(i+1:end)]]
+    splice_generic(x::Tuple, i) = (x[1:(i-1)]..., x[(i+1:end)]...)
+    finalperm = nothing
+    idatasetax = datasetaxis === nothing ? nothing : findAxis(datasetaxis, axlist)
+    if idatasetax !== nothing
+        groupaxis = axlist[idatasetax]
+        axlist = splice_generic(axlist, idatasetax)
+        chunksize = splice_generic(chunksize, idatasetax)
+        chunkoffset = splice_generic(chunkoffset, idatasetax)
+        finalperm =
             ((1:idatasetax-1)..., length(axlist) + 1, (idatasetax:length(axlist))...)
         else
             groupaxis = nothing
