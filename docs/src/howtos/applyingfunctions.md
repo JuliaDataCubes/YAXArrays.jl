@@ -1,4 +1,4 @@
-## How to apply functions on YAXArrays
+# How to apply functions on YAXArrays
 
 To apply user defined functions on a YAXArray data type we can use the [`map`](@ref) function, [`mapslices`](@ref) function or the [`mapCube`](@ref) function. 
 Which of these functions should be used depends on the layout of the data,  that the user defined function should be applied on. 
