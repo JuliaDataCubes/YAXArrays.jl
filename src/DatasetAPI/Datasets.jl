@@ -596,7 +596,7 @@ function createdataset(
     if persist === nothing
         persist = !isempty(path)
     end
-    attr = copy(properties)
+    attr = Dict{String,Any}(properties)
     path = getsavefolder(path, persist)
     check_overwrite(path, overwrite)
     splice_generic(x::AbstractArray, i) = [x[1:(i-1)]; x[(i+1:end)]]
