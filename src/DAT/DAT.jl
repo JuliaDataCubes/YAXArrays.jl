@@ -299,7 +299,7 @@ mapCube(fu::Function, cdata, addargs...; kwargs...) =
     mapCube(fu, (cdata,), addargs...; kwargs...)
 
 function mapCube(
-    f,
+    f::Function,
     in_ds::Dataset,
     addargs...;
     indims = InDims(),
