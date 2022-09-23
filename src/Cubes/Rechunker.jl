@@ -70,7 +70,8 @@ function get_copy_buffer_size(incube, outcube;writefac=4.0, maxbuf = YAXDefaults
     else
         bufnow
     end
-    bufcorrected
+    bufcorrected = min.(bufcorrected,insize)
+    Int.(max.(bufcorrected,1))
 end
 
 """
