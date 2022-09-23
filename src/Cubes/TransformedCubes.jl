@@ -4,7 +4,7 @@ import ..Cubes: YAXArray, caxes, iscompressed, cubechunks, chunkoffset
 using DiskArrayTools: diskstack, DiskArrayTools
 
 function Base.map(op, incubes::YAXArray...)
-    axlist = copy(caxes(incubes[1]))
+    axlist = [c for c in caxes(incubes[1])]
     chunks = incubes[1].chunks
     all(i-> eachchunk(i) == chunks, incubes) || error("All chunk sizes must match, consider resetting the chunks to a common size using `setchunks`")
     all(i -> caxes(i) == axlist, incubes) || error("All axes must match")
