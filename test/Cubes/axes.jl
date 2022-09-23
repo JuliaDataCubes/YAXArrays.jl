@@ -21,6 +21,8 @@
             DateTime(2002, 1, 1):Day(1):DateTime(2002, 1, 31),
             Hour(24),
         ),
+        (RangeAxis, "Single_IntRange", 1:1, 0),
+
         #This is currently not used, because we need to design, how this should behave.
         (
             RangeAxis,

@@ -200,6 +200,8 @@ abshalf(a::Month) = iseven(Dates.value(a)) ? a / 2 : Month(a ÷ 2) + Day(15)
 """
 function axVal2Index(a::RangeAxis{<:Any,<:Any,<:AbstractRange}, v; fuzzy=false)
     dt = v - first(a.values)
+    s = step(a.values)
+    s == 0 && return 1
     r = round(Int, dt / step(a.values)) + 1
     return max(1, min(length(a.values), r))
 end
