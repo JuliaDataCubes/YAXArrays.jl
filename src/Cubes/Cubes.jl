@@ -172,6 +172,15 @@ end
 caxes(c::YAXArray) = getfield(c, :axes)
 
 """
+# Internal 
+    getcleaner(x)
+Get the cleaner for a YAXArray.
+This function is used to separate the cleaner access from the implementation in the Array.
+"""
+getcleaner(x) = CleanMe[]
+getcleaner(x::YAXArray) = x.cleaner
+
+"""
     readcubedata(cube)
 
 Given any array implementing the YAXArray interface it returns an in-memory [`YAXArray`](@ref) from it.

@@ -1,6 +1,6 @@
 module Datasets
 import ..Cubes.Axes: axsym, axname, CubeAxis, findAxis, CategoricalAxis, RangeAxis, caxes
-import ..Cubes: Cubes, YAXArray, concatenatecubes, CleanMe, subsetcube, copy_diskarray, setchunks
+import ..Cubes: Cubes, YAXArray, concatenatecubes, CleanMe, subsetcube, copy_diskarray, setchunks, getcleaner
 using ...YAXArrays: YAXArrays, YAXDefaults
 using DataStructures: OrderedDict, counter
 using Dates: Day, Hour, Minute, Second, Month, Year, Date, DateTime, TimeType, AbstractDateTime
@@ -72,9 +72,9 @@ function to_dataset(c;datasetaxis = "Variable", name = get(c.properties,"name","
     allcubes = map(enumerate(cubenames)) do (i,cn)
         if idatasetax !== nothing
             viewinds = Base.setindex(viewinds,i,idatasetax)
-            Symbol(cn)=>YAXArray(axlist, view(getdata(c),viewinds...), copy(atts),chunks=GridChunks(chunks),cleaner=c.cleaner)
+            Symbol(cn)=>YAXArray(axlist, view(getdata(c),viewinds...), copy(atts),chunks=GridChunks(chunks),cleaner=getcleaner(c))
         else
-            Symbol(cn)=>YAXArray(axlist, getdata(c), copy(atts),chunks=GridChunks(chunks),cleaner=c.cleaner)
+            Symbol(cn)=>YAXArray(axlist, getdata(c), copy(atts),chunks=GridChunks(chunks),cleaner=getcleaner(c))
         end
         
     end
@@ -541,7 +541,7 @@ The keyword arguments are:
 function savecube(
     c,
     path::AbstractString;
-    name = get(c.properties,"name","layer"),
+    name = get(getattributes(c),"name","layer"),
     datasetaxis = "Variable",
     max_cache = 5e8,
     backend = :all,
