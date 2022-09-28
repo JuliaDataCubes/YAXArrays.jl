@@ -60,3 +60,34 @@
     @test_broken all(c_reopened.data .== c)
     @test_broken c.dims[1] == c_reopened.dims[1]
 end
+
+@testitem "Multiple Cubes" begin
+    using YAXArrays 
+    using DimensionalData
+    x = Dim{:x}(1:4)
+    y = Dim{:y}(1:5)
+    z = Dim{:z}(1:6)
+    a1 = DimArray(rand(4,5,6), (x,y,z))
+    a2 = DimArray(rand(4,6,5),(x,z,y))
+    a3 = DimArray(rand(4,5),(x,y))
+    indims = InDims("x")
+    outdims = OutDims("x")
+    r = mapCube((a1, a2), indims=(indims, indims), outdims=outdims) do xout, x1, x2
+        xout .= x1 .+ x2
+    end
+    @test r.data == a1.data .+ permutedims(a2.data,(1,3,2))
+    r = mapCube((a2, a3), indims=(indims, indims), outdims=outdims) do xout, x1, x2
+        xout .= x1 .+ x2
+    end
+    @test r.data == a2.data .+ reshape(a3.data,(4,1,5))
+
+
+    x = Dim{:axis1}(1:10)
+    yax = DimArray(rand(10), x)
+    r = mapslices(sum, yax, dims=:axis1)
+    @test r.data[] == sum(yax.data)
+
+    #I am not sure, whether this is an actual use case 
+    # and whether we would like to support the mix of symbol and string axisnames.
+    @test_broken r = mapslices(sum, yax, dims="axis1")
+end
