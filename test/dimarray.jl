@@ -170,3 +170,5 @@ end
     d = tempname()
     @test_broken c_chunked = setchunks(c,Dict("Lon" => 7, "Lat" => 9))
     @test_broken c_chunked isa AbstractDimArray
+
+end
