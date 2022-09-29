@@ -172,3 +172,23 @@ end
     @test_broken c_chunked isa AbstractDimArray
 
 end
+
+@testitem "DimArray tablestats" begin
+    using DimensionalData
+    using YAXArrays 
+    using OnlineStats
+    data = collect(reshape(1:20.,4,5))
+    axlist = (Dim{:XVals}(1.0:4.0), Dim{:YVals}([1,2,3,4,5]))
+    props = Dict("att1"=>5, "att2"=>"Hallo")
+    a = DimArray(data, axlist, metadata=props)
+    cta = CubeTable(data=a)
+    meancta = cubefittable(cta,Mean(),:data, by=(:YVals,))
+    @test meancta.data == [2.5, 6.5, 10.5, 14.5, 18.5] 
+    @test_broken meancta isa AbstractDimArray 
+    ashcta = cubefittable(cta, Ash(KHist(3)), :data, by=(:YVals,))
+    @test all(ashcta[Hist="Frequency"][1,:] .== 0.2222222222222222)
+    @test_broken ashcta isa AbstractDimArray 
+    khistcta = cubefittable(cta, KHist(3), :data, by=(:YVals,))
+    @test all(khistcta[Hist="Frequency"][1,:] .== 1.0)
+    @test_broken khistcta isa AbstractDimArray
+end
