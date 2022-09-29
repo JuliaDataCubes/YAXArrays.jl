@@ -158,3 +158,16 @@ end
     @test r1[:,:,2:40,:] == a[:,:,1:end-1,:]
     @test_broken r1 isa DimArray
 end
+
+@testitem "DimArray Chunking" begin
+    using YAXArrays 
+    using DimensionalData
+
+    a = Array{Union{Float64,Missing}}(rand(40, 20, 10))
+    lon = Dim{:Lon}(1:40)
+    lat = Dim{:Lat}(1:20)
+    tim = Dim{:Time}(1:10)
+    c = DimArray(a,(lon, lat, tim))
+    d = tempname()
+    @test_broken c_chunked = setchunks(c,Dict("Lon" => 7, "Lat" => 9))
+    @test_broken c_chunked isa AbstractDimArray
