@@ -50,13 +50,13 @@
     end
     @test any(ismissing.(nofilter.data)) == false
 
-    @test_broken r isa DimArray
+    @test_broken r isa AbstractDimArray
     temp = tempname()
     @test_broken c_saved = savecube(c, temp)
-    @test_broken c_saved isa DimArray 
+    @test_broken c_saved isa AbstractDimArray 
     @test_broken all(c_saved[:,:,:] .== c[:,:,:])
 
-    @test_broken c_reopened = open_dataset(temp, artype=DimArray) isa DimArray
+    @test_broken c_reopened = open_dataset(temp, artype=DimArray) isa AbstractDimArray
     @test_broken all(c_reopened.data .== c)
     @test_broken c.dims[1] == c_reopened.dims[1]
 end
@@ -100,8 +100,7 @@ end
     lat = Dim{:Lat}(1:20)
     tim = Dim{:Time}(1:10)
     c = DimArray(a,(lon, lat, tim))
-    d = tempname()
-    @test_broken c_chunked = setchunks(c,Dict("Lon" => 7, "Lat" => 9))
+
     indims = InDims("Time",YAXArrays.MovingWindow("Lon",1,1),window_oob_value = -9999.0)
     r1 = mapCube(c, indims=indims, outdims=OutDims("Time")) do xout,xin
         xout[:] = xin[:,1]
@@ -112,9 +111,9 @@ end
     r3 = mapCube(c, indims = indims, outdims = OutDims("Time")) do xout, xin
         xout[:] = xin[:, 3]
     end
-    @test_broken r1 isa DimArray
-    @test_broken r2 isa DimArray
-    @test_broken r3 isa DimArray
+    @test_broken r1 isa AbstractDimArray
+    @test_broken r2 isa AbstractDimArray
+    @test_broken r3 isa AbstractDimArray
 
     @test r1.data[:, 2:40, :] == permutedims(a[1:39, :, :], (3, 1, 2))
     @test all(==(-9999.0), r1.data[:, 1, :])
@@ -139,9 +138,9 @@ end
     @test r3.data[:, 1:39, 1:19] == permutedims(a[2:40, 2:20, :], (3, 1, 2))
     @test all(ismissing, r3.data[:, end, :])
     @test all(ismissing, r3.data[:, :, end])
-    @test_broken r1 isa DimArray
-    @test_broken r2 isa DimArray
-    @test_broken r3 isa DimArray
+    @test_broken r1 isa AbstractDimArray
+    @test_broken r2 isa AbstractDimArray
+    @test_broken r3 isa AbstractDimArray
 
     a = Array{Union{Float64,Missing}}(rand(10,4,  40, 20));
     varax = Dim{:Variable}('a':'d')
@@ -156,7 +155,7 @@ end
     end
     @test all(ismissing,r1[:,:,1,:])
     @test r1[:,:,2:40,:] == a[:,:,1:end-1,:]
-    @test_broken r1 isa DimArray
+    @test_broken r1 isa AbstractDimArray
 end
 
 @testitem "DimArray Chunking" begin
