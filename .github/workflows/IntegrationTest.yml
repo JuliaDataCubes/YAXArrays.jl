@@ -21,7 +21,7 @@ jobs:
         julia-version: [1]
         os: [ubuntu-latest]
         package:
-          - {user: esa-ESDL, repo: ESDL.jl}
+          - {user: JuliaDataCubes, repo: EarthDataLab.jl}
 
     steps:
       - uses: actions/checkout@v2
