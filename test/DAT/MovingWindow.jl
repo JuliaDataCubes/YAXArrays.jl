@@ -6,6 +6,7 @@
     tim = RangeAxis("Time", 1:10)
     c = YAXArray([lon, lat, tim], a)
     d = tempname()
+    # Why is this done in the Moving Window testset?
     c = savecube(setchunks(c,Dict("Lon" => 7, "Lat" => 9)), d, backend = :zarr)
 
     indims = InDims("Time",YAXArrays.MovingWindow("Lon",1,1),window_oob_value = -9999.0)
