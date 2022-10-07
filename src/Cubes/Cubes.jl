@@ -85,14 +85,18 @@ It can wrap normal arrays or, more typically DiskArrays.
 
 ### Fields
 
-* `axes` a `Vector{CubeAxis}` containing the Axes of the Cube
-* `data` N-D array containing the data
+$(FIELDS)
 """
 struct YAXArray{T,N,A<:AbstractArray{T,N},AxesTypes}
+    "`Vector{CubeAxis}` containing the Axes of the Cube"
     axes::AxesTypes
+    "length(axes)-dimensional array which holds the data, this can be a lazy DiskArray"
     data::A
+    "Metadata properties describing the content of the data"
     properties::Dict{String}
+    "Representation of the chunking of the data"
     chunks::GridChunks{N}
+    "Cleaner objects to track which objects to tidy up when the YAXArray goes out of scope"
     cleaner::Vector{CleanMe}
     function YAXArray(axes, data, properties, chunks, cleaner)
         if ndims(data) != length(axes) # case: mismatched Arguments
