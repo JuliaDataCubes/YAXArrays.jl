@@ -95,3 +95,20 @@ ch = YAXArrays.DAT.getloopchunks(dc)
 incubes, outcubes = YAXArrays.DAT.getCubeCache(dc);
 @test 0.5 < sum(sizeof,incubes)/YAXArrays.YAXDefaults.max_cache[] <= 1.0#
 end
+
+@testitem "Map Cubes with Different Chunks Issue #182" begin
+   using YAXArrays
+   using Zarr
+   d = tempdir()
+   x,y,z = (RangeAxis("x",1:400), RangeAxis("y", 1:500), RangeAxis("z", 1:600))
+   a = rand(400,500,600)
+   a1 = YAXArray([x,y,z], a)
+   p1 = joinpath(d,tempname()) * ".zarr"
+   p2 = joinpath(d,tempname()) * ".zarr"
+   savecube(setchunks(a1, (40,50,1)), p2)
+   savecube(setchunks(a1, (20,20,1)), p1)
+   a2 = Cube(p2)
+   a1 = Cube(p1)
+   mapped = map((x,y) -> x * y, a1, setchunks(a2, YAXArrays.Cubes.cubechunks(a1)))
+   @test_broken mapped[x=1] isa YAXArray
+end
