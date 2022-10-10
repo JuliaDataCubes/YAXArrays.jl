@@ -238,8 +238,14 @@ function batchextract(x,i)
         end
         axinds = filter(!isnothing,axinds)
     end
-    if !all(diff(sort(axinds)).==1)
-        error("Axes indexed into currently need to be together") #Tofix
+    allax = 1:ndims(x)
+    axrem = setdiff(allax,axinds)
+    ai1, ai2 = extrema(axinds)
+    if !all(diff(sort(collect(axinds))).==1)
+        #Axes to be extracted from are not consecutive in cube -> permute
+        p = [1:(ai1-1);collect(axinds);filter(!in(axinds),ai1:ai2);(ai2+1:ndims(x))]
+        x_perm = permutedims(x,p)
+        return batchextract(x_perm,i)
     end
     cartinds = map(axinds,tcols) do iax,col
         axcur = caxes(x)[iax]
@@ -247,16 +253,20 @@ function batchextract(x,i)
             axVal2Index(axcur,val)
         end
     end
-    indlist = map(cartinds...) do inds...
-        ind = map(inds,axinds) do i,ai
-            
+    
+    before = ntuple(_->Colon(),ai1-1)
+    after = ntuple(_->Colon(),ndims(x)-ai2)
+    sp = issorted(axinds) ? nothing : sortperm(collect(axinds))
+    function makeindex(sp, inds...)
+        if sp === nothing
+            CartesianIndex(inds...)
+        else
+            CartesianIndex(inds[sp]...)
         end
-        ind
     end
-    d = getdata(x)[indlist]
+    indlist = makeindex.(Ref(sp),cartinds...)
+    d = getdata(x)[before...,indlist,after...]
     cax = caxes(x)
-    allax = 1:ndims(x)
-    axrem = setdiff(allax,axinds)
     newax = if newaxcol == nothing
         outaxis_from_data(cax,axinds,indlist)
     else
@@ -282,9 +292,10 @@ function outaxis_from_data(cax,axinds,indlist)
     mergeaxes = getindex.(Ref(cax),axinds)
     mergenames = axname.(mergeaxes)
     newname = join(mergenames,'_')
+    minai = minimum(axinds)
     mergevals = map(indlist) do i
         broadcast(mergeaxes,axinds) do ax,ai
-            ax.values[i[ai]]
+            ax.values[i[ai-minai+1]]
         end
     end
     CategoricalAxis(newname, mergevals)
