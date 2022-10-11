@@ -215,7 +215,6 @@ cubechunks(c) = approx_chunksize(eachchunk(c))
 DiskArrays.eachchunk(c::YAXArray) = c.chunks
 getindex_all(a) = getindex(a, ntuple(_ -> Colon(), ndims(a))...)
 function Base.getindex(x::YAXArray, i...) 
-    @show length(i), istable(i)
     if length(i)==1 && istable(first(i))
         batchextract(x,first(i))
     else

@@ -12,7 +12,7 @@ c_perm = permutedims(c,(3,2,1))
 
 
 sites_names = [(lon = rand()*5+30, lat = rand()*5+50,site = string(i)) for i in 1:200]
-sites_pure = [n[[:lon,:lat]] for n in sites_names]
+sites_pure = [(lon = n.lon, lat=n.lat) for n in sites_names]
 lon,lat = sites_pure[10]
 
 r = c[sites_names]
