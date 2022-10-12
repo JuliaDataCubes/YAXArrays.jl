@@ -13,6 +13,7 @@ using YAXArrayBase: YAXArrayBase, iscompressed, dimnames, iscontdimval
 import YAXArrayBase: getattributes, iscontdim, dimnames, dimvals, getdata
 using DiskArrayTools: CFDiskArray
 using DocStringExtensions
+using Tables: istable, schema, columns
 
 export concatenatecubes, caxes, subsetcube, readcubedata, renameaxis!, YAXArray, setchunks
 
@@ -217,7 +218,91 @@ setchunks(c::YAXArray,chunks) = YAXArray(c.axes,c.data,c.properties,interpret_cu
 cubechunks(c) = approx_chunksize(eachchunk(c))
 DiskArrays.eachchunk(c::YAXArray) = c.chunks
 getindex_all(a) = getindex(a, ntuple(_ -> Colon(), ndims(a))...)
-Base.getindex(x::YAXArray, i...) = getdata(x)[i...]
+function Base.getindex(x::YAXArray, i...) 
+    if length(i)==1 && istable(first(i))
+        batchextract(x,first(i))
+    else
+        getdata(x)[i...]
+    end
+end
+function batchextract(x,i)
+    sch = schema(i)
+    axinds = map(sch.names) do n
+        findAxis(n,x)
+    end
+    
+    tcols = columns(i)
+    #Try to find a column denoting new axis name and values
+    newaxcol = nothing
+    if any(isnothing,axinds)
+        allnothings = findall(isnothing,axinds)
+        if length(allnothings) == 1
+            newaxcol = allnothings[1]
+        end
+        axinds = filter(!isnothing,axinds)
+    end
+    allax = 1:ndims(x)
+    axrem = setdiff(allax,axinds)
+    ai1, ai2 = extrema(axinds)
+    if !all(diff(sort(collect(axinds))).==1)
+        #Axes to be extracted from are not consecutive in cube -> permute
+        p = [1:(ai1-1);collect(axinds);filter(!in(axinds),ai1:ai2);(ai2+1:ndims(x))]
+        x_perm = permutedims(x,p)
+        return batchextract(x_perm,i)
+    end
+    cartinds = map(axinds,tcols) do iax,col
+        axcur = caxes(x)[iax]
+        map(col) do val
+            axVal2Index(axcur,val)
+        end
+    end
+    
+    before = ntuple(_->Colon(),ai1-1)
+    after = ntuple(_->Colon(),ndims(x)-ai2)
+    sp = issorted(axinds) ? nothing : sortperm(collect(axinds))
+    function makeindex(sp, inds...)
+        if sp === nothing
+            CartesianIndex(inds...)
+        else
+            CartesianIndex(inds[sp]...)
+        end
+    end
+    indlist = makeindex.(Ref(sp),cartinds...)
+    d = getdata(x)[before...,indlist,after...]
+    cax = caxes(x)
+    newax = if newaxcol == nothing
+        outaxis_from_data(cax,axinds,indlist)
+    else
+        outaxis_from_column(i,newaxcol)
+    end
+    outax = CubeAxis[axcopy(a) for a in cax][axrem]
+    insert!(outax,minimum(axinds),newax)
+    YAXArray(outax,d,x.properties)
+end
+
+function outaxis_from_column(tab,icol)
+    axdata = columns(tab)[icol]
+    axname = schema(tab).names[icol]
+    if eltype(axdata) <: AbstractString ||
+        (!issorted(axdata) && !issorted(axdata, rev = true))
+        CategoricalAxis(axname, axdata)
+    else
+        RangeAxis(axname, axdata)
+    end
+end
+
+function outaxis_from_data(cax,axinds,indlist)
+    mergeaxes = getindex.(Ref(cax),axinds)
+    mergenames = axname.(mergeaxes)
+    newname = join(mergenames,'_')
+    minai = minimum(axinds)
+    mergevals = map(indlist) do i
+        broadcast(mergeaxes,axinds) do ax,ai
+            ax.values[i[ai-minai+1]]
+        end
+    end
+    CategoricalAxis(newname, mergevals)
+end
 chunkoffset(c) = grid_offset(eachchunk(c))
 
 # Implementation for YAXArrayBase interface
