@@ -4,32 +4,45 @@
 
 A package for operating on out-of-core labeled arrays, based on stores like NetCDF, Zarr or GDAL.  
 
-## Package Features
+!!! info
+    - Open datasets from a variety of sources (NetCDF, Zarr, ArchGDAL)
+    - Interoperability with other named axis packages through YAXArrayBase
+    - Efficient `mapslices(x)` operations on huge multiple arrays, optimized for high-latency data access (object storage, compressed datasets) 
 
-- open datasets from a variety of sources (NetCDF, Zarr, ArchGDAL)
-- interoperability with other named axis packages through YAXArrayBase
-- efficient `mapslices(x)` operations on huge multiple arrays, optimized for high-latency data access (object storage, compressed datasets) 
+## Installation
+
+In the Julia REPL type:
+
+```julia
+using Pkg
+Pkg.add("YAXArrays")
+```
+
+or 
+
+```julia
+] add YAXArrays
+```
+
+The `]` character starts the Julia [package manager](https://docs.julialang.org/en/v1/stdlib/Pkg/). Hit backspace key to return to Julia prompt.
+
+You may check the installed version with:
+
+```julia
+] st YAXArrays
+```
+
+Start using the package:
+
+```julia
+using YAXArrays
+```
 
 The [YAXArray tutorial](@ref) provides a tutorial explaining how to get started using YAXArrays.
 
-## Manual Outline
+## Quick start
 
-```@contents
-Pages = [
-    "tutorials/tutorial.md",
-    "howtos/howtos.md",
-    "exp/exp.md"
-]
-Depth = 2
+```julia
+using YAXArrays
+yax = YAXArray(rand(10,20,30))
 ```
-## Library Outline
-
-```@contents
-Pages = ["lib/public.md", "lib/internals.md"]
-```
-
-### [Index](@id main-index)
-
-```@index
-Pages = ["lib/public.md"]
-``` -->
