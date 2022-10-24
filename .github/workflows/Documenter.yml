@@ -1,8 +1,9 @@
 name: Documenter
 on:
   push:
-    branches: [master]
-    tags: [v*]
+    branches:
+      - master
+    tags: "*"
   pull_request:
 concurrency:
   # Skip intermediate builds: always.
@@ -41,3 +42,7 @@ jobs:
         run: |
           DISPLAY=:0 xvfb-run -s '-screen 0 1024x768x24' julia --code-coverage=user --project=docs/ --color=yes docs/genfiles.jl
           DISPLAY=:0 xvfb-run -s '-screen 0 1024x768x24' julia --code-coverage=user --project=docs/ --color=yes docs/make.jl
+      - uses: julia-actions/julia-processcoverage@v1
+        - uses: codecov/codecov-action@v2
+          with:
+            files: lcov.info
