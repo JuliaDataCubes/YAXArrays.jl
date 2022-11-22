@@ -65,7 +65,9 @@ mutable struct InputCube{N}
     colonperm::Union{Vector{Int},Nothing}
     "Indices of loop axes that this cube does not contain, i.e. broadcasts"
     loopinds::Vector{Int}
-    cachesize::Vector{Int}     #Number of elements to keep in cache along each axis TODO: delete
+    "Number of elements to keep in cache along each axis"
+    cachesize::Vector{Int}     # TODO: delete
+
     window::Vector{WindowDescriptor}
     iwindow::Vector{Int}
     windowloopinds::Vector{Int}
@@ -210,37 +212,36 @@ end
 """
 Configuration object of a DAT process. This holds all necessary information to perform the calculations.
 It contains the following fields:
-
-- `incubes::NTuple{NIN,InputCube}` The input data cubes
-- `outcube::NTuple{NOUT,OutputCube}` The output data cubes
-allInAxes     :: Vector
-LoopAxes      :: Vector
-ispar         :: Bool
-loopcachesize :: Vector{Int}
-max_cache
-fu
-inplace      :: Bool
-include_loopvars:: Bool
-ntr
-addargs
-kwargs
+$TYPEDFIELDS
 """
 mutable struct DATConfig{NIN,NOUT}
     "The input data cubes"
     incubes::NTuple{NIN,InputCube}
     "The output data cubes"
     outcubes::NTuple{NOUT,OutputCube}
+    "List of all axes of the input cubes"
     allInAxes::Vector
+    "List of axes that are looped through"
     LoopAxes::Vector
+    "Flag whether the computation is parallelized"
     ispar::Bool
+    ""
     loopcachesize::Vector{Int}
+    ""
     allow_irregular_chunks::Bool
+    "Maximal size of the in memory cache"
     max_cache::Any
+    "Inner function which is computed"
     fu::Any
+    "Flag whether the computation happens in place"
     inplace::Bool
+    ""
     include_loopvars::Bool
+    ""
     ntr::Any
+    "Additional arguments for the inner function"
     addargs::Any
+    "Additional keyword arguments for the inner function"
     kwargs::Any
 end
 function DATConfig(
@@ -289,7 +290,11 @@ function DATConfig(
     )
 end
 
-
+"""
+    getOuttype(outtype, cdata)
+# Internal function 
+Get the element type for the output cube
+"""
 getOuttype(outtype::Int, cdata) = eltype(cdata[outtype])
 function getOuttype(outtype::DataType, cdata)
     outtype
@@ -298,6 +303,17 @@ end
 mapCube(fu::Function, cdata, addargs...; kwargs...) =
     mapCube(fu, (cdata,), addargs...; kwargs...)
 
+
+"""
+    mapCube(fun, cube, addargs...;kwargs...)
+
+    Map a given function `fun` over slices of all cubes of the dataset `ds`. 
+    Use InDims to discribe the input dimensions and OutDims to describe the output dimensions of the function.
+    For Datasets, only one output cube can be specified.
+    In contrast to the mapCube function for cubes, additional arguments for the inner function should be set as keyword arguments.
+
+    For the specific keyword arguments see the docstring of the mapCube function for cubes.
+"""        
 function mapCube(
     f::Function,
     in_ds::Dataset,
@@ -326,6 +342,7 @@ function mapCube(
         "Additional arguments currently not supported for datasets, use kwargs instead",
     )
     if inplace
+        # Why do we specify arnames here again, this seems to be unused in the let block?
         fnew = let arnames = collect(arnames), f = f
             function dsfun(xout, xin...; kwargs...)
                 incubes = NamedTuple{sarnames,typeof(xin)}(xin)
@@ -372,7 +389,7 @@ end
 
 Map a given function `fun` over slices of the data cube `cube`. 
     The additional arguments `addargs` will be forwarded to the inner function `fun`.
-
+    Use InDims to discribe the input dimensions and OutDims to describe the output dimensions of the function.
 ### Keyword arguments
 
 * `max_cache=YAXDefaults.max_cache` maximum size of blocks that are read into memory, defaults to approx 10Mb
@@ -491,6 +508,12 @@ function to_chunksize(c::IrregularChunks, cs, allow_irregular=true)
     end
 end
 
+"""
+    getloopchunks(dc::DATConfig)
+# Internal function
+    Returns the chunks that can be looped over toghether for all dimensions.
+    This computation of the size of the chunks is handled by [`DiskArrays.approx_chunksize`](@ref)
+"""
 function getloopchunks(dc::DATConfig)
     lc = dc.loopcachesize
     co = map(lc,dc.LoopAxes) do cs, ax
@@ -523,6 +546,12 @@ function getloopchunks(dc::DATConfig)
     (co...,)
 end
 
+"""
+    permuteloopaxes(dc)
+# Internal function
+Permute the dimensions of the cube, so that the axes that are looped through are in the first positions.
+This is necessary for a faster looping through the data.
+"""
 function permuteloopaxes(dc)
     foreach(dc.incubes) do ic
         if !issorted(ic.loopinds)
