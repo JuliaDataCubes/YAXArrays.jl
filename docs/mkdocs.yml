@@ -33,7 +33,7 @@ theme:
         icon: material/lightbulb
         name: Switch to dark mode
     - scheme: slate
-      primary: blue grey
+      primary: black
       accent: amber
       toggle:
         icon: material/lightbulb-outline
@@ -113,4 +113,6 @@ nav:
     - "Simple maps": "examples/generated/Gallery/simplemaps.md"
   - "Tutorials":
     - "Tutorial": "tutorials/tutorial.md"
+  - "How do I ...":
+    - "Extract axes names": "examples/generated/HowdoI/extract_axes_names.md"
   - "API" : "api.md"
