@@ -139,15 +139,22 @@ function Base.getindex(x::Dataset, i::Vector{String})
     Dataset(; cubesnew...)
 end
 Base.getindex(x::Dataset, i::String) = getproperty(x, Symbol(i))
+function subsetifdimexists(a;kwargs...)
+    axlist = caxes(a)
+    kwargsshort = filter(kwargs) do kw
+        findAxis(first(kw),axlist) !== nothing
+    end
+    subsetcube(a;kwargsshort...)
+end
 function subsetcube(x::Dataset; var = nothing, kwargs...)
     if var === nothing
         cc = x.cubes
-        Dataset(; properties=x.properties, map(ds -> ds => subsetcube(cc[ds]; kwargs...), collect(keys(cc)))...)
+        Dataset(; properties=x.properties, map(ds -> ds => subsetifdimexists(cc[ds]; kwargs...), collect(keys(cc)))...)
     elseif isa(var, String) || isa(var, Symbol)
         subsetcube(getproperty(x, Symbol(var)); kwargs...)
     else
         cc = x[var].cubes
-        Dataset(; properties=x.properties, map(ds -> ds => subsetcube(cc[ds]; kwargs...), collect(keys(cc)))...)
+        Dataset(; properties=x.properties, map(ds -> ds => subsetifdimexists(cc[ds]; kwargs...), collect(keys(cc)))...)
     end
 end
 function collectdims(g)

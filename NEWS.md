@@ -1,9 +1,10 @@
 # News
 
-All notable changes to this project will be documented in this file.
+## v0.4.4
+Fixed subsetting of datasets so that no error is thrown if some of the cubes inside the dataset don't contain the axis for subsetting. 
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+## v0.4.3
+Added the possibility to use Tables.jl compatible Tables for indexing into a YAXArray. Makes extraction of data from a list of scattered locations in a YAXArray convenient. 
 
 ## Unreleased
 
