@@ -54,6 +54,15 @@ using DataStructures: OrderedDict
         @test ds["avar"] === c1
         @test length(ds3[Time=(Date(2001,2,1),Date(2001,8,1))].Time) == 6 
     end
+    @testset "Subsetting datasets" begin
+        dssub = ds[time=Date(2001,2,15)]
+        @test dssub isa Dataset
+        @test sort(collect(keys(dssub.axes))) == [:XVals, :YVals]
+        @test ndims(dssub.avar)==2
+        dssub2 = ds[var=[:avar,:something], time=Date(2001,1,15)..Date(2001,6,15)]
+        @test length(dssub2.cubes)==2
+        @test size(dssub2.avar)==(4,5,6)
+    end
     @testset "Dataset interface" begin
         struct MockDataset
             vars::Any
