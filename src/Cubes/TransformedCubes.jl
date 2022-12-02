@@ -27,12 +27,13 @@ axis `cataxis`
 function concatenatecubes(cl, cataxis::CubeAxis)
     length(cataxis.values) == length(cl) ||
         error("cataxis must have same length as cube list")
-    axlist = axcopy.(caxes(cl[1]))
-    T = eltype(cl[1])
-    N = ndims(cl[1])
-    chunks = eachchunk(cl[1])
+    firstnontrivialcube = findfirst(c->ndims(c)>0, cl)
+    axlist = axcopy.(caxes(cl[firstnontrivialcube]))
+    T = eltype(cl[firstnontrivialcube])
+    N = ndims(cl[firstnontrivialcube])
+    chunks = eachchunk(cl[firstnontrivialcube])
     cleaners = CleanMe[]
-    append!(cleaners, cl[1].cleaner)
+    append!(cleaners, cl[firstnontrivialcube].cleaner)
     for i = 2:length(cl)
         all(caxes(cl[i]) .== axlist) ||
             error("All cubes must have the same axes, cube number $i does not match")
@@ -43,7 +44,7 @@ function concatenatecubes(cl, cataxis::CubeAxis)
         eachchunk(cl[i]) == chunks || error("Trying to concatenate cubes with different chunk sizes. Consider manually setting a common chunk size using `setchunks`.")
         append!(cleaners, cl[i].cleaner)
     end
-    props = mapreduce(getattributes, merge, cl, init = getattributes(cl[1]))
+    props = mapreduce(getattributes, merge, cl, init = getattributes(cl[firstnontrivialcube]))
     newchunks = GridChunks((chunks.chunks...,DiskArrays.RegularChunks(1,0,length(cataxis))))
     YAXArray([axlist..., cataxis], diskstack([getdata(c) for c in cl]), props, newchunks, cleaners)
 end
