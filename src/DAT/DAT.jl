@@ -556,7 +556,10 @@ function permuteloopaxes(dc)
     foreach(dc.incubes) do ic
         if !issorted(ic.loopinds)
             p = sortperm(ic.loopinds)
-            ic.cube = permutedims(ic.cube,[1:length(ic.axesSmall);p .+ length(ic.axesSmall)])
+            iloopax = setdiff(1:ndims(ic.cube),ic.iall)
+            perm = collect(1:ndims(ic.cube))
+            perm[iloopax] = perm[iloopax[p]]
+            ic.cube = permutedims(ic.cube,perm)
             ic.loopinds = ic.loopinds[p]
         end
     end
