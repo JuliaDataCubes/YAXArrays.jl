@@ -2,7 +2,7 @@
 #     How do I concatenate cubes?
 
 
-# It is possible to concatenate several cubes that shared the same dimmensions using the [`concatenatecubes`]@ref function.
+# It is possible to concatenate several cubes that shared the same dimensions using the [`concatenatecubes`]@ref function.
 
 # let's create two dummy cubes
 
