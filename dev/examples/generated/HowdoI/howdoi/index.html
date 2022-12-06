@@ -17,7 +17,7 @@
     
     
       
-        <title>Extract axes names - YAXArrays</title>
+        <title>How do I ... - YAXArrays</title>
       
     
     
@@ -71,6 +71,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#extract-the-axes-names-from-a-cube" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -99,7 +104,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Extract axes names
+              How do I ...
             
           </span>
         </div>
@@ -268,15 +273,11 @@
   
 
 
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="./" class="md-tabs__link md-tabs__link--active">
-        How do I ...
-      </a>
-    </li>
-  
+  <li class="md-tabs__item">
+    <a href="./" class="md-tabs__link md-tabs__link--active">
+      How do I ...
+    </a>
+  </li>
 
       
         
@@ -613,55 +614,52 @@
     
   
   
-    
-    <li class="md-nav__item md-nav__item--active md-nav__item--nested">
-      
-      
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" checked>
-      
-      
-      
-        
-          
-        
-      
-      
-        <label class="md-nav__link" for="__nav_5">
-          How do I ...
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <nav class="md-nav" aria-label="How do I ..." data-md-level="1">
-        <label class="md-nav__title" for="__nav_5">
-          <span class="md-nav__icon md-icon"></span>
-          How do I ...
-        </label>
-        <ul class="md-nav__list" data-md-scrollfix>
-          
-            
-              
-  
-  
-    
-  
-  
     <li class="md-nav__item md-nav__item--active">
       
       <input class="md-nav__toggle md-toggle" data-md-toggle="toc" type="checkbox" id="__toc">
       
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          How do I ...
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
-        Extract axes names
+        How do I ...
       </a>
       
-    </li>
-  
+        
 
-            
-          
-        </ul>
-      </nav>
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#extract-the-axes-names-from-a-cube" class="md-nav__link">
+    extract the axes names from a Cube?
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#concatenate-cubes" class="md-nav__link">
+    concatenate cubes?
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -699,6 +697,28 @@
   
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#extract-the-axes-names-from-a-cube" class="md-nav__link">
+    extract the axes names from a Cube?
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#concatenate-cubes" class="md-nav__link">
+    concatenate cubes?
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -712,20 +732,64 @@
                   
 
 
-  <h1>Extract axes names</h1>
+  <h1>How do I ...</h1>
 
+<p>The purpose of this section is to do a collection of small convinient pieces of code on how to do simple things.</p>
 <div class="admonition question">
 <p class="admonition-title">Question</p>
-<p>How do I extract the axes names from a Cube?</p>
 </div>
+<p><a id='extract-the-axes-names-from-a-Cube?'></a></p>
+<p><a id='extract-the-axes-names-from-a-Cube?-1'></a></p>
+<h2 id="extract-the-axes-names-from-a-cube">extract the axes names from a Cube?<a class="headerlink" href="#extract-the-axes-names-from-a-cube" title="Permanent link">¤</a></h2>
 <div class="highlight"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">YAXArrays</span><span class="w"></span>
 <span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">rand</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span><span class="w"></span>
+
 <span class="n">caxes</span><span class="p">(</span><span class="n">c</span><span class="p">)</span><span class="w"></span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>3-element Vector{RangeAxis{Int64, _A, Base.OneTo{Int64}} where _A}:
  Dim_1               Axis with 10 Elements from 1 to 10
  Dim_2               Axis with 10 Elements from 1 to 10
  Dim_3               Axis with 5 Elements from 1 to 5
+</code></pre></div>
+<div class="admonition question">
+<p class="admonition-title">Question</p>
+</div>
+<p><a id='concatenate-cubes?'></a></p>
+<p><a id='concatenate-cubes?-1'></a></p>
+<h2 id="concatenate-cubes">concatenate cubes?<a class="headerlink" href="#concatenate-cubes" title="Permanent link">¤</a></h2>
+<p>It is possible to concatenate several cubes that shared the same dimensions using the [<code>concatenatecubes</code>]@ref function.</p>
+<p>let's create two dummy cubes</p>
+<div class="highlight"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">YAXArrays</span><span class="w"></span>
+
+<span class="n">axlist</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="w"></span>
+<span class="w">    </span><span class="n">RangeAxis</span><span class="p">(</span><span class="s">&quot;time&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="o">=</span><span class="mi">20</span><span class="p">)),</span><span class="w"></span>
+<span class="w">    </span><span class="n">RangeAxis</span><span class="p">(</span><span class="s">&quot;lon&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="o">=</span><span class="mi">10</span><span class="p">)),</span><span class="w"></span>
+<span class="w">    </span><span class="n">RangeAxis</span><span class="p">(</span><span class="s">&quot;lat&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="o">=</span><span class="mi">15</span><span class="p">))]</span><span class="w"></span>
+
+<span class="n">data1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">15</span><span class="p">)</span><span class="w"></span>
+<span class="n">ds1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">axlist</span><span class="p">,</span><span class="w"> </span><span class="n">data1</span><span class="p">)</span><span class="w"></span>
+
+<span class="n">data2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">15</span><span class="p">)</span><span class="w"></span>
+<span class="n">ds2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">axlist</span><span class="p">,</span><span class="w"> </span><span class="n">data2</span><span class="p">)</span><span class="w"></span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
+time                Axis with 20 Elements from 1.0 to 20.0
+lon                 Axis with 10 Elements from 1.0 to 10.0
+lat                 Axis with 15 Elements from 1.0 to 5.0
+Total size: 23.44 KB
+</code></pre></div>
+<p>Now we can concatenate <code>ds1</code> and <code>ds2</code> cubes:</p>
+<div class="highlight"><pre><span></span><code><span class="n">dsfinal</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">concatenatecubes</span><span class="p">([</span><span class="n">ds1</span><span class="p">,</span><span class="w"> </span><span class="n">ds2</span><span class="p">],</span><span class="w"></span>
+<span class="w">    </span><span class="n">CategoricalAxis</span><span class="p">(</span><span class="s">&quot;Variables&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="s">&quot;var1&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;var2&quot;</span><span class="p">]))</span><span class="w"></span>
+
+<span class="n">dsfinal</span><span class="w"></span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
+time                Axis with 20 Elements from 1.0 to 20.0
+lon                 Axis with 10 Elements from 1.0 to 10.0
+lat                 Axis with 15 Elements from 1.0 to 5.0
+Variables           Axis with 2 elements: var1 var2 
+Total size: 46.88 KB
 </code></pre></div>
 <hr />
 <p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p>

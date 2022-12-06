@@ -273,15 +273,11 @@
   
 
 
-  
-  
-  
-    <li class="md-tabs__item">
-      <a href="../../HowdoI/extract_axes_names/" class="md-tabs__link">
-        How do I ...
-      </a>
-    </li>
-  
+  <li class="md-tabs__item">
+    <a href="../../HowdoI/howdoi/" class="md-tabs__link">
+      How do I ...
+    </a>
+  </li>
 
       
         
@@ -740,47 +736,10 @@
   
   
   
-    
-    <li class="md-nav__item md-nav__item--nested">
-      
-      
-        <input class="md-nav__toggle md-toggle" data-md-toggle="__nav_5" type="checkbox" id="__nav_5" >
-      
-      
-      
-        
-          
-        
-      
-      
-        <label class="md-nav__link" for="__nav_5">
-          How do I ...
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <nav class="md-nav" aria-label="How do I ..." data-md-level="1">
-        <label class="md-nav__title" for="__nav_5">
-          <span class="md-nav__icon md-icon"></span>
-          How do I ...
-        </label>
-        <ul class="md-nav__list" data-md-scrollfix>
-          
-            
-              
-  
-  
-  
     <li class="md-nav__item">
-      <a href="../../HowdoI/extract_axes_names/" class="md-nav__link">
-        Extract axes names
+      <a href="../../HowdoI/howdoi/" class="md-nav__link">
+        How do I ...
       </a>
-    </li>
-  
-
-            
-          
-        </ul>
-      </nav>
     </li>
   
 
@@ -1051,17 +1010,17 @@ Total size: 7.03 KB
   Dim{:lat} Sampled{Float64} 1.0:0.2857142857142857:5.0 ForwardOrdered Regular Points,
   Dim{:Variable} Categorical{String} String[var1, var2] ForwardOrdered
 [:, :, 1, 1]
-                      1.0        2.0       …  8.0       9.0        10.0
-  2022-01-01  0.986655   0.304565     0.845993  0.178423    0.820355
-  2022-01-02  0.0797829  0.310937     0.95272   0.575485    0.347041
-  2022-01-03  0.534783   0.692704     0.848044  0.906595    0.369685
-  2022-01-04  0.82687    0.637217     0.549266  0.810846    0.631359
+                      1.0        2.0       …  8.0        9.0       10.0
+  2022-01-01  0.307915   0.33117      0.869569   0.542674   0.432402
+  2022-01-02  0.0652746  0.57924      0.371282   0.430929   0.505827
+  2022-01-03  0.324381   0.341185     0.338867   0.23795    0.308004
+  2022-01-04  0.987728   0.165203     0.426368   0.882881   0.359174
  ⋮                                         ⋱                        ⋮
-  2022-01-26  0.315389   0.545244     0.872197  0.0844447   0.718387
-  2022-01-27  0.392328   0.482832     0.475018  0.341064    0.902446
-  2022-01-28  0.668378   0.737189     0.302945  0.21388     0.125356
-  2022-01-29  0.0665945  0.276005     0.333335  0.281283    0.876928
-  2022-01-30  0.942857   0.444539  …  0.764038  0.0071112   0.926332
+  2022-01-26  0.069924   0.711665     0.0949607  0.369955   0.755939
+  2022-01-27  0.662626   0.757041     0.0800933  0.139585   0.687128
+  2022-01-28  0.224645   0.875096     0.708531   0.791922   0.318905
+  2022-01-29  0.681488   0.547215     0.797122   0.155852   0.774947
+  2022-01-30  0.0106656  0.637163  …  0.977311   0.343584   0.487892
 [and 29 more slices...]
 </code></pre></div>
 <p>Now, the syntax from DimensionalData.jl just works</p>
@@ -1078,16 +1037,16 @@ Total size: 7.03 KB
 and reference dimensions: 
   Dim{:Variable} Categorical{String} String[var2] ForwardOrdered
 [:, :, 1]
-                      1.0         2.0
-  2022-01-01  0.65475     0.890484
-  2022-01-02  0.799933    0.113567
-  2022-01-03  0.896804    0.0509642
-  2022-01-04  0.752323    0.569121
- ⋮                                
-  2022-01-07  0.155104    0.430301
-  2022-01-08  0.102882    0.313627
-  2022-01-09  0.862054    0.607007
-  2022-01-10  0.00229787  0.767432
+                      1.0        2.0
+  2022-01-01  0.891548   0.263821
+  2022-01-02  0.479959   0.77643
+  2022-01-03  0.181464   0.836841
+  2022-01-04  0.0198561  0.65525
+ ⋮                               
+  2022-01-07  0.449477   0.114981
+  2022-01-08  0.457884   0.955484
+  2022-01-09  0.301173   0.85517
+  2022-01-10  0.757879   0.086301
 [and 14 more slices...]
 </code></pre></div>
 <p>And going back to our YAXArray view is done with</p>
