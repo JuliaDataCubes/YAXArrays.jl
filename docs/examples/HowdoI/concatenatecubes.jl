@@ -26,11 +26,4 @@ ds2 = YAXArray(axlist, data2)
 
 dsfinal = concatenatecubes([ds1, ds2], CategoricalAxis("Variables", ["var1", "var2"]))
 
-#```julia
-# YAXArray with the following dimensions
-# time                Axis with 20 Elements from 1.0 to 20.0
-# lon                 Axis with 10 Elements from 1.0 to 10.0
-# lat                 Axis with 15 Elements from 1.0 to 5.0
-# Variables           Axis with 2 elements: var1 var2 
-# Total size: 46.88 KB
-#```
+dsfinal
