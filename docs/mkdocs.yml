@@ -113,6 +113,5 @@ nav:
     - "Simple maps": "examples/generated/Gallery/simplemaps.md"
   - "Tutorials":
     - "Tutorial": "tutorials/tutorial.md"
-  - "How do I ...":
-    - "Extract axes names": "examples/generated/HowdoI/extract_axes_names.md"
+  - "How do I ...": "examples/generated/HowdoI/howdoi.md"
   - "API" : "api.md"
