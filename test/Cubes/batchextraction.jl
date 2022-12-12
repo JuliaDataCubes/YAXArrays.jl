@@ -1,6 +1,7 @@
 using Test
 
-@testset "Batch extraction along multiple axes" begin 
+@testitem "Batch extraction along multiple axes" begin 
+using Dates    
 lons = range(30,35,step=0.25)
 lats = range(50,55,step=0.25)
 times = Date(2000,1,1):Month(1):Date(2000,12,31)
@@ -51,3 +52,36 @@ r = c[othersites]
 @test c[lon=33.0,time=Date(2000,7,1)][:] == r[point=5][:]
 
 end
+
+
+@testitem "Batch extraction polygon dataset" begin 
+    using Dates    
+    lons = range(30,35,step=0.25)
+    lats = range(50,55,step=0.25)
+    times = Date(2000,1,1):Month(1):Date(2000,12,31)
+    
+    data = rand(length(lons),length(lats), length(times));
+    
+    c = YAXArray([RangeAxis("longitude",lons),RangeAxis("latitude",lats),RangeAxis("time",times)],data)
+    #c_perm = permutedims(c,(3,2,1))
+    
+    
+    sites_names = [(lon = rand()*5+30, lat = rand()*5+50,site = string(i % 5)) for i in 1:200]
+    sites_pure = [(lon = n.lon, lat=n.lat) for n in sites_names]
+    lon,lat = sites_pure[10]
+    
+    r = c[sites_names]
+    @test r isa YAXArrays.Dataset
+    @test YAXArrays.Cubes.axname.(caxes(r.site_1)) == ["site_1_longitude_latitude", "time"]
+    @test length(r.site_1.site_1_longitude_latitude.values) == count(==("1"),getproperty.(sites_names, :site))
+    #@test r.site_1.site_1_longitude_latitude.values == string.(1:200)
+    @test all(isequal.(c[lon=lon,lat=lat][:], r.site_0[2,:]))
+    
+    #r = c_perm[sites_names]
+    #@test r isa YAXArray
+    #@test YAXArrays.Cubes.axname.(caxes(r)) == ["time","site"]
+    #@test r.site.values == string.(1:200)
+    #@test all(isequal.(c[lon=lon,lat=lat][:], r[:,10]))
+    
+    
+    end
