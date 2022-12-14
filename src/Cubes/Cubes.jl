@@ -230,26 +230,30 @@ function batchextract(x,i)
     axinds = map(sch.names) do n
         findAxis(n,x)
     end
-    
     tcols = columns(i)
     #Try to find a column denoting new axis name and values
     newaxcol = nothing
+    
     if any(isnothing,axinds)
         allnothings = findall(isnothing,axinds)
         if length(allnothings) == 1
             newaxcol = allnothings[1]
         end
+        tcols = (;[p[1:2] for p in zip(keys(tcols), values(tcols), axinds) if !isnothing(last(p))]...)
         axinds = filter(!isnothing,axinds)
     end
+    
     allax = 1:ndims(x)
     axrem = setdiff(allax,axinds)
     ai1, ai2 = extrema(axinds)
+    
     if !all(diff(sort(collect(axinds))).==1)
         #Axes to be extracted from are not consecutive in cube -> permute
         p = [1:(ai1-1);collect(axinds);filter(!in(axinds),ai1:ai2);(ai2+1:ndims(x))]
         x_perm = permutedims(x,p)
         return batchextract(x_perm,i)
     end
+
     cartinds = map(axinds,tcols) do iax,col
         axcur = caxes(x)[iax]
         map(col) do val
