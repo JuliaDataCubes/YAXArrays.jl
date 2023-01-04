@@ -62,6 +62,10 @@ function get_copy_buffer_size(incube, outcube;writefac=4.0, maxbuf = YAXDefaults
     outcs = DiskArrays.approx_chunksize(eachchunk(outcube))
     insize = size(incube)
     outsize = size(outcube)
+    #Catch case where buffer is larger than cube
+    if maxbuf > prod(insize)
+        return insize
+    end
     r = optimize(sz->optifunc(sz,maxbuf,incs,outcs,insize, outsize,writefac),init, iterations=100)
     bufnow = (r.minimizer...,maxbuf/prod(r.minimizer))
 
