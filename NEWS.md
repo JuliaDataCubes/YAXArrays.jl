@@ -1,7 +1,16 @@
 # News
 
 ## v0.4.4
+### Added
+Add How to sections to the documentation
+
+### Fixed
 Fixed subsetting of datasets so that no error is thrown if some of the cubes inside the dataset don't contain the axis for subsetting. 
+Fixed batch extraction so that extracted values are not duplicated (#194)
+Fixed performance bug in saving of small cubes (#210)
+Fix concatenation bug (EarthDataLab # 284)
+Fix permutation bug for two input cubes (#201)
+
 
 ## v0.4.3
 Added the possibility to use Tables.jl compatible Tables for indexing into a YAXArray. Makes extraction of data from a list of scattered locations in a YAXArray convenient. 
