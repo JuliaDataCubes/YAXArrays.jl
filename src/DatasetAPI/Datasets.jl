@@ -466,9 +466,9 @@ function savedataset(
         persist = !isempty(path)
     end
     path = getsavefolder(path, persist)
-
     if ispath(path)
         if overwrite
+            @warn "`overwrite` is deleting ALL your data and it will create a complete new file"
             rm(path, recursive = true)
         elseif !append
             throw(ArgumentError("Path $path already exists. Consider setting `overwrite` or `append` keyword arguments"))
