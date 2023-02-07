@@ -1,8 +1,5 @@
 using YAXArrays, Documenter, DocumenterMarkdown
 
-deployconfig = Documenter.auto_detect_deploy_system()
-Documenter.post_status(deployconfig; type="pending", repo="github.com/JuliaDataCubes/YAXArrays.jl.git")
-
 makedocs(
     modules = [YAXArrays],
     clean   = true,

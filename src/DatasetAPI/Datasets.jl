@@ -450,7 +450,15 @@ function setchunks(ds::Dataset, chunks)
     newds
 end
 
+"""
+savedataset(ds::Dataset; path = "", persist = nothing, overwrite = false, append = false, skeleton=false, backend = :all,
+    driver = backend, max_cache = 5e8, writefac=4.0)
 
+Saves a Dataset into a file with the format given by driver, i.e., driver=:netcdf or driver=:zarr .
+
+!!! warning
+    overwrite = true, deletes ALL your data and it will create a new file.
+"""
 function savedataset(
     ds::Dataset;
     path = "",
@@ -468,7 +476,11 @@ function savedataset(
     path = getsavefolder(path, persist)
     if ispath(path)
         if overwrite
-            @warn "`overwrite` is deleting ALL your data and it will create a complete new file"
+            @warn "`overwrite` is deleting ALL your data and it will create a new file."
+            for t in 1:10
+                print("Your previous data will be DELETED in $t seconds, do CTRL+C to cancel. \u001b[1000D")
+                sleep(1)
+            end
             rm(path, recursive = true)
         elseif !append
             throw(ArgumentError("Path $path already exists. Consider setting `overwrite` or `append` keyword arguments"))
