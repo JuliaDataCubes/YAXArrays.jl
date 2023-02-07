@@ -1015,17 +1015,17 @@ Total size: 7.03 KB
   Dim{:lat} Sampled{Float64} 1.0:0.2857142857142857:5.0 ForwardOrdered Regular Points,
   Dim{:Variable} Categorical{String} String[var1, var2] ForwardOrdered
 [:, :, 1, 1]
-                      1.0       2.0       …  8.0        9.0        10.0
-  2022-01-01  0.80961   0.15648      0.0844712  0.909843    0.629999
-  2022-01-02  0.389273  0.69359      0.0539162  0.389468    0.947868
-  2022-01-03  0.811839  0.270313     0.764881   0.0481978   0.958466
-  2022-01-04  0.396181  0.826797     0.188725   0.105732    0.738709
- ⋮                                        ⋱                         ⋮
-  2022-01-26  0.6195    0.875229     0.198792   0.749403    0.671587
-  2022-01-27  0.380475  0.741473     0.293196   0.440764    0.131306
-  2022-01-28  0.267155  0.447504     0.212479   0.956336    0.0224216
-  2022-01-29  0.613615  0.236473     0.763479   0.320675    0.46753
-  2022-01-30  0.31247   0.875975  …  0.953056   0.0895807   0.56843
+                      1.0       2.0        …  8.0       9.0        10.0
+  2022-01-01  0.606314  0.741082      0.417503  0.241023    0.82911
+  2022-01-02  0.215873  0.141784      0.945957  0.956638    0.852037
+  2022-01-03  0.114219  0.708833      0.204046  0.561582    0.48838
+  2022-01-04  0.594597  0.0633775     0.925539  0.115007    0.435779
+ ⋮                                         ⋱                        ⋮
+  2022-01-26  0.722618  0.209262      0.15374   0.0365817   0.248144
+  2022-01-27  0.599896  0.473319      0.024541  0.831094    0.306164
+  2022-01-28  0.15416   0.676198      0.359481  0.296767    0.9482
+  2022-01-29  0.699075  0.346428      0.784382  0.523447    0.957601
+  2022-01-30  0.472341  0.795736   …  0.326088  0.104311    0.486141
 [and 29 more slices...]
 </code></pre></div>
 <p>Now, the syntax from DimensionalData.jl just works</p>
@@ -1042,16 +1042,16 @@ Total size: 7.03 KB
 and reference dimensions: 
   Dim{:Variable} Categorical{String} String[var2] ForwardOrdered
 [:, :, 1]
-                      1.0        2.0
-  2022-01-01  0.912534   0.131778
-  2022-01-02  0.802524   0.721564
-  2022-01-03  0.0561886  0.212567
-  2022-01-04  0.0401204  0.370655
- ⋮                               
-  2022-01-07  0.993472   0.658362
-  2022-01-08  0.995802   0.943563
-  2022-01-09  0.39075    0.334012
-  2022-01-10  0.239674   0.671979
+                      1.0       2.0
+  2022-01-01  0.201434  0.167208
+  2022-01-02  0.640273  0.0102906
+  2022-01-03  0.634506  0.14742
+  2022-01-04  0.463379  0.0372932
+ ⋮                              
+  2022-01-07  0.26422   0.166252
+  2022-01-08  0.920881  0.95508
+  2022-01-09  0.995895  0.464701
+  2022-01-10  0.755707  0.0450812
 [and 14 more slices...]
 </code></pre></div>
 <p>And going back to our YAXArray view is done with</p>
@@ -1201,6 +1201,44 @@ Total size: 80.0 bytes
       
         <footer class="md-footer">
   
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../../../.." class="md-footer__link md-footer__link--prev" aria-label="Previous: Home" rel="prev">
+            <div class="md-footer__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <div class="md-ellipsis">
+                <span class="md-footer__direction">
+                  Previous
+                </span>
+                Home
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../saving/" class="md-footer__link md-footer__link--next" aria-label="Next: Saving YAXArrays and Datasets" rel="next">
+            <div class="md-footer__title">
+              <div class="md-ellipsis">
+                <span class="md-footer__direction">
+                  Next
+                </span>
+                Saving YAXArrays and Datasets
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
   <div class="md-footer-meta md-typeset">
     <div class="md-footer-meta__inner md-grid">
       <div class="md-copyright">
@@ -1222,7 +1260,7 @@ Total size: 80.0 bytes
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../../../..", "features": ["content.code.annotate", "content.tooltips", "navigation.indexes", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow", "header.autohide"], "search": "../../../../assets/javascripts/workers/search.db81ec45.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../../../..", "features": ["content.code.annotate", "content.tooltips", "navigation.indexes", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.footer", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow", "header.autohide"], "search": "../../../../assets/javascripts/workers/search.db81ec45.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
       <script src="../../../../assets/javascripts/bundle.6df46069.min.js"></script>
