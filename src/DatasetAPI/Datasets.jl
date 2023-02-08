@@ -450,7 +450,15 @@ function setchunks(ds::Dataset, chunks)
     newds
 end
 
+"""
+savedataset(ds::Dataset; path = "", persist = nothing, overwrite = false, append = false, skeleton=false, backend = :all,
+    driver = backend, max_cache = 5e8, writefac=4.0)
 
+Saves a Dataset into a file with the format given by driver, i.e., driver=:netcdf or driver=:zarr .
+
+!!! warning
+    overwrite = true, deletes ALL your data and it will create a new file.
+"""
 function savedataset(
     ds::Dataset;
     path = "",
@@ -466,7 +474,6 @@ function savedataset(
         persist = !isempty(path)
     end
     path = getsavefolder(path, persist)
-
     if ispath(path)
         if overwrite
             rm(path, recursive = true)

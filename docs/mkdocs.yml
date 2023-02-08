@@ -15,6 +15,7 @@ theme:
     - navigation.tabs
     # - navigation.tabs.sticky
     - navigation.top
+    - navigation.footer
     - navigation.tracking
     - search.highlight
     - search.share

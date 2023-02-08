@@ -29,7 +29,11 @@ savedataset(ds,path=f,driver=:zarr)
 # ## Overwriting a Dataset    
 # If a path already exists, an error will be thrown. Set `overwrite=true` to delete the existing dataset
 savedataset(ds,path=f,driver=:zarr, overwrite=true)
-    
+
+# Look at the docs for more information
+
+Docs.doc(savedataset) # hide
+
 # ## Appending to a Dataset
 # New variables can be added to an existing dataset using the `append=true` keyword. 
 ds2 = Dataset(z = YAXArray(rand(10,20,5)))
