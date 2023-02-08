@@ -14,6 +14,7 @@ import YAXArrayBase: getattributes, iscontdim, dimnames, dimvals, getdata
 using DiskArrayTools: CFDiskArray
 using DocStringExtensions
 using Tables: istable, schema, columns
+using DimensionalData: AbstractDimArray
 
 export concatenatecubes, caxes, subsetcube, readcubedata, renameaxis!, YAXArray, setchunks
 
@@ -88,9 +89,9 @@ It can wrap normal arrays or, more typically DiskArrays.
 
 $(FIELDS)
 """
-struct YAXArray{T,N,A<:AbstractArray{T,N},AxesTypes}
+struct YAXArray{T,N,A<:AbstractArray{T,N}, D} <: AbstractDimArray{T,N,D,A} 
     "`Vector{CubeAxis}` containing the Axes of the Cube"
-    axes::AxesTypes
+    axes::D
     "length(axes)-dimensional array which holds the data, this can be a lazy DiskArray"
     data::A
     "Metadata properties describing the content of the data"
