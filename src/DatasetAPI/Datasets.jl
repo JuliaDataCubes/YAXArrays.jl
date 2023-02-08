@@ -476,11 +476,6 @@ function savedataset(
     path = getsavefolder(path, persist)
     if ispath(path)
         if overwrite
-            @warn "`overwrite` is deleting ALL your data and it will create a new file."
-            for t in 1:10
-                print("Your previous data will be DELETED in $t seconds, do CTRL+C to cancel. \u001b[1000D")
-                sleep(1)
-            end
             rm(path, recursive = true)
         elseif !append
             throw(ArgumentError("Path $path already exists. Consider setting `overwrite` or `append` keyword arguments"))
