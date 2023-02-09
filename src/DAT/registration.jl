@@ -94,7 +94,7 @@ function InDims(
     filter = AllMissing(),
     window_oob_value = missing,
 )
-    descs = get_descriptor.(axisdesc...)
+    descs = get_descriptor.(axisdesc)
     InDims(descs, artype, getprocfilter(filter), window_oob_value)
 end
 struct OutDims

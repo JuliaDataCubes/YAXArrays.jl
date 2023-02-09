@@ -335,11 +335,7 @@ function mapCube(
         idshort = filter(idar) do ad
             findAxis(ad, c) !== nothing
         end
-        try
-            InDims((idshort...,), indims.artype, indims.procfilter)
-        catch
-            InDims(idshort...; artype=indims.artype, filter=indims.procfilter)
-        end
+        InDims((idshort...,); artype=indims.artype, filter=indims.procfilter)
 
     end
     isa(outdims, OutDims) || error("Only one output cube currently supported for datasets")
