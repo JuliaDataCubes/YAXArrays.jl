@@ -14,7 +14,11 @@ using Glob: glob
 
 export Dataset, Cube, open_dataset, to_dataset, savecube, savedataset
 
-
+"""
+    Dataset object which stores an `OrderedDict` of YAXArrays with Symbol keys. 
+    a dictionary of CubeAxes and a Dictionary of general properties. 
+    A dictionary can hold cubes with differing axes. But it will share the common axes between the subcubes. 
+"""
 struct Dataset
     cubes::OrderedDict{Symbol,YAXArray}
     axes::Dict{Symbol,CubeAxis}
@@ -245,6 +249,13 @@ open_mfdataset(g::AbstractString; kwargs...) = open_mfdataset(_glob(g); kwargs..
 open_mfdataset(g::Vector{<:AbstractString}; kwargs...) =
 merge_datasets(map(i -> open_dataset(i; kwargs...), g))
 
+
+"""
+open_dataset(g; driver=:all)
+
+Open the dataset at `g` with the given `driver`.
+The default driver will search for available drivers and tries to detect the useable driver from the filename extension.
+"""
 function open_dataset(g; driver = :all)
     g = YAXArrayBase.to_dataset(g, driver = driver)
     isempty(get_varnames(g)) && throw(ArgumentError("Group does not contain datasets."))
@@ -454,7 +465,8 @@ end
 savedataset(ds::Dataset; path = "", persist = nothing, overwrite = false, append = false, skeleton=false, backend = :all,
     driver = backend, max_cache = 5e8, writefac=4.0)
 
-Saves a Dataset into a file with the format given by driver, i.e., driver=:netcdf or driver=:zarr .
+Saves a Dataset into a file at `path` with the format given by `driver`, i.e., driver=:netcdf or driver=:zarr.
+
 
 !!! warning
     overwrite = true, deletes ALL your data and it will create a new file.
@@ -546,8 +558,8 @@ The keyword arguments are:
 * `name`:
 * `datasetaxis="Variable"` special treatment of a categorical axis that gets written into separate zarr arrays
 * `max_cache`: The number of bits that are used as cache for the data handling.
-* `backend`: The backend, that is used to save the data. Fallsback to searching the backend according to the extension of the path.
-* `driver` 
+* `backend`: The backend, that is used to save the data. Falls back to searching the backend according to the extension of the path.
+* `driver`: The same setting as `backend`.
 * `overwrite::Bool=false` overwrite cube if it already exists
 
 
