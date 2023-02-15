@@ -1,0 +1,1330 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Yet Another XArray-like Julia Package">
+      
+      
+        <meta name="author" content="Lazaro Alonso">
+      
+      
+      
+        <link rel="prev" href="../examples/generated/HowdoI/howdoi/">
+      
+      
+      <link rel="icon" href="../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.0.12">
+    
+    
+      
+        <title>API - YAXArrays</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.0d440cfe.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.2505c338.min.css">
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Lato";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/custom.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#public-api" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="YAXArrays" class="md-header__button md-logo" aria-label="YAXArrays" data-md-component="logo">
+      
+  <img src="../assets/view-grid-plus-outline.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            YAXArrays
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              API
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      <form class="md-header__option" data-md-component="palette">
+        
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+          
+            <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7M9 21a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1H9v1Z"/></svg>
+            </label>
+          
+        
+          
+          <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+          
+            <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7M9 21v-1h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1m3-17a5 5 0 0 0-5 5c0 2.05 1.23 3.81 3 4.58V16h4v-2.42c1.77-.77 3-2.53 3-4.58a5 5 0 0 0-5-5Z"/></svg>
+            </label>
+          
+        
+      </form>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        
+<a href="https://github.com/JuliaDataCubes/YAXArrays.jl" title="" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    YAXArrays
+  </div>
+</a>
+
+
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-tabs__inner md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href=".." class="md-tabs__link">
+      Home
+    </a>
+  </li>
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../examples/generated/UserGuide/creating/" class="md-tabs__link">
+        User Guide
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../examples/generated/Gallery/simplemaps/" class="md-tabs__link">
+        Gallery
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../tutorials/tutorial/" class="md-tabs__link">
+        Tutorials
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+
+
+  <li class="md-tabs__item">
+    <a href="../examples/generated/HowdoI/howdoi/" class="md-tabs__link">
+      How do I ...
+    </a>
+  </li>
+
+      
+        
+  
+  
+    
+  
+
+
+  <li class="md-tabs__item">
+    <a href="./" class="md-tabs__link md-tabs__link--active">
+      API
+    </a>
+  </li>
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="YAXArrays" class="md-nav__button md-logo" aria-label="YAXArrays" data-md-component="logo">
+      
+  <img src="../assets/view-grid-plus-outline.svg" alt="logo">
+
+    </a>
+    YAXArrays
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/JuliaDataCubes/YAXArrays.jl" title="" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    YAXArrays
+  </div>
+</a>
+
+
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+      
+      
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+          User Guide
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_2">
+          <span class="md-nav__icon md-icon"></span>
+          User Guide
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/generated/UserGuide/creating/" class="md-nav__link">
+        Creating YAXArrays and Datasets
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/generated/UserGuide/saving/" class="md-nav__link">
+        Saving YAXArrays and Datasets
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/generated/UserGuide/setchuncks/" class="md-nav__link">
+        Setting chunks's size
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/generated/UserGuide/applyfunctions/" class="md-nav__link">
+        Apply functions on YAXArrays
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/generated/UserGuide/openNetCDF/" class="md-nav__link">
+        Open NetCDF
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/generated/UserGuide/openZarr/" class="md-nav__link">
+        Open Zarr (Store)
+      </a>
+    </li>
+  
+
+            
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/generated/UserGuide/distributed/" class="md-nav__link">
+        Distributed processes
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+      
+      
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+          Gallery
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_3">
+          <span class="md-nav__icon md-icon"></span>
+          Gallery
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/generated/Gallery/simplemaps/" class="md-nav__link">
+        Simple maps
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+      
+      
+      
+      <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+      
+      
+        
+          
+        
+      
+      
+        <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+          Tutorials
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+        <label class="md-nav__title" for="__nav_4">
+          <span class="md-nav__icon md-icon"></span>
+          Tutorials
+        </label>
+        <ul class="md-nav__list" data-md-scrollfix>
+          
+            
+              
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/tutorial/" class="md-nav__link">
+        Tutorial
+      </a>
+    </li>
+  
+
+            
+          
+        </ul>
+      </nav>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples/generated/HowdoI/howdoi/" class="md-nav__link">
+        How do I ...
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          API
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        API
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#public-api" class="md-nav__link">
+    Public API
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#internal-api" class="md-nav__link">
+    Internal API
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#public-api" class="md-nav__link">
+    Public API
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#internal-api" class="md-nav__link">
+    Internal API
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+  <h1>API</h1>
+
+<p><a id='Public-API'></a></p>
+<p><a id='Public-API-1'></a></p>
+<h2 id="public-api">Public API<a class="headerlink" href="#public-api" title="Permanent link">¤</a></h2>
+<p><a id='YAXArrays.Cubes' href='#YAXArrays.Cubes'>#</a>
+<strong><code>YAXArrays.Cubes</code></strong> &mdash; <em>Module</em>.</p>
+<p>The functions provided by YAXArrays are supposed to work on different types of cubes. This module defines the interface for all Data types that</p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Cubes.jl#L1-L4' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Cubes.YAXArray' href='#YAXArrays.Cubes.YAXArray'>#</a>
+<strong><code>YAXArrays.Cubes.YAXArray</code></strong> &mdash; <em>Type</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="kt">YAXArray</span><span class="p">{</span><span class="kt">T</span><span class="p">,</span><span class="kt">N</span><span class="p">}</span>
+</code></pre></div>
+<p>An array labelled with named axes that have values associated with them. It can wrap normal arrays or, more typically DiskArrays.</p>
+<p><strong>Fields</strong></p>
+<ul>
+<li><code>axes</code>: <code>Vector{CubeAxis}</code> containing the Axes of the Cube</li>
+<li><code>data</code>: length(axes)-dimensional array which holds the data, this can be a lazy DiskArray</li>
+<li><code>properties</code>: Metadata properties describing the content of the data</li>
+<li><code>chunks</code>: Representation of the chunking of the data</li>
+<li><code>cleaner</code>: Cleaner objects to track which objects to tidy up when the YAXArray goes out of scope</li>
+</ul>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Cubes.jl#L81-L90' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Cubes.caxes' href='#YAXArrays.Cubes.caxes'>#</a>
+<strong><code>YAXArrays.Cubes.caxes</code></strong> &mdash; <em>Function</em>.</p>
+<p>Returns the axes of a Cube</p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Cubes.jl#L25' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Cubes.concatenatecubes-Tuple{Any, CubeAxis}' href='#YAXArrays.Cubes.concatenatecubes-Tuple{Any, CubeAxis}'>#</a>
+<strong><code>YAXArrays.Cubes.concatenatecubes</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">concatenateCubes</span><span class="p">(</span><span class="n">cubelist</span><span class="p">,</span><span class="w"> </span><span class="n">cataxis</span><span class="o">::</span><span class="kt">CategoricalAxis</span><span class="p">)</span>
+</code></pre></div>
+<p>Concatenates a vector of datacubes that have identical axes to a new single cube along the new axis <code>cataxis</code></p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/TransformedCubes.jl#L21-L26' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Cubes.readcubedata-Tuple{Any}' href='#YAXArrays.Cubes.readcubedata-Tuple{Any}'>#</a>
+<strong><code>YAXArrays.Cubes.readcubedata</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">readcubedata</span><span class="p">(</span><span class="n">cube</span><span class="p">)</span>
+</code></pre></div>
+<p>Given any array implementing the YAXArray interface it returns an in-memory <a href="./#YAXArrays.Cubes.YAXArray"><code>YAXArray</code></a> from it.</p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Cubes.jl#L179-L183' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Cubes.setchunks-Tuple{YAXArray, Any}' href='#YAXArrays.Cubes.setchunks-Tuple{YAXArray, Any}'>#</a>
+<strong><code>YAXArrays.Cubes.setchunks</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">setchunks</span><span class="p">(</span><span class="n">c</span><span class="o">::</span><span class="kt">YAXArray</span><span class="p">,</span><span class="n">chunks</span><span class="p">)</span>
+</code></pre></div>
+<p>Resets the chunks of a YAXArray and returns a new YAXArray. Note that this will not change the chunking of the underlying data itself,  it will just make the data "look" like it had a different chunking. If you need a persistent on-disk representation of this chunking, use <code>savecube</code> on the resulting array. The <code>chunks</code> argument can take one of the following forms:</p>
+<ul>
+<li>a <code>DiskArrays.GridChunks</code> object</li>
+<li>a tuple specifying the chunk size along each dimension</li>
+<li>an AbstractDict or NamedTuple mapping one or more axis names to chunk sizes</li>
+</ul>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Cubes.jl#L205-L216' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Cubes.subsetcube' href='#YAXArrays.Cubes.subsetcube'>#</a>
+<strong><code>YAXArrays.Cubes.subsetcube</code></strong> &mdash; <em>Function</em>.</p>
+<p>This function calculates a subset of a cube's data</p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Cubes.jl#L20-L22' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Cubes.Axes' href='#YAXArrays.Cubes.Axes'>#</a>
+<strong><code>YAXArrays.Cubes.Axes</code></strong> &mdash; <em>Module</em>.</p>
+<p>The <code>Axes</code> module handles the Axes of a data cube.  It provides the following exports:</p>
+<ul>
+<li><a href="./#YAXArrays.Cubes.Axes.CategoricalAxis"><code>CategoricalAxis</code></a></li>
+<li><a href="./#YAXArrays.Cubes.Axes.CubeAxis"><code>CubeAxis</code></a></li>
+<li><a href="./#YAXArrays.Cubes.Axes.RangeAxis"><code>RangeAxis</code></a></li>
+<li><a href="./#YAXArrays.Cubes.Axes.getAxis-Tuple{Any, Any}"><code>getAxis</code></a></li>
+</ul>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Cubes.jl#L44-L49' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Cubes.Axes.CategoricalAxis' href='#YAXArrays.Cubes.Axes.CategoricalAxis'>#</a>
+<strong><code>YAXArrays.Cubes.Axes.CategoricalAxis</code></strong> &mdash; <em>Type</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="k">struct</span> <span class="kt">CategoricalAxis</span><span class="p">{</span><span class="kt">T</span><span class="p">,</span><span class="kt">S</span><span class="p">,</span><span class="kt">RT</span><span class="p">}</span>
+</code></pre></div>
+<p>To represent axes that are categorical, where <code>T</code> is the element type. The type parameter <code>S</code> denotes the axis name (a symbol). The default constructor is:</p>
+<div class="highlight"><pre><span></span><code>CategoricalAxis(axname::String,values::Vector{T})
+</code></pre></div>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Axes.jl#L22-L31' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Cubes.Axes.CubeAxis' href='#YAXArrays.Cubes.Axes.CubeAxis'>#</a>
+<strong><code>YAXArrays.Cubes.Axes.CubeAxis</code></strong> &mdash; <em>Type</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="k">abstract</span><span class="w"> </span><span class="k">type</span> <span class="kt">CubeAxis</span><span class="p">{</span><span class="kt">T</span><span class="p">,</span><span class="kt">S</span><span class="p">}</span>
+</code></pre></div>
+<p>Supertype of all axes. Every <code>CubeAxis</code> is an 1D Cube itself and can be passed to mapCube operations. In detail CubeAxis is an <code>AbstractArray{Int, 1}</code></p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Axes.jl#L14-L19' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Cubes.Axes.RangeAxis' href='#YAXArrays.Cubes.Axes.RangeAxis'>#</a>
+<strong><code>YAXArrays.Cubes.Axes.RangeAxis</code></strong> &mdash; <em>Type</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="kt">RangeAxis</span><span class="p">{</span><span class="kt">T</span><span class="p">,</span><span class="kt">S</span><span class="p">,</span><span class="kt">R</span><span class="p">}</span>
+</code></pre></div>
+<p>To represent axes that are numerical, where <code>T</code> is the element type. The type parameter <code>S</code> denotes the axis name (a symbol) and <code>R</code> the type of the range which is used to represent the axis values. The default constructor is:</p>
+<div class="highlight"><pre><span></span><code>RangeAxis(axname::String,values::Range{T})
+</code></pre></div>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Axes.jl#L56-L66' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Cubes.Axes.getAxis-Tuple{Any, Any}' href='#YAXArrays.Cubes.Axes.getAxis-Tuple{Any, Any}'>#</a>
+<strong><code>YAXArrays.Cubes.Axes.getAxis</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">getAxis</span><span class="p">(</span><span class="n">desc</span><span class="p">,</span><span class="w"> </span><span class="n">c</span><span class="p">)</span>
+</code></pre></div>
+<p>Given an Axis description and a cube, returns the corresponding axis of the cube. The Axis description can be:</p>
+<ul>
+<li>the name as a string or symbol.</li>
+<li>an Axis object</li>
+</ul>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Axes.jl#L110-L117' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.DAT.InDims' href='#YAXArrays.DAT.InDims'>#</a>
+<strong><code>YAXArrays.DAT.InDims</code></strong> &mdash; <em>Type</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">InDims</span><span class="p">(</span><span class="n">axisdesc</span><span class="o">...</span><span class="p">;</span><span class="o">...</span><span class="p">)</span>
+</code></pre></div>
+<p>Creates a description of an Input Data Cube for cube operations. Takes a single   or multiple axis descriptions as first arguments. Alternatively a MovingWindow(@ref) struct can be passed to include   neighbour slices of one or more axes in the computation.    Axes can be specified by their   name (String), through an Axis type, or by passing a concrete axis.</p>
+<p><strong>Keyword arguments</strong></p>
+<ul>
+<li><code>artype</code> how shall the array be represented in the inner function. Defaults to <code>Array</code>, alternatives are <code>DataFrame</code> or <code>AsAxisArray</code></li>
+<li><code>filter</code> define some filter to skip the computation, e.g. when all values are missing. Defaults to   <code>AllMissing()</code>, possible values are <code>AnyMissing()</code>, <code>AnyOcean()</code>, <code>StdZero()</code>, <code>NValid(n)</code>   (for at least n non-missing elements). It is also possible to provide a custom one-argument function   that takes the array and returns <code>true</code> if the compuation shall be skipped and <code>false</code> otherwise.</li>
+<li><code>window_oob_value</code> if one of the input dimensions is a MowingWindow, this value will be used to fill out-of-bounds areas</li>
+</ul>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DAT/registration.jl#L58-L75' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.DAT.MovingWindow' href='#YAXArrays.DAT.MovingWindow'>#</a>
+<strong><code>YAXArrays.DAT.MovingWindow</code></strong> &mdash; <em>Type</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">MovingWindow</span><span class="p">(</span><span class="n">desc</span><span class="p">,</span><span class="w"> </span><span class="n">pre</span><span class="p">,</span><span class="w"> </span><span class="n">after</span><span class="p">)</span>
+</code></pre></div>
+<p>Constructs a <code>MovingWindow</code> object to be passed to an <code>InDims</code> constructor to define that the axis in <code>desc</code> shall participate in the inner function (i.e. shall be looped over), but inside the inner function <code>pre</code> values before and <code>after</code> values after the center value will be passed as well. </p>
+<p>For example passing <code>MovingWindow("Time", 2, 0)</code> will loop over the time axis and  always pass the current time step plus the 2 previous steps. So in the inner function the array will have an additional dimension of size 3.    </p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DAT/registration.jl#L8-L19' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.DAT.OutDims-Tuple' href='#YAXArrays.DAT.OutDims-Tuple'>#</a>
+<strong><code>YAXArrays.DAT.OutDims</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">OutDims</span><span class="p">(</span><span class="n">axisdesc</span><span class="p">;</span><span class="o">...</span><span class="p">)</span>
+</code></pre></div>
+<p>Creates a description of an Output Data Cube for cube operations. Takes a single   or a Vector/Tuple of axes as first argument. Axes can be specified by their   name (String), through an Axis type, or by passing a concrete axis.</p>
+<ul>
+<li><code>axisdesc</code>: List of input axis names</li>
+<li><code>backend</code> : specifies the dataset backend to write data to, must be either :auto or a key in <code>YAXArrayBase.backendlist</code></li>
+<li><code>update</code> : specifies wether the function operates inplace or if an output is returned</li>
+<li><code>artype</code> : specifies the Array type inside the inner function that is mapped over</li>
+<li><code>chunksize</code>: A Dict specifying the chunksizes for the output dimensions of the cube, or <code>:input</code> to copy chunksizes from input cube axes or <code>:max</code> to not chunk the inner dimensions</li>
+<li><code>outtype</code>: force the output type to a specific type, defaults to <code>Any</code> which means that the element type of the first input cube is used</li>
+</ul>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DAT/registration.jl#L102-L115' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.DAT.CubeTable-Tuple{}' href='#YAXArrays.DAT.CubeTable-Tuple{}'>#</a>
+<strong><code>YAXArrays.DAT.CubeTable</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">CubeTable</span><span class="p">()</span>
+</code></pre></div>
+<p>Function to turn a DataCube object into an iterable table. Takes a list of as arguments, specified as a <code>name=cube</code> expression. For example <code>CubeTable(data=cube1,country=cube2)</code> would generate a Table with the entries <code>data</code> and <code>country</code>, where <code>data</code> contains the values of <code>cube1</code> and <code>country</code> the values of <code>cube2</code>. The cubes are matched and broadcasted along their axes like in <code>mapCube</code>.</p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DAT/dciterators.jl#L122-L130' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.DAT.cubefittable-Tuple{Any, Any, Any}' href='#YAXArrays.DAT.cubefittable-Tuple{Any, Any, Any}'>#</a>
+<strong><code>YAXArrays.DAT.cubefittable</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">cubefittable</span><span class="p">(</span><span class="n">tab</span><span class="p">,</span><span class="n">o</span><span class="p">,</span><span class="n">fitsym</span><span class="p">;</span><span class="n">post</span><span class="o">=</span><span class="n">getpostfunction</span><span class="p">(</span><span class="n">o</span><span class="p">),</span><span class="n">kwargs</span><span class="o">...</span><span class="p">)</span>
+</code></pre></div>
+<p>Executes <a href="./#YAXArrays.DAT.fittable-Tuple{YAXArrays.DAT.CubeIterator, Any, Any}"><code>fittable</code></a> on the <a href="./#YAXArrays.DAT.CubeTable-Tuple{}"><code>CubeTable</code></a> <code>tab</code> with the (Weighted-)OnlineStat <code>o</code>, looping through the values specified by <code>fitsym</code>. Finally, writes the results from the <code>TableAggregator</code> to an output data cube.</p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DAT/tablestats.jl#L318-L324' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.DAT.fittable-Tuple{YAXArrays.DAT.CubeIterator, Any, Any}' href='#YAXArrays.DAT.fittable-Tuple{YAXArrays.DAT.CubeIterator, Any, Any}'>#</a>
+<strong><code>YAXArrays.DAT.fittable</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">fittable</span><span class="p">(</span><span class="n">tab</span><span class="p">,</span><span class="n">o</span><span class="p">,</span><span class="n">fitsym</span><span class="p">;</span><span class="n">by</span><span class="o">=</span><span class="p">(),</span><span class="n">weight</span><span class="o">=</span><span class="nb">nothing</span><span class="p">)</span>
+</code></pre></div>
+<p>Loops through an iterable table <code>tab</code> and thereby fitting an OnlineStat <code>o</code> with the values specified through <code>fitsym</code>. Optionally one can specify a field (or tuple) to group by. Any groupby specifier can either be a symbol denoting the entry to group by or an anynymous function calculating the group from a table row.</p>
+<p>For example the following would caluclate a weighted mean over a cube weighted by grid cell area and grouped by country and month:</p>
+<div class="highlight"><pre><span></span><code><span class="n">fittable</span><span class="p">(</span><span class="n">iter</span><span class="p">,</span><span class="n">WeightedMean</span><span class="p">,</span><span class="ss">:tair</span><span class="p">,</span><span class="n">weight</span><span class="o">=</span><span class="p">(</span><span class="n">i</span><span class="o">-&gt;</span><span class="n">abs</span><span class="p">(</span><span class="n">cosd</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">lat</span><span class="p">))),</span><span class="n">by</span><span class="o">=</span><span class="p">(</span><span class="n">i</span><span class="o">-&gt;</span><span class="n">month</span><span class="p">(</span><span class="n">i</span><span class="o">.</span><span class="n">time</span><span class="p">),</span><span class="ss">:country</span><span class="p">))</span>
+</code></pre></div>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DAT/tablestats.jl#L235-L249' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.DAT.mapCube-Tuple{Function, Dataset, Vararg{Any}}' href='#YAXArrays.DAT.mapCube-Tuple{Function, Dataset, Vararg{Any}}'>#</a>
+<strong><code>YAXArrays.DAT.mapCube</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">mapCube</span><span class="p">(</span><span class="n">fun</span><span class="p">,</span><span class="w"> </span><span class="n">cube</span><span class="p">,</span><span class="w"> </span><span class="n">addargs</span><span class="o">...</span><span class="p">;</span><span class="n">kwargs</span><span class="o">...</span><span class="p">)</span>
+
+<span class="n">Map</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">given</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="sb">`fun`</span><span class="w"> </span><span class="n">over</span><span class="w"> </span><span class="n">slices</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">all</span><span class="w"> </span><span class="n">cubes</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">dataset</span><span class="w"> </span><span class="sb">`ds`</span><span class="o">.</span><span class="w"> </span>
+<span class="n">Use</span><span class="w"> </span><span class="n">InDims</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">discribe</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">input</span><span class="w"> </span><span class="n">dimensions</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="n">OutDims</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">describe</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">output</span><span class="w"> </span><span class="n">dimensions</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="k">function</span><span class="o">.</span>
+<span class="n">For</span><span class="w"> </span><span class="n">Datasets</span><span class="p">,</span><span class="w"> </span><span class="n">only</span><span class="w"> </span><span class="n">one</span><span class="w"> </span><span class="n">output</span><span class="w"> </span><span class="n">cube</span><span class="w"> </span><span class="n">can</span><span class="w"> </span><span class="n">be</span><span class="w"> </span><span class="n">specified</span><span class="o">.</span>
+<span class="n">In</span><span class="w"> </span><span class="n">contrast</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">mapCube</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">cubes</span><span class="p">,</span><span class="w"> </span><span class="n">additional</span><span class="w"> </span><span class="n">arguments</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">inner</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">should</span><span class="w"> </span><span class="n">be</span><span class="w"> </span><span class="n">set</span><span class="w"> </span><span class="n">as</span><span class="w"> </span><span class="n">keyword</span><span class="w"> </span><span class="n">arguments</span><span class="o">.</span>
+
+<span class="n">For</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">specific</span><span class="w"> </span><span class="n">keyword</span><span class="w"> </span><span class="n">arguments</span><span class="w"> </span><span class="n">see</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">docstring</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">mapCube</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">cubes</span><span class="o">.</span>
+</code></pre></div>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DAT/DAT.jl#L307-L316' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.DAT.mapCube-Tuple{Function, Tuple, Vararg{Any}}' href='#YAXArrays.DAT.mapCube-Tuple{Function, Tuple, Vararg{Any}}'>#</a>
+<strong><code>YAXArrays.DAT.mapCube</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">mapCube</span><span class="p">(</span><span class="n">fun</span><span class="p">,</span><span class="w"> </span><span class="n">cube</span><span class="p">,</span><span class="w"> </span><span class="n">addargs</span><span class="o">...</span><span class="p">;</span><span class="n">kwargs</span><span class="o">...</span><span class="p">)</span>
+</code></pre></div>
+<p>Map a given function <code>fun</code> over slices of the data cube <code>cube</code>.      The additional arguments <code>addargs</code> will be forwarded to the inner function <code>fun</code>.     Use InDims to discribe the input dimensions and OutDims to describe the output dimensions of the function.</p>
+<p><strong>Keyword arguments</strong></p>
+<ul>
+<li><code>max_cache=YAXDefaults.max_cache</code> maximum size of blocks that are read into memory, defaults to approx 10Mb</li>
+<li><code>indims::InDims</code> List of input cube descriptors of type <a href="./#YAXArrays.DAT.InDims"><code>InDims</code></a> for each input data cube</li>
+<li><code>outdims::OutDims</code> List of output cube descriptors of type <a href="./#YAXArrays.DAT.OutDims-Tuple"><code>OutDims</code></a> for each output cube</li>
+<li><code>inplace</code> does the function write to an output array inplace or return a single value&gt; defaults to <code>true</code></li>
+<li><code>ispar</code> boolean to determine if parallelisation should be applied, defaults to <code>true</code> if workers are available.</li>
+<li><code>showprog</code> boolean indicating if a ProgressMeter shall be shown</li>
+<li><code>include_loopvars</code> boolean to indicate if the varoables looped over should be added as function arguments</li>
+<li><code>nthreads</code> number of threads for the computation, defaults to Threads.nthreads for every worker.</li>
+<li><code>loopchunksize</code> determines the chunk sizes of variables which are looped over, a dict</li>
+<li><code>kwargs</code> additional keyword arguments are passed to the inner function</li>
+</ul>
+<p>The first argument is always the function to be applied, the second is the input cube or a tuple of input cubes if needed.</p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DAT/DAT.jl#L387-L408' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Datasets.Dataset' href='#YAXArrays.Datasets.Dataset'>#</a>
+<strong><code>YAXArrays.Datasets.Dataset</code></strong> &mdash; <em>Type</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">Dataset</span><span class="w"> </span><span class="n">object</span><span class="w"> </span><span class="n">which</span><span class="w"> </span><span class="n">stores</span><span class="w"> </span><span class="n">an</span><span class="w"> </span><span class="sb">`OrderedDict`</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">YAXArrays</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="kt">Symbol</span><span class="w"> </span><span class="n">keys</span><span class="o">.</span><span class="w"> </span>
+<span class="n">a</span><span class="w"> </span><span class="n">dictionary</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">CubeAxes</span><span class="w"> </span><span class="n">and</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="n">Dictionary</span><span class="w"> </span><span class="n">of</span><span class="w"> </span><span class="n">general</span><span class="w"> </span><span class="n">properties</span><span class="o">.</span><span class="w"> </span>
+<span class="n">A</span><span class="w"> </span><span class="n">dictionary</span><span class="w"> </span><span class="n">can</span><span class="w"> </span><span class="n">hold</span><span class="w"> </span><span class="n">cubes</span><span class="w"> </span><span class="n">with</span><span class="w"> </span><span class="n">differing</span><span class="w"> </span><span class="n">axes</span><span class="o">.</span><span class="w"> </span><span class="n">But</span><span class="w"> </span><span class="n">it</span><span class="w"> </span><span class="n">will</span><span class="w"> </span><span class="n">share</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">common</span><span class="w"> </span><span class="n">axes</span><span class="w"> </span><span class="n">between</span><span class="w"> </span><span class="n">the</span><span class="w"> </span><span class="n">subcubes</span><span class="o">.</span>
+</code></pre></div>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DatasetAPI/Datasets.jl#L17-L21' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Datasets.Dataset-Tuple{}' href='#YAXArrays.Datasets.Dataset-Tuple{}'>#</a>
+<strong><code>YAXArrays.Datasets.Dataset</code></strong> &mdash; <em>Method</em>.</p>
+<p>Dataset(; properties = Dict{String,Any}, cubes...)</p>
+<p>Construct a YAXArray Dataset with global attributes <code>properties</code> a and a list of named YAXArrays cubes...</p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DatasetAPI/Datasets.jl#L27-L31' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Datasets.Cube-Tuple{Dataset}' href='#YAXArrays.Datasets.Cube-Tuple{Dataset}'>#</a>
+<strong><code>YAXArrays.Datasets.Cube</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">Cube</span><span class="p">(</span><span class="n">ds</span><span class="o">::</span><span class="kt">Dataset</span><span class="p">;</span><span class="w"> </span><span class="n">joinname</span><span class="o">=</span><span class="s">&quot;Variable&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>Construct a single YAXArray from the dataset <code>ds</code>  by concatenating the cubes in the datset on the <code>joinname</code> dimension.</p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DatasetAPI/Datasets.jl#L305-L309' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Datasets.open_dataset-Tuple{Any}' href='#YAXArrays.Datasets.open_dataset-Tuple{Any}'>#</a>
+<strong><code>YAXArrays.Datasets.open_dataset</code></strong> &mdash; <em>Method</em>.</p>
+<p>open_dataset(g; driver=:all)</p>
+<p>Open the dataset at <code>g</code> with the given <code>driver</code>. The default driver will search for available drivers and tries to detect the useable driver from the filename extension.</p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DatasetAPI/Datasets.jl#L253-L258' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Datasets.savecube-Tuple{Any, AbstractString}' href='#YAXArrays.Datasets.savecube-Tuple{Any, AbstractString}'>#</a>
+<strong><code>YAXArrays.Datasets.savecube</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">savecube</span><span class="p">(</span><span class="n">cube</span><span class="p">,</span><span class="n">name</span><span class="o">::</span><span class="kt">String</span><span class="p">)</span>
+</code></pre></div>
+<p>Save a <a href="./#YAXArrays.Cubes.YAXArray"><code>YAXArray</code></a> to the <code>path</code>. </p>
+<p><strong>Extended Help</strong></p>
+<p>The keyword arguments are:</p>
+<ul>
+<li><code>name</code>:</li>
+<li><code>datasetaxis="Variable"</code> special treatment of a categorical axis that gets written into separate zarr arrays</li>
+<li><code>max_cache</code>: The number of bits that are used as cache for the data handling.</li>
+<li><code>backend</code>: The backend, that is used to save the data. Falls back to searching the backend according to the extension of the path.</li>
+<li><code>driver</code>: The same setting as <code>backend</code>.</li>
+<li><code>overwrite::Bool=false</code> overwrite cube if it already exists</li>
+</ul>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DatasetAPI/Datasets.jl#L550-L566' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Datasets.savedataset-Tuple{Dataset}' href='#YAXArrays.Datasets.savedataset-Tuple{Dataset}'>#</a>
+<strong><code>YAXArrays.Datasets.savedataset</code></strong> &mdash; <em>Method</em>.</p>
+<p>savedataset(ds::Dataset; path = "", persist = nothing, overwrite = false, append = false, skeleton=false, backend = :all,     driver = backend, max_cache = 5e8, writefac=4.0)</p>
+<p>Saves a Dataset into a file at <code>path</code> with the format given by <code>driver</code>, i.e., driver=:netcdf or driver=:zarr.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>overwrite = true, deletes ALL your data and it will create a new file.</p>
+</div>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DatasetAPI/Datasets.jl#L464-L473' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Datasets.to_dataset-Tuple{Any}' href='#YAXArrays.Datasets.to_dataset-Tuple{Any}'>#</a>
+<strong><code>YAXArrays.Datasets.to_dataset</code></strong> &mdash; <em>Method</em>.</p>
+<p>to_dataset(c;datasetaxis = "Variable", name = "layer")  </p>
+<p>Convert a Data Cube into a Dataset. It is possible to treat one of  the Cube's axes as a "DatasetAxis" i.e. the cube will be split into  different parts that become variables in the Dataset. If no such  axis is specified or found, there will only be a single variable  in the dataset with the name <code>name</code></p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DatasetAPI/Datasets.jl#L44-L52' class='documenter-source'>source</a><br></p>
+<p><a id='Internal-API'></a></p>
+<p><a id='Internal-API-1'></a></p>
+<h2 id="internal-api">Internal API<a class="headerlink" href="#internal-api" title="Permanent link">¤</a></h2>
+<p><a id='YAXArrays.YAXDefaults' href='#YAXArrays.YAXDefaults'>#</a>
+<strong><code>YAXArrays.YAXDefaults</code></strong> &mdash; <em>Constant</em>.</p>
+<p>Default configuration for YAXArrays, has the following fields:</p>
+<ul>
+<li><code>workdir[]::String = "./"</code> The default location for temporary cubes.</li>
+<li><code>recal[]::Bool = false</code> set to true if you want <code>@loadOrGenerate</code> to always recalculate the results.</li>
+<li><code>chunksize[]::Any = :input</code> Set the default output chunksize.</li>
+<li><code>max_cache[]::Float64 = 1e8</code> The maximum cache used by mapCube.</li>
+<li><code>cubedir[]::""</code> the default location for <code>Cube()</code> without an argument.</li>
+<li><code>subsetextensions::Array{Any} = []</code> List of registered functions, that convert subsetting input into dimension boundaries.</li>
+</ul>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/YAXArrays.jl#L3-L12' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Cubes.CleanMe' href='#YAXArrays.Cubes.CleanMe'>#</a>
+<strong><code>YAXArrays.Cubes.CleanMe</code></strong> &mdash; <em>Type</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="k">mutable</span><span class="w"> </span><span class="k">struct</span> <span class="kt">CleanMe</span>
+</code></pre></div>
+<p>Struct which describes data paths and their persistency. Non-persistend paths/files are removed at finalize step</p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Cubes.jl#L52-L56' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Cubes.clean-Tuple{YAXArrays.Cubes.CleanMe}' href='#YAXArrays.Cubes.clean-Tuple{YAXArrays.Cubes.CleanMe}'>#</a>
+<strong><code>YAXArrays.Cubes.clean</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">clean</span><span class="p">(</span><span class="n">c</span><span class="o">::</span><span class="kt">CleanMe</span><span class="p">)</span>
+</code></pre></div>
+<p>finalizer function for CleanMe struct. The main process removes all directories/files which are not persistent.</p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Cubes.jl#L66-L70' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Cubes.copydata-Tuple{Any, Any, Any}' href='#YAXArrays.Cubes.copydata-Tuple{Any, Any, Any}'>#</a>
+<strong><code>YAXArrays.Cubes.copydata</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">copydata</span><span class="p">(</span><span class="n">outar</span><span class="p">,</span><span class="w"> </span><span class="n">inar</span><span class="p">,</span><span class="w"> </span><span class="n">copybuf</span><span class="p">)</span>
+</code></pre></div>
+<p>Internal function which copies the data from the input <code>inar</code> into the output <code>outar</code> at the <code>copybuf</code> positions.</p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Rechunker.jl#L81-L84' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Cubes.optifunc-NTuple{7, Any}' href='#YAXArrays.Cubes.optifunc-NTuple{7, Any}'>#</a>
+<strong><code>YAXArrays.Cubes.optifunc</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">optifunc</span><span class="p">(</span><span class="n">s</span><span class="p">,</span><span class="w"> </span><span class="n">maxbuf</span><span class="p">,</span><span class="w"> </span><span class="n">incs</span><span class="p">,</span><span class="w"> </span><span class="n">outcs</span><span class="p">,</span><span class="w"> </span><span class="n">insize</span><span class="p">,</span><span class="w"> </span><span class="n">outsize</span><span class="p">,</span><span class="w"> </span><span class="n">writefac</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Internal</strong></p>
+<p>This function is going to be minimized to detect the best possible chunk setting for the rechunking of the data.</p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Rechunker.jl#L19-L24' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Cubes.Axes.abshalf-Tuple{Any}' href='#YAXArrays.Cubes.Axes.abshalf-Tuple{Any}'>#</a>
+<strong><code>YAXArrays.Cubes.Axes.abshalf</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">abshalf</span>
+</code></pre></div>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Axes.jl#L191-L193' class='documenter-source'>source</a><br></p>
+<p>&lt;a id='YAXArrays.Cubes.Axes.axVal2Index-Tuple{RangeAxis{&lt;:Any, &lt;:Any, &lt;:AbstractRange}, Any}' href='#YAXArrays.Cubes.Axes.axVal2Index-Tuple{RangeAxis{&lt;:Any, &lt;:Any, &lt;:AbstractRange}, Any}'&gt;#</a>
+<strong><code>YAXArrays.Cubes.Axes.axVal2Index</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">axVal2Index</span>
+</code></pre></div>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Axes.jl#L198-L200' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Cubes.Axes.axVal2Index_lb-Tuple{RangeAxis, Any}' href='#YAXArrays.Cubes.Axes.axVal2Index_lb-Tuple{RangeAxis, Any}'>#</a>
+<strong><code>YAXArrays.Cubes.Axes.axVal2Index_lb</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">axVal2Index_lb</span>
+</code></pre></div>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Axes.jl#L262-L264' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Cubes.Axes.axVal2Index_ub-Tuple{RangeAxis, Any}' href='#YAXArrays.Cubes.Axes.axVal2Index_ub-Tuple{RangeAxis, Any}'>#</a>
+<strong><code>YAXArrays.Cubes.Axes.axVal2Index_ub</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">axVal2Index_ub</span>
+</code></pre></div>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Axes.jl#L254-L256' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Cubes.Axes.axcopy-Tuple{RangeAxis, Any}' href='#YAXArrays.Cubes.Axes.axcopy-Tuple{RangeAxis, Any}'>#</a>
+<strong><code>YAXArrays.Cubes.Axes.axcopy</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">axcopy</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="n">vals</span><span class="p">)</span>
+</code></pre></div>
+<p>Makes a full copy of a <code>CubeAxis</code> with the values <code>vals</code></p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Axes.jl#L166-L170' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Cubes.Axes.axisfrombb-Tuple{Any, Any, Any}' href='#YAXArrays.Cubes.Axes.axisfrombb-Tuple{Any, Any, Any}'>#</a>
+<strong><code>YAXArrays.Cubes.Axes.axisfrombb</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">axisfrombb</span>
+</code></pre></div>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Axes.jl#L276-L278' class='documenter-source'>source</a><br></p>
+<p>&lt;a id='YAXArrays.Cubes.Axes.axname-Union{Tuple{Type{&lt;:CubeAxis{&lt;:Any, U}}}, Tuple{U}} where U' href='#YAXArrays.Cubes.Axes.axname-Union{Tuple{Type{&lt;:CubeAxis{&lt;:Any, U}}}, Tuple{U}} where U'&gt;#</a>
+<strong><code>YAXArrays.Cubes.Axes.axname</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">axname</span>
+</code></pre></div>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Axes.jl#L155-L157' class='documenter-source'>source</a><br></p>
+<p>&lt;a id='YAXArrays.Cubes.Axes.axsym-Union{Tuple{CubeAxis{&lt;:Any, S}}, Tuple{S}} where S' href='#YAXArrays.Cubes.Axes.axsym-Union{Tuple{CubeAxis{&lt;:Any, S}}, Tuple{S}} where S'&gt;#</a>
+<strong><code>YAXArrays.Cubes.Axes.axsym</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">axsym</span>
+</code></pre></div>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Axes.jl#L161-L163' class='documenter-source'>source</a><br></p>
+<p>&lt;a id='YAXArrays.Cubes.Axes.convert_time-Tuple{Type{&lt;:Dates.TimeType}, Dates.TimeType}' href='#YAXArrays.Cubes.Axes.convert_time-Tuple{Type{&lt;:Dates.TimeType}, Dates.TimeType}'&gt;#</a>
+<strong><code>YAXArrays.Cubes.Axes.convert_time</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">convert_time</span>
+</code></pre></div>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Axes.jl#L284-L286' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Cubes.Axes.findAxis-Tuple{Any, Any}' href='#YAXArrays.Cubes.Axes.findAxis-Tuple{Any, Any}'>#</a>
+<strong><code>YAXArrays.Cubes.Axes.findAxis</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">findAxis</span><span class="p">(</span><span class="n">desc</span><span class="p">,</span><span class="w"> </span><span class="n">c</span><span class="p">)</span>
+</code></pre></div>
+<p>Given an Axis description and a cube return the index of the Axis. The Axis description can be:</p>
+<ul>
+<li>the name as a string or symbol.</li>
+<li>an Axis object</li>
+</ul>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Axes.jl#L316-L322' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Cubes.Axes.getOutAxis-NTuple{5, Any}' href='#YAXArrays.Cubes.Axes.getOutAxis-NTuple{5, Any}'>#</a>
+<strong><code>YAXArrays.Cubes.Axes.getOutAxis</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">getOutAxis</span>
+</code></pre></div>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Axes.jl#L344-L346' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Cubes.Axes.get_bb-Tuple{RangeAxis}' href='#YAXArrays.Cubes.Axes.get_bb-Tuple{RangeAxis}'>#</a>
+<strong><code>YAXArrays.Cubes.Axes.get_bb</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">get_bb</span>
+</code></pre></div>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Axes.jl#L270-L272' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Cubes.Axes.get_descriptor-Tuple{String}' href='#YAXArrays.Cubes.Axes.get_descriptor-Tuple{String}'>#</a>
+<strong><code>YAXArrays.Cubes.Axes.get_descriptor</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">get_descriptor</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+</code></pre></div>
+<p>Get the descriptor of an Axis.  This is used to dispatch on the descriptor. </p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Axes.jl#L293-L298' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Cubes.Axes.get_step-Tuple{AbstractRange}' href='#YAXArrays.Cubes.Axes.get_step-Tuple{AbstractRange}'>#</a>
+<strong><code>YAXArrays.Cubes.Axes.get_step</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">get_step</span>
+</code></pre></div>
+<p>returns stepwidth of the RangeAxis</p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Axes.jl#L183-L187' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Cubes.Axes.match_axis-Tuple{YAXArrays.Cubes.Axes.ByName, Any}' href='#YAXArrays.Cubes.Axes.match_axis-Tuple{YAXArrays.Cubes.Axes.ByName, Any}'>#</a>
+<strong><code>YAXArrays.Cubes.Axes.match_axis</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">match_axis</span>
+</code></pre></div>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Axes.jl#L305-L307' class='documenter-source'>source</a><br></p>
+<p>&lt;a id='YAXArrays.Cubes.Axes.renameaxis-Union{Tuple{V}, Tuple{T}, Tuple{RangeAxis{T, &lt;:Any, V}, Any}} where {T, V}' href='#YAXArrays.Cubes.Axes.renameaxis-Union{Tuple{V}, Tuple{T}, Tuple{RangeAxis{T, &lt;:Any, V}, Any}} where {T, V}'&gt;#</a>
+<strong><code>YAXArrays.Cubes.Axes.renameaxis</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">renameaxis</span>
+</code></pre></div>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Axes.jl#L336-L338' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Cubes.caxes-Tuple{CubeAxis}' href='#YAXArrays.Cubes.caxes-Tuple{CubeAxis}'>#</a>
+<strong><code>YAXArrays.Cubes.caxes</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">caxes</span>
+</code></pre></div>
+<p>Embeds  Cube inside a new Cube</p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/Cubes/Axes.jl#L176-L180' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.DAT.DATConfig' href='#YAXArrays.DAT.DATConfig'>#</a>
+<strong><code>YAXArrays.DAT.DATConfig</code></strong> &mdash; <em>Type</em>.</p>
+<p>Configuration object of a DAT process. This holds all necessary information to perform the calculations. It contains the following fields:</p>
+<ul>
+<li><code>incubes::Tuple{Vararg{YAXArrays.DAT.InputCube, NIN}} where NIN</code>: The input data cubes</li>
+<li><code>outcubes::Tuple{Vararg{YAXArrays.DAT.OutputCube, NOUT}} where NOUT</code>: The output data cubes</li>
+<li><code>allInAxes::Vector</code>: List of all axes of the input cubes</li>
+<li><code>LoopAxes::Vector</code>: List of axes that are looped through</li>
+<li><code>ispar::Bool</code>: Flag whether the computation is parallelized</li>
+<li><code>loopcachesize::Vector{Int64}</code>:</li>
+<li><code>allow_irregular_chunks::Bool</code>:</li>
+<li><code>max_cache::Any</code>: Maximal size of the in memory cache</li>
+<li><code>fu::Any</code>: Inner function which is computed</li>
+<li><code>inplace::Bool</code>: Flag whether the computation happens in place</li>
+<li><code>include_loopvars::Bool</code>:</li>
+<li><code>ntr::Any</code>:</li>
+<li><code>addargs::Any</code>: Additional arguments for the inner function</li>
+<li><code>kwargs::Any</code>: Additional keyword arguments for the inner function</li>
+</ul>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DAT/DAT.jl#L212-L216' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.DAT.InputCube' href='#YAXArrays.DAT.InputCube'>#</a>
+<strong><code>YAXArrays.DAT.InputCube</code></strong> &mdash; <em>Type</em>.</p>
+<p>Internal representation of an input cube for DAT operations</p>
+<ul>
+<li><code>cube</code>: The input data</li>
+<li><code>desc</code>: The input description given by the user/registration</li>
+<li><code>axesSmall</code>: List of axes that were actually selected through the description</li>
+<li><code>icolon</code></li>
+<li><code>colonperm</code></li>
+<li><code>loopinds</code>: Indices of loop axes that this cube does not contain, i.e. broadcasts</li>
+<li><code>cachesize</code>: Number of elements to keep in cache along each axis</li>
+<li><code>window</code></li>
+<li><code>iwindow</code></li>
+<li><code>windowloopinds</code></li>
+<li><code>iall</code></li>
+</ul>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DAT/DAT.jl#L53-L56' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.DAT.OutputCube' href='#YAXArrays.DAT.OutputCube'>#</a>
+<strong><code>YAXArrays.DAT.OutputCube</code></strong> &mdash; <em>Type</em>.</p>
+<p>Internal representation of an output cube for DAT operations</p>
+<p><strong>Fields</strong></p>
+<ul>
+<li><code>cube</code>: The actual outcube cube, once it is generated</li>
+<li><code>cube_unpermuted</code>: The unpermuted output cube</li>
+<li><code>desc</code>: The description of the output axes as given by users or registration</li>
+<li><code>axesSmall</code>: The list of output axes determined through the description</li>
+<li><code>allAxes</code>: List of all the axes of the cube</li>
+<li><code>loopinds</code>: Index of the loop axes that are broadcasted for this output cube</li>
+<li><code>innerchunks</code></li>
+<li><code>outtype</code>: Elementtype of the outputcube</li>
+</ul>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DAT/DAT.jl#L122-L126' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.DAT.YAXColumn' href='#YAXArrays.DAT.YAXColumn'>#</a>
+<strong><code>YAXArrays.DAT.YAXColumn</code></strong> &mdash; <em>Type</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">YAXColumn</span>
+</code></pre></div>
+<p>A struct representing a single column of a YAXArray partitioned Table     # Fields </p>
+<ul>
+<li><code>inarBC</code></li>
+<li><code>inds</code></li>
+</ul>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DAT/dciterators.jl#L40-L46' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.DAT.cmpcachmisses-Tuple{Any, Any}' href='#YAXArrays.DAT.cmpcachmisses-Tuple{Any, Any}'>#</a>
+<strong><code>YAXArrays.DAT.cmpcachmisses</code></strong> &mdash; <em>Method</em>.</p>
+<p>Function that compares two cache miss specifiers by their importance</p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DAT/DAT.jl#L927-L929' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.DAT.getFrontPerm-Tuple{Any, Any}' href='#YAXArrays.DAT.getFrontPerm-Tuple{Any, Any}'>#</a>
+<strong><code>YAXArrays.DAT.getFrontPerm</code></strong> &mdash; <em>Method</em>.</p>
+<p>Calculate an axis permutation that brings the wanted dimensions to the front</p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DAT/DAT.jl#L1180' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.DAT.getLoopCacheSize-NTuple{5, Any}' href='#YAXArrays.DAT.getLoopCacheSize-NTuple{5, Any}'>#</a>
+<strong><code>YAXArrays.DAT.getLoopCacheSize</code></strong> &mdash; <em>Method</em>.</p>
+<p>Calculate optimal Cache size to DAT operation</p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DAT/DAT.jl#L1027' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.DAT.getOuttype-Tuple{Int64, Any}' href='#YAXArrays.DAT.getOuttype-Tuple{Int64, Any}'>#</a>
+<strong><code>YAXArrays.DAT.getOuttype</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">getOuttype</span><span class="p">(</span><span class="n">outtype</span><span class="p">,</span><span class="w"> </span><span class="n">cdata</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Internal function</strong></p>
+<p>Get the element type for the output cube</p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DAT/DAT.jl#L293-L297' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.DAT.getloopchunks-Tuple{YAXArrays.DAT.DATConfig}' href='#YAXArrays.DAT.getloopchunks-Tuple{YAXArrays.DAT.DATConfig}'>#</a>
+<strong><code>YAXArrays.DAT.getloopchunks</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">getloopchunks</span><span class="p">(</span><span class="n">dc</span><span class="o">::</span><span class="kt">DATConfig</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Internal function</strong></p>
+<div class="highlight"><pre><span></span><code>Returns the chunks that can be looped over toghether for all dimensions.
+This computation of the size of the chunks is handled by [`DiskArrays.approx_chunksize`](@ref)
+</code></pre></div>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DAT/DAT.jl#L511-L516' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.DAT.permuteloopaxes-Tuple{Any}' href='#YAXArrays.DAT.permuteloopaxes-Tuple{Any}'>#</a>
+<strong><code>YAXArrays.DAT.permuteloopaxes</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">permuteloopaxes</span><span class="p">(</span><span class="n">dc</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Internal function</strong></p>
+<p>Permute the dimensions of the cube, so that the axes that are looped through are in the first positions. This is necessary for a faster looping through the data.</p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DAT/DAT.jl#L549-L554' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Cubes.setchunks-Tuple{Dataset, Any}' href='#YAXArrays.Cubes.setchunks-Tuple{Dataset, Any}'>#</a>
+<strong><code>YAXArrays.Cubes.setchunks</code></strong> &mdash; <em>Method</em>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">setchunks</span><span class="p">(</span><span class="n">c</span><span class="o">::</span><span class="kt">Dataset</span><span class="p">,</span><span class="n">chunks</span><span class="p">)</span>
+</code></pre></div>
+<p>Resets the chunks of all or a subset YAXArrays in the dataset and returns a new Dataset. Note that this will not change the chunking of the underlying data itself,  it will just make the data "look" like it had a different chunking. If you need a persistent on-disk representation of this chunking, use <code>savedataset</code> on the resulting array. The <code>chunks</code> argument can take one of the following forms:</p>
+<ul>
+<li>a NamedTuple or AbstractDict mapping from variable name to a description of the desired variable chunks</li>
+<li>a NamedTuple or AbstractDict mapping from dimension name to a description of the desired variable chunks</li>
+<li>a description of the desired variable chunks applied to all members of the Dataset</li>
+</ul>
+<p>where a description of the desired variable chunks can take one of the following forms:</p>
+<ul>
+<li>a <code>DiskArrays.GridChunks</code> object</li>
+<li>a tuple specifying the chunk size along each dimension</li>
+<li>an AbstractDict or NamedTuple mapping one or more axis names to chunk sizes</li>
+</ul>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DatasetAPI/Datasets.jl#L436-L452' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Datasets.collectfromhandle-Tuple{Any, Any, Any}' href='#YAXArrays.Datasets.collectfromhandle-Tuple{Any, Any, Any}'>#</a>
+<strong><code>YAXArrays.Datasets.collectfromhandle</code></strong> &mdash; <em>Method</em>.</p>
+<p>Extracts a YAXArray from a dataset handle that was just created from a arrayinfo</p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DatasetAPI/Datasets.jl#L370-L372' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Datasets.createdataset-Tuple{Any, Any}' href='#YAXArrays.Datasets.createdataset-Tuple{Any, Any}'>#</a>
+<strong><code>YAXArrays.Datasets.createdataset</code></strong> &mdash; <em>Method</em>.</p>
+<p>function createdataset(DS::Type,axlist; kwargs...)</p>
+<p>Creates a new dataset with axes specified in <code>axlist</code>. Each axis must be a subtype   of <code>CubeAxis</code>. A new empty Zarr array will be created and can serve as a sink for   <code>mapCube</code> operations.</p>
+<p><strong>Keyword arguments</strong></p>
+<ul>
+<li><code>path=""</code> location where the new cube is stored</li>
+<li><code>T=Union{Float32,Missing}</code> data type of the target cube</li>
+<li><code>chunksize = ntuple(i-&gt;length(axlist[i]),length(axlist))</code> chunk sizes of the array</li>
+<li><code>chunkoffset = ntuple(i-&gt;0,length(axlist))</code> offsets of the chunks</li>
+<li><code>persist::Bool=true</code> shall the disk data be garbage-collected when the cube goes out of scope?</li>
+<li><code>overwrite::Bool=false</code> overwrite cube if it already exists</li>
+<li><code>properties=Dict{String,Any}()</code> additional cube properties</li>
+<li><code>fillvalue= T&gt;:Missing ? defaultfillval(Base.nonmissingtype(T)) : nothing</code> fill value</li>
+<li><code>datasetaxis="Variable"</code> special treatment of a categorical axis that gets written into separate zarr arrays</li>
+</ul>
+<div class="highlight"><pre><span></span><code>
+</code></pre></div>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DatasetAPI/Datasets.jl#L590-L608' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Datasets.getarrayinfo-Tuple{Any, Any}' href='#YAXArrays.Datasets.getarrayinfo-Tuple{Any, Any}'>#</a>
+<strong><code>YAXArrays.Datasets.getarrayinfo</code></strong> &mdash; <em>Method</em>.</p>
+<p>Extract necessary information to create a YAXArrayBase dataset from a name and YAXArray pair </p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DatasetAPI/Datasets.jl#L339-L341' class='documenter-source'>source</a><br></p>
+<p><a id='YAXArrays.Datasets.testrange-Tuple{Any}' href='#YAXArrays.Datasets.testrange-Tuple{Any}'>#</a>
+<strong><code>YAXArrays.Datasets.testrange</code></strong> &mdash; <em>Method</em>.</p>
+<p>Test if data in x can be approximated by a step range</p>
+<p><a target='_blank' href='https://github.com/JuliaDataCubes/YAXArrays.jl/blob/c559838b5d4ed7ef90a83ef9be9de3cc780079bb/src/DatasetAPI/Datasets.jl#L225' class='documenter-source'>source</a><br></p>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+          <a href="#" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </a>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../examples/generated/HowdoI/howdoi/" class="md-footer__link md-footer__link--prev" aria-label="Previous: How do I ..." rel="prev">
+            <div class="md-footer__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <div class="md-ellipsis">
+                <span class="md-footer__direction">
+                  Previous
+                </span>
+                How do I ...
+              </div>
+            </div>
+          </a>
+        
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "..", "features": ["content.code.annotate", "content.tooltips", "navigation.indexes", "navigation.sections", "navigation.tabs", "navigation.top", "navigation.footer", "navigation.tracking", "search.highlight", "search.share", "search.suggest", "toc.follow", "header.autohide"], "search": "../assets/javascripts/workers/search.db81ec45.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.4b2c34cd.min.js"></script>
+      
+        <script src="../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
