@@ -862,7 +862,7 @@ Variables: x y
 </code></pre></div>
 <p>Look at the docs for more information</p>
 <p>savedataset(ds::Dataset; path = "", persist = nothing, overwrite = false, append = false, skeleton=false, backend = :all,     driver = backend, max_cache = 5e8, writefac=4.0)</p>
-<p>Saves a Dataset into a file with the format given by driver, i.e., driver=:netcdf or driver=:zarr .</p>
+<p>Saves a Dataset into a file at <code>path</code> with the format given by <code>driver</code>, i.e., driver=:netcdf or driver=:zarr.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>overwrite = true, deletes ALL your data and it will create a new file.</p>
