@@ -1,7 +1,6 @@
 export InDims, OutDims, MovingWindow
 using ..Cubes.Axes: get_descriptor, findAxis, Axes
 using ...YAXArrays: YAXDefaults
-using DataFrames: DataFrame
 using YAXArrayBase: yaxcreate
 
 
