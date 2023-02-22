@@ -3,8 +3,9 @@ on:
   push:
     branches:
       - master
-    tags: "*"
+    tags: '*'
   pull_request:
+
 concurrency:
   # Skip intermediate builds: always.
   # Cancel intermediate builds: only if it is a pull request build.
@@ -12,23 +13,17 @@ concurrency:
   cancel-in-progress: ${{ startsWith(github.ref, 'refs/pull/') }}
 jobs:
   build:
+    permissions:
+        contents: write
     runs-on: ubuntu-20.04
+    env:
+      DISPLAY: ':0'
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: julia-actions/setup-julia@v1
-      - uses: julia-actions/julia-docdeploy@latest
+      - uses: julia-actions/cache@v1
         with:
-          version: "1"
-      - uses: actions/cache@v1
-        env:
-          cache-name: cache-artifacts
-        with:
-          path: ~/.julia/artifacts
-          key: ${{ runner.os }}-test-${{ env.cache-name }}-${{ hashFiles('**/Project.toml') }}
-          restore-keys: |
-            ${{ runner.os }}-test-${{ env.cache-name }}-
-            ${{ runner.os }}-test-
-            ${{ runner.os }}-
+          cache-registries: "true"
       - name: Install documentation dependencies
         run: sudo apt-get update && sudo apt-get install -y xorg-dev mesa-utils xvfb libgl1 freeglut3-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev
       - name: Install pkgs dependencies
