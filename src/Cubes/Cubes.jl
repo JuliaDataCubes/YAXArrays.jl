@@ -14,7 +14,8 @@ import YAXArrayBase: getattributes, iscontdim, dimnames, dimvals, getdata
 using DiskArrayTools: CFDiskArray
 using DocStringExtensions
 using Tables: istable, schema, columns
-using DimensionalData: AbstractDimArray
+using DimensionalData: AbstractDimArray, NoName
+import DimensionalData: name
 
 export concatenatecubes, caxes, subsetcube, readcubedata, renameaxis!, YAXArray, setchunks
 
@@ -100,6 +101,7 @@ struct YAXArray{T,N,A<:AbstractArray{T,N}, D} <: AbstractDimArray{T,N,D,A}
     chunks::GridChunks{N}
     "Cleaner objects to track which objects to tidy up when the YAXArray goes out of scope"
     cleaner::Vector{CleanMe}
+    "Name of the Array"
     function YAXArray(axes, data, properties, chunks, cleaner)
         if ndims(data) != length(axes) # case: mismatched Arguments
             throw(
@@ -107,12 +109,12 @@ struct YAXArray{T,N,A<:AbstractArray{T,N}, D} <: AbstractDimArray{T,N,D,A}
                     "Can not construct YAXArray, supplied data dimension is $(ndims(data)) while the number of axes is $(length(axes))",
                 ),
             )
-        elseif ntuple(i -> length(axes[i]), ndims(data)) != size(data) # case: mismatched data dimensions: sizes of axes and data
-            throw(
-                ArgumentError(
-                    "Can not construct YAXArray, supplied data size is $(size(data)) while axis lenghts are $(ntuple(i->length(axes[i]),ndims(data)))",
-                ),
-            )
+        #elseif ntuple(i -> length(axes[i]), ndims(data)) != size(data) # case: mismatched data dimensions: sizes of axes and data
+        #    throw(
+        #        ArgumentError(
+        #            "Can not construct YAXArray, supplied data size is $(size(data)) while axis lenghts are $(ntuple(i->length(axes[i]),ndims(data)))",
+        #        ),
+        #    )
         elseif ndims(chunks) != ndims(data)
             throw(ArgumentError("Can not construct YAXArray, supplied chunk dimension is $(ndims(chunks)) while the number of dims is $(length(axes))"))
         else
@@ -126,6 +128,8 @@ struct YAXArray{T,N,A<:AbstractArray{T,N}, D} <: AbstractDimArray{T,N,D,A}
         end
     end
 end
+
+name(::YAXArray) = NoName()
 
 YAXArray(axes, data, properties = Dict{String,Any}(); cleaner = CleanMe[], chunks = eachchunk(data)) =
     YAXArray(axes, data, properties, chunks, cleaner)

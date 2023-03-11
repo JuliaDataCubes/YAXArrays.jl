@@ -4,6 +4,7 @@ using Dates
 using Base.Iterators: take, drop
 import DataStructures: counter
 using YAXArrayBase: YAXArrayBase
+using DimensionalData: Dimension
 
 export CubeAxis, RangeAxis, CategoricalAxis, getAxis
 
@@ -162,6 +163,7 @@ axname(::CubeAxis{<:Any,U}) where {U} = string(U)
     axsym
 """
 axsym(::CubeAxis{<:Any,S}) where {S} = S
+axsym(s::Dimension) = Symbol(s)
 
 """
     axcopy(x,vals)
