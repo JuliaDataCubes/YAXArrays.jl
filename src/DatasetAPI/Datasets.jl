@@ -89,11 +89,17 @@ function to_dataset(c;datasetaxis = "Variable", name = get(c.properties,"name","
 end
 
 function Base.show(io::IO, ds::Dataset)
+    sharedaxs = intersect([caxes(c) for (n,c) in ds.cubes]...)
     println(io, "YAXArray Dataset")
-    println(io, "Dimensions: ")
-    foreach(a -> println(io, "   ", a), values(ds.axes))
-    print(io, "Variables: ")
-    foreach(i -> print(io, i, " "), keys(ds.cubes))
+    println(io, "Shared Axes: ")
+    foreach(a -> println(io, "   ", a), sharedaxs)
+    println(io, "Variables: ")
+    for (k,c) in ds.cubes
+        println(io, k)
+        specaxes = setdiff(caxes(c), sharedaxs)
+        foreach(i-> println(io," └── ", i), specaxes)
+    end
+    #foreach(i -> print(io, i, " "), keys(ds.cubes))
     if !isempty(ds.properties)
         println(io)
         print(io,"Properties: ")
