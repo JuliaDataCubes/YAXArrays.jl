@@ -13,17 +13,17 @@
       
       
       
-        <link rel="prev" href="../create_from_func/">
+        <link rel="prev" href="../../HowdoI/howdoi/">
       
       
-        <link rel="next" href="../openZarr/">
+        <link rel="next" href="../../../../api/">
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.4.2, mkdocs-material-9.1.3">
     
     
       
-        <title>Open NetCDF - YAXArrays</title>
+        <title>Contribute to docs - YAXArrays</title>
       
     
     
@@ -76,6 +76,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#contribute-to-documentation" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -106,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Open NetCDF
+              Contribute to docs
             
           </span>
         </div>
@@ -262,7 +267,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../creating/" class="md-nav__link">
+      <a href="../../UserGuide/creating/" class="md-nav__link">
         Creating YAXArrays and Datasets
       </a>
     </li>
@@ -277,7 +282,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../saving/" class="md-nav__link">
+      <a href="../../UserGuide/saving/" class="md-nav__link">
         Saving YAXArrays and Datasets
       </a>
     </li>
@@ -292,7 +297,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../setchuncks/" class="md-nav__link">
+      <a href="../../UserGuide/setchuncks/" class="md-nav__link">
         Setting chunks's size
       </a>
     </li>
@@ -307,7 +312,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../applyfunctions/" class="md-nav__link">
+      <a href="../../UserGuide/applyfunctions/" class="md-nav__link">
         Apply functions on YAXArrays
       </a>
     </li>
@@ -322,7 +327,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../create_from_func/" class="md-nav__link">
+      <a href="../../UserGuide/create_from_func/" class="md-nav__link">
         Generate a cube from function
       </a>
     </li>
@@ -335,19 +340,11 @@
 
   
   
-    
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../../UserGuide/openNetCDF/" class="md-nav__link">
         Open NetCDF
       </a>
-      
     </li>
   
 
@@ -360,7 +357,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../openZarr/" class="md-nav__link">
+      <a href="../../UserGuide/openZarr/" class="md-nav__link">
         Open Zarr (Store)
       </a>
     </li>
@@ -375,7 +372,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../distributed/" class="md-nav__link">
+      <a href="../../UserGuide/distributed/" class="md-nav__link">
         Distributed processes
       </a>
     </li>
@@ -433,11 +430,55 @@
 
   
   
+    
   
-    <li class="md-nav__item">
-      <a href="../../contribute/contribute/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Contribute to docs
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         Contribute to docs
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#contribute-to-documentation" class="md-nav__link">
+    Contribute to Documentation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#build-docs-locally" class="md-nav__link">
+    Build docs locally
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -475,6 +516,28 @@
   
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#contribute-to-documentation" class="md-nav__link">
+    Contribute to Documentation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#build-docs-locally" class="md-nav__link">
+    Build docs locally
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -488,23 +551,55 @@
                   
 
 
-  <h1>Open NetCDF</h1>
+  <h1>Contribute to docs</h1>
 
-<p>In this example we are going to use a <code>NetCDF</code> file but this should be very similar for other data backends. To open a single data file we first need to load the appropriate backend package via <code>using NetCDF</code>.</p>
-<div class="highlight"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">YAXArrays</span><span class="p">,</span><span class="w"> </span><span class="n">NetCDF</span>
-<span class="k">using</span><span class="w"> </span><span class="n">Downloads</span>
-<span class="n">url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;https://www.unidata.ucar.edu/software/netcdf/examples/tos_O1_2001-2002.nc&quot;</span>
-<span class="n">filename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Downloads</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="n">url</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;tos_O1_2001-2002.nc&quot;</span><span class="p">)</span><span class="w"> </span><span class="c"># you pick your own path</span>
-<span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Cube</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
-lon                 Axis with 180 Elements from 1.0 to 359.0
-lat                 Axis with 170 Elements from -79.5 to 89.5
-time                Axis with 24 Elements from CFTime.DateTime360Day(2001-01-16T00:00:00) to CFTime.DateTime360Day(2002-12-16T00:00:00)
-units: K
-name: tos
-Total size: 2.8 MB
-</code></pre></div>
+<p><a id='Contribute-to-Documentation'></a></p>
+<p><a id='Contribute-to-Documentation-1'></a></p>
+<h2 id="contribute-to-documentation">Contribute to Documentation<a class="headerlink" href="#contribute-to-documentation" title="Permanent link">¤</a></h2>
+<p>Contributing with examples can be done by first creating a new file example <a href="https://github.com/JuliaDataCubes/YAXArrays.jl/tree/master/docs/examples/UserGuide">here</a></p>
+<div class="admonition info">
+<p class="admonition-title">new file</p>
+<ul>
+<li><code>your_new_file.jl</code> at <code>docs/examples/UserGuide/</code></li>
+</ul>
+</div>
+<p>Once this is done you need to add a new entry <a href="https://github.com/JuliaDataCubes/YAXArrays.jl/blob/master/docs/mkdocs.yml">here</a> at the bottom and the appropriate level.</p>
+<div class="admonition info">
+<p class="admonition-title">add entry to docs</p>
+<p>Your new entry should look like:</p>
+<ul>
+<li><code>"Your title example" : "examples/generated/UserGuide/your_new_file.md"</code></li>
+</ul>
+</div>
+<p><a id='Build-docs-locally'></a></p>
+<p><a id='Build-docs-locally-1'></a></p>
+<h2 id="build-docs-locally">Build docs locally<a class="headerlink" href="#build-docs-locally" title="Permanent link">¤</a></h2>
+<p>If you want to take a look at the docs locally before doing a PR follow the next steps:</p>
+<div class="admonition warning">
+<p class="admonition-title">build docs locally</p>
+<p>Install the following dependencies in your system via pip, i.e.</p>
+<ul>
+<li><code>pip install mkdocs pygments python-markdown-math</code></li>
+<li><code>pip install mkdocs-material pymdown-extensions mkdocstrings</code></li>
+<li><code>pip mknotebooks pytkdocs_tweaks mkdocs_include_exclude_files jinja2 mkdocs-video</code></li>
+</ul>
+</div>
+<p>Then simply go to your <code>docs</code> env and activate it, i.e.</p>
+<p><code>docs&gt; julia</code></p>
+<p><code>julia&gt; ]</code></p>
+<p><code>(docs) pkg&gt; activate .</code></p>
+<p>Next, run the scripts:</p>
+<div class="admonition info">
+<p class="admonition-title">Julia env: docs</p>
+<p>Generate files and build docs by running:</p>
+<ul>
+<li><code>include("genfiles.jl")</code></li>
+<li><code>include("make.jl")</code></li>
+</ul>
+</div>
+<p>Now go to your <code>terminal</code> in the same path <code>docs&gt;</code> and run:</p>
+<p><code>mkdocs serve</code></p>
+<p>This should ouput <code>http://127.0.0.1:8000</code>, copy/paste this into your browser and you are all set.</p>
 <hr />
 <p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p>
 
@@ -533,7 +628,7 @@ Total size: 2.8 MB
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../create_from_func/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Generate a cube from function" rel="prev">
+          <a href="../../HowdoI/howdoi/" class="md-footer__link md-footer__link--prev" aria-label="Previous: How do I ..." rel="prev">
             <div class="md-footer__button md-icon">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
             </div>
@@ -542,20 +637,20 @@ Total size: 2.8 MB
                 <span class="md-footer__direction">
                   Previous
                 </span>
-                Generate a cube from function
+                How do I ...
               </div>
             </div>
           </a>
         
         
           
-          <a href="../openZarr/" class="md-footer__link md-footer__link--next" aria-label="Next: Open Zarr (Store)" rel="next">
+          <a href="../../../../api/" class="md-footer__link md-footer__link--next" aria-label="Next: API" rel="next">
             <div class="md-footer__title">
               <div class="md-ellipsis">
                 <span class="md-footer__direction">
                   Next
                 </span>
-                Open Zarr (Store)
+                API
               </div>
             </div>
             <div class="md-footer__button md-icon">
