@@ -31,10 +31,10 @@
 # `(docs) pkg> activate .`
 
 # Next, run the scripts:
-# !!! info
+# !!! info "docs>"
 #     Generate files and build docs by running:
-#     - `genfiles.jl`
-#     - `make.jl`
+#     - `include("genfiles.jl")`
+#     - `include("make.jl")`
 
 # Now go to your `terminal` in the same path `docs>` and run:
 
