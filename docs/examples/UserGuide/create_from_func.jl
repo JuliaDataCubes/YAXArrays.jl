@@ -14,7 +14,7 @@ end
 # Note the applied `.` after `f`, this is because we will slice across time,
 # hence the application is broadcasted along this dimension.
 
-# ## Create Cube's Axis
+# ## Create Cube's Axes
 
 # We do this via `RangeAxis` for every dimension
 lon = YAXArray(RangeAxis("lon", range(1, 15)))
@@ -37,6 +37,6 @@ gen_cube = mapCube(g, (lon, lat, time);
 # !!! warning "time axis is first"
 #     Note that currently the `time` axis in the output cube goes first.
 
-# Check that is working
+# Check that it is working
 
 gen_cube.data[1,:,:]
