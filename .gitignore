@@ -6,6 +6,7 @@ generated
 build
 .vscode
 .DS_Store
+*.zarr
 
 docs/docs
 docs/site
