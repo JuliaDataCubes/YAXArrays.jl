@@ -3,20 +3,20 @@ theme:
   logo: assets/view-grid-plus-outline.svg
   features:
     # - announce.dismiss
-    - content.code.annotate
+    #- content.code.annotate
     # - content.tabs.link
-    - content.tooltips
+    #- content.tooltips
     # - header.autohide
     # - navigation.expand
-    - navigation.indexes
+    #- navigation.indexes
     # - navigation.instant
     # - navigation.prune
-    - navigation.sections
-    - navigation.tabs
+    #- navigation.sections
+    #- navigation.tabs
     # - navigation.tabs.sticky
     - navigation.top
     - navigation.footer
-    - navigation.tracking
+    #- navigation.tracking
     - search.highlight
     - search.share
     - search.suggest
@@ -28,7 +28,7 @@ theme:
     # We deliberately don't automatically use `media` to check a user's preferences. We default to light mode as
     # (a) it looks more professional, and (b) is more obvious about the fact that it offers a (dark mode) toggle.
     - scheme: default
-      primary: indigo
+      primary: blue
       accent: amber
       toggle:
         icon: material/lightbulb
@@ -102,17 +102,19 @@ plugins:
   - mkdocs-video
 nav:
   - "Home": "index.md"
-  - "User Guide":
-    - "Creating YAXArrays and Datasets" : "examples/generated/UserGuide/creating.md"
-    - "Saving YAXArrays and Datasets" : "examples/generated/UserGuide/saving.md"
-    - "Setting chunks's size": "examples/generated/UserGuide/setchuncks.md"
-    - "Apply functions on YAXArrays": "examples/generated/UserGuide/applyfunctions.md"
-    - "Open NetCDF" : "examples/generated/UserGuide/openNetCDF.md"
-    - "Open Zarr (Store)" : "examples/generated/UserGuide/openZarr.md"
-    - "Distributed processes" : "examples/generated/UserGuide/distributed.md"
-  - "Gallery":
-    - "Simple maps": "examples/generated/Gallery/simplemaps.md"
-  - "Tutorials":
-    - "Tutorial": "tutorials/tutorial.md"
+  #- "User Guide":
+  - "Creating YAXArrays and Datasets" : "examples/generated/UserGuide/creating.md"
+  - "Saving YAXArrays and Datasets" : "examples/generated/UserGuide/saving.md"
+  - "Setting chunks's size": "examples/generated/UserGuide/setchuncks.md"
+  - "Apply functions on YAXArrays": "examples/generated/UserGuide/applyfunctions.md"
+  - "Generate a cube from function": "examples/generated/UserGuide/create_from_func.md"
+  - "Open NetCDF" : "examples/generated/UserGuide/openNetCDF.md"
+  - "Open Zarr (Store)" : "examples/generated/UserGuide/openZarr.md"
+  - "Distributed processes" : "examples/generated/UserGuide/distributed.md"
+  #- "Gallery":
+  - "Simple maps": "examples/generated/Gallery/simplemaps.md"
+  #- "Tutorials":
+  - "Tutorial": "tutorials/tutorial.md"
   - "How do I ...": "examples/generated/HowdoI/howdoi.md"
+  - "Contribute to docs": "examples/generated/contribute/contribute.md"
   - "API" : "api.md"
