@@ -19,7 +19,7 @@ end
 # We do this via `RangeAxis` for every dimension
 lon = YAXArray(RangeAxis("lon", range(1, 15)))
 lat = YAXArray(RangeAxis("lat", range(1, 10)))
-# And a time Cube's Axis
+# And a time Cube's Axes
 tspan =  Date("2022-01-01"):Day(1):Date("2022-01-30")
 time = YAXArray(RangeAxis("time", tspan))
 
@@ -40,3 +40,19 @@ gen_cube = mapCube(g, (lon, lat, time);
 # Check that it is working
 
 gen_cube.data[1,:,:]
+
+# ## Generate Cube: change output order
+
+# The following generates a new `cube` using `mapCube` and saving the output directly to disk.
+
+gen_cube = mapCube(g, (lon, lat, time);
+    indims = (InDims("lon"), InDims(), InDims()),
+    outdims = OutDims("lon", overwrite=true,
+    path = "my_gen_cube.zarr", backend=:zarr, outtype=Float32),
+    #max_cache=1e9
+    )
+
+# !!! info "slicing dim"
+#     Note that now the broadcasted dimension is `lon`.
+
+gen_cube.data[:,:,1]
