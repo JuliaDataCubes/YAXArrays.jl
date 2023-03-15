@@ -31,7 +31,7 @@
 # `(docs) pkg> activate .`
 
 # Next, run the scripts:
-# !!! info "docs>"
+# !!! info "Julia env: docs"
 #     Generate files and build docs by running:
 #     - `include("genfiles.jl")`
 #     - `include("make.jl")`
