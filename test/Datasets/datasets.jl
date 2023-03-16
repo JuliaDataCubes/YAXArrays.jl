@@ -21,13 +21,13 @@ using DataStructures: OrderedDict
         s = split(String(take!(b)), "\n")
         s2 = """
         YAXArray Dataset
-        Dimensions:
+        Shared Axes:
         XVals               Axis with 4 Elements from 1.0 to 4.0
         YVals               Axis with 5 elements: 1 2 3 4 5
-        Time                Axis with 12 Elements from 2001-01-15 to 2001-12-15
-        Variables: avar something smaller """
+        Variables: 
+        """
         s2 = split(s2, "\n")
-        #     @test s[[1,2,6]] == s2[[1,2,6]]
+             @test s[[1]] == s2[[1]]
         #     @test all(i->in(i,s2), s[3:5])
         for n in [:avar, :something, :smaller, :XVals, :Time, :YVals]
             @test n in propertynames(ds)
