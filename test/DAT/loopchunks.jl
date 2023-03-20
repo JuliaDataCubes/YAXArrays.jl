@@ -98,11 +98,12 @@ end
 
 @testitem "Map Cubes with Different Chunks Issue #182" begin
    using YAXArrays
+   using Rasters
    using Zarr
    d = tempdir()
-   x,y,z = (RangeAxis("x",1:400), RangeAxis("y", 1:500), RangeAxis("z", 1:600))
+   x,y,z = (X(1:400), Y(1:500), Z(1:600))
    a = rand(400,500,600)
-   a1 = YAXArray([x,y,z], a)
+   a1 = YAXArray((x,y,z), a)
    p1 = joinpath(d,tempname()) * ".zarr"
    p2 = joinpath(d,tempname()) * ".zarr"
    savecube(setchunks(a1, (40,50,1)), p2)

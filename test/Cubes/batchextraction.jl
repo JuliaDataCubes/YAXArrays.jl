@@ -7,7 +7,7 @@ times = Date(2000,1,1):Month(1):Date(2000,12,31)
 
 data = rand(length(lons),length(lats), length(times));
 
-c = YAXArray([RangeAxis("longitude",lons),RangeAxis("latitude",lats),RangeAxis("time",times)],data)
+c = YAXArray((X(lons),Y(lats),Ti(times)),data)
 c_perm = permutedims(c,(3,2,1))
 
 
@@ -61,7 +61,7 @@ end
 
     data = rand(length(lons),length(lats), length(times));
 
-    c = YAXArray([RangeAxis("longitude",lons),RangeAxis("latitude",lats),RangeAxis("time",times)],data)
+    c = YAXArray((X(lons),Y(lats),Ti(times)),data)
     c_perm = permutedims(c,(3,2,1))
 
     sites_first = [(site=string(i), lon = rand()*5+30, lat = rand()*5+50) for i in 1:200]

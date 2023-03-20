@@ -2,14 +2,14 @@ using YAXArrays, YAXArrayBase, Test, Dates
 
 @testset "YAXArrays" begin
     data = collect(reshape(1:20, 4, 5))
-    axlist = [RangeAxis("XVals", 1.0:4.0), CategoricalAxis("YVals", [1, 2, 3, 4, 5])]
+    axlist = (X(1.0:4.0), Dim{:YVals}([1, 2, 3, 4, 5]))
     props = Dict("att1" => 5, "att2" => "Hallo")
     a = YAXArray(axlist, data, props)
 
     @testset "Array construction sanity checks" begin
         @test_throws ArgumentError YAXArray(axlist[1:1], data, props)
         @test_throws ArgumentError YAXArray(
-            [RangeAxis("XVals", 1.0:4.0), CategoricalAxis("YVals", [1, 2, 3, 4])],
+            (X(1.0:4.0), Dim{:YVals}([1, 2, 3, 4])),
             data,
             props,
         )
@@ -54,7 +54,7 @@ using YAXArrays, YAXArrayBase, Test, Dates
 
         @test YAXArrayBase.dimname(a2, 1) == :Ax1
 
-        renameaxis!(a2, "Ax1" => RangeAxis("XVals", 2:5))
+        renameaxis!(a2, "Ax1" => X(2:5))
 
         @test a2.axes[1].values == 2:5
 
@@ -97,8 +97,8 @@ using YAXArrays, YAXArrayBase, Test, Dates
     @testset "Subsets" begin
         s = YAXArrays.Cubes.subsetcube(a, X = 1.5..3.5)
         @test s.data == [2 6 10 14 18; 3 7 11 15 19]
-        @test s.axes[1] == RangeAxis("XVals", 2.0:3.0)
-        @test s.axes[2] == CategoricalAxis("YVals", [1, 2, 3, 4, 5])
+        @test s.axes[1] == X(2.0:3.0)
+        @test s.axes[2] == Y([1, 2, 3, 4, 5])
         ax = a.axes[1]
         @test YAXArrays.Cubes.interpretsubset(CartesianIndices((1:2,)), ax) == 1:2
         @test YAXArrays.Cubes.interpretsubset(CartesianIndex((2,)), ax) == 2
@@ -113,8 +113,8 @@ using YAXArrays, YAXArrayBase, Test, Dates
 
         s2 = a[X = 0.5..3.5, Y = [1, 5, 4]]
         @test s2.data == [1 17 13; 2 18 14; 3 19 15]
-        @test s2.axes[1] == RangeAxis("XVals", 1.0:3.0)
-        @test s2.axes[2] == CategoricalAxis("YVals", [1, 5, 4])
+        @test s2.axes[1] == X(1.0:3.0)
+        @test s2.axes[2] == Y([1, 5, 4])
     end
 
 end

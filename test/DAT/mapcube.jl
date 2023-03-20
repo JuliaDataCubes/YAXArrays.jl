@@ -1,10 +1,10 @@
 @testitem "mapcube" begin
     using YAXArrays
     @testset "Loop Axis permutation" begin
-        x,y,z = (RangeAxis("x",1:4), RangeAxis("y", 1:5), RangeAxis("z", 1:6))
-        a1 = YAXArray([x,y,z], rand(4,5,6))
-        a2 = YAXArray([x,z,y], rand(4,6,5))
-        a3 = YAXArray([x,y], rand(4,5))
+        x,y,z = X(1:4), Y(1:5), Z(1:6)
+        a1 = YAXArray((x,y,z), rand(4,5,6))
+        a2 = YAXArray((x,z,y), rand(4,6,5))
+        a3 = YAXArray((x,y), rand(4,5))
         indims = InDims("x")
         outdims = OutDims("x")
         r = mapCube((a1, a2), indims=(indims, indims), outdims=outdims) do xout, x1, x2
@@ -18,7 +18,7 @@
     end
 
     @testset "Reduction to empty outputs" begin
-        yax = YAXArray([RangeAxis("axis1", 1:10)], rand(10))
+        yax = YAXArray((Dim{:axis1}(1:10),), rand(10))
         r = mapslices(sum, yax, dims="axis1")
         @test r.data[] == sum(yax.data)
 
