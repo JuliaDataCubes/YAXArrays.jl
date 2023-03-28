@@ -14,7 +14,7 @@ import YAXArrayBase: getattributes, iscontdim, dimnames, dimvals, getdata
 using DiskArrayTools: CFDiskArray
 using DocStringExtensions
 using Tables: istable, schema, columns
-using DimensionalData: AbstractDimArray, NoName
+using DimensionalData: DimensionalData as DD, AbstractDimArray, NoName
 import DimensionalData: name
 
 export concatenatecubes, caxes, subsetcube, readcubedata, renameaxis!, YAXArray, setchunks
@@ -176,7 +176,7 @@ function caxes(x)
     map(enumerate(dimnames(x))) do a
         index, symbol = a
         values = YAXArrayBase.dimvals(x, index)
-        iscontdim(x, index) ? RangeAxis(symbol, values) : CategoricalAxis(symbol, values)
+        DD.Dim{symbol}(values)
     end
 end
 caxes(c::YAXArray) = getfield(c, :axes)

@@ -27,6 +27,7 @@ using DiskArrays: grid_offset, approx_chunksize, max_chunksize, RegularChunks,
   IrregularChunks, GridChunks, eachchunk, ChunkType
 using OffsetArrays: OffsetArray
 using Dates
+using DimensionalData: DimensionalData as DD
 
 export mapCube,
     getAxis,
@@ -91,7 +92,7 @@ function InputCube(c, desc::InDims)
     InputCube{ndims(c)}(
         c,
         desc,
-        collect(CubeAxis, axesSmall),
+        collect(axesSmall),
         collect(fullaxes),
         colonperm,
         Int[],
@@ -132,9 +133,9 @@ mutable struct OutputCube
     "The description of the output axes as given by users or registration"
     desc::OutDims
     "The list of output axes determined through the description"
-    axesSmall::Array{CubeAxis}
+    axesSmall::Array{DD.Dim} # Should this be a Vector?
     "List of all the axes of the cube"
-    allAxes::Vector{CubeAxis}
+    allAxes::Vector{DD.Dim}
     "Index of the loop axes that are broadcasted for this output cube"
     loopinds::Vector{Int}
     innerchunks::Any
@@ -276,7 +277,7 @@ function DATConfig(
         incubes,
         outcubes,
         allInAxes,
-        CubeAxis[],                                 # LoopAxes
+        DD.Dim[],                                 # LoopAxes
         ispar,
         Int[],
         allow_irregular,
@@ -898,12 +899,12 @@ function analyzeAxes(dc::DATConfig{NIN,NOUT}) where {NIN,NOUT}
         end
     end
     for outcube in dc.outcubes
-        LoopAxesAdd = CubeAxis[]
+        LoopAxesAdd = DD.Dim[]
         for (il, loopax) in enumerate(dc.LoopAxes)
             push!(outcube.loopinds, il)
             push!(LoopAxesAdd, loopax)
         end
-        outcube.allAxes = CubeAxis[outcube.axesSmall; LoopAxesAdd]
+        outcube.allAxes = DD.Dim[outcube.axesSmall; LoopAxesAdd]
         dold = outcube.innerchunks
         newchunks = ntuple(_->nothing, length(outcube.allAxes))
         for (k, v) in dold
@@ -970,7 +971,7 @@ function getCacheSizes(dc::DATConfig, loopchunksizes)
     foreach(dc.LoopAxes, 1:length(dc.LoopAxes)) do lax, ilax
         haskey(userchunks, ilax) && return nothing
         for ic in dc.incubes
-            #@show lax
+            @show lax
             #@show ic.cube.axes
             ii = findAxis(lax, ic.cube)
             if !isa(ii, Nothing)

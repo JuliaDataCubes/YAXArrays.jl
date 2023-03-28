@@ -11,13 +11,14 @@ using YAXArrayBase: iscontdimval, add_var
 using DiskArrayTools: CFDiskArray, ConcatDiskArray
 using DiskArrays: DiskArrays, GridChunks
 using Glob: glob
+using DimensionalData: DimensionalData as DD
 
 export Dataset, Cube, open_dataset, to_dataset, savecube, savedataset
 
 
 struct Dataset
     cubes::OrderedDict{Symbol,YAXArray}
-    axes::Dict{Symbol,CubeAxis}
+    axes::Dict{Symbol,DD.Dimension}
     properties::Dict
 end
 """
@@ -182,7 +183,7 @@ function collectdims(g)
 end
 
 function toaxis(dimname, g, offs, len)
-    axname = dimname
+    axname = Symbol(dimname)
     if !haskey(g, dimname)
         return RangeAxis(dimname, 1:len)
     end
@@ -194,18 +195,18 @@ function toaxis(dimname, g, offs, len)
         catch
             ar[:]
         end
-        RangeAxis(dimname, tsteps[offs+1:end])
+        DD.Ti(tsteps[offs+1:end])
     elseif haskey(aratts, "_ARRAYVALUES")
         vals = identity.(aratts["_ARRAYVALUES"])
-        CategoricalAxis(axname, vals)
+        DD.Dim{axname}(vals)
     else
         axdata = cleanaxiselement.(ar[offs+1:end])
         axdata = testrange(axdata)
         if eltype(axdata) <: AbstractString ||
             (!issorted(axdata) && !issorted(axdata, rev = true))
-            CategoricalAxis(axname, axdata)
+            DD.Dim{axname}(axdata)
         else
-            RangeAxis(axname, axdata)
+            DD.Dim{axname}(axdata)
         end
     end
 end
@@ -249,6 +250,7 @@ function open_dataset(g; driver = :all)
     g = YAXArrayBase.to_dataset(g, driver = driver)
     isempty(get_varnames(g)) && throw(ArgumentError("Group does not contain datasets."))
     dimlist = collectdims(g)
+    @show dimlist
     dnames = string.(keys(dimlist))
     varlist = filter(get_varnames(g)) do vn
         upname = uppercase(vn)
@@ -259,7 +261,7 @@ function open_dataset(g; driver = :all)
     allcubes = OrderedDict{Symbol,YAXArray}()
     for vname in varlist
         vardims = get_var_dims(g, vname)
-        iax = [dimlist[vd].ax for vd in vardims]
+        iax = tuple(collect(dimlist[vd].ax for vd in vardims)...)
         offs = [dimlist[vd].offs for vd in vardims]
         subs = if all(iszero, offs)
             nothing
@@ -504,12 +506,12 @@ function savedataset(
             backend, 
             path, 
             ds.properties,
-            getproperty.(axdata,:name), 
+            string.(getproperty.(axdata,:name)), 
             getproperty.(axdata,:data),
             getproperty.(axdata,:attrs), 
             getproperty.(arrayinfo, :t), 
             getproperty.(arrayinfo, :name),
-            map(e -> axname.(e.axes), arrayinfo), 
+            map(e -> string.(DD.name.(e.axes)), arrayinfo), 
             getproperty.(arrayinfo, :attr), 
             getproperty.(arrayinfo, :chunks)
         )
@@ -696,10 +698,10 @@ function createdataset(
         end
     end
     
-    function arrayfromaxis(ax::CubeAxis, offs)
+    function arrayfromaxis(ax::DD.Dimension, offs)
         data, attr = dataattfromaxis(ax, offs)
         attr["_ARRAY_OFFSET"] = offs
-        return (name = axname(ax), data = data, attrs = attr)
+        return (name = DD.name(ax), data = data, attrs = attr)
     end
     
     prependrange(r::AbstractRange, n) =
@@ -727,15 +729,15 @@ function createdataset(
     toaxistype(x::Array{<:AbstractString}) = string.(x)
     toaxistype(x::Array{String}) = x
     
-    function dataattfromaxis(ax::CubeAxis, n)
-        prependrange(toaxistype(ax.values), n), Dict{String,Any}()
+    function dataattfromaxis(ax::DD.Dimension, n)
+        prependrange(toaxistype(DD.lookup(ax)), n), Dict{String,Any}()
     end
     
     # function dataattfromaxis(ax::CubeAxis,n)
     #     prependrange(1:length(ax.values),n), Dict{String,Any}("_ARRAYVALUES"=>collect(ax.values))
     # end
-    function dataattfromaxis(ax::CubeAxis{T}, n) where {T<:TimeType}
-        data = timeencode(datetodatetime(ax.values), "days since 1980-01-01", defaultcal(T))
+    function dataattfromaxis(ax::DD.Dimension{T}, n) where {T<:TimeType}
+        data = timeencode(datetodatetime(DD.lookup(ax)), "days since 1980-01-01", defaultcal(T))
         prependrange(data, n),
         Dict{String,Any}("units" => "days since 1980-01-01", "calendar" => defaultcal(T))
     end

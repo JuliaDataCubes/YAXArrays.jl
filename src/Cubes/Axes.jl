@@ -4,7 +4,7 @@ using Dates
 using Base.Iterators: take, drop
 import DataStructures: counter
 using YAXArrayBase: YAXArrayBase
-using DimensionalData: Dimension
+using DimensionalData: DimensionalData as DD, Dimension, name
 
 export CubeAxis, RangeAxis, CategoricalAxis, getAxis
 
@@ -94,7 +94,7 @@ end
 struct ByInference <: AxisDescriptor end
 
 struct ByValue <: AxisDescriptor
-    v::CubeAxis
+    v::DD.Dimension
 end
 
 const VecOrTuple{S} = Union{Vector{<:S},Tuple{Vararg{<:S}}} where {S}
@@ -300,7 +300,7 @@ This is used to dispatch on the descriptor.
 """
 get_descriptor(a::String) = ByName(a)
 get_descriptor(a::Symbol) = ByName(String(a))
-get_descriptor(a::CubeAxis) = ByValue(a)
+get_descriptor(a::DD.Dimension) = ByValue(a)
 get_descriptor(a) = error("$a is not a valid axis description")
 get_descriptor(a::AxisDescriptor) = a
 
@@ -308,7 +308,7 @@ get_descriptor(a::AxisDescriptor) = a
     match_axis
 """
 function match_axis(bs::ByName, ax)
-    startswith(lowercase(axname(ax)), lowercase(bs.name))
+    startswith(lowercase(string(name(ax))), lowercase(bs.name))
 end
 function match_axis(bs::ByValue, ax)
     isequal(bs.v, ax)
@@ -323,8 +323,8 @@ The Axis description can be:
   - an Axis object
 """
 findAxis(desc, c) = findAxis(desc, caxes(c))
-findAxis(a, axlist::VecOrTuple{CubeAxis}) = findAxis(get_descriptor(a), axlist)
-function findAxis(bs::AxisDescriptor, axlist::VecOrTuple{CubeAxis})
+findAxis(a, axlist::VecOrTuple{Dimension}) = findAxis(get_descriptor(a), axlist)
+function findAxis(bs::AxisDescriptor, axlist::VecOrTuple{Dimension})
     m = findall(i -> match_axis(bs, i), axlist)
     if isempty(m)
         return nothing
