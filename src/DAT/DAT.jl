@@ -167,7 +167,7 @@ function getworkarray(c::InOutCube, ntr)
                 i1 = findfirst(isequal(i), c.icolon)
                 i1 === nothing || return caxes(c.cube)[c.icolon[i1]]
                 i2 = findfirst(isequal(i), c.iwindow)
-                RangeAxis(axname(caxes(c.cube)[c.iwindow[i2]]), UnitRange(-c.window[i2][1], c.window[i2][2]))
+                DD.Dim{axsym(caxes(c.cube)[c.iwindow[i2]])}(UnitRange(-c.window[i2][1], c.window[i2][2]))
             end
             wrapWorkArray(c.desc.artype, w, axes)
         end
@@ -202,8 +202,8 @@ function OutputCube(desc::OutDims, inAxes, incubes, pargs, f)
         nothing,
         nothing,
         desc,
-        collect(CubeAxis, axesSmall),
-        CubeAxis[],
+        collect(DD.Dimension, axesSmall),
+        DD.Dimension[],
         Int[],
         innerchunks,
         outtype,
@@ -828,7 +828,7 @@ function generateOutCube(
     newsize = map(length, oc.allAxes)
     outar = Array{elementtype}(undef, newsize...)
     fill!(outar,_zero(elementtype))
-    oc.cube = YAXArray(oc.allAxes, outar)
+    oc.cube = YAXArray(tuple(oc.allAxes...), outar)
     oc.cube_unpermuted = oc.cube
 end
 _zero(T) = zero(T)
@@ -971,7 +971,6 @@ function getCacheSizes(dc::DATConfig, loopchunksizes)
     foreach(dc.LoopAxes, 1:length(dc.LoopAxes)) do lax, ilax
         haskey(userchunks, ilax) && return nothing
         for ic in dc.incubes
-            @show lax
             #@show ic.cube.axes
             ii = findAxis(lax, ic.cube)
             if !isa(ii, Nothing)

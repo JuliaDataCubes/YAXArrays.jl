@@ -50,7 +50,7 @@
     end
     @test any(ismissing.(nofilter.data)) == false
 
-    @test_broken r isa AbstractDimArray
+    @test r isa AbstractDimArray
     temp = tempname()
     @test_broken c_saved = savecube(c, temp)
     @test_broken c_saved isa AbstractDimArray 

@@ -18,7 +18,7 @@ Base.eltype(ci::CubeIterator)  = eltype(typeof(ci))
 function Base.getindex(t::CubeIterator, i::Int)
     rnow = t.r[i]
     laxsmall = map(t.loopaxes, rnow) do ax,ir
-        axcopy(ax,ax.values[ir])
+        axcopy(ax,ax.val[ir])
     end
     cols = Union{Nothing,YAXColumn}[nothing for i in t.schema.names]
     return YAXTableChunk(t,laxsmall,rnow,cols)
@@ -87,7 +87,7 @@ function YAXColumn(t::YAXTableChunk,ivar)
     rnow = getfield(t,:ichunk)
     if ivar > length(ci.dc.incubes)
         iax = ivar-length(ci.dc.incubes)
-        axvals = getfield(t,:loopaxes)[iax].values
+        axvals = getfield(t,:loopaxes)[iax].val
         allax = map(_->false, getfield(t,:loopaxes))
         allax = Base.setindex(allax, true, iax)
         inarbc = PickAxisArray(axvals, allax)
@@ -190,7 +190,7 @@ function CubeIterator(
     et = map(dc.incubes) do ic
         eltype(ic.cube)
     end
-    et = (et..., map(i->eltype(i.values), loopaxes)...)
+    et = (et..., map(i->eltype(i.val), loopaxes)...)
     axnames = axsym.(loopaxes)
     colnames = (map(Symbol, varnames)..., axnames...)
     CubeIterator(

@@ -1,5 +1,5 @@
 module Axes
-import ..Cubes: caxes, Cubes
+import ..Cubes: caxes, Cubes, YAXArray
 using Dates
 using Base.Iterators: take, drop
 import DataStructures: counter
@@ -117,8 +117,8 @@ The Axis description can be:
   - an Axis object
 """
 getAxis(desc, c) = getAxis(desc, caxes(c))
-getAxis(desc::ByValue, axlist::Vector{T}) where {T<:CubeAxis} = desc.v
-function getAxis(desc, axlist::VecOrTuple{CubeAxis})
+getAxis(desc::ByValue, axlist::Vector{T}) where {T<:DD.Dimension} = desc.v
+function getAxis(desc, axlist::VecOrTuple{DD.Dimension})
     i = findAxis(desc, axlist)
     if isa(i, Nothing)
         return nothing
@@ -158,6 +158,7 @@ YAXArrayBase.iscontdim(::CategoricalAxis, _) = false
 """
 axname(::Type{<:CubeAxis{<:Any,U}}) where {U} = string(U)
 axname(::CubeAxis{<:Any,U}) where {U} = string(U)
+axname(x::DD.Dimension) = string(name(x))
 
 """
     axsym
@@ -172,15 +173,17 @@ Makes a full copy of a `CubeAxis` with the values `vals`
 """
 axcopy(ax::RangeAxis, vals) = RangeAxis(axname(ax), vals)
 axcopy(ax::CategoricalAxis, vals) = CategoricalAxis(axname(ax), vals)
+axcopy(ax::DD.Dimension, vals) = typeof(ax)(vals)
 axcopy(ax::RangeAxis) = RangeAxis(axname(ax), copy(ax.values))
 axcopy(ax::CategoricalAxis) = CategoricalAxis(axname(ax), copy(ax.values))
+axcopy(ax::DD.Dimension) =typeof(ax)(copy(ax.val))
 
 """
     caxes
 
 Embeds  Cube inside a new Cube
 """
-caxes(x::CubeAxis) = CubeAxis[x]
+caxes(x::DD.Dimension) = x
 
 """
     get_step

@@ -172,7 +172,14 @@ function Base.permutedims(c::YAXArray, p)
     newchunks = DiskArrays.GridChunks(eachchunk(c).chunks[collect(p)])
     YAXArray(newaxes, permutedims(getdata(c), p), c.properties, newchunks, c.cleaner)
 end
+
+# DimensionalData overloads
+
+DD.dims(x::YAXArray) = x.axes
+
 function caxes(x)
+    #@show x
+    #@show typeof(x)
     map(enumerate(dimnames(x))) do a
         index, symbol = a
         values = YAXArrayBase.dimvals(x, index)
@@ -223,13 +230,14 @@ setchunks(c::YAXArray,chunks) = YAXArray(c.axes,c.data,c.properties,interpret_cu
 cubechunks(c) = approx_chunksize(eachchunk(c))
 DiskArrays.eachchunk(c::YAXArray) = c.chunks
 getindex_all(a) = getindex(a, ntuple(_ -> Colon(), ndims(a))...)
-function Base.getindex(x::YAXArray, i...) 
+#=function Base.getindex(x::YAXArray, i...) 
     if length(i)==1 && istable(first(i))
         batchextract(x,first(i))
     else
         getdata(x)[i...]
     end
 end
+=#
 function batchextract(x,i)
     sch = schema(i)
     axinds = map(sch.names) do n

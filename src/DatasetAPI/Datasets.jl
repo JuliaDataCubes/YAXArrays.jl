@@ -250,7 +250,6 @@ function open_dataset(g; driver = :all)
     g = YAXArrayBase.to_dataset(g, driver = driver)
     isempty(get_varnames(g)) && throw(ArgumentError("Group does not contain datasets."))
     dimlist = collectdims(g)
-    @show dimlist
     dnames = string.(keys(dimlist))
     varlist = filter(get_varnames(g)) do vn
         upname = uppercase(vn)
