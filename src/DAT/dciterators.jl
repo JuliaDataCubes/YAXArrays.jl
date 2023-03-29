@@ -185,6 +185,7 @@ function CubeIterator(
     varnames::Tuple = ntuple(i -> Symbol("x$i"), length(dc.incubes)),
 )
     loopaxes = (dc.LoopAxes...,)
+    @show varnames
     length(varnames) == length(dc.incubes) ||
         error("Supplied $(length(varnames)) varnames and $(length(dc.incubes)) cubes.")
     et = map(dc.incubes) do ic

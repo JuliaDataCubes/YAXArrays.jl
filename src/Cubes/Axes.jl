@@ -164,7 +164,7 @@ axname(x::DD.Dimension) = string(name(x))
     axsym
 """
 axsym(::CubeAxis{<:Any,S}) where {S} = S
-axsym(s::Dimension) = Symbol(s)
+axsym(s::DD.Dimension) = name(s)
 
 """
     axcopy(x,vals)

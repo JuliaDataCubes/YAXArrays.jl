@@ -144,7 +144,7 @@ end
 # Base utility overloads
 Base.size(a::YAXArray) = size(getdata(a))
 Base.size(a::YAXArray, i::Int) = size(getdata(a), i)
-Base.size(a::YAXArray, desc) = size(a, findAxis(desc, a))
+#Base.size(a::YAXArray, desc) = size(a, findAxis(desc, a))
 # overload dot syntax for YAXArray to provide direct access to axes
 function Base.getproperty(a::YAXArray, s::Symbol)
     ax = axsym.(caxes(a))
@@ -194,7 +194,7 @@ caxes(c::YAXArray) = getfield(c, :axes)
 Given any array implementing the YAXArray interface it returns an in-memory [`YAXArray`](@ref) from it.
 """
 function readcubedata(x)
-    YAXArray(collect(CubeAxis, caxes(x)), getindex_all(x), getattributes(x))
+    YAXArray(caxes(x), getindex_all(x), getattributes(x))
 end
 
 interpret_cubechunks(cs::NTuple{N,Int},cube) where N = DiskArrays.GridChunks(getdata(cube),cs)
@@ -323,15 +323,15 @@ end
 chunkoffset(c) = grid_offset(eachchunk(c))
 
 # Implementation for YAXArrayBase interface
-YAXArrayBase.dimvals(x::YAXArray, i) = caxes(x)[i].values
+YAXArrayBase.dimvals(x::YAXArray, i) = caxes(x)[i].val
 YAXArrayBase.dimname(x::YAXArray, i) = axsym(caxes(x)[i])
 YAXArrayBase.getattributes(x::YAXArray) = x.properties
 YAXArrayBase.iscontdim(x::YAXArray, i) = isa(caxes(x)[i], RangeAxis)
 YAXArrayBase.getdata(x::YAXArray) = getfield(x, :data)
 function YAXArrayBase.yaxcreate(::Type{YAXArray}, data, dimnames, dimvals, atts)
-    axlist = map(dimnames, dimvals) do dn, dv
-        iscontdimval(dv) ? RangeAxis(dn, dv) : CategoricalAxis(dn, dv)
-    end
+    axlist = tuple(map(dimnames, dimvals) do dn, dv
+        DD.Dim{dn}(dv)
+    end...)
     if any(in(keys(atts)), ["missing_value", "scale_factor", "add_offset"]) && !(eltype(data) >: Missing)
         data = CFDiskArray(data, atts)
     end
@@ -419,7 +419,7 @@ function _subsetcube(z, subs; kwargs...)
 end
 
 
-Base.getindex(a::YAXArray; kwargs...) = subsetcube(a; kwargs...)
+#Base.getindex(a::YAXArray; kwargs...) = subsetcube(a; kwargs...)
 
 Base.read(d::YAXArray) = getindex_all(d)
 
