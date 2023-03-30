@@ -109,12 +109,12 @@ struct YAXArray{T,N,A<:AbstractArray{T,N}, D} <: AbstractDimArray{T,N,D,A}
                     "Can not construct YAXArray, supplied data dimension is $(ndims(data)) while the number of axes is $(length(axes))",
                 ),
             )
-        #elseif ntuple(i -> length(axes[i]), ndims(data)) != size(data) # case: mismatched data dimensions: sizes of axes and data
-        #    throw(
-        #        ArgumentError(
-        #            "Can not construct YAXArray, supplied data size is $(size(data)) while axis lenghts are $(ntuple(i->length(axes[i]),ndims(data)))",
-        #        ),
-        #    )
+        elseif ntuple(i -> length(axes[i]), ndims(data)) != size(data) # case: mismatched data dimensions: sizes of axes and data
+            throw(
+                ArgumentError(
+                    "Can not construct YAXArray, supplied data size is $(size(data)) while axis lenghts are $(ntuple(i->length(axes[i]),ndims(data)))",
+                ),
+            )
         elseif ndims(chunks) != ndims(data)
             throw(ArgumentError("Can not construct YAXArray, supplied chunk dimension is $(ndims(chunks)) while the number of dims is $(length(axes))"))
         else
@@ -176,6 +176,12 @@ end
 # DimensionalData overloads
 
 DD.dims(x::YAXArray) = x.axes
+DD.refdims(::YAXArray) = ()
+DD.metadata(x::YAXArray) = x.properties
+
+function DD.rebuild(A::YAXArray, data::AbstractArray, dims::Tuple, refdims::Tuple, name, metadata)
+    YAXArray(dims, data, metadata)
+end
 
 function caxes(x)
     #@show x

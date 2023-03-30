@@ -19,17 +19,17 @@ using DimensionalData
     @testset "Basic array Functions" begin
         @test size(a) == (4, 5)
         @test size(a, 1) == 4     
-        @test size(a, "X") == 4
+        @test size(a, :X) == 4
         @test size(a, 2) == 5
         @test size(a, :YVals) == 5
         @test eltype(a) == Int
         @test ndims(a) == 2
-        @test a.XVals == axlist[1]
+        @test a.X == axlist[1]
         @test a.YVals == axlist[2]
         pa = permutedims(a, (2, 1))
         @test pa.axes == axlist[[2, 1]]
         @test pa.data == transpose(data)
-        @test pa.XVals == axlist[1]
+        @test pa.X == axlist[1]
         @test pa.YVals == axlist[2]
         @test a[2, 3] == a.data[2, 3]
         @test read(a) isa Array
