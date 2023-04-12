@@ -1,6 +1,7 @@
 <div align="center">
 
-## Yet Another XArray-like Julia Package
+*Yet Another XArray-like Julia Package*
+
 </div>
 
 <img align="left" width=200 src="docs/src/assets/logo.png">
@@ -28,8 +29,6 @@
 [coveralls-img]: https://coveralls.io/repos/github/JuliaDataCubes/YAXArrays.jl/badge.svg?branch=master
 [coveralls-url]: https://coveralls.io/github/JuliaDataCubes/YAXArrays.jl?branch=master
 
-<br> </br>
-<br> </br>
 <br> </br>
 
 ## Installation
