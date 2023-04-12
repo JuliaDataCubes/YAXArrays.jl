@@ -4,12 +4,12 @@
 <svg
    xml:space="preserve"
    inkscape:version="1.2.2 (b0a8486541, 2022-12-01)"
-   sodipodi:docname="yaxarrays.svg"
+   sodipodi:docname="logo.svg"
    id="svg106371"
    version="1.1"
-   viewBox="0 0 196.7019 265.56872"
-   height="265.56873mm"
-   width="196.7019mm"
+   viewBox="0 0 200.37313 266.66122"
+   height="266.66122mm"
+   width="200.37314mm"
    inkscape:export-filename="yaxarrays.png"
    inkscape:export-xdpi="300"
    inkscape:export-ydpi="300"
@@ -28,8 +28,8 @@
      inkscape:document-units="mm"
      showgrid="false"
      inkscape:zoom="0.53184016"
-     inkscape:cx="509.55159"
-     inkscape:cy="561.25886"
+     inkscape:cx="444.68248"
+     inkscape:cy="499.21014"
      inkscape:window-width="1920"
      inkscape:window-height="1034"
      inkscape:window-x="0"
@@ -40,7 +40,7 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(-5.045934,60.35066)"><g
+     transform="translate(-3.2103929,60.35066)"><g
        id="g7191"
        transform="translate(-988.8923,-544.66701)"><g
          id="g6811-1-0"
@@ -310,12 +310,15 @@
          x="12.215881"
          y="216.21628" /></text><text
        xml:space="preserve"
-       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:38.1131px;line-height:1.25;font-family:'Fira Sans';-inkscape-font-specification:'Fira Sans, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;text-anchor:middle;opacity:0.87484;fill:#1e1e1e;fill-opacity:1;stroke:none;stroke-width:2.18500014;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke markers fill;stop-color:#000000;stroke-linejoin:round;stroke-linecap:butt"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:38.1131px;line-height:1.25;font-family:'Fira Sans';-inkscape-font-specification:'Fira Sans, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;text-align:center;text-anchor:middle;opacity:0.87484;fill:#1e1e1e;fill-opacity:1;stroke:#ffffff;stroke-width:2.185;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke markers fill;stop-color:#000000"
        x="103.77811"
        y="197.09998"
-       id="text1712"><tspan
+       id="text1712"
+       inkscape:export-filename="./logo.png"
+       inkscape:export-xdpi="300"
+       inkscape:export-ydpi="300"><tspan
          sodipodi:role="line"
          id="tspan1710"
-         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:38.1131px;font-family:'Fira Sans';-inkscape-font-specification:'Fira Sans, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#1e1e1e;fill-opacity:1;stroke:none;stroke-width:2.18500014;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke markers fill;stroke-linejoin:round;stroke-linecap:butt"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:38.1131px;font-family:'Fira Sans';-inkscape-font-specification:'Fira Sans, Normal';font-variant-ligatures:normal;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;fill:#1e1e1e;fill-opacity:1;stroke:#ffffff;stroke-width:2.185;stroke-linecap:butt;stroke-linejoin:miter;stroke-dasharray:none;stroke-opacity:1;paint-order:stroke markers fill"
          x="103.77811"
-         y="197.09998">YAXarrays.jl</tspan></text></g></svg>
+         y="197.09998">YAXArrays.jl</tspan></text></g></svg>
