@@ -1,6 +1,10 @@
-<img align="left" width=200 src="docs/src/assets/logo.png">
+<div align="center">
 
-*Yet Another XArray-like Julia Package*
+# Yet Another XArray-like Julia Package
+
+</div>
+
+<img align="left" width=200 src="docs/src/assets/logo.png">
 
 <div align="center">
 
