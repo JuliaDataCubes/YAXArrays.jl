@@ -1,4 +1,4 @@
-# YAXArrays.jl
+<img align="left" width="40%" src="docs/src/assets/logo.png">
 
 *Yet Another XArray-like Julia Package*
 
