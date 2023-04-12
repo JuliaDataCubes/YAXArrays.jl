@@ -2,11 +2,14 @@
 
 *Yet Another XArray-like Julia Package*
 
+<div align="center">
+
 | **Documentation**                                                               | **Build Status**                                                                                |
 |:-------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------------------:|
 | [![][docs-dev-img]][docs-dev-url] | [![][ci-img]][ci-url] [![][codecov-img]][codecov-url] |
 |  |  [![][coveralls-img]][coveralls-url] |
 
+</div>
 
 [docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
 [docs-dev-url]: https://JuliaDataCubes.github.io/YAXArrays.jl/dev/
@@ -19,6 +22,9 @@
 
 [coveralls-img]: https://coveralls.io/repos/github/JuliaDataCubes/YAXArrays.jl/badge.svg?branch=master
 [coveralls-url]: https://coveralls.io/github/JuliaDataCubes/YAXArrays.jl?branch=master
+
+<br> </br>
+<br> </br>
 
 ## Installation
 
