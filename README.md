@@ -8,8 +8,6 @@
 
 <div align="center">
 
-<br> </br>
-
 | **Documentation**                                                               | **Build Status**                                                                                |
 |:-------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------------------:|
 | [![][docs-dev-img]][docs-dev-url] | [![][ci-img]][ci-url] [![][codecov-img]][codecov-url] |
@@ -29,25 +27,19 @@
 [coveralls-img]: https://coveralls.io/repos/github/JuliaDataCubes/YAXArrays.jl/badge.svg?branch=master
 [coveralls-url]: https://coveralls.io/github/JuliaDataCubes/YAXArrays.jl?branch=master
 
-<br> </br>
-
-## Installation
-
-Add the YAXArrays package:
-
+Install the YAXArrays package:
 ```julia
 julia>]
 pkg> add YAXArrays
 ```
+<br> </br>
 
 You may check the installed version with:
-
 ```julia
 ] st YAXArrays
 ```
 
 Start using the package:
-
 ```julia
 using YAXArrays
 ```
