@@ -1,4 +1,4 @@
-<img align="left" width="35%" src="docs/src/assets/logo.png">
+<img align="left" width="40%" src="docs/src/assets/logo.png">
 
 *Yet Another XArray-like Julia Package*
 
