@@ -185,7 +185,7 @@ end
 function toaxis(dimname, g, offs, len)
     axname = Symbol(dimname)
     if !haskey(g, dimname)
-        return RangeAxis(dimname, 1:len)
+        return DD.rebuild(DD.key2dim(dimname), 1:len)
     end
     ar = get_var_handle(g, dimname)
     aratts = get_var_attrs(g, dimname)
@@ -198,15 +198,15 @@ function toaxis(dimname, g, offs, len)
         DD.Ti(tsteps[offs+1:end])
     elseif haskey(aratts, "_ARRAYVALUES")
         vals = identity.(aratts["_ARRAYVALUES"])
-        DD.Dim{axname}(vals)
+        DD.rebuild(DD.key2dim(axname),(vals))
     else
         axdata = cleanaxiselement.(ar[offs+1:end])
         axdata = testrange(axdata)
         if eltype(axdata) <: AbstractString ||
             (!issorted(axdata) && !issorted(axdata, rev = true))
-            DD.Dim{axname}(axdata)
+            DD.rebuild(DD.key2dim(axname), axdata)
         else
-            DD.Dim{axname}(axdata)
+            DD.rebuild(DD.key2dim(axname), axdata)
         end
     end
 end

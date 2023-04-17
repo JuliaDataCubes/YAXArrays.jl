@@ -118,6 +118,7 @@ struct YAXArray{T,N,A<:AbstractArray{T,N}, D} <: AbstractDimArray{T,N,D,A}
         elseif ndims(chunks) != ndims(data)
             throw(ArgumentError("Can not construct YAXArray, supplied chunk dimension is $(ndims(chunks)) while the number of dims is $(length(axes))"))
         else
+            axes = DD.format(axes, data)
             return new{eltype(data),ndims(data),typeof(data),typeof(axes)}(
                 axes,
                 data,
@@ -175,12 +176,12 @@ end
 
 # DimensionalData overloads
 
-DD.dims(x::YAXArray) = x.axes
+DD.dims(x::YAXArray) = getfield(x,:axes)
 DD.refdims(::YAXArray) = ()
-DD.metadata(x::YAXArray) = x.properties
+DD.metadata(x::YAXArray) = getfield(x,:properties)
 
 function DD.rebuild(A::YAXArray, data::AbstractArray, dims::Tuple, refdims::Tuple, name, metadata)
-    YAXArray(dims, data, metadata)
+    YAXArray(dims, data, metadata; cleaner=A.cleaner)
 end
 
 function caxes(x)
@@ -350,6 +351,8 @@ _iscompressed(c) = YAXArrayBase.iscompressed(c)
 
 # lift renameaxis functionality from Axes.jl to YAXArrays
 function renameaxis!(c::YAXArray, p::Pair)
+    #This needs to be deleted, because DimensionalData cannot update the axlist
+    # Because this is a tuple instead of a vector
     axlist = caxes(c)
     i = findAxis(p[1], axlist)
     axlist[i] = renameaxis(axlist[i], p[2])

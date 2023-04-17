@@ -133,9 +133,9 @@ mutable struct OutputCube
     "The description of the output axes as given by users or registration"
     desc::OutDims
     "The list of output axes determined through the description"
-    axesSmall::Array{DD.Dim} # Should this be a Vector?
+    axesSmall::Array{DD.Dimension} # Should this be a Vector?
     "List of all the axes of the cube"
-    allAxes::Vector{DD.Dim}
+    allAxes::Vector{DD.Dimension}
     "Index of the loop axes that are broadcasted for this output cube"
     loopinds::Vector{Int}
     innerchunks::Any
@@ -167,7 +167,7 @@ function getworkarray(c::InOutCube, ntr)
                 i1 = findfirst(isequal(i), c.icolon)
                 i1 === nothing || return caxes(c.cube)[c.icolon[i1]]
                 i2 = findfirst(isequal(i), c.iwindow)
-                DD.Dim{axsym(caxes(c.cube)[c.iwindow[i2]])}(UnitRange(-c.window[i2][1], c.window[i2][2]))
+                DD.rebuild(DD.key2dim(axsym(caxes(c.cube)[c.iwindow[i2]])),UnitRange(-c.window[i2][1], c.window[i2][2]))
             end
             wrapWorkArray(c.desc.artype, w, axes)
         end
@@ -277,7 +277,7 @@ function DATConfig(
         incubes,
         outcubes,
         allInAxes,
-        DD.Dim[],                                 # LoopAxes
+        DD.Dimension[],                                 # LoopAxes
         ispar,
         Int[],
         allow_irregular,
@@ -899,12 +899,12 @@ function analyzeAxes(dc::DATConfig{NIN,NOUT}) where {NIN,NOUT}
         end
     end
     for outcube in dc.outcubes
-        LoopAxesAdd = DD.Dim[]
+        LoopAxesAdd = DD.Dimension[]
         for (il, loopax) in enumerate(dc.LoopAxes)
             push!(outcube.loopinds, il)
             push!(LoopAxesAdd, loopax)
         end
-        outcube.allAxes = DD.Dim[outcube.axesSmall; LoopAxesAdd]
+        outcube.allAxes = DD.Dimension[outcube.axesSmall; LoopAxesAdd]
         dold = outcube.innerchunks
         newchunks = ntuple(_->nothing, length(outcube.allAxes))
         for (k, v) in dold

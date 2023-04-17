@@ -32,8 +32,8 @@ using DimensionalData
         @test pa.X == axlist[1]
         @test pa.YVals == axlist[2]
         @test a[2, 3] == a.data[2, 3]
-        @test read(a) isa Array
-        @test read(a) == collect(reshape(1:20, 4, 5))
+        @test parent(a) isa Array
+        @test parent(a) == collect(reshape(1:20, 4, 5))
         @test propertynames(a) == (:X, :YVals, :axes, :data)
         @test propertynames(a, true) == (:X, :YVals, :axes, :data, :properties)
     end
@@ -51,7 +51,7 @@ using DimensionalData
 
         cs = CartesianIndices.(collect(Iterators.product([1:2, 3:5, 6:6], [1:2, 3:4])))
 
-        renameaxis!(a2, "XVals" => "Ax1")
+        renameaxis!(a2, "X" => "Ax1")
 
         @test YAXArrayBase.dimname(a2, 1) == :Ax1
 

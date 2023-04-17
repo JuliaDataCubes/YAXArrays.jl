@@ -345,7 +345,7 @@ renameaxis(r::RangeAxis{T,<:Any,V}, newname) where {T,V} =
     RangeAxis{T,Symbol(newname),V}(r.values)
 renameaxis(r::CategoricalAxis{T,<:Any,V}, newname) where {T,V} =
     CategoricalAxis{T,Symbol(newname),V}(r.values)
-
+renameaxis(r::DD.Dimension, newname) = DD.rebuild(DD.key2dim(Symbol(newname)), parent(r))
 """
     getOutAxis
 """
