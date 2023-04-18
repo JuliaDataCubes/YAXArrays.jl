@@ -356,3 +356,14 @@ end
     @test ds2.c.chunks == DiskArrays.GridChunks(size(a),(5,10))
 
 end
+
+@testset "Mapslices" begin 
+    using YAXArrays, StatsBase
+
+    a = ones(10,20,5)
+    cube = YAXArray(a)
+    mean_slice = mapslices(mean, cube; dims="Dim_1")
+
+    @test mean_slice[:,:] == ones(20,5)
+end
+

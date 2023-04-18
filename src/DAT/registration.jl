@@ -1,5 +1,5 @@
 export InDims, OutDims, MovingWindow
-using ..Cubes.Axes: get_descriptor, findAxis, Axes
+using ..Cubes.Axes: get_descriptor, findAxis, Axes, AxisDescriptor
 using ...YAXArrays: YAXDefaults
 using YAXArrayBase: yaxcreate
 
@@ -79,7 +79,7 @@ mutable struct InDims
     window_oob_value::Any
 end
 function InDims(
-    axisdesc::Union{String,CubeAxis,Symbol,MovingWindow}...;
+    axisdesc::Union{String,CubeAxis,Symbol,MovingWindow,AxisDescriptor}...;
     artype = Array,
     filter = AllMissing(),
     window_oob_value = missing,
@@ -87,8 +87,15 @@ function InDims(
     descs = get_descriptor.(axisdesc)
     InDims(descs, artype, getprocfilter(filter), window_oob_value)
 end
-
-
+function InDims(
+    axisdesc::Tuple{Union{String,CubeAxis,Symbol,MovingWindow,AxisDescriptor}};
+    artype = Array,
+    filter = AllMissing(),
+    window_oob_value = missing,
+)
+    descs = get_descriptor.(axisdesc)
+    InDims(descs, artype, getprocfilter(filter), window_oob_value)
+end
 struct OutDims
     axisdesc::Any
     backend::Symbol
