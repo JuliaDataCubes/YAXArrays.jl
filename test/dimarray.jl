@@ -89,7 +89,7 @@ end
 
     #I am not sure, whether this is an actual use case 
     # and whether we would like to support the mix of symbol and string axisnames.
-    @test_broken r = mapslices(sum, yax, dims="axis1")
+    @test_broken mapslices(sum, yax, dims="axis1")
 end
 
 @testitem "Moving Window DimArray" begin
@@ -111,9 +111,9 @@ end
     r3 = mapCube(c, indims = indims, outdims = OutDims("Time")) do xout, xin
         xout[:] = xin[:, 3]
     end
-    @test_broken r1 isa AbstractDimArray
-    @test_broken r2 isa AbstractDimArray
-    @test_broken r3 isa AbstractDimArray
+    @test r1 isa AbstractDimArray
+    @test r2 isa AbstractDimArray
+    @test r3 isa AbstractDimArray
 
     @test r1.data[:, 2:40, :] == permutedims(a[1:39, :, :], (3, 1, 2))
     @test all(==(-9999.0), r1.data[:, 1, :])
@@ -138,9 +138,9 @@ end
     @test r3.data[:, 1:39, 1:19] == permutedims(a[2:40, 2:20, :], (3, 1, 2))
     @test all(ismissing, r3.data[:, end, :])
     @test all(ismissing, r3.data[:, :, end])
-    @test_broken r1 isa AbstractDimArray
-    @test_broken r2 isa AbstractDimArray
-    @test_broken r3 isa AbstractDimArray
+    @test r1 isa AbstractDimArray
+    @test r2 isa AbstractDimArray
+    @test r3 isa AbstractDimArray
 
     a = Array{Union{Float64,Missing}}(rand(10,4,  40, 20));
     varax = Dim{:Variable}('a':'d')
@@ -155,7 +155,7 @@ end
     end
     @test all(ismissing,r1[:,:,1,:])
     @test r1[:,:,2:40,:] == a[:,:,1:end-1,:]
-    @test_broken r1 isa AbstractDimArray
+    @test r1 isa AbstractDimArray
 end
 
 @testitem "DimArray Chunking" begin
@@ -184,11 +184,12 @@ end
     cta = CubeTable(data=a)
     meancta = cubefittable(cta,Mean(),:data, by=(:YVals,))
     @test meancta.data == [2.5, 6.5, 10.5, 14.5, 18.5] 
-    @test_broken meancta isa AbstractDimArray 
+    @test meancta isa AbstractDimArray 
     ashcta = cubefittable(cta, Ash(KHist(3)), :data, by=(:YVals,))
-    @test all(ashcta[Hist="Frequency"][1,:] .== 0.2222222222222222)
-    @test_broken ashcta isa AbstractDimArray 
+    @test all(ashcta[Hist=At("Frequency")][1,:] .== 0.2222222222222222)
+    @test ashcta isa AbstractDimArray 
     khistcta = cubefittable(cta, KHist(3), :data, by=(:YVals,))
-    @test all(khistcta[Hist="Frequency"][1,:] .== 1.0)
-    @test_broken khistcta isa AbstractDimArray
+    @show typeof(khistcta)
+    @test all(khistcta[Dim{:Hist}(At("Frequency"))][1,:] .== 1.0)
+    @test khistcta isa AbstractDimArray
 end

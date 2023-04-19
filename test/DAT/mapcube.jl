@@ -1,5 +1,6 @@
 @testitem "mapcube" begin
     using YAXArrays
+    using DimensionalData
     @testset "Loop Axis permutation" begin
         x,y,z = X(1:4), Y(1:5), Z(1:6)
         a1 = YAXArray((x,y,z), rand(4,5,6))

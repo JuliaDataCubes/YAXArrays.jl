@@ -245,6 +245,7 @@ getindex_all(a) = getindex(a, ntuple(_ -> Colon(), ndims(a))...)
     end
 end
 =#
+
 function batchextract(x,i)
     sch = schema(i)
     axinds = map(sch.names) do n
@@ -299,7 +300,7 @@ function batchextract(x,i)
     else
         outaxis_from_column(i,newaxcol)
     end
-    outax = CubeAxis[axcopy(a) for a in cax][axrem]
+    outax = Tuple([axcopy(a) for a in cax][axrem]...)
     insert!(outax,minimum(axinds),newax)
     YAXArray(outax,d,x.properties)
 end
@@ -309,9 +310,9 @@ function outaxis_from_column(tab,icol)
     axname = schema(tab).names[icol]
     if eltype(axdata) <: AbstractString ||
         (!issorted(axdata) && !issorted(axdata, rev = true))
-        CategoricalAxis(axname, axdata)
+        DD.rebuild(DD.key2dim(Symbol(axname)), axdata)
     else
-        RangeAxis(axname, axdata)
+        DD.rebuild(DD.key2dim(Symbol(axname)), axdata)
     end
 end
 
