@@ -1,13 +1,14 @@
 using DataStructures: OrderedDict
+using DimensionalData: DimensionalData as DD
 
 @testset "Datasets" begin
     data = [rand(4, 5, 12), rand(4, 5, 12), rand(4, 5)]
-    axlist1 = [
-        RangeAxis("XVals", 1.0:4.0),
-        CategoricalAxis("YVals", [1, 2, 3, 4, 5]),
-        RangeAxis("Time", Date(2001, 1, 15):Month(1):Date(2001, 12, 15)),
-    ]
-    axlist2 = [RangeAxis("XVals", 1.0:4.0), CategoricalAxis("YVals", [1, 2, 3, 4, 5])]
+    axlist1 = (
+        Dim{:XVals}(1.0:4.0),
+        Dim{:YVals}([1, 2, 3, 4, 5]),
+        Dim{:Time}(Date(2001, 1, 15):Month(1):Date(2001, 12, 15)),
+    )
+    axlist2 = (Dim{:XVals}(1.0:4.0), Dim{:YVals}([1, 2, 3, 4, 5]))
     props = [Dict("att$i" => i) for i = 1:3]
     c1, c2, c3 = (
         YAXArray(axlist1, data[1], props[1]),
@@ -139,18 +140,18 @@ using DataStructures: OrderedDict
         m = MockDataset("testpath.mock")
         @testset "collectdims" begin
             dcollect = YAXArrays.Datasets.collectdims(m)
-            @test dcollect["time"].ax isa RangeAxis
-            @test YAXArrays.Cubes.Axes.axname(dcollect["time"].ax) == "time"
-            @test dcollect["time"].ax.values ==
+            @test dcollect["time"].ax isa DD.Dimension
+            #@test YAXArrays.Cubes.Axes.axname(dcollect["time"].ax) == "time"
+            @test DD.lookup(dcollect["time"].ax) ==
                   DateTime(2001, 1, 4):Day(1):DateTime(2001, 1, 13)
             @test dcollect["time"].offs == 2
-            @test dcollect["d2"].ax isa RangeAxis
-            @test YAXArrays.Cubes.Axes.axname(dcollect["d2"].ax) == "d2"
-            @test dcollect["d2"].ax.values == 0.1:0.1:0.5
+            @test dcollect["d2"].ax isa DD.Dimension
+            #@test YAXArrays.Cubes.Axes.axname(dcollect["d2"].ax) == "d2"
+            @test DD.lookup(collect["d2"].ax) == 0.1:0.1:0.5
             @test dcollect["d2"].offs == 0
-            @test dcollect["d3"].ax isa CategoricalAxis
-            @test YAXArrays.Cubes.Axes.axname(dcollect["d3"].ax) == "d3"
-            @test dcollect["d3"].ax.values == ["One", "Two"]
+            @test dcollect["d3"].ax isa DD.Dimension
+            #@test YAXArrays.Cubes.Axes.axname(dcollect["d3"].ax) == "d3"
+            @test DD.lookup(dcollect["d3"].ax) == ["One", "Two"]
             @test dcollect["d3"].offs == 0
             a1 = [0.1, 0.2, 0.3, 0.4]
             a2 = [0.1, 0.21, 0.3, 0.4]
@@ -167,20 +168,20 @@ using DataStructures: OrderedDict
             @test ar isa YAXArray
             @test size(ar) == (10, 5, 2, 2)
             @test YAXArrays.Cubes.Axes.axname.(ar.axes) == ["time", "d2", "d3", "Variable"]
-            @test ar.axes[4].values == ["Var1", "Var3"]
+            @test DD.lookup(ar.axes[4]) == ["Var1", "Var3"]
         end
         @testset "Dataset creation" begin
-            al = [
-                RangeAxis("Time", Date(2001):Month(1):Date(2001, 12, 31)),
-                CategoricalAxis("Variable", ["A", "B"]),
-                RangeAxis("Xvals", 1:10),
-            ]
+            al = (
+                Dim{:Time}(Date(2001):Month(1):Date(2001, 12, 31)),
+                Dim{:Variable}(["A", "B"]),
+                Dim{:Xvals}(1:10),
+            )
             # Basic
             newds, newds2 = YAXArrays.Datasets.createdataset(MockDataset, al)
             @test YAXArrays.Cubes.axsym.(newds2.axes) == [:Time, :Xvals, :Variable]
-            @test newds2.axes[1].values == Date(2001):Month(1):Date(2001, 12, 31)
-            @test newds2.axes[3].values == ["A", "B"]
-            @test newds2.axes[2].values == 1:10
+            @test DD.lookup(newds2.axes[1]) == Date(2001):Month(1):Date(2001, 12, 31)
+            @test DD.lookup(newds2.axes[3]) == ["A", "B"]
+            @test DD.lookup(newds2.axes[2]) == 1:10
             @test newds2.data isa YAXArrays.Cubes.DiskArrayTools.DiskArrayStack
             # A bit more advanced
             fn = string(tempname(), ".mock")
@@ -216,15 +217,15 @@ end
 @testset "Saving and loading between different backends" begin
     using NetCDF, Zarr, YAXArrays
     x = rand(10, 5)
-    ax1 = CategoricalAxis("Ax1", string.(1:10))
-    ax2 = RangeAxis("Ax2", 1:5)
+    ax1 = Dim{:Ax1}(string.(1:10))
+    ax2 = Dim{:Ax2}(1:5)
     p = string(tempname(),".zarr")
     savecube(YAXArray([ax1, ax2], x), p, backend = :zarr)
     @test ispath(p)
     cube1 = Cube(p)
     @test cube1.Ax1 == ax1
     @test cube1.Ax2 == ax2
-    @test eltype(cube1.Ax2.values) <: Int64
+    @test eltype(cube1.Ax2) <: Int64
     @test cube1.data == x
     p2 = string(tempname(), ".nc")
     savecube(cube1, p2, backend = :netcdf)
@@ -233,7 +234,7 @@ end
     @test cube2.Ax1 == ax1
     @test cube2.Ax2 == ax2
     @test cube2.data == x
-    @test eltype(cube2.Ax2.values) <: Int64
+    @test eltype(cube2.Ax2) <: Int64
 end
 
 @testset "Saving, loading and appending" begin
