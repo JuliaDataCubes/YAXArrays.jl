@@ -26,8 +26,8 @@ end
 Concatenates a vector of datacubes that have identical axes to a new single cube along the new
 axis `cataxis`
 """
-function concatenatecubes(cl, cataxis::CubeAxis)
-    length(cataxis.values) == length(cl) ||
+function concatenatecubes(cl, cataxis::DD.Dimension)
+    length(cataxis) == length(cl) ||
         error("cataxis must have same length as cube list")
     firstnontrivialcube = findfirst(c->ndims(c)>0, cl)
     axlist = axcopy.(caxes(cl[firstnontrivialcube]))
@@ -48,7 +48,9 @@ function concatenatecubes(cl, cataxis::CubeAxis)
     end
     props = mapreduce(getattributes, merge, cl, init = getattributes(cl[firstnontrivialcube]))
     newchunks = GridChunks((chunks.chunks...,DiskArrays.RegularChunks(1,0,length(cataxis))))
-    YAXArray([axlist..., cataxis], diskstack([getdata(c) for c in cl]), props, newchunks, cleaners)
+    @show axlist
+    @show typeof(axlist)
+    YAXArray((axlist... , cataxis), diskstack([getdata(c) for c in cl]), props, newchunks, cleaners)
 end
 function concatenatecubes(; kwargs...)
     cubenames = String[]

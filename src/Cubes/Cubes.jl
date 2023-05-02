@@ -28,6 +28,7 @@ function subsetcube end
 function caxes end
 
 # TODO: Give Axes an own module in YAXArrays
+#=
 include("Axes.jl")
 using .Axes:
     CubeAxis,
@@ -50,7 +51,7 @@ It provides the following exports:
 $(EXPORTS)
 """
 Axes
-
+=#
 """
     mutable struct CleanMe
 
@@ -91,7 +92,7 @@ It can wrap normal arrays or, more typically DiskArrays.
 $(FIELDS)
 """
 struct YAXArray{T,N,A<:AbstractArray{T,N}, D} <: AbstractDimArray{T,N,D,A} 
-    "`Vector{CubeAxis}` containing the Axes of the Cube"
+    "`Tuple` of Dimensions containing the Axes of the Cube"
     axes::D
     "length(axes)-dimensional array which holds the data, this can be a lazy DiskArray"
     data::A
@@ -148,12 +149,12 @@ Base.size(a::YAXArray, i::Int) = size(getdata(a), i)
 #Base.size(a::YAXArray, desc) = size(a, findAxis(desc, a))
 # overload dot syntax for YAXArray to provide direct access to axes
 function Base.getproperty(a::YAXArray, s::Symbol)
-    ax = axsym.(caxes(a))
+    ax = name.(caxes(a))
     i = findfirst(isequal(s), ax)
     if i === nothing
         return getfield(a, s)
     else
-        return caxes(a)[i]
+        return axes(a)[i]
     end
 end
 # because getproperty is overloaded, propertynames should be as well
@@ -326,7 +327,7 @@ function outaxis_from_data(cax,axinds,indlist)
             ax.values[i[ai-minai+1]]
         end
     end
-    CategoricalAxis(newname, mergevals)
+    DD.rebuild(DD.key2dim(Symbol(newname)), mergevals)
 end
 chunkoffset(c) = grid_offset(eachchunk(c))
 
@@ -351,6 +352,9 @@ _iscompressed(c::DiskArrays.SubDiskArray) = _iscompressed(c.v.parent)
 _iscompressed(c) = YAXArrayBase.iscompressed(c)
 
 # lift renameaxis functionality from Axes.jl to YAXArrays
+renameaxis!(c::YAXArray, p::Pair) = DD.set(c, Symbol(first(p)) => last(p))
+
+#=
 function renameaxis!(c::YAXArray, p::Pair)
     #This needs to be deleted, because DimensionalData cannot update the axlist
     # Because this is a tuple instead of a vector
@@ -367,7 +371,7 @@ function renameaxis!(c::YAXArray, p::Pair{<:Any,<:CubeAxis})
     caxes(c)[i] = p[2]
     c
 end
-
+=#
 function _subsetcube end
 
 function subsetcube(z::YAXArray{T}; kwargs...) where {T}
@@ -379,6 +383,7 @@ end
 sorted(x, y) = x < y ? (x, y) : (y, x)
 
 #TODO move everything that is subset-related to its own file or to axes.jl
+#=
 interpretsubset(subexpr::Union{CartesianIndices{1},LinearIndices{1}}, ax) =
     subexpr.indices[1]
 interpretsubset(subexpr::CartesianIndex{1}, ax) = subexpr.I[1]
@@ -394,14 +399,14 @@ interpretsubset(subexpr::UnitRange{<:Integer}, ax::RangeAxis{T}) where {T<:TimeT
 interpretsubset(subexpr::Interval, ax) = interpretsubset((subexpr.left, subexpr.right), ax)
 interpretsubset(subexpr::AbstractVector, ax::CategoricalAxis) =
     axVal2Index.(Ref(ax), subexpr, fuzzy=true)
-
+=#
 
 function _subsetcube(z, subs; kwargs...)
     kwargs = Dict{Any,Any}(kwargs)
     for f in YAXDefaults.subsetextensions
         f(kwargs)
     end
-    newaxes = deepcopy(collect(CubeAxis, caxes(z)))
+    newaxes = deepcopy(collect(DD.Dimension, caxes(z)))
     foreach(kwargs) do kw
         axdes, subexpr = kw
         axdes = string(axdes)
@@ -445,7 +450,7 @@ end
 cubesize(c::YAXArray{T}) where {T} = (sizeof(T)) * prod(map(length, caxes(c)))
 cubesize(::YAXArray{T,0}) where {T} = sizeof(T)
 
-getCubeDes(::CubeAxis) = "Cube axis"
+getCubeDes(::DD.Dimension) = "Cube axis"
 getCubeDes(::YAXArray) = "YAXArray"
 getCubeDes(::Type{T}) where {T} = string(T)
 Base.show(io::IO, c::YAXArray) = show_yax(io, c)

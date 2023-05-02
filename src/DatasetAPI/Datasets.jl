@@ -1,5 +1,5 @@
 module Datasets
-import ..Cubes.Axes: axsym, axname, CubeAxis, findAxis, CategoricalAxis, RangeAxis, caxes
+#import ..Cubes.Axes: axsym, axname, CubeAxis, findAxis, CategoricalAxis, RangeAxis, caxes
 import ..Cubes: Cubes, YAXArray, concatenatecubes, CleanMe, subsetcube, copy_diskarray, setchunks
 using ...YAXArrays: YAXArrays, YAXDefaults
 using DataStructures: OrderedDict, counter
@@ -27,14 +27,14 @@ Dataset(; properties = Dict{String,Any}, cubes...)
 Construct a YAXArray Dataset with global attributes `properties` a and a list of named YAXArrays cubes...
 """
 function Dataset(; properties = Dict{String,Any}(), cubes...)
-    axesall = Set{CubeAxis}()
+    axesall = Set{DD.Dimension}()
     foreach(values(cubes)) do c
         ax = caxes(c)
         foreach(a -> push!(axesall, a), ax)
     end
     axesall = collect(axesall)
     axnameall = axsym.(axesall)
-    axesnew = Dict{Symbol,CubeAxis}(axnameall[i] => axesall[i] for i = 1:length(axesall))
+    axesnew = Dict{Symbol,DD.Dimension}(axnameall[i] => axesall[i] for i = 1:length(axesall))
     Dataset(OrderedDict(cubes), axesnew, properties)
 end
 
@@ -48,7 +48,7 @@ axis is specified or found, there will only be a single variable
 in the dataset with the name `name`
 """
 function to_dataset(c;datasetaxis = "Variable", name = get(c.properties,"name","layer"))
-    axlist = caxes(c)
+    axlist = axes(c)
     splice_generic(x::AbstractArray, i) = [x[1:(i-1)]; x[(i+1:end)]]
     splice_generic(x::Tuple, i) = (x[1:(i-1)]..., x[(i+1:end)]...)
     finalperm = nothing
@@ -66,7 +66,7 @@ function to_dataset(c;datasetaxis = "Variable", name = get(c.properties,"name","
     if groupaxis === nothing
         cubenames = [name]
     else
-        cubenames = groupaxis.values
+        cubenames = DD.lookup(groupaxis)
     end
     viewinds = ntuple(_->Colon(),ndims(c))
     atts = getattributes(c)
@@ -501,13 +501,14 @@ function savedataset(
         # We go into append mode
         append_dataset(backend, path, ds, axdata, arrayinfo)
     else
+        @show getproperty.(axdata, :attrs)
         YAXArrayBase.create_dataset(
             backend, 
             path, 
             ds.properties,
             string.(getproperty.(axdata,:name)), 
             getproperty.(axdata,:data),
-            getproperty.(axdata,:attrs), 
+            getproperty.(axdata,:attrs),
             getproperty.(arrayinfo, :t), 
             getproperty.(arrayinfo, :name),
             map(e -> string.(DD.name.(e.axes)), arrayinfo), 
@@ -627,13 +628,13 @@ function createdataset(
         #Potentially create a view
         if !all(iszero, chunkoffset)
             subs = ntuple(length(axlist)) do i
-                (chunkoffset[i]+1):(length(axlist[i].values)+chunkoffset[i])
+                (chunkoffset[i]+1):(length(axlist[i])+chunkoffset[i])
             end
         end
         if groupaxis === nothing
             cubenames = ["layer"]
         else
-            cubenames = groupaxis.values
+            cubenames = DD.lookup(groupaxis)
         end
         cleaner = CleanMe[]
         persist || push!(cleaner, CleanMe(path, false))
@@ -820,7 +821,7 @@ function createdataset(
         for ds in dslist, k in keys(ds.axes)
             push!(allaxnames, k)
         end
-        dimvallist = Dict(ax => map(i -> i.axes[ax].values, dslist) for ax in keys(allaxnames))
+        dimvallist = Dict(ax => map(i -> DD.lookup(i.axes[ax]), dslist) for ax in keys(allaxnames))
         allmerges = create_mergedict(dimvallist)
         repvars = counter(Symbol)
         for ds in dslist, v in keys(ds.cubes)

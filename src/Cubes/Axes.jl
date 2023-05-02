@@ -176,7 +176,7 @@ axcopy(ax::CategoricalAxis, vals) = CategoricalAxis(axname(ax), vals)
 axcopy(ax::DD.Dimension, vals) = typeof(ax)(vals)
 axcopy(ax::RangeAxis) = RangeAxis(axname(ax), copy(ax.values))
 axcopy(ax::CategoricalAxis) = CategoricalAxis(axname(ax), copy(ax.values))
-axcopy(ax::DD.Dimension) =typeof(ax)(copy(ax.val))
+axcopy(ax::DD.Dimension) = DD.rebuild(ax, DD.val(ax))
 
 """
     caxes

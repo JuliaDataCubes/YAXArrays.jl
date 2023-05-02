@@ -14,9 +14,9 @@ using Distributed:
     @spawn, 
     AbstractWorkerPool, 
     default_worker_pool
-import ..Cubes: cubechunks, iscompressed, chunkoffset, CubeAxis, YAXArray, caxes, YAXSlice
-import ..Cubes.Axes:
-    AxisDescriptor, axname, ByInference, axsym, getOutAxis, getAxis, findAxis, match_axis
+import ..Cubes: cubechunks, iscompressed, chunkoffset, YAXArray, caxes, YAXSlice
+#import ..Cubes.Axes:
+#    AxisDescriptor, axname, ByInference, axsym, getOutAxis, getAxis, findAxis, match_axis
 import ..Datasets: Dataset, createdataset
 import ...YAXArrays
 import ...YAXArrays.workdir

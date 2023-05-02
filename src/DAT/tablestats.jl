@@ -1,5 +1,5 @@
 import OnlineStats: OnlineStat, Extrema, fit!, value, HistogramStat, Ash
-import ...Cubes.Axes: CategoricalAxis, RangeAxis
+#import ...Cubes.Axes: CategoricalAxis, RangeAxis
 import IterTools
 using WeightedOnlineStats
 using Distributed: nworkers
@@ -163,8 +163,8 @@ end
 varsym(::WeightOnlineAggregator{<:Any,S}) where {S} = S
 varsym(::OnlineAggregator{<:Any,S}) where {S} = S
 varsym(::GroupedOnlineAggregator{<:Any,S}) where {S} = S
-axt(::CategoricalAxis) = CategoricalAxis
-axt(::RangeAxis) = RangeAxis
+#axt(::CategoricalAxis) = CategoricalAxis
+#axt(::RangeAxis) = RangeAxis
 getStatType(::WeightOnlineAggregator{T}) where {T} = T
 getStatType(::OnlineAggregator{T}) where {T} = T
 getStatType(t::GroupedOnlineAggregator{T}) where {T} = getStatType(T)
