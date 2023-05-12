@@ -4,11 +4,11 @@ using DimensionalData: DimensionalData as DD
 @testset "Datasets" begin
     data = [rand(4, 5, 12), rand(4, 5, 12), rand(4, 5)]
     axlist1 = (
-        Dim{:XVals}(1.0:4.0),
-        Dim{:YVals}([1, 2, 3, 4, 5]),
-        Dim{:Time}(Date(2001, 1, 15):Month(1):Date(2001, 12, 15)),
+        DD.Dim{:XVals}(1.0:4.0),
+        DD.Dim{:YVals}([1, 2, 3, 4, 5]),
+        DD.Dim{:Time}(Date(2001, 1, 15):Month(1):Date(2001, 12, 15)),
     )
-    axlist2 = (Dim{:XVals}(1.0:4.0), Dim{:YVals}([1, 2, 3, 4, 5]))
+    axlist2 = (DD.Dim{:XVals}(1.0:4.0), DD.Dim{:YVals}([1, 2, 3, 4, 5]))
     props = [Dict("att$i" => i) for i = 1:3]
     c1, c2, c3 = (
         YAXArray(axlist1, data[1], props[1]),
@@ -56,11 +56,11 @@ using DimensionalData: DimensionalData as DD
         #@test length(ds3[Time=(Date(2001,2,1),Date(2001,8,1))].Time) == 6 
     end
     @testset "Subsetting datasets" begin
-        dssub = ds[time=Date(2001,2,15)]
+        dssub = ds[Time=DD.At(Date(2001,2,15))]
         @test dssub isa Dataset
         @test sort(collect(keys(dssub.axes))) == [:XVals, :YVals]
         @test ndims(dssub.avar)==2
-        dssub2 = ds[var=[:avar,:something], time=Date(2001,1,15)..Date(2001,6,15)]
+        dssub2 = ds[var=[:avar,:something], Time=Date(2001,1,15)..Date(2001,6,15)]
         @test length(dssub2.cubes)==2
         @test size(dssub2.avar)==(4,5,6)
     end
@@ -163,11 +163,11 @@ using DimensionalData: DimensionalData as DD
             ds = open_dataset("test.mock")
             @test size(ds.Var1) == (10, 5, 2)
             @test size(ds.Var2) == (10, 5)
-            @test all(in(keys(ds.axes)), (:time, :d2, :d3))
+            @test all(in(keys(ds.axes)), (:Time, :d2, :d3))
             ar = Cube(ds)
             @test ar isa YAXArray
             @test size(ar) == (10, 5, 2, 2)
-            @test YAXArrays.Cubes.Axes.axname.(ar.axes) == ["time", "d2", "d3", "Variable"]
+            @test DD.name.(ar.axes) == (:Time, :d2, :d3, :Variable)
             @test DD.lookup(ar.axes[4]) == ["Var1", "Var3"]
         end
         @testset "Dataset creation" begin

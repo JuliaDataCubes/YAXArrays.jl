@@ -143,17 +143,29 @@ end
 Base.getindex(x::Dataset, i::String) = getproperty(x, Symbol(i))
 function subsetifdimexists(a;kwargs...)
     axlist = DD.dims(a)
+    @show DD.name.(axlist)
     kwargsshort = filter(kwargs) do kw
+        @show first(kw)
         findAxis(first(kw),axlist) !== nothing
     end
-    subsetcube(a;kwargsshort...)
+    #@show a
+    #@show kwargsshort
+    # This makes no subsetting on cubes that do not have the respective axis.
+    # Is this the behaviour we would expect?
+    if !isempty(kwargsshort)
+        getindex(a;kwargsshort...)
+    else
+        a
+    end
 end
-function subsetcube(x::Dataset; var = nothing, kwargs...)
+
+function Base.getindex(x::Dataset; var = nothing, kwargs...)
     if var === nothing
         cc = x.cubes
+        @show cc
         Dataset(; properties=x.properties, map(ds -> ds => subsetifdimexists(cc[ds]; kwargs...), collect(keys(cc)))...)
     elseif isa(var, String) || isa(var, Symbol)
-        subsetcube(getproperty(x, Symbol(var)); kwargs...)
+        getindex(getproperty(x, Symbol(var)); kwargs...)
     else
         cc = x[var].cubes
         Dataset(; properties=x.properties, map(ds -> ds => subsetifdimexists(cc[ds]; kwargs...), collect(keys(cc)))...)
@@ -287,7 +299,7 @@ function open_dataset(g; driver = :all)
     sdimlist = Dict(Symbol(k) => v.ax for (k, v) in dimlist)
     Dataset(allcubes, sdimlist,gatts)
 end
-Base.getindex(x::Dataset; kwargs...) = subsetcube(x; kwargs...)
+#Base.getindex(x::Dataset; kwargs...) = subsetcube(x; kwargs...)
 YAXDataset(; kwargs...) = Dataset(YAXArrays.YAXDefaults.cubedir[]; kwargs...)
 
 
@@ -644,11 +656,12 @@ function createdataset(
         if hasmissings && !haskey(attr, "missing_value")
                 attr["missing_value"] = YAXArrayBase.defaultfillval(S)
         end
+        @show axdata
         dshandle = YAXArrayBase.create_dataset(
         DS, 
         path, 
         Dict{String,Any}(),
-        getproperty.(axdata,:name), 
+        string.(getproperty.(axdata,:name)),
         getproperty.(axdata,:data),
         getproperty.(axdata,:attrs), 
         fill(S, length(cubenames)), 

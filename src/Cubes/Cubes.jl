@@ -119,7 +119,6 @@ struct YAXArray{T,N,A<:AbstractArray{T,N}, D} <: AbstractDimArray{T,N,D,A}
         elseif ndims(chunks) != ndims(data)
             throw(ArgumentError("Can not construct YAXArray, supplied chunk dimension is $(ndims(chunks)) while the number of dims is $(length(axes))"))
         else
-            @show axes
             axes = DD.format(axes, data)
             return new{eltype(data),ndims(data),typeof(data),typeof(axes)}(
                 axes,
@@ -139,7 +138,6 @@ YAXArray(axes, data, properties = Dict{String,Any}(); cleaner = CleanMe[], chunk
 YAXArray(axes,data,properties,cleaner) = YAXArray(axes,data,properties,eachchunk(data),cleaner)
 function YAXArray(x::AbstractArray)
     ax = caxes(x)
-    @show ax
     props = getattributes(x)
     chunks = eachchunk(x)
     YAXArray(ax, x, props,chunks=chunks)
@@ -247,6 +245,7 @@ setchunks(c::YAXArray,chunks) = YAXArray(c.axes,c.data,c.properties,interpret_cu
 cubechunks(c) = approx_chunksize(eachchunk(c))
 DiskArrays.eachchunk(c::YAXArray) = c.chunks
 getindex_all(a) = getindex(a, ntuple(_ -> Colon(), ndims(a))...)
+
 #=
 function Base.getindex(x::YAXArray, i...) 
     if length(i)==1 && istable(first(i))
@@ -257,7 +256,9 @@ function Base.getindex(x::YAXArray, i...)
 end
 =#
 
+
 function batchextract(x,i)
+    # This function should be documented and moved to DimensionalData
     sch = schema(i)
     axinds = map(sch.names) do n
         findAxis(n,x)
@@ -444,7 +445,7 @@ function _subsetcube(z, subs; kwargs...)
 end
 
 
-#Base.getindex(a::YAXArray; kwargs...) = subsetcube(a; kwargs...)
+Base.getindex(a::YAXArray, args::DD.Dimension...; kwargs...) = view(a, args...; kwargs...)
 
 Base.read(d::YAXArray) = getindex_all(d)
 
