@@ -1,15 +1,15 @@
 export ConcatCube, concatenateCubes
 export mergeAxes
-import ..Cubes: YAXArray, caxes, iscompressed, cubechunks, chunkoffset
+import ..Cubes: YAXArray, iscompressed, cubechunks, chunkoffset
 using DiskArrayTools: diskstack, DiskArrayTools
 
 function Base.map(op, incubes::YAXArray...)
-    axlist = caxes(incubes[1])
+    axlist = DD.dims(incubes[1])
     @debug axlist
     chunks = incubes[1].chunks
-    [@debug caxes(c) for c in incubes]
+    [@debug DD.dims(c) for c in incubes]
     all(i-> eachchunk(i) == chunks, incubes) || error("All chunk sizes must match, consider resetting the chunks to a common size using `setchunks`")
-    all(i -> caxes(i) == axlist, incubes) || error("All axes must match")
+    all(i -> DD.dims(i) == axlist, incubes) || error("All axes must match")
     props = merge(getattributes.(incubes)...)
     YAXArray(
         axlist,
@@ -30,14 +30,14 @@ function concatenatecubes(cl, cataxis::DD.Dimension)
     length(cataxis) == length(cl) ||
         error("cataxis must have same length as cube list")
     firstnontrivialcube = findfirst(c->ndims(c)>0, cl)
-    axlist = axcopy.(caxes(cl[firstnontrivialcube]))
+    axlist = DD.rebuild.(DD.dims(cl[firstnontrivialcube]))
     T = eltype(cl[firstnontrivialcube])
     N = ndims(cl[firstnontrivialcube])
     chunks = eachchunk(cl[firstnontrivialcube])
     cleaners = CleanMe[]
     append!(cleaners, cl[firstnontrivialcube].cleaner)
     for i = 2:length(cl)
-        all(caxes(cl[i]) .== axlist) ||
+        all(DD.dims(cl[i]) .== axlist) ||
             error("All cubes must have the same axes, cube number $i does not match")
         eltype(cl[i]) == T || error(
             "All cubes must have the same element type, cube number $i does not match",

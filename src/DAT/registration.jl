@@ -1,6 +1,7 @@
 export InDims, OutDims, MovingWindow
 #using ..Cubes.Axes: get_descriptor, findAxis, Axes
-using ...YAXArrays: YAXDefaults
+import ..YAXArrays: get_descriptor, findAxis
+using ..YAXArrays: YAXDefaults
 using DataFrames: DataFrame
 using YAXArrayBase: yaxcreate
 
@@ -22,12 +23,12 @@ struct MovingWindow
     pre::Int
     after::Int
 end
-#Axes.get_descriptor(m::MovingWindow) = MovingWindow(get_descriptor(m.desc), m.pre, m.after)
-#Axes.findAxis(m::MovingWindow, c) = findAxis(m.desc, c)
+get_descriptor(m::MovingWindow) = MovingWindow(get_descriptor(m.desc), m.pre, m.after)
+findAxis(m::MovingWindow, c) = findAxis(m.desc, c)
 
 wrapWorkArray(::Type{Array}, a, axes) = a
 wrapWorkArray(T, a, axes) =
-    yaxcreate(T, a, map(axsym, axes), map(i -> i.values, axes), Dict{String, Any}())
+    yaxcreate(T, a, map(DD.dim2key, axes), map(i -> i.values, axes), Dict{String, Any}())
 
 abstract type ProcFilter end
 struct AllMissing <: ProcFilter end

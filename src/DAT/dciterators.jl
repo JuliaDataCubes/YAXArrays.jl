@@ -18,7 +18,7 @@ Base.eltype(ci::CubeIterator)  = eltype(typeof(ci))
 function Base.getindex(t::CubeIterator, i::Int)
     rnow = t.r[i]
     laxsmall = map(t.loopaxes, rnow) do ax,ir
-        axcopy(ax,ax.val[ir])
+        DD.rebuild(ax,ax.val[ir])
     end
     cols = Union{Nothing,YAXColumn}[nothing for i in t.schema.names]
     return YAXTableChunk(t,laxsmall,rnow,cols)
@@ -142,11 +142,11 @@ function CubeTable(; expandaxes = (), cubes...)
             axn = filter(collect(expandaxes)) do ax
                 findAxis(ax, i) !== nothing
             end
-            foreach(j -> push!(inaxnames, axname(getAxis(j, i))), axn)
+            foreach(j -> push!(inaxnames, DD.name(getAxis(j, i))), axn)
             InDims(axn...)
         end
     end
-    axnames = map(i -> axname.(caxes(i)), c)
+    axnames = map(i -> DD.name.(caxes(i)), c)
     foreach(1:length(axnames)) do i
         otheraxes = axnames[[1:i-1;i+1:length(axnames)]]
         if !isempty(otheraxes) && isempty(intersect(axnames[i], union(otheraxes...)))
@@ -192,7 +192,7 @@ function CubeIterator(
         eltype(ic.cube)
     end
     et = (et..., map(i->eltype(i.val), loopaxes)...)
-    axnames = axsym.(loopaxes)
+    axnames = DD.dim2key.(loopaxes)
     colnames = (map(Symbol, varnames)..., axnames...)
     CubeIterator(
         dc,

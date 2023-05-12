@@ -1,7 +1,7 @@
 module Datasets
 #import ..Cubes.Axes: axsym, axname, CubeAxis, findAxis, CategoricalAxis, RangeAxis, caxes
 import ..Cubes: Cubes, YAXArray, concatenatecubes, CleanMe, subsetcube, copy_diskarray, setchunks
-using ...YAXArrays: YAXArrays, YAXDefaults
+using ...YAXArrays: YAXArrays, YAXDefaults, findAxis
 using DataStructures: OrderedDict, counter
 using Dates: Day, Hour, Minute, Second, Month, Year, Date, DateTime, TimeType, AbstractDateTime
 using IntervalSets: Interval, (..)
@@ -29,11 +29,11 @@ Construct a YAXArray Dataset with global attributes `properties` a and a list of
 function Dataset(; properties = Dict{String,Any}(), cubes...)
     axesall = Set{DD.Dimension}()
     foreach(values(cubes)) do c
-        ax = caxes(c)
+        ax = DD.dims(c)
         foreach(a -> push!(axesall, a), ax)
     end
     axesall = collect(axesall)
-    axnameall = axsym.(axesall)
+    axnameall = DD.dim2key.(axesall)
     axesnew = Dict{Symbol,DD.Dimension}(axnameall[i] => axesall[i] for i = 1:length(axesall))
     Dataset(OrderedDict(cubes), axesnew, properties)
 end
@@ -47,12 +47,12 @@ different parts that become variables in the Dataset. If no such
 axis is specified or found, there will only be a single variable 
 in the dataset with the name `name`
 """
-function to_dataset(c;datasetaxis = "Variable", name = get(c.properties,"name","layer"))
-    axlist = axes(c)
+function to_dataset(c;datasetaxis = "Variable", layername = get(c.properties,"name","layer"))
+    axlist = DD.dims(c)
     splice_generic(x::AbstractArray, i) = [x[1:(i-1)]; x[(i+1:end)]]
     splice_generic(x::Tuple, i) = (x[1:(i-1)]..., x[(i+1:end)]...)
     finalperm = nothing
-    idatasetax = datasetaxis === nothing ? nothing : findAxis(datasetaxis, axlist)
+    idatasetax = datasetaxis === nothing ? nothing : findAxis(datasetaxis, collect(axlist))
     chunks = DiskArrays.eachchunk(c).chunks
     if idatasetax !== nothing
         groupaxis = axlist[idatasetax]
@@ -64,7 +64,7 @@ function to_dataset(c;datasetaxis = "Variable", name = get(c.properties,"name","
         groupaxis = nothing
     end
     if groupaxis === nothing
-        cubenames = [name]
+        cubenames = [layername]
     else
         cubenames = DD.lookup(groupaxis)
     end
@@ -79,7 +79,8 @@ function to_dataset(c;datasetaxis = "Variable", name = get(c.properties,"name","
         end
         
     end
-    axlist = Dict(YAXArrays.Axes.axsym(ax)=>ax for ax in axlist)
+
+    axlist = Dict(Symbol(DD.name(ax))=>ax for ax in axlist)
     attrs = Dict{String,Any}()
     !isnothing(finalperm) && (attrs["_CubePerm"] = collect(finalperm))
     Dataset(OrderedDict(allcubes),axlist,attrs)
@@ -141,7 +142,7 @@ function Base.getindex(x::Dataset, i::Vector{String})
 end
 Base.getindex(x::Dataset, i::String) = getproperty(x, Symbol(i))
 function subsetifdimexists(a;kwargs...)
-    axlist = caxes(a)
+    axlist = DD.dims(a)
     kwargsshort = filter(kwargs) do kw
         findAxis(first(kw),axlist) !== nothing
     end
@@ -316,7 +317,7 @@ function Cube(ds::Dataset; joinname = "Variable")
     if length(newkeys) == 1
         return ds.cubes[first(newkeys)]
     else
-        varax = CategoricalAxis(joinname, string.(newkeys))
+        varax = DD.rebuild(DD.key2dim(Symbol(joinname)), string.(newkeys))
         cubestomerge = [ds.cubes[k] for k in newkeys]
         foreach(
         i -> haskey(i.properties, "name") && delete!(i.properties, "name"),
@@ -331,11 +332,11 @@ Extract necessary information to create a YAXArrayBase dataset from a name and Y
 """
 function getarrayinfo(entry,backend)
     k,c = entry
-    axlist = caxes(c)
+    axlist = DD.dims(c)
     chunks = DiskArrays.eachchunk(c)
     cs = DiskArrays.approx_chunksize(chunks)
     co = DiskArrays.grid_offset(chunks)
-    offs = Dict(axsym(ax)=>o for (ax,o) in zip(axlist,co))
+    offs = Dict(Symbol(DD.name(ax))=>o for (ax,o) in zip(axlist,co))
     s = map(length, axlist) .+ co
     #Potentially create a view
     subs = if !all(iszero, co)
@@ -564,7 +565,7 @@ function savecube(
     if chunks !== nothing
         error("Setting chunks in savecube is not supported anymore. Rechunk using `setchunks` before saving. ")
     end
-    ds = to_dataset(c; name, datasetaxis)
+    ds = to_dataset(c; layername = name, datasetaxis)
     ds = savedataset(ds; path, max_cache, driver, overwrite, append,skeleton, writefac)
     Cube(ds, joinname = datasetaxis)
 end

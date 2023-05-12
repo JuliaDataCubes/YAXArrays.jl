@@ -2,6 +2,7 @@
 @testset "Loop chunk distribution" begin
 using DiskArrays: DiskArrays, GridChunks, RegularChunks, IrregularChunks, AbstractDiskArray
 using YAXArrayBase: YAXArrayBase
+using YAXArrays
 struct LargeDiskArray{N,CT<:GridChunks{N}} <: AbstractDiskArray{Float64,N}
     size::NTuple{N,Int}
     chunks::CT

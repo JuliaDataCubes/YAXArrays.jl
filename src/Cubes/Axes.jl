@@ -85,19 +85,7 @@ Base.show(io::IO, a::RangeAxis) = print(
     last(a.values),
 )
 
-abstract type AxisDescriptor end
 
-struct ByName <: AxisDescriptor
-    name::String
-end
-
-struct ByInference <: AxisDescriptor end
-
-struct ByValue <: AxisDescriptor
-    v::DD.Dimension
-end
-
-const VecOrTuple{S} = Union{Vector{<:S},Tuple{Vararg{<:S}}} where {S}
 
 ################################
 # Public
@@ -107,25 +95,6 @@ import Base.==
 import Base.isequal
 ==(a::CubeAxis, b::CubeAxis) = (a.values == b.values) && (axname(a) == axname(b))
 isequal(a::CubeAxis, b::CubeAxis) = a == b
-
-"""
-    getAxis(desc, c)
-
-Given an Axis description and a cube, returns the corresponding axis of the cube.
-The Axis description can be:
-  - the name as a string or symbol.
-  - an Axis object
-"""
-getAxis(desc, c) = getAxis(desc, caxes(c))
-getAxis(desc::ByValue, axlist::Vector{T}) where {T<:DD.Dimension} = desc.v
-function getAxis(desc, axlist::VecOrTuple{DD.Dimension})
-    i = findAxis(desc, axlist)
-    if isa(i, Nothing)
-        return nothing
-    else
-        return axlist[i]
-    end
-end
 
 # Implement interfaces
 
@@ -178,12 +147,7 @@ axcopy(ax::RangeAxis) = RangeAxis(axname(ax), copy(ax.values))
 axcopy(ax::CategoricalAxis) = CategoricalAxis(axname(ax), copy(ax.values))
 axcopy(ax::DD.Dimension) = DD.rebuild(ax, DD.val(ax))
 
-"""
-    caxes
 
-Embeds  Cube inside a new Cube
-"""
-caxes(x::DD.Dimension) = x
 
 """
     get_step
@@ -247,7 +211,7 @@ end
 axVal2Index(x, v::CartesianIndex{1}; fuzzy::Bool=false) = min(max(v.I[1], 1), length(x))
 function axVal2Index(x, v; fuzzy::Bool=false)
     i = findfirst(isequal(v), x.values)
-    if isa(i, Nothing)
+    if isa(i, axnameNothing)
         dd = map(i -> abs(i - v), x.values)
         mi, ind = findmin(dd)
         return ind
@@ -295,48 +259,7 @@ convert_time(T::Type{<:TimeType}, v::Date) = T(year(v), month(v), day(v), 0, 0, 
 convert_time(::Type{Date}, v::TimeType) = Date(year(v), month(v), day(v))
 convert_time(::Type{Date}, v::Date) = Date(year(v), month(v), day(v))
 
-"""
-    get_descriptor(a)
 
-Get the descriptor of an Axis. 
-This is used to dispatch on the descriptor. 
-"""
-get_descriptor(a::String) = ByName(a)
-get_descriptor(a::Symbol) = ByName(String(a))
-get_descriptor(a::DD.Dimension) = ByValue(a)
-get_descriptor(a) = error("$a is not a valid axis description")
-get_descriptor(a::AxisDescriptor) = a
-
-"""
-    match_axis
-"""
-function match_axis(bs::ByName, ax)
-    startswith(lowercase(string(name(ax))), lowercase(bs.name))
-end
-function match_axis(bs::ByValue, ax)
-    isequal(bs.v, ax)
-end
-match_axis(a, ax) = match_axis(get_descriptor(a), ax)
-
-"""
-    findAxis(desc, c)
-Given an Axis description and a cube return the index of the Axis.
-The Axis description can be:
-  - the name as a string or symbol.
-  - an Axis object
-"""
-findAxis(desc, c) = findAxis(desc, caxes(c))
-findAxis(a, axlist::VecOrTuple{Dimension}) = findAxis(get_descriptor(a), axlist)
-function findAxis(bs::AxisDescriptor, axlist::VecOrTuple{Dimension})
-    m = findall(i -> match_axis(bs, i), axlist)
-    if isempty(m)
-        return nothing
-    elseif length(m) > 1
-        error("Multiple possible axis matches found for $bs")
-    else
-        return m[1]
-    end
-end
 
 """
     renameaxis
@@ -346,47 +269,6 @@ renameaxis(r::RangeAxis{T,<:Any,V}, newname) where {T,V} =
 renameaxis(r::CategoricalAxis{T,<:Any,V}, newname) where {T,V} =
     CategoricalAxis{T,Symbol(newname),V}(r.values)
 renameaxis(r::DD.Dimension, newname) = DD.rebuild(DD.key2dim(Symbol(newname)), parent(r))
-"""
-    getOutAxis
-"""
-getOutAxis(desc, axlist, incubes, pargs, f) = getAxis(desc, unique(axlist))
-function getOutAxis(desc::Tuple{ByInference}, axlist, incubes, pargs, f)
-    inAxes = map(caxes, incubes)
-    inAxSmall = map(i -> filter(j -> in(j, axlist), i) |> collect, inAxes)
-    inSizes = map(i -> (map(length, i)...,), inAxSmall)
-    intypes = map(eltype, incubes)
-    testars = map((s, it) -> zeros(it, s...), inSizes, intypes)
-    map(testars) do ta
-        ta .= rand(Base.nonmissingtype(eltype(ta)), size(ta)...)
-        if eltype(ta) >: Missing
-            # Add some missings
-            randind = rand(1:length(ta), length(ta) ÷ 10)
-            ta[randind] .= missing
-        end
-    end
-    resu = f(testars..., pargs...)
-    isa(resu, AbstractArray) ||
-        isa(resu, Number) ||
-        isa(resu, Missing) ||
-        error("Function must return an array or a number")
-    (isa(resu, Number) || isa(resu, Missing)) && return ()
-    outsizes = size(resu)
-    outaxes = map(outsizes, 1:length(outsizes)) do s, il
-        if s > 2
-            i = findall(i -> i == s, length.(axlist))
-            if length(i) == 1
-                return axlist[i[1]]
-            elseif length(i) > 1
-                @info "Found multiple matching axes for output dimension $il"
-            end
-        end
-        return RangeAxis("OutAxis$(il)", 1:s)
-    end
-    if !allunique(outaxes)
-        #TODO: fallback with axis renaming in this case
-        error("Could not determine unique output axes from output shape")
-    end
-    return (outaxes...,)
-end
+
 
 end #module

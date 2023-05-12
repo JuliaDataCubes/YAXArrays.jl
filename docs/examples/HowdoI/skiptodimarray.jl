@@ -7,8 +7,9 @@ lookup(arr, :x)
 
 
 # ## Get the axes of a YAXArray
-# To get the axes of a YAXArray use the `axes` instead of the `caxes` function
+# To get the axes of a YAXArray use the `dims` function instead of the `caxes` function
 
-axes(arr)
+dims(arr)
 
-# ## 
+# ## Copy an axes with the same name but different values
+# Use DD.rebuild(ax, values) instead of axcopy(ax, values)

@@ -15,10 +15,11 @@ using Distributed:
     AbstractWorkerPool, 
     default_worker_pool
 import ..Cubes: cubechunks, iscompressed, chunkoffset, YAXArray, caxes, YAXSlice
+import ..YAXArrays: findAxis, getOutAxis, getAxis
 #import ..Cubes.Axes:
 #    AxisDescriptor, axname, ByInference, axsym, getOutAxis, getAxis, findAxis, match_axis
 import ..Datasets: Dataset, createdataset
-import ...YAXArrays
+using ..YAXArrays: ByInference, YAXArrays
 import ...YAXArrays.workdir
 import YAXArrayBase
 import ProgressMeter: Progress, next!, progress_pmap, progress_map
@@ -167,7 +168,7 @@ function getworkarray(c::InOutCube, ntr)
                 i1 = findfirst(isequal(i), c.icolon)
                 i1 === nothing || return caxes(c.cube)[c.icolon[i1]]
                 i2 = findfirst(isequal(i), c.iwindow)
-                DD.rebuild(DD.key2dim(axsym(caxes(c.cube)[c.iwindow[i2]])),UnitRange(-c.window[i2][1], c.window[i2][2]))
+                DD.rebuild(DD.key2dim(DD.dim2key(caxes(c.cube)[c.iwindow[i2]])),UnitRange(-c.window[i2][1], c.window[i2][2]))
             end
             wrapWorkArray(c.desc.artype, w, axes)
         end
@@ -180,12 +181,12 @@ function interpretoutchunksizes(desc, axesSmall, incubes)
     elseif desc.chunksize == :input
         map(axesSmall) do ax
             for cc in incubes
-                i = findAxis(axname(ax), cc)
+                i = findAxis(string(DD.name(ax)), cc)
                 if i !== nothing
-                    return axname(ax) => eachchunk(cc.data).chunks[i]
+                    return string(DD.name(ax)) => eachchunk(cc.data).chunks[i]
                 end
             end
-            return axname(ax) => length(ax)
+            return string(DD.name(ax)) => length(ax)
         end
     else
         desc.chunksize
@@ -720,7 +721,7 @@ struct AllLoopAxes{S,V} <: AxValCreator
     loopsyms::S
     loopaxvals::V
 end
-AllLoopAxes(a) = AllLoopAxes(map(axsym, a), map(i -> i.values, a))
+AllLoopAxes(a) = AllLoopAxes(map(DD.dim2key, a), map(i -> i.values, a))
 getlaxvals(::NoLoopAxes, cI, offscur) = ()
 getlaxvals(a::AllLoopAxes, cI, offscur) = (
     NamedTuple{a.loopsyms}(
@@ -882,7 +883,7 @@ function analyzeAxes(dc::DATConfig{NIN,NOUT}) where {NIN,NOUT}
     for cube in dc.incubes
         for (iax,a) in enumerate(caxes(cube.cube))
             if !in(a, cube.axesSmall)
-                s = axsym(a)
+                s = DD.name(a)
                 is = findfirst(isequal(s), loopaxsyms) 
                 if is === nothing
                     push!(dc.LoopAxes, a)

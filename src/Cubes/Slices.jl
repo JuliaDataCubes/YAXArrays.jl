@@ -23,7 +23,7 @@ end
 dimvals(x::YAXSlice, i) = x.c.axes[x.otheraxes[1][i]].values
 
 function dimname(x::YAXSlice, i)
-    axsym(x.otheraxes[2][i])
+    DD.dim2key(x.otheraxes[2][i])
 end
 
 getattributes(x::YAXSlice) = x.c.properties

@@ -32,6 +32,7 @@ recalculate(x::Bool) = YAXDefaults.recal[] = x
 recalculate() = YAXDefaults.recal[]
 YAXdir() = YAXDefaults.workdir[]
 export YAXdir
+include("helpers.jl")
 
 include("YAXTools.jl")
 include("Cubes/Cubes.jl")
