@@ -31,7 +31,7 @@ incubes, outcubes = YAXArrays.DAT.getCubeCache(dc);
 
 
 #Test subsets and offset
-a2 = a1[Dim_3=200..1300.5]
+a2 = a1[Dim_3=201..1300.5]
 dc = mapslices(sum, a2, dims="Dim_1", debug = true)
 ch = YAXArrays.DAT.getloopchunks(dc)
 @test ch == (RegularChunks(4,0,2000), RegularChunks(700,200,1100))
@@ -59,7 +59,7 @@ incubes, outcubes = YAXArrays.DAT.getCubeCache(dc)
 @test 0.5 < (sum(sizeof,incubes) + sum(sizeof,outcubes))/YAXArrays.YAXDefaults.max_cache[] <= 1.0# Test that the allocated buffer is close to what the prescribes size
 
 #With offset
-a2 = a1[Dim_1=50..3050.5]
+a2 = a1[Dim_1=51..3050.5]
 dc = mapslices(sum, a2, dims="Dim_3", debug = true)
 ch = YAXArrays.DAT.getloopchunks(dc)
 @test ch == (RegularChunks(100,50,3000), RegularChunks(100,0,2000))
@@ -68,7 +68,7 @@ incubes, outcubes = YAXArrays.DAT.getCubeCache(dc)
 
 #With more working memory 
 YAXArrays.YAXDefaults.max_cache[] = 4.5e8
-a2 = a1[Dim_1=50..3050.5]
+a2 = a1[Dim_1=51..3050.5]
 dc = mapslices(sum, a1, dims="Dim_3", debug = true);
 ch = YAXArrays.DAT.getloopchunks(dc)
 @test ch == (RegularChunks(300,0,4000), RegularChunks(100,0,2000))
