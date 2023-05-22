@@ -13,3 +13,9 @@ dims(arr)
 
 # ## Copy an axes with the same name but different values
 # Use DD.rebuild(ax, values) instead of axcopy(ax, values)
+
+
+# ## Subsetting is including not excluding
+# Beware that the subsets in DimensionalData include the bounds.
+# Thereby the size of the subset can differ by one on every bound.
+# a[X=1..4]
