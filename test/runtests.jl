@@ -1,8 +1,10 @@
 using YAXArrays
 using Test
 using TestItemRunner
+using Dates
+using YAXArrayBase
 
-#@run_package_tests
+@run_package_tests
 
 include("tools.jl")
 #include("Cubes/axes.jl")
