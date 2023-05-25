@@ -1,5 +1,6 @@
 using DataStructures: OrderedDict
 using DimensionalData: DimensionalData as DD
+using Dates
 
 @testset "Datasets" begin
     data = [rand(4, 5, 12), rand(4, 5, 12), rand(4, 5)]
@@ -163,18 +164,18 @@ using DimensionalData: DimensionalData as DD
             ds = open_dataset("test.mock")
             @test size(ds.Var1) == (10, 5, 2)
             @test size(ds.Var2) == (10, 5)
-            @test all(in(keys(ds.axes)), (:Time, :d2, :d3))
+            @test all(in(keys(ds.axes)), (:time, :d2, :d3))
             ar = Cube(ds)
             @test ar isa YAXArray
             @test size(ar) == (10, 5, 2, 2)
-            @test DD.name.(ar.axes) == (:Time, :d2, :d3, :Variable)
+            @test DD.name.(ar.axes) == (:time, :d2, :d3, :Variable)
             @test DD.lookup(ar.axes[4]) == ["Var1", "Var3"]
         end
         @testset "Dataset creation" begin
             al = (
-                Dim{:Time}(Date(2001):Month(1):Date(2001, 12, 31)),
-                Dim{:Variable}(["A", "B"]),
-                Dim{:Xvals}(1:10),
+                DD.Dim{:Time}(Date(2001):Month(1):Date(2001, 12, 31)),
+                DD.Dim{:Variable}(["A", "B"]),
+                DD.Dim{:Xvals}(1:10),
             )
             # Basic
             newds, newds2 = YAXArrays.Datasets.createdataset(MockDataset, al)
