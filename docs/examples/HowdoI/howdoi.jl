@@ -57,8 +57,9 @@ c = YAXArray(axes, reshape(1:3600, (10,10,36)))
 ## subset cube by years
 ctime = c[Time=2021:2022]
 
-## subset cube by a specific date
-ctime2 = c[Time=Date(2021-01-05)..Date()] # :Date(2021-01-12)
+## subset cube by a specific date and date range
+ctime2 = c[Time=Date(2021-01-05)]
+ctime3 = c[Time=Date(2021-01-05)..Date(2021-01-12)] 
 
 ## subset cube by longitude and latitude
-clonlat = c[Lon=1..5, Lat=(5,10)] # check even numbers range, it is ommiting them
+clonlat = c[Lon=1..5, Lat=5..10] # check even numbers range, it is ommiting them
