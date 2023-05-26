@@ -44,6 +44,7 @@ dsfinal
 # Let's start by creating a dummy cube
 
 ## define the time span of the cube
+using Dates
 t =  Date("2020-01-01"):Month(1):Date("2022-12-31")
 
 ## create cube axes
@@ -63,3 +64,12 @@ ctime3 = c[Time=Date(2021-01-05)..Date(2021-01-12)]
 
 ## subset cube by longitude and latitude
 clonlat = c[Lon=1..5, Lat=5..10] # check even numbers range, it is ommiting them
+
+# Our next step is some map algebra compuations. This can be done effectively using the 'map' function. For example:
+
+## Cubes with only spatio-temporal dimensions
+map((x,y)->x*y, ds1, ds2)
+
+## Cubes with more than 3 dimensions
+map((x,y)->x*y, dsfinal[Variables="Var1"], dsfinal[Variables="Var2"])
+
