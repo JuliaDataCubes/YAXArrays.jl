@@ -182,7 +182,17 @@ DD.refdims(::YAXArray) = ()
 DD.metadata(x::YAXArray) = getfield(x,:properties)
 
 function DD.rebuild(A::YAXArray, data::AbstractArray, dims::Tuple, refdims::Tuple, name, metadata)
-    YAXArray(dims, data, metadata; cleaner=A.cleaner)
+    #chunks = map(dims, eachchunk(data).chunks) do d, chunk
+    #    @show d
+    #    if d in A.axes
+    #        @show d
+    #        dind = findAxis(d, A)
+    #        A.chunks.chunks[dind]
+    #    else
+    #       chunk
+    #    end
+    #end
+    YAXArray(dims, data, metadata; cleaner=A.cleaner)#, chunks=GridChunks(chunks))
 end
 
 function caxes(x)
