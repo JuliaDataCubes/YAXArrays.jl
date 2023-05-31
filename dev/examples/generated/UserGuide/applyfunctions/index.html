@@ -19,7 +19,7 @@
         <link rel="next" href="../create_from_func/">
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.14">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.15">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.85bb2934.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.26e3688c.min.css">
       
         
-        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.a6bdf11c.min.css">
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.ecc896b0.min.css">
       
       
 
@@ -368,6 +368,27 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#compute-the-mean-seasonal-cycle-for-one-sigle-pixel" class="md-nav__link">
+    Compute the Mean Seasonal Cycle for one sigle pixel
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#define-the-cube" class="md-nav__link">
+    Define the cube
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plot-results-mean-seasonal-cycle" class="md-nav__link">
+    Plot results: mean seasonal cycle
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
@@ -489,6 +510,21 @@
   
   
     <li class="md-nav__item">
+      <a href="../examples_from_esdl/" class="md-nav__link">
+        Examples from ESDL
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../contribute/contribute/" class="md-nav__link">
         Contribute to docs
       </a>
@@ -552,6 +588,27 @@
         <li class="md-nav__item">
   <a href="#how-to-combine-multiple-cubes-in-one-computation" class="md-nav__link">
     How to combine multiple cubes in one computation
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#compute-the-mean-seasonal-cycle-for-one-sigle-pixel" class="md-nav__link">
+    Compute the Mean Seasonal Cycle for one sigle pixel
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#define-the-cube" class="md-nav__link">
+    Define the cube
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plot-results-mean-seasonal-cycle" class="md-nav__link">
+    Plot results: mean seasonal cycle
   </a>
   
 </li>
@@ -677,6 +734,124 @@ Total size: 800.0 bytes
 <p><a id="How-to-combine-multiple-cubes-in-one-computation"></a></p>
 <p><a id="How-to-combine-multiple-cubes-in-one-computation-1"></a></p>
 <h2 id="how-to-combine-multiple-cubes-in-one-computation">How to combine multiple cubes in one computation<a class="headerlink" href="#how-to-combine-multiple-cubes-in-one-computation" title="Permanent link">¤</a></h2>
+<p><a id="Compute-the-Mean-Seasonal-Cycle-for-one-sigle-pixel"></a></p>
+<p><a id="Compute-the-Mean-Seasonal-Cycle-for-one-sigle-pixel-1"></a></p>
+<h2 id="compute-the-mean-seasonal-cycle-for-one-sigle-pixel">Compute the Mean Seasonal Cycle for one sigle pixel<a class="headerlink" href="#compute-the-mean-seasonal-cycle-for-one-sigle-pixel" title="Permanent link">¤</a></h2>
+<div class="highlight"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">CairoMakie</span>
+<span class="n">CairoMakie</span><span class="o">.</span><span class="n">activate!</span><span class="p">()</span>
+<span class="k">using</span><span class="w"> </span><span class="n">Dates</span>
+<span class="k">using</span><span class="w"> </span><span class="n">Statistics</span>
+</code></pre></div>
+<p>We define the data span. For simplicity, three non-leap years were selected.</p>
+<div class="highlight"><pre><span></span><code><span class="n">t</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="n">Date</span><span class="p">(</span><span class="s">"2021-01-01"</span><span class="p">)</span><span class="o">:</span><span class="n">Day</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">:</span><span class="n">Date</span><span class="p">(</span><span class="s">"2023-12-31"</span><span class="p">)</span>
+<span class="n">NpY</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">3</span>
+<span class="c"># create some seasonal dummy data</span>
+<span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">repeat</span><span class="p">(</span><span class="n">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="nb">π</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="o">=</span><span class="mi">365</span><span class="p">),</span><span class="w"> </span><span class="n">NpY</span><span class="p">)</span>
+<span class="n">var</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nd">@.</span><span class="w"> </span><span class="n">sin</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mf">0.1</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">randn</span><span class="p">()</span>
+
+<span class="n">lines</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="n">length</span><span class="p">(</span><span class="n">t</span><span class="p">),</span><span class="w"> </span><span class="n">var</span><span class="p">;</span><span class="w"> </span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">:purple</span><span class="p">,</span><span class="w"> </span><span class="n">linewidth</span><span class="o">=</span><span class="mf">1.25</span><span class="p">,</span>
+<span class="w">    </span><span class="n">axis</span><span class="o">=</span><span class="p">(;</span><span class="w"> </span><span class="n">xlabel</span><span class="o">=</span><span class="s">"Time"</span><span class="p">,</span><span class="w"> </span><span class="n">ylabel</span><span class="o">=</span><span class="s">"Variable"</span><span class="p">),</span>
+<span class="w">    </span><span class="n">figure</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(;</span><span class="w"> </span><span class="n">resolution</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">600</span><span class="p">,</span><span class="mi">400</span><span class="p">))</span>
+<span class="w">    </span><span class="p">)</span>
+</code></pre></div>
+<p><img alt="" src="../btpdquy.png"></p>
+<p>Currently makie doesn't support time axis natively, but the following function can do the work for now.</p>
+<div class="highlight"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">time_ticks</span><span class="p">(</span><span class="n">dates</span><span class="p">;</span><span class="w"> </span><span class="n">frac</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+<span class="w">    </span><span class="n">tempo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">string</span><span class="o">.</span><span class="p">(</span><span class="n">dates</span><span class="p">)</span>
+<span class="w">    </span><span class="n">lentime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">length</span><span class="p">(</span><span class="n">tempo</span><span class="p">)</span>
+<span class="w">    </span><span class="n">slice_dates</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">lentime</span><span class="p">,</span><span class="w"> </span><span class="n">step</span><span class="o">=</span><span class="n">lentime</span><span class="w"> </span><span class="o">÷</span><span class="w"> </span><span class="n">frac</span><span class="p">)</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">slice_dates</span><span class="p">,</span><span class="w"> </span><span class="n">tempo</span><span class="p">[</span><span class="n">slice_dates</span><span class="p">]</span>
+<span class="k">end</span>
+
+<span class="n">xpos</span><span class="p">,</span><span class="w"> </span><span class="n">ticks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">time_ticks</span><span class="p">(</span><span class="n">t</span><span class="p">;</span><span class="w"> </span><span class="n">frac</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>(1:136:1089, ["2021-01-01", "2021-05-17", "2021-09-30", "2022-02-13", "2022-06-29", "2022-11-12", "2023-03-28", "2023-08-11", "2023-12-25"])
+</code></pre></div>
+<p>In order to apply the previous output, we split the plotting function into his 3 components, <code>figure</code>, <code>axis</code> and <code>plotted object</code>, namely</p>
+<div class="highlight"><pre><span></span><code><span class="n">fig</span><span class="p">,</span><span class="w"> </span><span class="n">ax</span><span class="p">,</span><span class="w"> </span><span class="n">obj</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lines</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="n">length</span><span class="p">(</span><span class="n">t</span><span class="p">),</span><span class="w"> </span><span class="n">var</span><span class="p">;</span><span class="w"> </span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">:purple</span><span class="p">,</span><span class="w"> </span><span class="n">linewidth</span><span class="o">=</span><span class="mf">1.25</span><span class="p">,</span>
+<span class="w">    </span><span class="n">axis</span><span class="o">=</span><span class="p">(;</span><span class="w"> </span><span class="n">xlabel</span><span class="o">=</span><span class="s">"Time"</span><span class="p">,</span><span class="w"> </span><span class="n">ylabel</span><span class="o">=</span><span class="s">"Variable"</span><span class="p">),</span>
+<span class="w">    </span><span class="n">figure</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(;</span><span class="w"> </span><span class="n">resolution</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">600</span><span class="p">,</span><span class="mi">400</span><span class="p">))</span>
+<span class="w">    </span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">xticks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">xpos</span><span class="p">,</span><span class="w"> </span><span class="n">ticks</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">xticklabelrotation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">π</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">4</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">xticklabelalign</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="ss">:right</span><span class="p">,</span><span class="w"> </span><span class="ss">:center</span><span class="p">)</span>
+<span class="n">fig</span>
+</code></pre></div>
+<p><img alt="" src="../dolsvfo.png"></p>
+<p><a id="Define-the-cube"></a></p>
+<p><a id="Define-the-cube-1"></a></p>
+<h2 id="define-the-cube">Define the cube<a class="headerlink" href="#define-the-cube" title="Permanent link">¤</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">axes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="n">RangeAxis</span><span class="p">(</span><span class="s">"Time"</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="p">)]</span>
+<span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span><span class="w"> </span><span class="n">var</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
+Time                Axis with 1095 Elements from 2021-01-01 to 2023-12-31
+Total size: 8.55 KB
+</code></pre></div>
+<p>Let's calculate the mean seasonal cycle of our dummy variable 'var'</p>
+<div class="highlight"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">mean_seasonal_cycle</span><span class="p">(</span><span class="n">c</span><span class="p">;</span><span class="w"> </span><span class="n">ndays</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">365</span><span class="p">)</span>
+<span class="w">    </span><span class="c"># filterig by month-day</span>
+<span class="w">    </span><span class="n">monthday</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">map</span><span class="p">(</span><span class="n">x</span><span class="o">-&gt;</span><span class="n">Dates</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="s">"u-d"</span><span class="p">),</span><span class="w"> </span><span class="n">collect</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">Time</span><span class="p">))</span>
+<span class="w">    </span><span class="n">datesid</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">unique</span><span class="p">(</span><span class="n">monthday</span><span class="p">)</span>
+<span class="w">    </span><span class="c"># number of years</span>
+<span class="w">    </span><span class="n">NpY</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Int</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">monthday</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span><span class="o">/</span><span class="n">ndays</span><span class="p">)</span>
+<span class="w">    </span><span class="n">idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Int</span><span class="o">.</span><span class="p">(</span><span class="n">zeros</span><span class="p">(</span><span class="n">ndays</span><span class="p">,</span><span class="w"> </span><span class="n">NpY</span><span class="p">))</span>
+<span class="w">    </span><span class="c"># get the day-month indices for data subsetting</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="n">ndays</span>
+<span class="w">        </span><span class="n">idx</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="o">:</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Int</span><span class="o">.</span><span class="p">(</span><span class="n">findall</span><span class="p">(</span><span class="n">x</span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">datesid</span><span class="p">[</span><span class="n">i</span><span class="p">],</span><span class="w"> </span><span class="n">monthday</span><span class="p">))</span>
+<span class="w">    </span><span class="k">end</span>
+<span class="w">    </span><span class="c"># compute the mean seasonal cycle</span>
+<span class="w">    </span><span class="n">mscarray</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">map</span><span class="p">(</span><span class="n">x</span><span class="o">-&gt;</span><span class="n">var</span><span class="p">[</span><span class="n">x</span><span class="p">],</span><span class="w"> </span><span class="n">idx</span><span class="p">)</span>
+<span class="w">    </span><span class="n">msc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mapslices</span><span class="p">(</span><span class="n">mean</span><span class="p">,</span><span class="w"> </span><span class="n">mscarray</span><span class="p">,</span><span class="w"> </span><span class="n">dims</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">msc</span>
+<span class="k">end</span>
+
+<span class="n">msc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mean_seasonal_cycle</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>365×1 Matrix{Float64}:
+ -0.0011438792888666279
+ -0.03114707276009204
+  0.05209077629374537
+  0.1400399932754364
+  0.04391682051620751
+  0.1029321029080703
+  0.058422374518056534
+  0.1595272587650876
+  0.12133781660310798
+  0.19993526067681178
+  ⋮
+ -0.08544258801654174
+ -0.2358313197710354
+ -0.12337349341405839
+ -0.12079776525621433
+ -0.06842597402251772
+ -0.12212693953402437
+ -0.07300600114738015
+  0.06287113801749868
+ -0.005557260002007799
+</code></pre></div>
+<p><a id="Plot-results:-mean-seasonal-cycle"></a></p>
+<p><a id="Plot-results:-mean-seasonal-cycle-1"></a></p>
+<h2 id="plot-results-mean-seasonal-cycle">Plot results: mean seasonal cycle<a class="headerlink" href="#plot-results-mean-seasonal-cycle" title="Permanent link">¤</a></h2>
+<div class="highlight"><pre><span></span><code><span class="n">xpos</span><span class="p">,</span><span class="w"> </span><span class="n">ticks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">time_ticks</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">365</span><span class="p">];</span><span class="w"> </span><span class="n">frac</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+
+<span class="n">fig</span><span class="p">,</span><span class="w"> </span><span class="n">ax</span><span class="p">,</span><span class="w"> </span><span class="n">obj</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lines</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="mi">365</span><span class="p">,</span><span class="w"> </span><span class="n">var</span><span class="p">[</span><span class="mi">1</span><span class="o">:</span><span class="mi">365</span><span class="p">];</span><span class="w"> </span><span class="n">label</span><span class="o">=</span><span class="s">"2021"</span><span class="p">,</span><span class="w"> </span><span class="n">color</span><span class="o">=</span><span class="ss">:black</span><span class="p">,</span>
+<span class="w">    </span><span class="n">linewidth</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span><span class="w"> </span><span class="n">linestyle</span><span class="o">=</span><span class="ss">:dot</span><span class="p">,</span>
+<span class="w">    </span><span class="n">axis</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(;</span><span class="w">  </span><span class="n">xlabel</span><span class="o">=</span><span class="s">"Time"</span><span class="p">,</span><span class="w"> </span><span class="n">ylabel</span><span class="o">=</span><span class="s">"Variable"</span><span class="p">),</span>
+<span class="w">    </span><span class="n">figure</span><span class="o">=</span><span class="p">(;</span><span class="w"> </span><span class="n">resolution</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">600</span><span class="p">,</span><span class="mi">400</span><span class="p">))</span>
+<span class="w">    </span><span class="p">)</span>
+<span class="n">lines!</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="mi">365</span><span class="p">,</span><span class="w"> </span><span class="n">var</span><span class="p">[</span><span class="mi">366</span><span class="o">:</span><span class="mi">730</span><span class="p">],</span><span class="w"> </span><span class="n">label</span><span class="o">=</span><span class="s">"2022"</span><span class="p">,</span><span class="w"> </span><span class="n">color</span><span class="o">=</span><span class="ss">:brown</span><span class="p">,</span>
+<span class="w">    </span><span class="n">linewidth</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span><span class="w"> </span><span class="n">linestyle</span><span class="o">=</span><span class="ss">:dash</span>
+<span class="w">    </span><span class="p">)</span>
+<span class="n">lines!</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="mi">365</span><span class="p">,</span><span class="w"> </span><span class="n">msc</span><span class="p">[</span><span class="o">:</span><span class="p">,</span><span class="mi">1</span><span class="p">];</span><span class="w"> </span><span class="n">label</span><span class="o">=</span><span class="s">"MSC"</span><span class="p">,</span><span class="w"> </span><span class="n">color</span><span class="o">=</span><span class="ss">:dodgerblue</span><span class="p">,</span><span class="w"> </span><span class="n">lw</span><span class="o">=</span><span class="mf">2.5</span><span class="p">)</span>
+<span class="n">axislegend</span><span class="p">()</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">xticks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">xpos</span><span class="p">,</span><span class="w"> </span><span class="n">ticks</span><span class="p">)</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">xticklabelrotation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">π</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">4</span>
+<span class="n">ax</span><span class="o">.</span><span class="n">xticklabelalign</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="ss">:right</span><span class="p">,</span><span class="w"> </span><span class="ss">:center</span><span class="p">)</span>
+<span class="n">fig</span>
+<span class="n">current_figure</span><span class="p">()</span>
+</code></pre></div>
+<p><img alt="" src="../ckkjrqw.png"></p>
 <hr>
 <p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></div>
 

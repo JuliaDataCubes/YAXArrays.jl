@@ -16,10 +16,10 @@
         <link rel="prev" href="../../../../tutorials/tutorial/">
       
       
-        <link rel="next" href="../../contribute/contribute/">
+        <link rel="next" href="../../UserGuide/examples_from_esdl/">
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.14">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.15">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.85bb2934.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.26e3688c.min.css">
       
         
-        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.a6bdf11c.min.css">
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.ecc896b0.min.css">
       
       
 
@@ -473,10 +473,32 @@
   
 </li>
       
+        <li class="md-nav__item">
+  <a href="#applying-map-algebra" class="md-nav__link">
+    Applying map algebra
+  </a>
+  
+</li>
+      
     </ul>
   
 </nav>
       
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../UserGuide/examples_from_esdl/" class="md-nav__link">
+        Examples from ESDL
+      </a>
     </li>
   
 
@@ -552,6 +574,13 @@
         <li class="md-nav__item">
   <a href="#subsetting-a-cube" class="md-nav__link">
     Subsetting a Cube
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#applying-map-algebra" class="md-nav__link">
+    Applying map algebra
   </a>
   
 </li>
@@ -667,11 +696,14 @@ Lat                 Axis with 5 Elements from 5 to 9
 Time                Axis with 36 Elements from 2020-01-01 to 2022-12-01
 Total size: 7.03 KB
 </code></pre></div>
-<p>Our next step is some map algebra compuations. This can be done effectively using the 'map' function. For example:</p>
-<div class="highlight"><pre><span></span><code><span class="c"># Cubes with only spatio-temporal dimensions</span>
+<p><a id="Applying-map-algebra"></a></p>
+<p><a id="Applying-map-algebra-1"></a></p>
+<h2 id="applying-map-algebra">Applying map algebra<a class="headerlink" href="#applying-map-algebra" title="Permanent link">¤</a></h2>
+<p>Our next step is map algebra computations. This can be done effectively using the 'map' function. For example:</p>
+<div class="highlight"><pre><span></span><code><span class="c"># cubes with only spatio-temporal dimensions</span>
 <span class="n">map</span><span class="p">((</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">x</span><span class="o">*</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">ds1</span><span class="p">,</span><span class="w"> </span><span class="n">ds2</span><span class="p">)</span>
 
-<span class="c"># Cubes with more than 3 dimensions</span>
+<span class="c"># cubes with more than 3 dimensions</span>
 <span class="n">map</span><span class="p">((</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">x</span><span class="o">*</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">dsfinal</span><span class="p">[</span><span class="n">Variables</span><span class="o">=</span><span class="s">"Var1"</span><span class="p">],</span><span class="w"> </span><span class="n">dsfinal</span><span class="p">[</span><span class="n">Variables</span><span class="o">=</span><span class="s">"Var2"</span><span class="p">])</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
@@ -724,13 +756,13 @@ Total size: 23.44 KB
         
         
           
-          <a href="../../contribute/contribute/" class="md-footer__link md-footer__link--next" aria-label="Next: Contribute to docs" rel="next">
+          <a href="../../UserGuide/examples_from_esdl/" class="md-footer__link md-footer__link--next" aria-label="Next: Examples from ESDL" rel="next">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Contribute to docs
+                Examples from ESDL
               </div>
             </div>
             <div class="md-footer__button md-icon">

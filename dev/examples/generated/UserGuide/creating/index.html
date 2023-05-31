@@ -19,7 +19,7 @@
         <link rel="next" href="../saving/">
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.14">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.15">
     
     
       
@@ -27,10 +27,10 @@
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.85bb2934.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.26e3688c.min.css">
       
         
-        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.a6bdf11c.min.css">
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.ecc896b0.min.css">
       
       
 
@@ -560,6 +560,21 @@
   
   
     <li class="md-nav__item">
+      <a href="../examples_from_esdl/" class="md-nav__link">
+        Examples from ESDL
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../contribute/contribute/" class="md-nav__link">
         Contribute to docs
       </a>
@@ -833,15 +848,15 @@ Total size: 7.03 KB
   Dim{:lat} Sampled{Float64} 1.0:0.2857142857142857:5.0 ForwardOrdered Regular Points,
   Dim{:Variable} Categorical{String} String["var1", "var2"] ForwardOrdered
 [:, :, 1, 1]
-                      1.0        2.0       …  8.0        9.0        10.0
-  2022-01-01  0.126531   0.425287     0.533267   0.2052      0.997003
-  2022-01-02  0.913503   0.957466     0.915586   0.939096    0.534388
-  2022-01-03  0.234313   0.325608     0.236123   0.487018    0.995128
- ⋮                                         ⋱                         ⋮
-  2022-01-27  0.0965654  0.650339  …  0.0947386  0.341967    0.128127
-  2022-01-28  0.825162   0.602981     0.0297032  0.640865    0.557692
-  2022-01-29  0.211867   0.482559     0.89329    0.208926    0.522737
-  2022-01-30  0.894125   0.190944     0.696728   0.0974249   0.7728
+                      1.0       2.0       …  8.0        9.0        10.0
+  2022-01-01  0.767421  0.716013     0.760348   0.0174253   0.118493
+  2022-01-02  0.890629  0.693134     0.0408148  0.324021    0.0395841
+  2022-01-03  0.44093   0.191218     0.888519   0.375095    0.719088
+ ⋮                                        ⋱                         ⋮
+  2022-01-27  0.938985  0.994861  …  0.0445738  0.146054    0.973099
+  2022-01-28  0.436516  0.448842     0.432211   0.917615    0.828231
+  2022-01-29  0.887628  0.432261     0.439289   0.990923    0.412803
+  2022-01-30  0.411374  0.234962     0.465272   0.526055    0.73715
 [and 29 more slices...]
 </code></pre></div>
 <p>Now, the syntax from DimensionalData.jl just works</p>
@@ -859,11 +874,11 @@ and reference dimensions:
   Dim{:Variable} Categorical{String} String["var2"] ForwardOrdered
 [:, :, 1]
                       1.0       2.0
-  2022-01-01  0.503596  0.416917
-  2022-01-02  0.790995  0.340981
+  2022-01-01  0.405197  0.969172
+  2022-01-02  0.999537  0.0958635
  ⋮                              
-  2022-01-09  0.84427   0.847959
-  2022-01-10  0.742133  0.755917
+  2022-01-09  0.689213  0.00434385
+  2022-01-10  0.809335  0.813442
 [and 14 more slices...]
 </code></pre></div>
 <p>And going back to our YAXArray view is done with</p>
