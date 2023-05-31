@@ -111,6 +111,5 @@ end
    savecube(setchunks(a1, (20,20,1)), p1)
    a2 = Cube(p2)
    a1 = Cube(p1)
-   mapped = map((x,y) -> x * y, a1, setchunks(a2, YAXArrays.Cubes.cubechunks(a1)))
-   @test mapped[X=1] isa YAXArray
+   @test_throws ArgumentError mapped = map((x,y) -> x * y, a1, setchunks(a2, YAXArrays.Cubes.cubechunks(a1)))
 end

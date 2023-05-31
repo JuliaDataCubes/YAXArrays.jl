@@ -11,9 +11,15 @@ function Base.map(op, incubes::YAXArray...)
     all(i-> eachchunk(i) == chunks, incubes) || error("All chunk sizes must match, consider resetting the chunks to a common size using `setchunks`")
     all(i -> DD.dims(i) == axlist, incubes) || error("All axes must match")
     props = merge(getattributes.(incubes)...)
+    broadcastdata = broadcast(op, map(c -> getdata(c), incubes)...)
+    try 
+        eachchunk(broadcastdata)
+    catch e 
+        throw(ArgumentError("Unable to construct broadcasted diskarray. Use mapcube instead."))
+    end
     YAXArray(
         axlist,
-        broadcast(op, map(c -> getdata(c), incubes)...),
+        broadcastdata,
         props,
         chunks,
         mapreduce(i -> i.cleaner, append!, incubes),
