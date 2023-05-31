@@ -116,5 +116,6 @@ nav:
   #- "Tutorials":
   - "Tutorial": "tutorials/tutorial.md"
   - "How do I ...": "examples/generated/HowdoI/howdoi.md"
+  - "Examples from ESDL": "examples/generated/UserGuide/examples_from_esdl.md"
   - "Contribute to docs": "examples/generated/contribute/contribute.md"
   - "API" : "api.md"

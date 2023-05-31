@@ -1,0 +1,1 @@
+# ## Case study 1: Seasonal dynamics on the land surface

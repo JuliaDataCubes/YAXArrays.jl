@@ -65,11 +65,13 @@ ctime3 = c[Time=Date(2021-01-05)..Date(2021-01-12)]
 ## subset cube by longitude and latitude
 clonlat = c[Lon=1..5, Lat=5..10] # check even numbers range, it is ommiting them
 
-# Our next step is some map algebra compuations. This can be done effectively using the 'map' function. For example:
 
-## Cubes with only spatio-temporal dimensions
+# ##  Applying map algebra
+# Our next step is map algebra computations. This can be done effectively using the 'map' function. For example:
+
+## cubes with only spatio-temporal dimensions
 map((x,y)->x*y, ds1, ds2)
 
-## Cubes with more than 3 dimensions
+## cubes with more than 3 dimensions
 map((x,y)->x*y, dsfinal[Variables="Var1"], dsfinal[Variables="Var2"])
 
