@@ -49,3 +49,17 @@
     end
     @test any(ismissing.(nofilter.data)) == false
 end
+
+@testset "Threaded input caches" begin
+    a = rand(1000,5)
+    b = YAXArray(a)
+    mapslices(b,dims="Dim_2") do x
+        xc = copy(x)
+        for i in 1:100
+            xc[1] = xc[1]
+            yield()
+            x == xc || error("Multithreaded buffer is not correct")
+        end
+        1.0
+    end
+end
