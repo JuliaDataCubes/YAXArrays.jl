@@ -1,4 +1,4 @@
-using Optim: optimize
+using Optim: optimize, Optim
 using ProgressMeter: @showprogress
 
 
@@ -62,14 +62,25 @@ function get_copy_buffer_size(incube, outcube;writefac=4.0, maxbuf = YAXDefaults
     totsize = prod(insize)
     incs = DiskArrays.approx_chunksize(eachchunk(incube))
     outcs = DiskArrays.approx_chunksize(eachchunk(outcube))
+    if incs == outcs
+        return incs
+    end
     #Catch case where buffer is larger than cube
     if maxbuf > prod(insize)
         return insize
     end
-    init = [(Float64(maxbuf)*insize[i]^(nd)/totsize)^(1/nd) for i in 1:(nd-1)]
-    @debug "Init: ", init
-    r = optimize(sz->optifunc(sz,maxbuf,incs,outcs,insize, outsize,writefac),init, iterations=100)
-    @debug "Optimization result: $(r.minimizer)"
+    r = nothing
+    
+    @debug "Incs: ", incs, " outcs ", outcs
+    for method in (Optim.NelderMead(),Optim.LBFGS(),Optim.GradientDescent(), Optim.Newton(),Optim.SimulatedAnnealing())
+        init = [insize[i]*(Float64(maxbuf)/totsize)^(1/nd) for i in 1:(nd-1)]
+        @debug "Init: ", init
+        @debug "Method: ", method
+        r = optimize(sz->optifunc(sz,maxbuf,incs,outcs,insize, outsize,writefac),init,method)
+        @debug "Optimization result: $(r.minimizer)"
+        Optim.converged(r) && break
+    end
+    Optim.converged(r) || error("Could not determine copy bufer size")
     bufnow = (r.minimizer...,maxbuf/prod(r.minimizer))
 
     bufcorrected = if align_output
@@ -95,8 +106,8 @@ function copy_diskarray(incube,outcube;writefac=4.0, maxbuf = YAXDefaults.max_ca
     size(incube) == size(outcube) || throw(ArgumentError("Input and output cubes must have the same size"))
     bufcorrected = get_copy_buffer_size(incube, outcube;writefac,maxbuf,align_output)
     @debug "Copying with buffer size $bufcorrected"
-    @debug "Input chunk size: $(eachchunk(incube).chunks)"
-    @debug "Output chunk size: $(eachchunk(outcube).chunks)"
+    #@debug "Input chunk size: $(eachchunk(incube).chunks)"
+    #@debug "Output chunk size: $(eachchunk(outcube).chunks)"
     copybuf = DiskArrays.GridChunks(size(outcube),bufcorrected)
     copydata(outcube,incube,copybuf)
 end
