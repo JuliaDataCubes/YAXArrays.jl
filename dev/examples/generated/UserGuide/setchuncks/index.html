@@ -695,11 +695,15 @@
 <span class="n">savedataset</span><span class="p">(</span><span class="n">dschunked</span><span class="p">,</span><span class="w"> </span><span class="n">path</span><span class="o">=</span><span class="n">f</span><span class="p">,</span><span class="n">driver</span><span class="o">=</span><span class="ss">:zarr</span><span class="p">)</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>YAXArray Dataset
-Dimensions: 
-   Dim_2               Axis with 20 Elements from 1 to 20
+Shared Axes: 
    Dim_1               Axis with 10 Elements from 1 to 10
-   Dim_3               Axis with 5 Elements from 1 to 5
-Variables: x y z 
+Variables: 
+x
+ └── Dim_2               Axis with 20 Elements from 1 to 20
+y
+z
+ └── Dim_2               Axis with 20 Elements from 1 to 20
+ └── Dim_3               Axis with 5 Elements from 1 to 5
 </code></pre></div>
 <p><a id="Set-chunking-by-Variable"></a></p>
 <p><a id="Set-chunking-by-Variable-1"></a></p>
@@ -728,11 +732,15 @@ Variables: x y z
 <span class="n">savedataset</span><span class="p">(</span><span class="n">dschunked</span><span class="p">,</span><span class="n">path</span><span class="o">=</span><span class="n">f</span><span class="p">,</span><span class="n">driver</span><span class="o">=</span><span class="ss">:zarr</span><span class="p">)</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>YAXArray Dataset
-Dimensions: 
-   Dim_2               Axis with 20 Elements from 1 to 20
+Shared Axes: 
    Dim_1               Axis with 10 Elements from 1 to 10
-   Dim_3               Axis with 5 Elements from 1 to 5
-Variables: x y z 
+Variables: 
+x
+ └── Dim_2               Axis with 20 Elements from 1 to 20
+y
+z
+ └── Dim_2               Axis with 20 Elements from 1 to 20
+ └── Dim_3               Axis with 5 Elements from 1 to 5
 </code></pre></div>
 <p><a id="Set-chunking-for-all-variables"></a></p>
 <p><a id="Set-chunking-for-all-variables-1"></a></p>
@@ -763,10 +771,13 @@ Variables: x y z
 <span class="n">savedataset</span><span class="p">(</span><span class="n">dschunked</span><span class="p">,</span><span class="n">path</span><span class="o">=</span><span class="n">f</span><span class="p">,</span><span class="n">driver</span><span class="o">=</span><span class="ss">:zarr</span><span class="p">)</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>YAXArray Dataset
-Dimensions: 
-   Dim_2               Axis with 20 Elements from 1 to 20
+Shared Axes: 
    Dim_1               Axis with 10 Elements from 1 to 10
-Variables: x y z 
+   Dim_2               Axis with 20 Elements from 1 to 20
+Variables: 
+x
+y
+z
 </code></pre></div>
 <hr>
 <p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></div>

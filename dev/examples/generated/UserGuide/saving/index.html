@@ -676,10 +676,12 @@ Total size: 1.56 KB
 <span class="n">savedataset</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span><span class="n">path</span><span class="o">=</span><span class="n">f</span><span class="p">,</span><span class="n">driver</span><span class="o">=</span><span class="ss">:zarr</span><span class="p">)</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>YAXArray Dataset
-Dimensions: 
-   Dim_2               Axis with 20 Elements from 1 to 20
+Shared Axes: 
    Dim_1               Axis with 10 Elements from 1 to 10
-Variables: x y 
+Variables: 
+x
+ └── Dim_2               Axis with 20 Elements from 1 to 20
+y
 </code></pre></div>
 <p><a id="Overwriting-a-Dataset"></a></p>
 <p><a id="Overwriting-a-Dataset-1"></a></p>
@@ -688,10 +690,12 @@ Variables: x y
 <div class="highlight"><pre><span></span><code><span class="n">savedataset</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span><span class="n">path</span><span class="o">=</span><span class="n">f</span><span class="p">,</span><span class="n">driver</span><span class="o">=</span><span class="ss">:zarr</span><span class="p">,</span><span class="w"> </span><span class="n">overwrite</span><span class="o">=</span><span class="nb">true</span><span class="p">)</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>YAXArray Dataset
-Dimensions: 
-   Dim_2               Axis with 20 Elements from 1 to 20
+Shared Axes: 
    Dim_1               Axis with 10 Elements from 1 to 10
-Variables: x y 
+Variables: 
+x
+ └── Dim_2               Axis with 20 Elements from 1 to 20
+y
 </code></pre></div>
 <p>Look at the docs for more information</p>
 <p>savedataset(ds::Dataset; path = "", persist = nothing, overwrite = false, append = false, skeleton=false, backend = :all,     driver = backend, max_cache = 5e8, writefac=4.0)</p>
@@ -709,11 +713,15 @@ Variables: x y
 <span class="n">open_dataset</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="n">driver</span><span class="o">=</span><span class="ss">:zarr</span><span class="p">)</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>YAXArray Dataset
-Dimensions: 
-   Dim_2               Axis with 20 Elements from 1 to 20
+Shared Axes: 
    Dim_1               Axis with 10 Elements from 1 to 10
-   Dim_3               Axis with 5 Elements from 1 to 5
-Variables: x z y 
+Variables: 
+x
+ └── Dim_2               Axis with 20 Elements from 1 to 20
+z
+ └── Dim_2               Axis with 20 Elements from 1 to 20
+ └── Dim_3               Axis with 5 Elements from 1 to 5
+y
 </code></pre></div>
 <p><a id="Datacube-Skeleton-without-the-actual-data"></a></p>
 <p><a id="Datacube-Skeleton-without-the-actual-data-1"></a></p>
