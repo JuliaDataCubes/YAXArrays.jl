@@ -701,6 +701,7 @@ function runLoop(dc::DATConfig, showprog)
             updateinars(dc, r, incaches)
             innerLoop(r, args...)
             writeoutars(dc, r, outcaches)
+            GC.gc()
         end
     else
         incaches, outcaches, args = getallargs(dc)
@@ -709,6 +710,7 @@ function runLoop(dc::DATConfig, showprog)
             updateinars(dc, r, incaches)
             innerLoop(r, args...)
             writeoutars(dc, r, outcaches)
+            GC.gc()
         end
     end
     dc.outcubes
