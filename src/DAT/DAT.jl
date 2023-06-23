@@ -13,7 +13,8 @@ using Distributed:
     remotecall, 
     @spawn, 
     AbstractWorkerPool, 
-    default_worker_pool
+    default_worker_pool,
+    CachingPool
 import ..Cubes: cubechunks, iscompressed, chunkoffset, CubeAxis, YAXArray, caxes, YAXSlice
 import ..Cubes.Axes:
     AxisDescriptor, axname, ByInference, axsym, getOutAxis, getAxis, findAxis, match_axis
@@ -194,6 +195,7 @@ end
 getOutAxis(desc::Tuple, inAxes, incubes, pargs, f) =
     map(i -> getOutAxis(i, inAxes, incubes, pargs, f), desc)
 function OutputCube(desc::OutDims, inAxes, incubes, pargs, f)
+    @show desc.axisdesc
     axesSmall = getOutAxis(desc.axisdesc, inAxes, incubes, pargs, f)
     outtype = getOuttype(desc.outtype, incubes)
     innerchunks = interpretoutchunksizes(desc, axesSmall, incubes)
@@ -657,11 +659,16 @@ updateinars(dc, r, incaches) = updatears(dc.incubes, r, :read, incaches)
 writeoutars(dc, r, outcaches) = updatears(dc.outcubes, r, :write, outcaches)
 
 function pmap_with_data(f, p::AbstractWorkerPool, c...; initfunc, progress=nothing, kwargs...)
-    d = Dict(ip=>remotecall(initfunc, ip) for ip in workers(p))
-    allrefs = @spawn d
+    #d = Dict(ip=>remotecall(initfunc, ip) for ip in workers(p))
+    #allrefs = @spawn d
+    data = initfunc()
+    
     function fnew(args...,)
+        @debug "Fetching reference dict $(myid())"
         refdict = fetch(allrefs)
+        @debug "Received Reference Dict and fetching own args $(myid())"
         myargs = fetch(refdict[myid()])
+        @debug "Received my function args $(myid())"
         f(args..., myargs)
     end
     if progress !==nothing
@@ -679,6 +686,7 @@ function moduleloadedeverywhere()
             remotecall(() -> true, w)
         end
         fetch.(isloaded)
+        @debug isloaded
     catch e
         return false
     end
@@ -689,17 +697,23 @@ function runLoop(dc::DATConfig, showprog)
     allRanges = GridChunks(getloopchunks(dc)...)
     if dc.ispar
         #Test if YAXArrays is loaded on all workers:
+        @debug moduleloadedeverywhere()
         moduleloadedeverywhere() || error(
             "YAXArrays is not loaded on all workers. Please run `@everywhere using YAXArrays` to fix.",
         )
         dcref = @spawn dc
         prepfunc = ()->getallargs(fetch(dcref))
         prog = showprog ? Progress(length(allRanges)) : nothing
-        pmap_with_data(allRanges, initfunc=prepfunc, progress=prog) do r, prep
-            incaches, outcaches, args = prep
+        pmapresults = progress_pmap(CachingPool(workers()),allRanges, on_error=identity) do r
+            incaches, outcaches, args = getallargs(dc)
+            @debug "Reading data for loop index $r on worker $(myid())"
             updateinars(dc, r, incaches)
+            @debug "Running inner loop for index $r on worker $(myid())"
             innerLoop(r, args...)
+            @debug "Writing output for index $r on worker $(myid())"
             writeoutars(dc, r, outcaches)
+            @debug "Done writing data for index $r on worker $(myid())"
+            nothing
         end
     else
         incaches, outcaches, args = getallargs(dc)
@@ -1073,6 +1087,7 @@ function getLoopCacheSize(preblocksize, loopaxlengths, max_cache, cmisses, userc
     else
         #TODO continue increasing cache sizes on by one...
     end
+    @debug "Using a loop chunk size of $loopcachesize"
     nopar = any(i -> i.preventpar, cmisses[imiss:end])
     return loopcachesize, nopar
 end
