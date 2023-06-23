@@ -481,7 +481,8 @@ function savedataset(
     backend = :all,
     driver = backend, 
     max_cache = 5e8,
-    writefac=4.0)
+    writefac=4.0,
+    kwargs...)
     if persist === nothing
         persist = !isempty(path)
     end
@@ -530,7 +531,8 @@ function savedataset(
             getproperty.(arrayinfo, :name),
             map(e -> axname.(e.axes), arrayinfo), 
             getproperty.(arrayinfo, :attr), 
-            getproperty.(arrayinfo, :chunks)
+            getproperty.(arrayinfo, :chunks);
+            kwargs...
         )
     end
     #Generate back a Dataset from the generated structure on disk
@@ -576,13 +578,14 @@ function savecube(
     overwrite = false, 
     append = false,
     skeleton=false,
-    writefac=4.0
+    writefac=4.0,
+    kwargs...
 )
     if chunks !== nothing
         error("Setting chunks in savecube is not supported anymore. Rechunk using `setchunks` before saving. ")
     end
     ds = to_dataset(c; name, datasetaxis)
-    ds = savedataset(ds; path, max_cache, driver, overwrite, append,skeleton, writefac)
+    ds = savedataset(ds; path, max_cache, driver, overwrite, append,skeleton, writefac, kwargs...)
     Cube(ds, joinname = datasetaxis)
 end
 
