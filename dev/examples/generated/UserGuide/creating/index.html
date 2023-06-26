@@ -19,7 +19,7 @@
         <link rel="next" href="../saving/">
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.16">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.17">
     
     
       
@@ -848,15 +848,15 @@ Total size: 7.03 KB
   Dim{:lat} Sampled{Float64} 1.0:0.2857142857142857:5.0 ForwardOrdered Regular Points,
   Dim{:Variable} Categorical{String} String["var1", "var2"] ForwardOrdered
 [:, :, 1, 1]
-                      1.0        …  8.0       9.0        10.0
-  2022-01-01  0.931441      0.211693  0.0155255   0.352431
-  2022-01-02  0.447388      0.480282  0.93885     0.532697
-  2022-01-03  0.0968472     0.5693    0.0276948   0.293315
- ⋮                               ⋱                        ⋮
-  2022-01-27  0.165194   …  0.642234  0.598829    0.85814
-  2022-01-28  0.726937      0.787694  0.486237    0.101341
-  2022-01-29  0.208268      0.298358  0.478368    0.494062
-  2022-01-30  0.423975      0.701128  0.572357    0.615807
+                      1.0       2.0       …  8.0        9.0       10.0
+  2022-01-01  0.990303  0.721158     0.950285   0.189097   0.24987
+  2022-01-02  0.423724  0.735346     0.0993112  0.543547   0.515362
+  2022-01-03  0.683971  0.732944     0.780849   0.916085   0.379763
+ ⋮                                        ⋱                        ⋮
+  2022-01-27  0.195196  0.137307  …  0.537112   0.241276   0.253037
+  2022-01-28  0.545176  0.618955     0.426087   0.218077   0.0795438
+  2022-01-29  0.677517  0.992873     0.117412   0.137968   0.925748
+  2022-01-30  0.789218  0.572492     0.827301   0.314734   0.464707
 [and 29 more slices...]
 </code></pre></div>
 <p>Now, the syntax from DimensionalData.jl just works</p>
@@ -874,11 +874,11 @@ and reference dimensions:
   Dim{:Variable} Categorical{String} String["var2"] ForwardOrdered
 [:, :, 1]
                       1.0       2.0
-  2022-01-01  0.803249  0.00219234
-  2022-01-02  0.339148  0.303806
+  2022-01-01  0.24149   0.542822
+  2022-01-02  0.946992  0.375657
  ⋮                              
-  2022-01-09  0.280341  0.37571
-  2022-01-10  0.304893  0.339532
+  2022-01-09  0.653409  0.753501
+  2022-01-10  0.159616  0.0682484
 [and 14 more slices...]
 </code></pre></div>
 <p>And going back to our YAXArray view is done with</p>
@@ -1096,7 +1096,7 @@ Total size: 80.0 bytes
     <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.top", "navigation.footer", "search.highlight", "search.share", "search.suggest", "toc.follow", "header.autohide"], "search": "../../../../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.a51614de.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.b425cdc4.min.js"></script>
       
         
           <script src="../../../../javascripts/mathjax.js"></script>
