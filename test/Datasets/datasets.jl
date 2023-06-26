@@ -372,6 +372,7 @@ end
     a2 = YAXArray(rand(Float32,10,10))
     a3 = YAXArray(rand(Int16,10,10))
     a4 = YAXArray(rand(Float64,10,10))
+    a5 = YAXArray(fill("hello",10,10))
     ds = Dataset(a=a1, b=a2,c=a3,d=a4)
 
     c = Cube(ds)
@@ -380,4 +381,7 @@ end
     x = c[var="c"][:,:]
     @test eltype(x) <: Float64
     @test x == Float64.(a3.data)
+
+    ds = Dataset(a=a1, b=a2,c=a3,d=a4,e=a5)
+    @test_throws ArgumentError Cube(ds)
 end
