@@ -1,7 +1,7 @@
 # # Examples from the ESDL paper 
 # ## Earth Syst. Dynam., 11, 201–234, 2020 (https://doi.org/10.5194/esd-11-201-2020)
 
-# **NOTE:** This section is based on the case studies from the paper "Earth system data cubes unravel global multivariate dynamics" by Mahecha, Gans et al. (2019), available at https://github.com/esa-esdl/ESDLPaperCode.jl.
+# **NOTE:** This section is based on the case studies from the paper "Earth system data cubes unravel global multivariate dynamics" by Mahecha, Gans et al. (2019). Original scripts are available at https://github.com/esa-esdl/ESDLPaperCode.jl.
 # - We have slightly adjusted the scripts. A few differences are that these new scripts are updated to Julia 1.9, and the YAXArrays.jl package is used.
 # - The dataset has been updated but it has less available variables. Therefore the results might differ.
 # - The calculations are performed with a very coarse spatial (2.5°) and temporal resolution (monthly).

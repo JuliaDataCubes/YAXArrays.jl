@@ -4,7 +4,7 @@
 # - We have slightly adjusted the scripts. A few differences are that these new scripts are updated to Julia 1.9, and the YAXArrays.jl package is used.
 # - The dataset has been updated but it has less available variables. Therefore the results might differ.
 # - The calculations are performed with a very coarse spatial (2.5°) and temporal resolution (monthly).
-# - These are examples for illustrative purposes of the packages and do not intend any deeper scientic interpretation. For scientific analysis use the higher spatio-temporal resolution datasets.
+# - These are examples for illustrative purposes of the packages and do not intend any deeper scientific interpretation. For scientific analysis use the higher spatio-temporal resolution datasets.
 
 # ## Case study 2: Intrinsic dimensions of ecosystem dynamics
 # ### As estimate based on PCAs
@@ -34,15 +34,15 @@ using Statistics, MultivariateStats, Dates, SkipNan
 
 ## for plotting later
 using CairoMakie
-using GeoMakie, GLMakie
+using GeoMakie
 
 
 # In this study we investigate the redundancy of the different variables in each pixel. Therefore we calculate a linear dimensionality reduction (PCA) and check how many dimensions are needed to explain 90% of the variance of a cube that contained originally 11 variables.
 
 # ### Select and prepare (subset/gapfill) an Earth system data cube.
 
-# We need to choose a cube and here select a monthly, 2.5° resolution global cube. This very low resolution cube aims at rapid processing for the safe of time and computational resources.
 
+# We need to choose a cube and here select a monthly, 2.5° resolution global cube. This very low resolution cube aims at rapid processing for the safe of time and computational resources.
 cube_handle = esdc(res="tiny")
 
 # Check which variables are avaiable in the data cube:

@@ -177,30 +177,26 @@ fig2 = geoplotsfx(q10_scape[:,:], "b) Scale Dependent Parameter Estimation", lab
 
 ## checking cubes axes order
 world_tair.axes
-world_tair.axes
+rb_scape.axes
 
-## dummy function for sorting axes order
-function sortaxes(xout, xin)
-    xout .= xin
-    return xout
-end    
+# Now we need to sort the rb_scape axes order. Axes order must be the same for the cubes concatenation.
+data_reshaped = permutedims(rb_scape.data,(2,3,1))
+rb_scape_reshaped = YAXArray(rb_scape.axes[[2,3,1]],data_reshaped)
 
-rb_scape = mapCube(sortaxes, rb_scape, indims = InDims("lon", "lat"), outdims = OutDims("lon", "lat"))
-    
 ## checking cubes chunking
 eachchunk(world_tair)
-eachchunk(rb_scape)
+eachchunk(rb_scape_reshaped)
 
 ## setting up the same chunking
-rb_scape = setchunks(rb_scape, Dict("lon"=>144, "lat"=>72, "time"=>44))
-rb_chunking = eachchunk(rb_scape);
+rb_scape_reshaped = setchunks(rb_scape_reshaped, Dict("lon"=>144, "lat"=>72, "time"=>44))
+rb_chunking = eachchunk(rb_scape_reshaped);
 first(rb_chunking)
 world_tair = setchunks(world_tair, Dict("lon"=>144, "lat"=>72, "time"=>44))
 tair_chunking = eachchunk(world_tair);
 first(tair_chunking)
 
 ## concatenate the cubes
-ds = concatenatecubes([world_tair, rb_scape], CategoricalAxis("Variables", ["tair", "rb"]))    
+ds = concatenatecubes([world_tair, rb_scape_reshaped], CategoricalAxis("Variables", ["tair", "rb"]))    
 
 ## And compute the correlation between Air temperature and Base respiration
 cor_tair_rb = mapslices(i->cor(eachcol(i)...),ds, dims=("Time","Variable"))
@@ -209,7 +205,5 @@ q10_diff = map((x,y)->x-y, q10_direct, q10_scape)
 crange = (-1,1)
 cmap = :PRGn
 
-
 fig3 = geoplotsfx(cor_tair_rb[:,:], "Correlation Tair and Rb", "Coefficient", crange, cmap)
 fig4 = geoplotsfx(q10_diff[:,:], string("Ratio of Q10 conv and Q10 Scape"), "Ratio", crange, cmap)
-## string("Ratio of ",L"$Q_{10}$", "conv and", L"$Q_{10}$", "Scape")
