@@ -23,13 +23,13 @@ using Dates
         s = split(String(take!(b)), "\n")
         s2 = """
         YAXArray Dataset
-        Dimensions:
+        Shared Axes:
         XVals               Axis with 4 Elements from 1.0 to 4.0
         YVals               Axis with 5 elements: 1 2 3 4 5
-        Time                Axis with 12 Elements from 2001-01-15 to 2001-12-15
-        Variables: avar something smaller """
+        Variables: 
+        """
         s2 = split(s2, "\n")
-        #     @test s[[1,2,6]] == s2[[1,2,6]]
+             @test s[[1]] == s2[[1]]
         #     @test all(i->in(i,s2), s[3:5])
         for n in [:avar, :something, :smaller, :XVals, :Time, :YVals]
             @test n in propertynames(ds)
@@ -357,4 +357,33 @@ end
     @test ds2.c.data[:,:] == ds.c.data
     @test ds2.c.chunks == DiskArrays.GridChunks(size(a),(5,10))
 
+end
+
+@testset "Mapslices" begin 
+    using YAXArrays, StatsBase
+
+    a = ones(10,20,5)
+    cube = YAXArray(a)
+    mean_slice = mapslices(mean, cube; dims="Dim_1")
+
+    @test mean_slice[:,:] == ones(20,5)
+end
+
+@testset "Making Cubes from heterogemous data types" begin
+    a1 = YAXArray(rand(Int8,10,10))
+    a2 = YAXArray(rand(Float32,10,10))
+    a3 = YAXArray(rand(Int16,10,10))
+    a4 = YAXArray(rand(Float64,10,10))
+    a5 = YAXArray(fill("hello",10,10))
+    ds = Dataset(a=a1, b=a2,c=a3,d=a4)
+
+    c = Cube(ds)
+    @test size(c) == (10,10,4)
+    @test eltype(c) <: Float64
+    x = c[var="c"][:,:]
+    @test eltype(x) <: Float64
+    @test x == Float64.(a3.data)
+
+    ds = Dataset(a=a1, b=a2,c=a3,d=a4,e=a5)
+    @test_throws ArgumentError Cube(ds)
 end

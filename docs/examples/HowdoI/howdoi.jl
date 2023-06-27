@@ -37,3 +37,41 @@ dsfinal = concatenatecubes([ds1, ds2],
     CategoricalAxis("Variables", ["var1", "var2"]))
 
 dsfinal
+
+
+# ##  Subsetting a Cube
+
+# Let's start by creating a dummy cube
+
+## define the time span of the cube
+using Dates
+t =  Date("2020-01-01"):Month(1):Date("2022-12-31")
+
+## create cube axes
+axes = [RangeAxis("Lon", 1:10), RangeAxis("Lat", 1:10), RangeAxis("Time", t)]
+
+## assign values to a cube
+c = YAXArray(axes, reshape(1:3600, (10,10,36)))
+
+# Now we subset the cube by any dimension
+
+## subset cube by years
+ctime = c[Time=2021:2022]
+
+## subset cube by a specific date and date range
+ctime2 = c[Time=Date(2021-01-05)]
+ctime3 = c[Time=Date(2021-01-05)..Date(2021-01-12)] 
+
+## subset cube by longitude and latitude
+clonlat = c[Lon=1..5, Lat=5..10] # check even numbers range, it is ommiting them
+
+
+# ##  Applying map algebra
+# Our next step is map algebra computations. This can be done effectively using the 'map' function. For example:
+
+## cubes with only spatio-temporal dimensions
+map((x,y)->x*y, ds1, ds2)
+
+## cubes with more than 3 dimensions
+map((x,y)->x*y, dsfinal[Variables="Var1"], dsfinal[Variables="Var2"])
+

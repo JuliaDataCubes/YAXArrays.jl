@@ -15,7 +15,11 @@ using DimensionalData: DimensionalData as DD
 
 export Dataset, Cube, open_dataset, to_dataset, savecube, savedataset
 
-
+"""
+    Dataset object which stores an `OrderedDict` of YAXArrays with Symbol keys. 
+    a dictionary of CubeAxes and a Dictionary of general properties. 
+    A dictionary can hold cubes with differing axes. But it will share the common axes between the subcubes. 
+"""
 struct Dataset
     cubes::OrderedDict{Symbol,YAXArray}
     axes::Dict{Symbol,DD.Dimension}
@@ -87,11 +91,17 @@ function to_dataset(c;datasetaxis = "Variable", layername = get(c.properties,"na
 end
 
 function Base.show(io::IO, ds::Dataset)
+    sharedaxs = intersect([caxes(c) for (n,c) in ds.cubes]...)
     println(io, "YAXArray Dataset")
-    println(io, "Dimensions: ")
-    foreach(a -> println(io, "   ", a), values(ds.axes))
-    print(io, "Variables: ")
-    foreach(i -> print(io, i, " "), keys(ds.cubes))
+    println(io, "Shared Axes: ")
+    foreach(a -> println(io, "   ", a), sharedaxs)
+    println(io, "Variables: ")
+    for (k,c) in ds.cubes
+        println(io, k)
+        specaxes = setdiff(caxes(c), sharedaxs)
+        foreach(i-> println(io," └── ", i), specaxes)
+    end
+    #foreach(i -> print(io, i, " "), keys(ds.cubes))
     if !isempty(ds.properties)
         println(io)
         print(io,"Properties: ")
@@ -259,6 +269,13 @@ open_mfdataset(g::AbstractString; kwargs...) = open_mfdataset(_glob(g); kwargs..
 open_mfdataset(g::Vector{<:AbstractString}; kwargs...) =
 merge_datasets(map(i -> open_dataset(i; kwargs...), g))
 
+
+"""
+open_dataset(g; driver=:all)
+
+Open the dataset at `g` with the given `driver`.
+The default driver will search for available drivers and tries to detect the useable driver from the filename extension.
+"""
 function open_dataset(g; driver = :all)
     g = YAXArrayBase.to_dataset(g, driver = driver)
     isempty(get_varnames(g)) && throw(ArgumentError("Group does not contain datasets."))
@@ -318,11 +335,18 @@ function Cube(ds::Dataset; joinname = "Variable")
     # TODO This is an ugly workaround to merge cubes with different element types,
     # There should bde a more generic solution
     eltypes = map(eltype, values(ds.cubes))
-    majtype = findmax(counter(eltypes))[2]
+    prom_type = first(eltypes)
+    for i in 2:length(eltypes)
+        prom_type = promote_type(prom_type,eltypes[i])
+        if !isconcretetype(prom_type)
+            wrongvar = collect(keys(ds.cubes))[i]
+            throw(ArgumentError("Could not promote element types of cubes in dataset to a common concrete type, because of Variable $wrongvar"))
+        end
+    end
     newkeys = Symbol[]
     for k in keys(ds.cubes)
         c = ds.cubes[k]
-        if all(axn -> findAxis(axn, c) !== nothing, dls) && eltype(c) == majtype
+        if all(axn -> findAxis(axn, c) !== nothing, dls)
             push!(newkeys, k)
         end
     end
@@ -330,7 +354,13 @@ function Cube(ds::Dataset; joinname = "Variable")
         return ds.cubes[first(newkeys)]
     else
         varax = DD.rebuild(DD.key2dim(Symbol(joinname)), string.(newkeys))
-        cubestomerge = [ds.cubes[k] for k in newkeys]
+        cubestomerge = map(newkeys) do k
+            if eltype(ds.cubes[k]) <: prom_type
+                ds.cubes[k]
+            else
+                map(prom_type,ds.cubes[k])
+            end
+        end
         foreach(
         i -> haskey(i.properties, "name") && delete!(i.properties, "name"),
         cubestomerge,
@@ -464,7 +494,16 @@ function setchunks(ds::Dataset, chunks)
     newds
 end
 
+"""
+savedataset(ds::Dataset; path = "", persist = nothing, overwrite = false, append = false, skeleton=false, backend = :all,
+    driver = backend, max_cache = 5e8, writefac=4.0)
 
+Saves a Dataset into a file at `path` with the format given by `driver`, i.e., driver=:netcdf or driver=:zarr.
+
+
+!!! warning
+    overwrite = true, deletes ALL your data and it will create a new file.
+"""
 function savedataset(
     ds::Dataset;
     path = "",
@@ -475,12 +514,12 @@ function savedataset(
     backend = :all,
     driver = backend, 
     max_cache = 5e8,
-    writefac=4.0)
+    writefac=4.0,
+    kwargs...)
     if persist === nothing
         persist = !isempty(path)
     end
     path = getsavefolder(path, persist)
-
     if ispath(path)
         if overwrite
             rm(path, recursive = true)
@@ -526,7 +565,8 @@ function savedataset(
             getproperty.(arrayinfo, :name),
             map(e -> string.(DD.name.(e.axes)), arrayinfo), 
             getproperty.(arrayinfo, :attr), 
-            getproperty.(arrayinfo, :chunks)
+            getproperty.(arrayinfo, :chunks);
+            kwargs...
         )
     end
     #Generate back a Dataset from the generated structure on disk
@@ -554,8 +594,8 @@ The keyword arguments are:
 * `name`:
 * `datasetaxis="Variable"` special treatment of a categorical axis that gets written into separate zarr arrays
 * `max_cache`: The number of bits that are used as cache for the data handling.
-* `backend`: The backend, that is used to save the data. Fallsback to searching the backend according to the extension of the path.
-* `driver` 
+* `backend`: The backend, that is used to save the data. Falls back to searching the backend according to the extension of the path.
+* `driver`: The same setting as `backend`.
 * `overwrite::Bool=false` overwrite cube if it already exists
 
 
@@ -572,13 +612,15 @@ function savecube(
     overwrite = false, 
     append = false,
     skeleton=false,
-    writefac=4.0
+    writefac=4.0,
+    kwargs...
 )
     if chunks !== nothing
         error("Setting chunks in savecube is not supported anymore. Rechunk using `setchunks` before saving. ")
     end
-    ds = to_dataset(c; layername = name, datasetaxis)
-    ds = savedataset(ds; path, max_cache, driver, overwrite, append,skeleton, writefac)
+
+    ds = to_dataset(c; name, datasetaxis)
+    ds = savedataset(ds; path, max_cache, driver, overwrite, append,skeleton, writefac, kwargs...)
     Cube(ds, joinname = datasetaxis)
 end
 

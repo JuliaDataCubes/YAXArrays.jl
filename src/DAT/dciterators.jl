@@ -97,7 +97,7 @@ function YAXColumn(t::YAXTableChunk,ivar)
         ic = ci.dc.incubes[ivar]
         buf = allocatecachebuf(ic, ci.dc.loopcachesize)
         updatear(:read, rnow, ic.cube, geticolon(ic), ic.loopinds, buf)
-        allax = ntuple(_->false, ndims(ic.cube))
+        allax = ntuple(_->false, length(ci.dc.LoopAxes))
         for il in ic.loopinds
             allax = Base.setindex(allax,true,il)
         end
