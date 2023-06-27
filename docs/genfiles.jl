@@ -12,7 +12,7 @@ function getfiles()
     srcsfiles = []
     for f in folders
         names = readdir(joinpath(@__DIR__, ".", "examples", f))
-        setdiff!(names, [".DS_Store", "simplemaps.jl"])
+        setdiff!(names, [".DS_Store"])
         fpaths  = "$(f)/" .* names
         srcsfiles = vcat(srcsfiles, fpaths...)
     end

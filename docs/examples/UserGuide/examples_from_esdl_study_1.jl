@@ -1,5 +1,5 @@
 # # Examples from the ESDL paper 
-# ## Earth Syst. Dynam., 11, 201–234, 2020 (https://doi.org/10.5194/esd-11-201-2020)
+# ## Earth Syst. Dynam., 11, 201–234, 2020 [doi](https://doi.org/10.5194/esd-11-201-2020)
 
 # **NOTE:** This section is based on the case studies from the paper "Earth system data cubes unravel global multivariate dynamics" by Mahecha, Gans et al. (2019). Original scripts are available at https://github.com/esa-esdl/ESDLPaperCode.jl.
 # - We have slightly adjusted the scripts. A few differences are that these new scripts are updated to Julia 1.9, and the YAXArrays.jl package is used.
@@ -87,7 +87,8 @@ function zonal_polar_plot(d_msc_lat, sbp, it, vari, lab)
     ax.set_yticklabels([])
     ax.set_thetagrids(angles = month_ang,
                       labels = month_lab,
-                      rotation = month_ang)
+                      #rotation = month_ang
+                      )
 
     ## set Jan to the top of the plot
     ax.set_theta_zero_location("N")
@@ -218,18 +219,10 @@ labtoshow = ["a)", "b)", "c)", "d)", "e)", "f)"]
 vari = getAxis("Variable", caxes(cube_msc_lat)).values
 
 for (sbp, lab, vari) in zip(sbps, labtoshow, vari)
-
   it1 = range(72/2, stop = 1, step = -2)
   it2 = range(72/2+1, stop = 72, step = 2)
-
   zonal_polar_plot(cube_msc_lat, sbp, it1, vari, lab)
   zonal_polar_plot(cube_msc_lat, sbp+1, it2, vari, lab)
-
 end
 
 f1
-
-mkpath("../figures")
-PyPlot.savefig("../figures/zonalmeans.png",
-        bbox_inches = "tight");
-

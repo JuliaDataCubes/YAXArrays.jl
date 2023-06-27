@@ -1,7 +1,7 @@
 # # Examples from the ESDL paper 
 # ## Earth Syst. Dynam., 11, 201–234, 2020 (https://doi.org/10.5194/esd-11-201-2020)
 
-# **NOTE:** This section is based on the case studies from the paper "Earth system data cubes unravel global multivariate dynamics" by Mahecha, Gans et al. (2019), available at https://github.com/esa-esdl/ESDLPaperCode.jl.
+# **NOTE:** This section is based on the case studies from the paper "Earth system data cubes unravel global multivariate dynamics" by Mahecha, Gans et al. (2019), available [here](https://github.com/esa-esdl/ESDLPaperCode.jl).
 # - We have slightly adjusted the scripts. A few differences are that these new scripts are updated to Julia 1.9, and the YAXArrays.jl package is used.
 # - The dataset has been updated but it has less available variables. Therefore the results might differ.
 # - The calculations are performed with a very coarse spatial (2.5°) and temporal resolution (monthly).
@@ -147,6 +147,7 @@ q10_scape, rb_scape = mapCube(Q10SCAPE,cube_decomp, indims=indims_scape, outdims
 
 # ### The rest is plotting. In this example we use GeoMakie.
 using CairoMakie, GeoMakie
+CairoMakie.activate!()
 using MakieTeX
 using LaTeXStrings
 
@@ -167,7 +168,10 @@ label_scape = L"$SCAPE Q_{10}$"
 crange = (0,3)
 cmap = :GnBu
 
-fig1 = geoplotsfx(q10_direct[:,:], "a) Confounded Parameter Estimation", label_direct, crange, cmap) 
+fig1 = geoplotsfx(q10_direct[:,:], "a) Confounded Parameter Estimation", label_direct, crange, cmap)
+
+# and for the other case
+
 fig2 = geoplotsfx(q10_scape[:,:], "b) Scale Dependent Parameter Estimation", label_scape, crange, cmap)
 
 # ## The following are some additional analyses, not included in the paper.
@@ -206,4 +210,7 @@ crange = (-1,1)
 cmap = :PRGn
 
 fig3 = geoplotsfx(cor_tair_rb[:,:], "Correlation Tair and Rb", "Coefficient", crange, cmap)
+
+# and also
+
 fig4 = geoplotsfx(q10_diff[:,:], string("Ratio of Q10 conv and Q10 Scape"), "Ratio", crange, cmap)

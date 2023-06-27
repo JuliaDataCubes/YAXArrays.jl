@@ -1,7 +1,7 @@
 # # Examples from the ESDL paper 
-# ## Earth Syst. Dynam., 11, 201–234, 2020 (https://doi.org/10.5194/esd-11-201-2020)
+# ## Earth Syst. Dynam., 11, 201–234, 2020 [doi](https://doi.org/10.5194/esd-11-201-2020)
 
-# **NOTE:** This section is based on the case studies from the paper "Earth system data cubes unravel global multivariate dynamics" by Mahecha, Gans et al. (2019). Original scripts are available at https://github.com/esa-esdl/ESDLPaperCode.jl.
+# **NOTE:** This section is based on the case studies from the paper "Earth system data cubes unravel global multivariate dynamics" by Mahecha, Gans et al. (2019). Original scripts are available [here](https://github.com/esa-esdl/ESDLPaperCode.jl).
 # - We have slightly adjusted the scripts. A few differences are that these new scripts are updated to Julia 1.9, and the YAXArrays.jl package is used.
 # - The dataset has been updated but it has less available variables. Therefore the results might differ.
 # - The calculations are performed with a very coarse spatial (2.5°) and temporal resolution (monthly).
@@ -39,7 +39,7 @@ moisture = subsetcube(cube_handle, variable = "surface_moisture", time = 2003:20
 # The objective is to estimate histograms of gross primary productivity and surface moisture and split them by AR5 region. We first download a shapefile defining these regions.
 p = Downloads.download("https://nextcloud.bgc-jena.mpg.de/s/3ZzX79EtgQr5nf5/download/IPCCregions_2d5.nc", "IPCCregions_2d5.nc")
 regions = Cube(p)
-# Cube("/home/lina/howdoi/data/IPCCregions_2d5.nc")
+# Cube("/home/lina/howdoi/data/IPCCregions_2d5.nc") # hide
 
 # In order to compute some aggregate statistics over our datasets we join the 3 data cubes into a single iterable table. The data is not loaded but can be iterated over in an efficient manner which is chunk-aware. Additionally we need the latitude values of the Table to compute the weights of our aggregation which represent the grid cell size.
 t = CubeTable(gpp=gpp, moisture=moisture, region=regions)
@@ -93,7 +93,7 @@ labels_ipcc = regions_df[2:end,2]
 # Here we create an empty 2d histogram for every SREX region
 
 function weightedhistograms_by_region(df,labels)
-hists = [WeightedHist((0.0:0.1:12,0:0.01:1)) for i=1:length(labels_ipcc)]
+    hists = [WeightedHist((0.0:0.1:12,0:0.01:1)) for _ in eachindex(labels_ipcc)]
     for row in Tables.rows(df)
             ## if all data are there
             if !any(ismissing, (row.gpp, row.moisture, row.region))
@@ -118,7 +118,7 @@ hists = [WeightedHist((0.0:0.1:12,0:0.01:1)) for i=1:length(labels_ipcc)]
     YAXArray(newaxes, data)
 end
 
-r = weightedhistograms_by_region(df, labels_ipcc)
+r = weightedhistograms_by_region(df, labels_ipcc);
 
 rdata = mapslices(r,dims=("GPP","Moisture")) do xin
     xin ./ maximum(skipmissing(xin))
@@ -128,13 +128,15 @@ end
 # To generate the publication-quality plots we use Makie plotting tools with the following code, which does not demonstrate any EarthDataLab capabilities but is included here for reproducbility:
 
 using CairoMakie, GeoMakie
+CairoMakie.activate!(type = "png")
 using MakieTeX, LaTeXStrings
 
 ## heatmaps
 ygpp = 0.05:0.1:11.95
 xmoist = 0.005:0.01:0.995
 crange = (0,1)
-f = Figure(resolution = (1200, 1000))
+
+f = CairoMakie.Figure(resolution = (1200, 1000))
 gtop = f[1,1] = GridLayout()
 gcen = f[2:3,1] = GridLayout()
 gbot = f[4,1] = GridLayout()
@@ -207,11 +209,8 @@ Label(gbot[1, 4:7, Bottom()], label_soil, valign=:bottom, fontsize=25,
     font=:bold, padding=(0, 0, 10, 40))
 Label(f[1:2,0, Bottom()], label_gpp, valign=:top, halign =:center, 
     fontsize=25, font=:bold, padding=(0, 0, 0, -375),  rotation=pi/2)
-
-
-f
-
-
+save("study4.png", f) # hide # because something is off [bug!] with the default output file format
+# ![](study4.png)
 
 ## separate function for plotting only the map
 function geoplotsfx(xin, titlein, crange, cmap, df)
@@ -228,4 +227,4 @@ function geoplotsfx(xin, titlein, crange, cmap, df)
       CairoMakie.translate!(tex, 0,0,100)
     end
     return(fig)
-  end
+end

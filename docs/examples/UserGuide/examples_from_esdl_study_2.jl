@@ -1,6 +1,6 @@
 # # Examples from the ESDL paper (Mahecha, Gans et al. Earth Syst. Dynam., 11, 201–234, 2020)
 
-# **NOTE:** This section is based on the case studies from the paper "Earth system data cubes unravel global multivariate dynamics" by Mahecha, Gans et al. (2019), available at https://github.com/esa-esdl/ESDLPaperCode.jl.
+# **NOTE:** This section is based on the case studies from the paper "Earth system data cubes unravel global multivariate dynamics" by Mahecha, Gans et al. (2019), available [here](https://github.com/esa-esdl/ESDLPaperCode.jl).
 # - We have slightly adjusted the scripts. A few differences are that these new scripts are updated to Julia 1.9, and the YAXArrays.jl package is used.
 # - The dataset has been updated but it has less available variables. Therefore the results might differ.
 # - The calculations are performed with a very coarse spatial (2.5°) and temporal resolution (monthly).
@@ -34,6 +34,7 @@ using Statistics, MultivariateStats, Dates, SkipNan
 
 ## for plotting later
 using CairoMakie
+CairoMakie.activate!()
 using GeoMakie
 
 
@@ -211,7 +212,7 @@ cmap = Reverse(:magma)
 
 scale_name = ["(a) Original Data", "(b) Long-term variability", "(c) Seasonal variability", "(d) Short-term variability"]
 
-f = Figure(fontsize=15, resolution = (1000, 700))
+f = CairoMakie.Figure(fontsize=15, resolution = (1000, 700))
 titlein = string(scale_name[1])
 ## map original data  
   ax = GeoAxis(f[1,1]; coastlines = false, lonlims=(-180, 180), latlims = (-90,90), title=scale_name[1])
@@ -262,7 +263,7 @@ d3 = weightdatafrec(skipmissing(cube_int_dim_dec[3,:,:])[idx], weights_sub, weig
 d4 = weightdatafrec(skipmissing(cube_int_dim_dec[4,:,:])[idx], weights_sub, weights_sum)
 
 ## plot histograms
-f2 = Figure()
+f2 = CairoMakie.Figure()
 limits = (1, 11, 0, 0.6)
 ax1 = Axis(f2[1, 1], ylabel="Weighted frequency", xticks = 1:11, yticks = 0:0.2:0.6; limits, title=scale_name[1])
 ax2 = Axis(f2[2, 1], xticks = 1:11, yticks = 0:0.2:0.6; limits, title=scale_name[2])
