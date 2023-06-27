@@ -19,6 +19,9 @@ jobs:
     env:
       DISPLAY: ':0'
     steps:
+    - name: Install matplotlib
+        run: if [ "$RUNNER_OS" = "Linux" ]; then sudo apt-get install -y python3-matplotlib; fi
+        shell: bash
       - uses: actions/checkout@v3
       - uses: julia-actions/setup-julia@v1
       - uses: julia-actions/cache@v1
