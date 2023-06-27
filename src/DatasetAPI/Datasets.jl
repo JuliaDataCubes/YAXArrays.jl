@@ -321,11 +321,18 @@ function Cube(ds::Dataset; joinname = "Variable")
     # TODO This is an ugly workaround to merge cubes with different element types,
     # There should bde a more generic solution
     eltypes = map(eltype, values(ds.cubes))
-    majtype = findmax(counter(eltypes))[2]
+    prom_type = first(eltypes)
+    for i in 2:length(eltypes)
+        prom_type = promote_type(prom_type,eltypes[i])
+        if !isconcretetype(prom_type)
+            wrongvar = collect(keys(ds.cubes))[i]
+            throw(ArgumentError("Could not promote element types of cubes in dataset to a common concrete type, because of Variable $wrongvar"))
+        end
+    end
     newkeys = Symbol[]
     for k in keys(ds.cubes)
         c = ds.cubes[k]
-        if all(axn -> findAxis(axn, c) !== nothing, dls) && eltype(c) == majtype
+        if all(axn -> findAxis(axn, c) !== nothing, dls)
             push!(newkeys, k)
         end
     end
@@ -333,7 +340,13 @@ function Cube(ds::Dataset; joinname = "Variable")
         return ds.cubes[first(newkeys)]
     else
         varax = CategoricalAxis(joinname, string.(newkeys))
-        cubestomerge = [ds.cubes[k] for k in newkeys]
+        cubestomerge = map(newkeys) do k
+            if eltype(ds.cubes[k]) <: prom_type
+                ds.cubes[k]
+            else
+                map(prom_type,ds.cubes[k])
+            end
+        end
         foreach(
         i -> haskey(i.properties, "name") && delete!(i.properties, "name"),
         cubestomerge,
@@ -487,7 +500,8 @@ function savedataset(
     backend = :all,
     driver = backend, 
     max_cache = 5e8,
-    writefac=4.0)
+    writefac=4.0,
+    kwargs...)
     if persist === nothing
         persist = !isempty(path)
     end
@@ -536,7 +550,8 @@ function savedataset(
             getproperty.(arrayinfo, :name),
             map(e -> axname.(e.axes), arrayinfo), 
             getproperty.(arrayinfo, :attr), 
-            getproperty.(arrayinfo, :chunks)
+            getproperty.(arrayinfo, :chunks);
+            kwargs...
         )
     end
     #Generate back a Dataset from the generated structure on disk
@@ -582,13 +597,14 @@ function savecube(
     overwrite = false, 
     append = false,
     skeleton=false,
-    writefac=4.0
+    writefac=4.0,
+    kwargs...
 )
     if chunks !== nothing
         error("Setting chunks in savecube is not supported anymore. Rechunk using `setchunks` before saving. ")
     end
     ds = to_dataset(c; name, datasetaxis)
-    ds = savedataset(ds; path, max_cache, driver, overwrite, append,skeleton, writefac)
+    ds = savedataset(ds; path, max_cache, driver, overwrite, append,skeleton, writefac, kwargs...)
     Cube(ds, joinname = datasetaxis)
 end
 

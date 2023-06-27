@@ -15,6 +15,10 @@
             xout .= x1 .+ x2
         end
         @test r.data == a2.data .+ reshape(a3.data,(4,1,5))
+        r = mapCube((a2, a3), indims=(indims, indims), outdims=outdims,nthreads = [1]) do xout, x1, x2
+            xout .= x1 .+ x2
+        end
+        @test r.data == a2.data .+ reshape(a3.data,(4,1,5))
     end
 
     @testset "Reduction to empty outputs" begin

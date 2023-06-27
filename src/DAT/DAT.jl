@@ -1159,7 +1159,7 @@ using Base.Cartesian
             )
         end
     else
-        Threads.@threads for cI in CartesianIndices(map(i -> 1:length(i), loopRanges))
+        Threads.@threads :static for cI in CartesianIndices(map(i -> 1:length(i), loopRanges))
             innercode(
                 f,
                 cI,
