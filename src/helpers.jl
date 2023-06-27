@@ -7,6 +7,7 @@ struct ByName <: AxisDescriptor
     name::String
 end
 
+
 struct ByInference <: AxisDescriptor end
 
 struct ByValue <: AxisDescriptor
@@ -58,7 +59,12 @@ Internal function
     For example to disregard differences of captialisation.
 """
 function match_axis(bs::ByName, ax)
-    startswith(lowercase(string(DD.name(ax))), lowercase(bs.name))
+    name_corrected = if lowercase(bs.name) == "time"
+        "Ti"
+    else
+        bs.name
+    end
+    startswith(lowercase(string(DD.name(ax))), lowercase(name_corrected))
 end
 function match_axis(bs::ByValue, ax)
     isequal(bs.v, ax)

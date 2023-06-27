@@ -656,7 +656,6 @@ function createdataset(
         if hasmissings && !haskey(attr, "missing_value")
                 attr["missing_value"] = YAXArrayBase.defaultfillval(S)
         end
-        @show axdata
         dshandle = YAXArrayBase.create_dataset(
         DS, 
         path, 
@@ -666,7 +665,7 @@ function createdataset(
         getproperty.(axdata,:attrs), 
         fill(S, length(cubenames)), 
         cubenames, 
-        fill(getproperty.(axdata,:name),length(cubenames)), 
+        fill(string.(getproperty.(axdata,:name)),length(cubenames)), 
         fill(attr,length(cubenames)), 
         fill(chunksize, length(cubenames));
         kwargs...
@@ -713,7 +712,7 @@ function createdataset(
     end
     
     function arrayfromaxis(ax::DD.Dimension, offs)
-        data, attr = dataattfromaxis(ax, offs)
+        data, attr = dataattfromaxis(ax, offs,eltype(ax))
         attr["_ARRAY_OFFSET"] = offs
         return (name = DD.name(ax), data = data, attrs = attr)
     end
@@ -743,14 +742,14 @@ function createdataset(
     toaxistype(x::Array{<:AbstractString}) = string.(x)
     toaxistype(x::Array{String}) = x
     
-    function dataattfromaxis(ax::DD.Dimension, n)
+    function dataattfromaxis(ax::DD.Dimension, n, _)
         prependrange(toaxistype(DD.lookup(ax)), n), Dict{String,Any}()
     end
     
     # function dataattfromaxis(ax::CubeAxis,n)
     #     prependrange(1:length(ax.values),n), Dict{String,Any}("_ARRAYVALUES"=>collect(ax.values))
     # end
-    function dataattfromaxis(ax::DD.Dimension{T}, n) where {T<:TimeType}
+    function dataattfromaxis(ax::DD.Dimensions.Ti, n, T::Type{<:TimeType})
         data = timeencode(datetodatetime(DD.lookup(ax)), "days since 1980-01-01", defaultcal(T))
         prependrange(data, n),
         Dict{String,Any}("units" => "days since 1980-01-01", "calendar" => defaultcal(T))
