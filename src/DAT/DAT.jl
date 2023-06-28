@@ -13,7 +13,8 @@ using Distributed:
     remotecall, 
     @spawn, 
     AbstractWorkerPool, 
-    default_worker_pool
+    default_worker_pool, 
+    CachingPool
 import ..Cubes: cubechunks, iscompressed, chunkoffset, CubeAxis, YAXArray, caxes, YAXSlice
 import ..Cubes.Axes:
     AxisDescriptor, axname, ByInference, axsym, getOutAxis, getAxis, findAxis, match_axis
@@ -239,6 +240,8 @@ mutable struct DATConfig{NIN,NOUT}
     include_loopvars::Bool
     ""
     ntr::Any
+    "Flag if GC should be called explicitly. Probably necessary for many runs in Julia 1.9"
+    do_gc::Bool
     "Additional arguments for the inner function"
     addargs::Any
     "Additional keyword arguments for the inner function"
@@ -255,6 +258,7 @@ function DATConfig(
     include_loopvars,
     allow_irregular,
     nthreads,
+    do_gc,
     addargs,
     kwargs,
 )
@@ -285,6 +289,7 @@ function DATConfig(
         inplace,                                    # inplace
         include_loopvars,
         nthreads,
+        do_gc,
         addargs,                                    # addargs
         kwargs,
     )
@@ -423,6 +428,7 @@ function mapCube(
     nthreads = ispar ? Dict(i => remotecall_fetch(Threads.nthreads, i) for i in workers()) :
                [Threads.nthreads()],
     loopchunksize = Dict(),
+    do_gc = true,
     kwargs...,
 )
 
@@ -460,6 +466,7 @@ function mapCube(
         include_loopvars,
         irregular_loopranges,
         nthreads,
+        do_gc,
         addargs,
         kwargs,
     )
@@ -693,15 +700,13 @@ function runLoop(dc::DATConfig, showprog)
         moduleloadedeverywhere() || error(
             "YAXArrays is not loaded on all workers. Please run `@everywhere using YAXArrays` to fix.",
         )
-        dcref = @spawn dc
-        prepfunc = ()->getallargs(fetch(dcref))
-        prog = showprog ? Progress(length(allRanges)) : nothing
-        pmap_with_data(allRanges, initfunc=prepfunc, progress=prog) do r, prep
-            incaches, outcaches, args = prep
+        mapfun = showprog ? progress_pmap : pmap
+        mapfun(CachingPool(workers()),allRanges, on_error=identity) do r
+            incaches, outcaches, args = getallargs(dc)
             updateinars(dc, r, incaches)
             innerLoop(r, args...)
             writeoutars(dc, r, outcaches)
-            GC.gc()
+            dc.do_gc && GC.gc()
         end
     else
         incaches, outcaches, args = getallargs(dc)
@@ -710,7 +715,7 @@ function runLoop(dc::DATConfig, showprog)
             updateinars(dc, r, incaches)
             innerLoop(r, args...)
             writeoutars(dc, r, outcaches)
-            GC.gc()
+            dc.do_gc && GC.gc()
         end
     end
     dc.outcubes
