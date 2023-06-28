@@ -37,7 +37,7 @@ gpp = subsetcube(cube_handle, variable = "gross_primary_productivity", time = 20
 moisture = subsetcube(cube_handle, variable = "surface_moisture", time = 2003:2012)
 
 # The objective is to estimate histograms of gross primary productivity and surface moisture and split them by AR5 region. We first download a shapefile defining these regions.
-url_link ="https://s3.bgc-jena.mpg.de:9000/misc/IPCCregions_2d5.nc"
+url_link ="http://s3.bgc-jena.mpg.de:9000/misc/IPCCregions_2d5.nc"
 p = Downloads.download(url_link, "IPCCregions_2d5.nc")
 regions = Cube(p)
 # Cube("/home/lina/howdoi/data/IPCCregions_2d5.nc") # hide
