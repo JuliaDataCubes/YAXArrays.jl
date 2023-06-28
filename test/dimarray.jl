@@ -189,7 +189,6 @@ end
     @test all(ashcta[Hist=At("Frequency")][1,:] .== 0.2222222222222222)
     @test ashcta isa AbstractDimArray 
     khistcta = cubefittable(cta, KHist(3), :data, by=(:YVals,))
-    @show typeof(khistcta)
     @test all(khistcta[Dim{:Hist}(At("Frequency"))][1,:] .== 1.0)
     @test khistcta isa AbstractDimArray
 end

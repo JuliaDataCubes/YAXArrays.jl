@@ -74,7 +74,6 @@ end
     sites_pure = [(lon = n.lon, lat=n.lat) for n in sites_first]
     lon,lat = sites_pure[10]
     r = c[sites_first]
-    @show typeof(r)
     @test r isa YAXArray
     @test YAXArrays.Cubes.axname.(caxes(r)) == ["site","time"]
     @test r.site.values == string.(1:200)

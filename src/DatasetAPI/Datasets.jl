@@ -153,13 +153,10 @@ end
 Base.getindex(x::Dataset, i::String) = getproperty(x, Symbol(i))
 function subsetifdimexists(a;kwargs...)
     axlist = DD.dims(a)
-    @show DD.name.(axlist)
     kwargsshort = filter(kwargs) do kw
-        @show first(kw)
         findAxis(first(kw),axlist) !== nothing
     end
-    #@show a
-    #@show kwargsshort
+
     # This makes no subsetting on cubes that do not have the respective axis.
     # Is this the behaviour we would expect?
     if !isempty(kwargsshort)
@@ -172,7 +169,6 @@ end
 function Base.getindex(x::Dataset; var = nothing, kwargs...)
     if var === nothing
         cc = x.cubes
-        @show cc
         Dataset(; properties=x.properties, map(ds -> ds => subsetifdimexists(cc[ds]; kwargs...), collect(keys(cc)))...)
     elseif isa(var, String) || isa(var, Symbol)
         getindex(getproperty(x, Symbol(var)); kwargs...)
@@ -553,7 +549,6 @@ function savedataset(
         # We go into append mode
         append_dataset(backend, path, ds, axdata, arrayinfo)
     else
-        @show getproperty.(axdata, :attrs)
         YAXArrayBase.create_dataset(
             backend, 
             path, 

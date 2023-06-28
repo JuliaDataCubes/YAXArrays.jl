@@ -213,7 +213,6 @@ function tooutcube(agg, iter, post)
     snew = map(length, outax)
     aout = fill!(zeros(Union{cubeeltype(agg),Missing}, snew), missing)
     filloutar(aout, convdictall, agg, map(i -> 1:length(i), outaxstat), post)
-    @show length(outax), size(aout)
     YAXArray(outax, aout)
 end
 function filloutar(aout, convdictall, agg::GroupedOnlineAggregator, s, post)

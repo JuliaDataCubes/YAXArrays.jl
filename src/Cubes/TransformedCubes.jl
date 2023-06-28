@@ -54,8 +54,7 @@ function concatenatecubes(cl, cataxis::DD.Dimension)
     end
     props = mapreduce(getattributes, merge, cl, init = getattributes(cl[firstnontrivialcube]))
     newchunks = GridChunks((chunks.chunks...,DiskArrays.RegularChunks(1,0,length(cataxis))))
-    @show axlist
-    @show typeof(axlist)
+
     YAXArray((axlist... , cataxis), diskstack([getdata(c) for c in cl]), props, newchunks, cleaners)
 end
 function concatenatecubes(; kwargs...)
