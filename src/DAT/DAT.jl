@@ -664,22 +664,6 @@ _writedata(d::Array{<:Any,0},cache::Array{<:Any,0},::Tuple{}) = d[] = cache[]
 updateinars(dc, r, incaches) = updatears(dc.incubes, r, :read, incaches)
 writeoutars(dc, r, outcaches) = updatears(dc.outcubes, r, :write, outcaches)
 
-function pmap_with_data(f, p::AbstractWorkerPool, c...; initfunc, progress=nothing, kwargs...)
-    d = Dict(ip=>remotecall(initfunc, ip) for ip in workers(p))
-    allrefs = @spawn d
-    function fnew(args...,)
-        refdict = fetch(allrefs)
-        myargs = fetch(refdict[myid()])
-        f(args..., myargs)
-    end
-    if progress !==nothing
-        progress_pmap(fnew,p,c...;progress=progress,kwargs...)
-    else
-        pmap(fnew,p,c...;kwargs...)
-    end
-end
-pmap_with_data(f,c...;initfunc,kwargs...) = pmap_with_data(f,default_worker_pool(),c...;initfunc,kwargs...) 
-
 function moduleloadedeverywhere()
     try
         isloaded = map(workers()) do w
