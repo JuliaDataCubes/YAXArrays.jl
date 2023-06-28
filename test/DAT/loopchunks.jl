@@ -99,7 +99,7 @@ end
 
 @testitem "Map Cubes with Different Chunks Issue #182" begin
    using YAXArrays
-   using Rasters
+   using DimensionalData
    using Zarr
    d = tempdir()
    x,y,z = (X(1:400), Y(1:500), Z(1:600))
