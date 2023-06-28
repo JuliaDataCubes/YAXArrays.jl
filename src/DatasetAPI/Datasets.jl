@@ -603,7 +603,7 @@ The keyword arguments are:
 function savecube(
     c,
     path::AbstractString;
-    name = get(c.properties,"name","layer"),
+    layername = get(c.properties,"name","layer"),
     datasetaxis = "Variable",
     max_cache = 5e8,
     backend = :all,
@@ -619,7 +619,7 @@ function savecube(
         error("Setting chunks in savecube is not supported anymore. Rechunk using `setchunks` before saving. ")
     end
 
-    ds = to_dataset(c; name, datasetaxis)
+    ds = to_dataset(c; layername, datasetaxis)
     ds = savedataset(ds; path, max_cache, driver, overwrite, append,skeleton, writefac, kwargs...)
     Cube(ds, joinname = datasetaxis)
 end
