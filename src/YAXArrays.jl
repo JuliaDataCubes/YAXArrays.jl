@@ -1,4 +1,5 @@
 module YAXArrays
+using Zarr
 
 """
 Default configuration for YAXArrays, has the following fields:
@@ -50,7 +51,7 @@ using YAXArrayBase: getattributes
 @reexport using .Datasets
 # from YAXTools
 
-# include("precompile.jl")
+include("Precompile/precompile.jl")
 # _precompile_()
 
 end # module
