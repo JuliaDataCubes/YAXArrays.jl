@@ -252,6 +252,7 @@ function fittable(tab::CubeIterator, o, fitsym; by = (), weight = nothing, showp
     func(merge!,tab) do t
         agg = TableAggregator(t, o, fitsym, by = by, weight = weight)
         foreach(i -> fitrow!(agg, i), Tables.rows(t))
+        GC.gc()
         agg
     end
 end

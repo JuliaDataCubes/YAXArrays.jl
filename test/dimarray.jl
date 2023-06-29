@@ -89,7 +89,7 @@ end
 
     #I am not sure, whether this is an actual use case 
     # and whether we would like to support the mix of symbol and string axisnames.
-    @test_broken r = mapslices(sum, yax, dims="axis1")
+    @test_broken mapslices(sum, yax, dims="axis1")
 end
 
 @testitem "Moving Window DimArray" begin

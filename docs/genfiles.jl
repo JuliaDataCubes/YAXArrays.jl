@@ -26,4 +26,5 @@ for (d, paths) in (("tutorial", srcsfiles),)
     Literate.markdown(get_example_path(p), joinpath(OUTPUT, dirname(p));
             documenter=true)
     end
+
 end

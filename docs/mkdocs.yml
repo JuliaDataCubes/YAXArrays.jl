@@ -116,6 +116,10 @@ nav:
   #- "Tutorials":
   - "Tutorial": "tutorials/tutorial.md"
   - "How do I ...": "examples/generated/HowdoI/howdoi.md"
-  - "Examples from ESDL": "examples/generated/UserGuide/examples_from_esdl.md"
+  - "Examples from ESDL study 1": "examples/generated/UserGuide/examples_from_esdl_study_1.md"
+  - "Examples from ESDL study 2": "examples/generated/UserGuide/examples_from_esdl_study_2.md"
+  - "Examples from ESDL study 3": "examples/generated/UserGuide/examples_from_esdl_study_3.md"
+  - "Examples from ESDL study 4": "examples/generated/UserGuide/examples_from_esdl_study_4.md"
+
   - "Contribute to docs": "examples/generated/contribute/contribute.md"
   - "API" : "api.md"
