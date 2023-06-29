@@ -99,6 +99,7 @@ Internal function which copies the data from the input `inar` into the output `o
 function copydata(outar,inar,copybuf)
     @showprogress for ii in copybuf
         outar[ii...] = inar[ii...]
+        GC.gc()
     end
 end
 
