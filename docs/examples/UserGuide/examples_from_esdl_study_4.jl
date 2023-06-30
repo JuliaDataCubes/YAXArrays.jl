@@ -37,10 +37,7 @@ gpp = subsetcube(cube_handle, variable = "gross_primary_productivity", time = 20
 moisture = subsetcube(cube_handle, variable = "surface_moisture", time = 2003:2012)
 
 # The objective is to estimate histograms of gross primary productivity and surface moisture and split them by AR5 region. We first download a shapefile defining these regions.
-url_link ="https://github.com/meggart/filesforyaxarraydocs/raw/main/IPCCregions_2d5.nc"
-p = Downloads.download(url_link, joinpath(mktempdir(),"IPCCregions_2d5.nc"))
-regions = Cube(p)
-# Cube("/home/lina/howdoi/data/IPCCregions_2d5.nc") # hide
+regions = Cube("https://s3.bgc-jena.mpg.de:9000/misc/IPCCregions_2d5.zarr")
 
 # In order to compute some aggregate statistics over our datasets we join the 3 data cubes into a single iterable table. The data is not loaded but can be iterated over in an efficient manner which is chunk-aware. Additionally we need the latitude values of the Table to compute the weights of our aggregation which represent the grid cell size.
 t = CubeTable(gpp=gpp, moisture=moisture, region=regions)
