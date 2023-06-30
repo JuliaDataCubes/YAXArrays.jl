@@ -1,0 +1,1003 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Yet Another XArray-like Julia Package">
+      
+      
+        <meta name="author" content="Lazaro Alonso">
+      
+      
+      
+        <link rel="prev" href="../../HowdoI/howdoi/">
+      
+      
+        <link rel="next" href="../examples_from_esdl_study_2/">
+      
+      <link rel="icon" href="../../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.17">
+    
+    
+      
+        <title>Examples from ESDL study 1 - YAXArrays</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.26e3688c.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.ecc896b0.min.css">
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Lato";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../../stylesheets/custom.css">
+    
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="amber">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#examples-from-the-esdl-paper" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../../.." title="YAXArrays" class="md-header__button md-logo" aria-label="YAXArrays" data-md-component="logo">
+      
+  <img src="../../../../assets/view-grid-plus-outline.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            YAXArrays
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Examples from ESDL study 1
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+            
+              <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7M9 21a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1H9v1Z"/></svg>
+              </label>
+            
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+            
+              <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7M9 21v-1h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1m3-17a5 5 0 0 0-5 5c0 2.05 1.23 3.81 3 4.58V16h4v-2.42c1.77-.77 3-2.53 3-4.58a5 5 0 0 0-5-5Z"/></svg>
+              </label>
+            
+          
+        </form>
+      
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        
+<a href="https://github.com/JuliaDataCubes/YAXArrays.jl" title="" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    YAXArrays
+  </div>
+</a>
+
+
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../../.." title="YAXArrays" class="md-nav__button md-logo" aria-label="YAXArrays" data-md-component="logo">
+      
+  <img src="../../../../assets/view-grid-plus-outline.svg" alt="logo">
+
+    </a>
+    YAXArrays
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/JuliaDataCubes/YAXArrays.jl" title="" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    YAXArrays
+  </div>
+</a>
+
+
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../creating/" class="md-nav__link">
+        Creating YAXArrays and Datasets
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../saving/" class="md-nav__link">
+        Saving YAXArrays and Datasets
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../setchuncks/" class="md-nav__link">
+        Setting chunks's size
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../applyfunctions/" class="md-nav__link">
+        Apply functions on YAXArrays
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../create_from_func/" class="md-nav__link">
+        Generate a cube from function
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../openNetCDF/" class="md-nav__link">
+        Open NetCDF
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../openZarr/" class="md-nav__link">
+        Open Zarr (Store)
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../distributed/" class="md-nav__link">
+        Distributed processes
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Gallery/simplemaps/" class="md-nav__link">
+        Simple maps
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../tutorials/tutorial/" class="md-nav__link">
+        Tutorial
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../HowdoI/howdoi/" class="md-nav__link">
+        How do I ...
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Examples from ESDL study 1
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Examples from ESDL study 1
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#earth-syst-dynam-11-201234-2020-doi" class="md-nav__link">
+    Earth Syst. Dynam., 11, 201–234, 2020 doi
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#case-study-1-seasonal-dynamics-on-the-land-surface" class="md-nav__link">
+    Case study 1: Seasonal dynamics on the land surface
+  </a>
+  
+    <nav class="md-nav" aria-label="Case study 1: Seasonal dynamics on the land surface">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#based-on-simple-seasonal-statistics" class="md-nav__link">
+    Based on simple seasonal statistics
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#visualization" class="md-nav__link">
+    Visualization
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples_from_esdl_study_2/" class="md-nav__link">
+        Examples from ESDL study 2
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples_from_esdl_study_3/" class="md-nav__link">
+        Examples from ESDL study 3
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contribute/contribute/" class="md-nav__link">
+        Contribute to docs
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../api/" class="md-nav__link">
+        API
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#earth-syst-dynam-11-201234-2020-doi" class="md-nav__link">
+    Earth Syst. Dynam., 11, 201–234, 2020 doi
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#case-study-1-seasonal-dynamics-on-the-land-surface" class="md-nav__link">
+    Case study 1: Seasonal dynamics on the land surface
+  </a>
+  
+    <nav class="md-nav" aria-label="Case study 1: Seasonal dynamics on the land surface">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#based-on-simple-seasonal-statistics" class="md-nav__link">
+    Based on simple seasonal statistics
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#visualization" class="md-nav__link">
+    Visualization
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+<div><p><a id="Examples-from-the-ESDL-paper"></a></p>
+<p><a id="Examples-from-the-ESDL-paper-1"></a></p>
+<h1 id="examples-from-the-esdl-paper">Examples from the ESDL paper<a class="headerlink" href="#examples-from-the-esdl-paper" title="Permanent link">¤</a></h1>
+<p><a id='Earth-Syst.-Dynam.,-11,-201–234,-2020-&lt;a href="https://doi.org/10.5194/esd-11-201-2020"&gt;doi&lt;/a&gt;'></a></p>
+<p><a id='Earth-Syst.-Dynam.,-11,-201–234,-2020-&lt;a href="https://doi.org/10.5194/esd-11-201-2020"&gt;doi&lt;/a&gt;-1'></a></p>
+<h2 id="earth-syst-dynam-11-201234-2020-doi">Earth Syst. Dynam., 11, 201–234, 2020 <a href="https://doi.org/10.5194/esd-11-201-2020">doi</a><a class="headerlink" href="#earth-syst-dynam-11-201234-2020-doi" title="Permanent link">¤</a></h2>
+<p><strong>NOTE:</strong> This section is based on the case studies from the paper "Earth system data cubes unravel global multivariate dynamics" by Mahecha, Gans et al. (2019). Original scripts are available at https://github.com/esa-esdl/ESDLPaperCode.jl.</p>
+<ul>
+<li>We have slightly adjusted the scripts. A few differences are that these new scripts are updated to Julia 1.9, and the YAXArrays.jl package is used.</li>
+<li>The dataset has been updated but it has less available variables. Therefore the results might differ.</li>
+<li>The calculations are performed with a very coarse spatial (2.5°) and temporal resolution (monthly).</li>
+<li>These are examples for illustrative purposes of the packages and do not intend any deeper scientific interpretation. For scientific analysis use the higher spatio-temporal resolution datasets.</li>
+</ul>
+<p><a id="Case-study-1:-Seasonal-dynamics-on-the-land-surface"></a></p>
+<p><a id="Case-study-1:-Seasonal-dynamics-on-the-land-surface-1"></a></p>
+<h2 id="case-study-1-seasonal-dynamics-on-the-land-surface">Case study 1: Seasonal dynamics on the land surface<a class="headerlink" href="#case-study-1-seasonal-dynamics-on-the-land-surface" title="Permanent link">¤</a></h2>
+<p><a id="Based-on-simple-seasonal-statistics"></a></p>
+<p><a id="Based-on-simple-seasonal-statistics-1"></a></p>
+<h3 id="based-on-simple-seasonal-statistics">Based on simple seasonal statistics<a class="headerlink" href="#based-on-simple-seasonal-statistics" title="Permanent link">¤</a></h3>
+<ul>
+<li>The code is written based on Julia 1.9</li>
+<li>Normal text are explanations referring to notation and equations in the paper</li>
+<li><code># comments in the code are itended explain specific aspects of the coding</code></li>
+<li><strong>New steps in workflows are introduced with bold headers</strong></li>
+</ul>
+<p>Load requiered packages</p>
+<div class="highlight"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">Pkg</span>
+
+<span class="c"># for plotting later on (need to be loaded first, to avoid conflicts)</span>
+<span class="k">using</span><span class="w"> </span><span class="n">PyCall</span><span class="p">,</span><span class="w"> </span><span class="n">PyPlot</span><span class="p">,</span><span class="w"> </span><span class="n">PlotUtils</span>
+
+<span class="c"># for operating data cubes</span>
+<span class="k">using</span><span class="w"> </span><span class="n">Zarr</span><span class="p">,</span><span class="w"> </span><span class="n">YAXArrays</span>
+<span class="k">using</span><span class="w"> </span><span class="n">EarthDataLab</span>
+
+<span class="c"># for data analysis</span>
+<span class="k">using</span><span class="w"> </span><span class="n">Statistics</span><span class="p">,</span><span class="w"> </span><span class="n">Dates</span><span class="p">,</span><span class="w"> </span><span class="n">SkipNan</span>
+</code></pre></div>
+<p>Next we get a handle to the Earth System Data Cube we want to use, which provides a description of the cube:</p>
+<div class="highlight"><pre><span></span><code><span class="n">cube_handle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">esdc</span><span class="p">(</span><span class="n">res</span><span class="o">=</span><span class="s">"tiny"</span><span class="p">)</span>
+
+<span class="c"># if we want the names of the variables:</span>
+<span class="n">println</span><span class="p">(</span><span class="n">getAxis</span><span class="p">(</span><span class="s">"Var"</span><span class="p">,</span><span class="w"> </span><span class="n">cube_handle</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>["sensible_heat", "potential_evaporation", "evaporation", "root_moisture", "radiation_era5", "sif_rtsif", "open_water_evaporation", "nbar_swir1", "latent_energy", "max_air_temperature_2m", "nbar_blue", "cth", "nirv", "aerosol_optical_thickness_550", "ctt", "air_temperature_2m", "nbar_swir3", "nbar_red", "evaporative_stress", "precipitation_era5", "nbar_green", "terrestrial_ecosystem_respiration", "gross_primary_productivity", "ndvi", "bare_soil_evaporation", "nbar_swir2", "sif_gosif", "sif_gome2_jj", "net_radiation", "cot", "kndvi", "sif_gome2_pk", "evaporation_era5", "transpiration", "surface_moisture", "nbar_nir", "interception_loss", "min_air_temperature_2m", "sm", "burnt_area", "net_ecosystem_exchange", "snow_sublimation"]
+</code></pre></div>
+<p>We decide which variables to plot:</p>
+<div class="highlight"><pre><span></span><code><span class="n">vars</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s">"gross_primary_productivity"</span><span class="p">,</span><span class="w"> </span><span class="s">"air_temperature_2m"</span><span class="p">,</span><span class="w"> </span><span class="s">"surface_moisture"</span><span class="p">]</span>
+
+<span class="c"># time based on data span availability</span>
+<span class="n">time_overlap</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Date</span><span class="p">(</span><span class="s">"2001-01-01"</span><span class="p">)</span><span class="o">..</span><span class="n">Date</span><span class="p">(</span><span class="s">"2020-12-31"</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>2001-01-01..2020-12-31
+</code></pre></div>
+<p>So we "virtually get" the cube data virtually:</p>
+<div class="highlight"><pre><span></span><code><span class="n">cube_subset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">subsetcube</span><span class="p">(</span><span class="n">cube_handle</span><span class="p">,</span><span class="w"> </span><span class="n">variable</span><span class="o">=</span><span class="n">vars</span><span class="p">,</span><span class="w"> </span><span class="n">time</span><span class="o">=</span><span class="n">time_overlap</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
+lon                 Axis with 144 Elements from -178.75 to 178.75
+lat                 Axis with 72 Elements from -88.75 to 88.75
+time                Axis with 460 Elements from 2001-01-09T00:00:00 to 2020-12-26T00:00:00
+Variable            Axis with 3 elements: gross_primary_productivity air_temperature_2m surface_moisture 
+units: mm d^-1
+Total size: 54.58 MB
+</code></pre></div>
+<p>The next function estimates the median seasonal cycle. This changes the dimension of the cube, as the time domain is replaced by day of year (doy); Eq. 9 in the manuscript: :$     f_{{time}}^{{doy}} : \mathcal{C}({lat, lon, time, var}) \rightarrow \mathcal{C}({lat, lon, doy, var}) :$</p>
+<p>median seasonal cycle built-in function</p>
+<div class="highlight"><pre><span></span><code><span class="n">cube_msc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getMedSC</span><span class="p">(</span><span class="n">cube_subset</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
+MSC                 Axis with 23 Elements from 1900-01-01T00:00:00 to 1900-12-19T00:00:00
+lon                 Axis with 144 Elements from -178.75 to 178.75
+lat                 Axis with 72 Elements from -88.75 to 88.75
+Variable            Axis with 3 elements: gross_primary_productivity air_temperature_2m surface_moisture 
+Total size: 2.73 MB
+</code></pre></div>
+<p>The resulting cube <code>cube_msc</code> has is of the form <span class="arithmatex">\(\mathcal{C}(\{lat, lon, doy, var\})\)</span>. On this cube we want to apply function <code>nan_med</code> (see below) to estimate latitudinal averages for all variables. The atomic function (Eq. 10) needs to have the form, i.e. expecting a longitude and returning a scalar: :$     f_{{lon}}^{{}} : \mathcal{C}({lat, lon, doy, var}) \rightarrow \mathcal{C}({lat, doy, var}) :$</p>
+<div class="highlight"><pre><span></span><code><span class="k">import</span><span class="w"> </span><span class="n">Statistics</span><span class="o">.</span><span class="n">median</span>
+<span class="n">cube_msc_lat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mapslices</span><span class="p">(</span><span class="n">median</span><span class="w"> </span><span class="o">∘</span><span class="w"> </span><span class="n">skipmissing</span><span class="p">,</span><span class="w"> </span><span class="n">cube_msc</span><span class="p">,</span><span class="w"> </span><span class="n">dims</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"Lon"</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
+MSC                 Axis with 23 Elements from 1900-01-01T00:00:00 to 1900-12-19T00:00:00
+lat                 Axis with 72 Elements from -88.75 to 88.75
+Variable            Axis with 3 elements: gross_primary_productivity air_temperature_2m surface_moisture 
+Total size: 19.41 KB
+</code></pre></div>
+<p>The result of each operation on a data cube is a data cube. Here the resulting cube has the form <span class="arithmatex">\(\mathcal{C}(\{doy, lat, var\})\)</span> as expected but in different order, which is, irrelevant as axes have no natural order.</p>
+<p><a id="Visualization"></a></p>
+<p><a id="Visualization-1"></a></p>
+<h3 id="visualization">Visualization<a class="headerlink" href="#visualization" title="Permanent link">¤</a></h3>
+<p>At this point we leave the <code>Earth Data Lab</code> and and go for visualizations. Using PyPlot we can generate fig. 3 of the paper, the data can be exatracted from the resutls cube via array-access <code>A[:, :]</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="c"># Create a plot and make it a polar plot</span>
+<span class="k">function</span><span class="w"> </span><span class="n">zonal_polar_plot</span><span class="p">(</span><span class="n">d_msc_lat</span><span class="p">,</span><span class="w"> </span><span class="n">sbp</span><span class="p">,</span><span class="w"> </span><span class="n">it</span><span class="p">,</span><span class="w"> </span><span class="n">vari</span><span class="p">,</span><span class="w"> </span><span class="n">lab</span><span class="p">)</span>
+
+<span class="w">    </span><span class="n">ax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">subplot</span><span class="p">(</span><span class="n">sbp</span><span class="p">,</span><span class="w"> </span><span class="n">polar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"true"</span><span class="p">)</span>
+<span class="w">    </span><span class="n">ourcmap</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ColorMap</span><span class="p">(</span><span class="n">get_cmap</span><span class="p">(</span><span class="s">"Spectral_r"</span><span class="p">,</span><span class="w"> </span><span class="mi">72</span><span class="p">))</span>
+
+<span class="w">    </span><span class="c"># set polar ticks and labels</span>
+<span class="w">    </span><span class="n">month_ang</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="o">:</span><span class="mi">11</span>
+<span class="w">    </span><span class="n">month_ang</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">month_ang</span><span class="w"> </span><span class="o">.*</span><span class="w"> </span><span class="p">(</span><span class="mi">360</span><span class="o">/</span><span class="mi">12</span><span class="p">)</span>
+<span class="w">    </span><span class="n">month_lab</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s">"Jan"</span><span class="p">;</span><span class="w"> </span><span class="s">"Feb"</span><span class="p">;</span><span class="w"> </span><span class="s">"Mar"</span><span class="p">;</span><span class="w"> </span><span class="s">"Apr"</span><span class="p">;</span><span class="w"> </span><span class="s">"May"</span><span class="p">;</span><span class="w"> </span><span class="s">"Jun"</span><span class="p">;</span><span class="w"> </span><span class="s">"Jul"</span><span class="p">;</span><span class="w"> </span><span class="s">"Aug"</span><span class="p">;</span><span class="w"> </span><span class="s">"Sep"</span><span class="p">;</span><span class="w"> </span><span class="s">"Oct"</span><span class="p">;</span><span class="w"> </span><span class="s">"Nov"</span><span class="p">;</span><span class="w"> </span><span class="s">"Dec"</span><span class="p">]</span>
+
+<span class="w">    </span><span class="c"># tuning</span>
+<span class="w">    </span><span class="n">ax</span><span class="o">.</span><span class="n">set_yticklabels</span><span class="p">([])</span>
+<span class="w">    </span><span class="n">ax</span><span class="o">.</span><span class="n">set_thetagrids</span><span class="p">(</span><span class="n">angles</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">month_ang</span><span class="p">,</span>
+<span class="w">                      </span><span class="n">labels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">month_lab</span><span class="p">,</span>
+<span class="w">                      </span><span class="c">#rotation = month_ang</span>
+<span class="w">                      </span><span class="p">)</span>
+
+<span class="w">    </span><span class="c"># set Jan to the top of the plot</span>
+<span class="w">    </span><span class="n">ax</span><span class="o">.</span><span class="n">set_theta_zero_location</span><span class="p">(</span><span class="s">"N"</span><span class="p">)</span>
+
+<span class="w">    </span><span class="c"># switch to clockwise</span>
+<span class="w">    </span><span class="n">ax</span><span class="o">.</span><span class="n">set_theta_direction</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="w">    </span><span class="c"># color setup</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">isequal</span><span class="p">(</span><span class="n">vari</span><span class="p">,</span><span class="w"> </span><span class="s">"gross_primary_productivity"</span><span class="p">)</span>
+<span class="w">        </span><span class="n">N_min</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">        </span><span class="n">N_max</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8</span>
+<span class="w">        </span><span class="n">N_var</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8</span>
+<span class="w">    </span><span class="k">elseif</span><span class="w"> </span><span class="n">isequal</span><span class="p">(</span><span class="n">vari</span><span class="p">,</span><span class="w"> </span><span class="s">"air_temperature_2m"</span><span class="p">)</span>
+<span class="w">        </span><span class="n">N_min</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">35</span>
+<span class="w">        </span><span class="n">N_max</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">35</span>
+<span class="w">        </span><span class="n">N_var</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">15</span>
+<span class="w">    </span><span class="k">elseif</span><span class="w"> </span><span class="n">isequal</span><span class="p">(</span><span class="n">vari</span><span class="p">,</span><span class="w"> </span><span class="s">"surface_moisture"</span><span class="p">)</span>
+<span class="w">        </span><span class="n">N_min</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">        </span><span class="n">N_max</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">50</span>
+<span class="w">        </span><span class="n">N_var</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="w">    </span><span class="c"># background setup</span>
+
+<span class="w">    </span><span class="c"># define time (all could be done more elegantly in julia I guess... )</span>
+<span class="w">    </span><span class="n">time_ang</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="n">stop</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">12</span><span class="p">,</span><span class="w"> </span><span class="n">step</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.25</span><span class="p">)</span>
+<span class="w">    </span><span class="n">N_time</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">length</span><span class="p">(</span><span class="n">time_ang</span><span class="p">)</span>
+<span class="w">    </span><span class="n">time_ang</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">time_ang</span><span class="w"> </span><span class="o">.*</span><span class="w"> </span><span class="p">(</span><span class="mi">360</span><span class="o">/</span><span class="mi">12</span><span class="p">)</span>
+<span class="w">    </span><span class="n">time_rad</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">time_ang</span><span class="w"> </span><span class="o">.*</span><span class="w"> </span><span class="p">(</span><span class="nb">pi</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">180</span><span class="p">)</span>
+
+<span class="w">    </span><span class="c"># create a continous var for the background</span>
+<span class="w">    </span><span class="n">N_div</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">N_time</span><span class="o">*</span><span class="mi">10</span>
+<span class="w">    </span><span class="n">y</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="n">range</span><span class="p">(</span><span class="n">N_min</span><span class="p">,</span><span class="w"> </span><span class="n">stop</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">N_max</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">N_div</span><span class="p">)</span>
+
+<span class="w">    </span><span class="c"># grid to fill the polar plot</span>
+<span class="w">    </span><span class="n">xgrid</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">repeat</span><span class="p">(</span><span class="n">time_rad</span><span class="o">'</span><span class="p">,</span><span class="w"> </span><span class="n">N_div</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">    </span><span class="n">ygrid</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">repeat</span><span class="p">(</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">N_time</span><span class="p">)</span>
+
+<span class="w">    </span><span class="c"># a grid of NaNs to make an extra colorbar later</span>
+<span class="w">    </span><span class="n">nangrid</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">zeros</span><span class="p">(</span><span class="n">size</span><span class="p">(</span><span class="n">ygrid</span><span class="p">))</span><span class="o">.*</span><span class="nb">NaN</span>
+<span class="w">    </span><span class="n">levels</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">range</span><span class="p">(</span><span class="o">-</span><span class="mi">90</span><span class="p">,</span><span class="w"> </span><span class="n">stop</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">90</span><span class="p">,</span><span class="w"> </span><span class="n">step</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">10</span><span class="p">)</span>
+<span class="w">    </span><span class="n">ticks</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="n">range</span><span class="p">(</span><span class="o">-</span><span class="mi">80</span><span class="p">,</span><span class="w"> </span><span class="n">stop</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">80</span><span class="p">,</span><span class="w"> </span><span class="n">step</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">20</span><span class="p">)</span>
+
+<span class="w">    </span><span class="n">axsurf2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ax</span><span class="o">.</span><span class="n">contourf</span><span class="p">(</span><span class="n">xgrid</span><span class="p">,</span><span class="w"> </span><span class="n">ygrid</span><span class="p">,</span><span class="w"> </span><span class="n">ygrid</span><span class="o">.*</span><span class="nb">NaN</span><span class="p">,</span><span class="w"> </span><span class="n">N_max</span><span class="p">,</span>
+<span class="w">                          </span><span class="n">cmap</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ourcmap</span><span class="p">,</span>
+<span class="w">                          </span><span class="n">levels</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">levels</span><span class="p">,</span>
+<span class="w">                          </span><span class="n">ticks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ticks</span><span class="p">)</span>
+
+<span class="w">    </span><span class="c"># background to the range of values</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">isequal</span><span class="p">(</span><span class="n">vari</span><span class="p">,</span><span class="w"> </span><span class="s">"gross_primary_productivity"</span><span class="p">)</span>
+<span class="w">        </span><span class="n">axsurf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ax</span><span class="o">.</span><span class="n">contourf</span><span class="p">(</span><span class="n">xgrid</span><span class="p">,</span><span class="w"> </span><span class="n">ygrid</span><span class="p">,</span><span class="w"> </span><span class="n">ygrid</span><span class="p">,</span><span class="w"> </span><span class="n">N_max</span><span class="p">,</span>
+<span class="w">                         </span><span class="n">cmap</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ColorMap</span><span class="p">(</span><span class="s">"gray_r"</span><span class="p">),</span>
+<span class="w">                         </span><span class="n">extend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"max"</span><span class="p">)</span>
+<span class="w">    </span><span class="k">elseif</span><span class="w"> </span><span class="n">isequal</span><span class="p">(</span><span class="n">vari</span><span class="p">,</span><span class="w"> </span><span class="s">"air_temperature_2m"</span><span class="p">)</span>
+<span class="w">        </span><span class="n">axsurf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ax</span><span class="o">.</span><span class="n">contourf</span><span class="p">(</span><span class="n">xgrid</span><span class="p">,</span><span class="w"> </span><span class="n">ygrid</span><span class="p">,</span><span class="w"> </span><span class="n">ygrid</span><span class="p">,</span><span class="w"> </span><span class="n">N_max</span><span class="p">,</span>
+<span class="w">                         </span><span class="n">cmap</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ColorMap</span><span class="p">(</span><span class="s">"gray_r"</span><span class="p">),</span>
+<span class="w">                         </span><span class="n">extend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"both"</span><span class="p">)</span>
+<span class="w">    </span><span class="k">elseif</span><span class="w"> </span><span class="n">isequal</span><span class="p">(</span><span class="n">vari</span><span class="p">,</span><span class="w"> </span><span class="s">"surface_moisture"</span><span class="p">)</span>
+<span class="w">        </span><span class="n">axsurf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ax</span><span class="o">.</span><span class="n">contourf</span><span class="p">(</span><span class="n">xgrid</span><span class="p">,</span><span class="w"> </span><span class="n">ygrid</span><span class="p">,</span><span class="w"> </span><span class="n">ygrid</span><span class="p">,</span><span class="w"> </span><span class="n">N_max</span><span class="p">,</span>
+<span class="w">                         </span><span class="n">cmap</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ColorMap</span><span class="p">(</span><span class="s">"gray_r"</span><span class="p">),</span>
+<span class="w">                         </span><span class="n">extend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"max"</span><span class="p">)</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="w">    </span><span class="c"># colorbar setup</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="n">isodd</span><span class="p">(</span><span class="n">sbp</span><span class="p">)</span>
+<span class="w">        </span><span class="c"># add forground colorbar</span>
+<span class="w">        </span><span class="n">cban</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">colorbar</span><span class="p">(</span><span class="n">axsurf2</span><span class="p">,</span><span class="w"> </span><span class="n">fraction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.05</span><span class="p">,</span><span class="w"> </span><span class="n">shrink</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.5</span><span class="p">,</span><span class="w"> </span><span class="n">pad</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.18</span><span class="p">)</span>
+<span class="w">        </span><span class="n">cban</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"Latitude"</span><span class="p">)</span>
+<span class="w">        </span><span class="n">cban</span><span class="o">.</span><span class="n">set_ticks</span><span class="p">([</span><span class="o">-</span><span class="mi">80</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">60</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">40</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">20</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span><span class="w"> </span><span class="mi">40</span><span class="p">,</span><span class="w"> </span><span class="mi">60</span><span class="p">,</span><span class="w"> </span><span class="mi">80</span><span class="p">])</span>
+<span class="w">        </span><span class="n">cban</span><span class="o">.</span><span class="n">set_ticklabels</span><span class="p">([</span><span class="s">"80°N"</span><span class="p">,</span><span class="w"> </span><span class="s">"60°N"</span><span class="p">,</span><span class="w"> </span><span class="s">"40°N"</span><span class="p">,</span><span class="w"> </span><span class="s">"20°N"</span><span class="p">,</span><span class="w"> </span><span class="s">"0°"</span><span class="p">,</span><span class="w"> </span><span class="s">"20°S"</span><span class="p">,</span><span class="w"> </span><span class="s">"40°S"</span><span class="p">,</span><span class="w"> </span><span class="s">"60°S"</span><span class="p">,</span><span class="w"> </span><span class="s">"80°S"</span><span class="p">])</span>
+<span class="w">        </span><span class="n">cban</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">invert_yaxis</span><span class="p">()</span>
+<span class="w">    </span><span class="k">else</span>
+<span class="w">        </span><span class="c"># add background colorbar</span>
+<span class="w">        </span><span class="n">cbsurf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">colorbar</span><span class="p">(</span><span class="n">axsurf</span><span class="p">,</span><span class="w"> </span><span class="n">fraction</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.05</span><span class="p">,</span><span class="w"> </span><span class="n">shrink</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.5</span><span class="p">,</span><span class="w"> </span><span class="n">pad</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.18</span><span class="p">)</span>
+<span class="w">        </span><span class="k">if</span><span class="w">  </span><span class="n">vari</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">"gross_primary_productivity"</span>
+<span class="w">            </span><span class="n">cbsurf</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"GPP"</span><span class="p">)</span>
+<span class="w">            </span><span class="n">cbsurf</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"g C / (m2 d)"</span><span class="p">,</span><span class="w"> </span><span class="n">rotation</span><span class="o">=</span><span class="mi">270</span><span class="p">,</span><span class="w"> </span><span class="n">labelpad</span><span class="o">=+</span><span class="mi">20</span><span class="p">)</span>
+<span class="w">        </span><span class="k">elseif</span><span class="w"> </span><span class="n">vari</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">"air_temperature_2m"</span>
+<span class="w">            </span><span class="n">cbsurf</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"Tair"</span><span class="p">)</span>
+<span class="w">            </span><span class="n">cbsurf</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"°C"</span><span class="p">,</span><span class="w"> </span><span class="n">rotation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">270</span><span class="p">,</span><span class="w"> </span><span class="n">labelpad</span><span class="o">=+</span><span class="mi">20</span><span class="p">)</span>
+<span class="w">        </span><span class="k">elseif</span><span class="w"> </span><span class="n">vari</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="s">"surface_moisture"</span>
+<span class="w">            </span><span class="n">cbsurf</span><span class="o">.</span><span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"Surf. Moist."</span><span class="p">)</span>
+<span class="w">            </span><span class="n">cbsurf</span><span class="o">.</span><span class="n">set_label</span><span class="p">(</span><span class="n">label</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"[]"</span><span class="p">,</span><span class="w"> </span><span class="n">rotation</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">270</span><span class="p">,</span><span class="w"> </span><span class="n">labelpad</span><span class="o">=+</span><span class="mi">20</span><span class="p">)</span>
+<span class="w">            </span><span class="n">cbsurf</span><span class="o">.</span><span class="n">set_ticks</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span><span class="w"> </span><span class="mi">30</span><span class="p">,</span><span class="w"> </span><span class="mi">40</span><span class="p">,</span><span class="w"> </span><span class="mi">50</span><span class="p">])</span>
+<span class="w">            </span><span class="n">cbsurf</span><span class="o">.</span><span class="n">set_ticklabels</span><span class="p">([</span><span class="s">"0"</span><span class="p">,</span><span class="w"> </span><span class="s">"0.1"</span><span class="p">,</span><span class="w"> </span><span class="s">"0.2"</span><span class="p">,</span><span class="w"> </span><span class="s">"0.3"</span><span class="p">,</span><span class="w"> </span><span class="s">"0.4"</span><span class="p">,</span><span class="w"> </span><span class="s">"0.5"</span><span class="p">])</span>
+<span class="w">        </span><span class="k">end</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="w">    </span><span class="c"># forground setup</span>
+
+<span class="w">    </span><span class="c"># plot the real data</span>
+<span class="w">    </span><span class="n">N_msc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">size</span><span class="p">(</span><span class="n">d_msc_lat</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+<span class="w">    </span><span class="n">time_ang_dat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">range</span><span class="p">(</span><span class="mi">1</span><span class="o">/</span><span class="n">N_msc</span><span class="p">,</span><span class="w"> </span><span class="n">step</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="o">/</span><span class="n">N_msc</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">N_msc</span><span class="p">)</span>
+<span class="w">    </span><span class="n">time_ang_dat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">time_ang_dat</span><span class="w"> </span><span class="o">.*</span><span class="w"> </span><span class="p">(</span><span class="mi">360</span><span class="p">)</span>
+<span class="w">    </span><span class="n">time_rad_dat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">time_ang_dat</span><span class="w"> </span><span class="o">.*</span><span class="w"> </span><span class="p">(</span><span class="nb">pi</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">180</span><span class="p">)</span>
+<span class="w">    </span><span class="n">time_rad_dat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="n">time_rad_dat</span><span class="p">;</span><span class="w"> </span><span class="n">time_rad_dat</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+
+<span class="w">    </span><span class="c"># add your data</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="n">j</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">it</span>
+<span class="w">      </span><span class="n">jj</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">convert</span><span class="p">(</span><span class="kt">Int</span><span class="p">,</span><span class="w"> </span><span class="n">j</span><span class="p">)</span>
+<span class="w">      </span><span class="k">try</span>
+<span class="w">      </span><span class="n">var_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">findall</span><span class="p">(</span><span class="n">vari</span><span class="w"> </span><span class="o">.==</span><span class="w"> </span><span class="n">getAxis</span><span class="p">(</span><span class="s">"Variable"</span><span class="p">,</span><span class="w"> </span><span class="n">d_msc_lat</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+<span class="w">      </span><span class="n">ts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d_msc_lat</span><span class="p">[</span><span class="o">:</span><span class="p">,</span><span class="w"> </span><span class="n">jj</span><span class="p">,</span><span class="w"> </span><span class="n">var_idx</span><span class="p">]</span>
+<span class="w">      </span><span class="n">va</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="n">ts</span><span class="p">;</span><span class="w"> </span><span class="n">ts</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+<span class="w">      </span><span class="c"># correction for temperature</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="n">isequal</span><span class="p">(</span><span class="n">vari</span><span class="p">,</span><span class="w"> </span><span class="s">"air_temperature_2m"</span><span class="p">)</span>
+<span class="w">        </span><span class="n">va</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">va</span><span class="o">.-</span><span class="mf">273.15</span>
+<span class="w">      </span><span class="k">elseif</span><span class="w"> </span><span class="n">isequal</span><span class="p">(</span><span class="n">vari</span><span class="p">,</span><span class="w"> </span><span class="s">"surface_moisture"</span><span class="p">)</span>
+<span class="w">        </span><span class="n">va</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">va</span><span class="o">.*</span><span class="mi">100</span>
+<span class="w">      </span><span class="k">end</span>
+<span class="w">      </span><span class="n">p</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">time_rad_dat</span><span class="p">,</span><span class="w"> </span><span class="n">va</span><span class="p">,</span>
+<span class="w">      </span><span class="n">color</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ourcmap</span><span class="p">(</span><span class="n">jj</span><span class="p">),</span>
+<span class="w">      </span><span class="n">linewidth</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">0.8</span><span class="p">)</span>
+<span class="w">      </span><span class="k">catch</span>
+<span class="w">      </span><span class="k">end</span>
+<span class="w">    </span><span class="k">end</span>
+
+<span class="k">end</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>zonal_polar_plot (generic function with 1 method)
+</code></pre></div>
+<p>create a new figure</p>
+<div class="highlight"><pre><span></span><code><span class="n">f1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">figure</span><span class="p">(</span><span class="s">"polar_lineplot_new"</span><span class="p">,</span><span class="w"> </span><span class="n">figsize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">15</span><span class="p">))</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>PyPlot.Figure(PyObject &lt;Figure size 1000x1500 with 0 Axes&gt;)
+</code></pre></div>
+<p>get the latitude values for which we have data</p>
+<div class="highlight"><pre><span></span><code><span class="n">L</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">collect</span><span class="p">(</span><span class="n">getAxis</span><span class="p">(</span><span class="s">"lat"</span><span class="p">,</span><span class="w"> </span><span class="n">caxes</span><span class="p">(</span><span class="n">cube_msc_lat</span><span class="p">))</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+
+<span class="n">sbps</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">321</span><span class="o">:</span><span class="mi">2</span><span class="o">:</span><span class="mi">332</span>
+<span class="n">labtoshow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s">"a)"</span><span class="p">,</span><span class="w"> </span><span class="s">"b)"</span><span class="p">,</span><span class="w"> </span><span class="s">"c)"</span><span class="p">,</span><span class="w"> </span><span class="s">"d)"</span><span class="p">,</span><span class="w"> </span><span class="s">"e)"</span><span class="p">,</span><span class="w"> </span><span class="s">"f)"</span><span class="p">]</span>
+<span class="n">vari</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">getAxis</span><span class="p">(</span><span class="s">"Variable"</span><span class="p">,</span><span class="w"> </span><span class="n">caxes</span><span class="p">(</span><span class="n">cube_msc_lat</span><span class="p">))</span><span class="o">.</span><span class="n">values</span>
+
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="n">sbp</span><span class="p">,</span><span class="w"> </span><span class="n">lab</span><span class="p">,</span><span class="w"> </span><span class="n">vari</span><span class="p">)</span><span class="w"> </span><span class="k">in</span><span class="w"> </span><span class="n">zip</span><span class="p">(</span><span class="n">sbps</span><span class="p">,</span><span class="w"> </span><span class="n">labtoshow</span><span class="p">,</span><span class="w"> </span><span class="n">vari</span><span class="p">)</span>
+<span class="w">  </span><span class="n">it1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">range</span><span class="p">(</span><span class="mi">72</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="n">stop</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">step</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">-</span><span class="mi">2</span><span class="p">)</span>
+<span class="w">  </span><span class="n">it2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">range</span><span class="p">(</span><span class="mi">72</span><span class="o">/</span><span class="mi">2</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">stop</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">72</span><span class="p">,</span><span class="w"> </span><span class="n">step</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
+<span class="w">  </span><span class="n">zonal_polar_plot</span><span class="p">(</span><span class="n">cube_msc_lat</span><span class="p">,</span><span class="w"> </span><span class="n">sbp</span><span class="p">,</span><span class="w"> </span><span class="n">it1</span><span class="p">,</span><span class="w"> </span><span class="n">vari</span><span class="p">,</span><span class="w"> </span><span class="n">lab</span><span class="p">)</span>
+<span class="w">  </span><span class="n">zonal_polar_plot</span><span class="p">(</span><span class="n">cube_msc_lat</span><span class="p">,</span><span class="w"> </span><span class="n">sbp</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">it2</span><span class="p">,</span><span class="w"> </span><span class="n">vari</span><span class="p">,</span><span class="w"> </span><span class="n">lab</span><span class="p">)</span>
+<span class="k">end</span>
+
+<span class="n">f1</span>
+</code></pre></div>
+<p><img alt="" src="../mdythyv.png"></p>
+<hr>
+<p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></div>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../../HowdoI/howdoi/" class="md-footer__link md-footer__link--prev" aria-label="Previous: How do I ..." rel="prev">
+            <div class="md-footer__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                How do I ...
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../examples_from_esdl_study_2/" class="md-footer__link md-footer__link--next" aria-label="Next: Examples from ESDL study 2" rel="next">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Examples from ESDL study 2
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.top", "navigation.footer", "search.highlight", "search.share", "search.suggest", "toc.follow", "header.autohide"], "search": "../../../../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../../../assets/javascripts/bundle.b425cdc4.min.js"></script>
+      
+        
+          <script src="../../../../javascripts/mathjax.js"></script>
+        
+      
+        
+          <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+        
+      
+        
+          <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        
+      
+    
+  </body>
+</html>
