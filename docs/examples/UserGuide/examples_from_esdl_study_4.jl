@@ -38,7 +38,7 @@ moisture = subsetcube(cube_handle, variable = "surface_moisture", time = 2003:20
 
 # The objective is to estimate histograms of gross primary productivity and surface moisture and split them by AR5 region. We first download a shapefile defining these regions.
 url_link ="https://github.com/meggart/filesforyaxarraydocs/raw/main/IPCCregions_2d5.nc"
-p = Downloads.download(url_link, "IPCCregions_2d5.nc")
+p = Downloads.download(url_link, joinpath(mktempdir(),"IPCCregions_2d5.nc"))
 regions = Cube(p)
 # Cube("/home/lina/howdoi/data/IPCCregions_2d5.nc") # hide
 
