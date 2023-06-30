@@ -560,8 +560,38 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples_from_esdl/" class="md-nav__link">
-        Examples from ESDL
+      <a href="../examples_from_esdl_study_1/" class="md-nav__link">
+        Examples from ESDL study 1
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples_from_esdl_study_2/" class="md-nav__link">
+        Examples from ESDL study 2
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples_from_esdl_study_3/" class="md-nav__link">
+        Examples from ESDL study 3
       </a>
     </li>
   
@@ -848,15 +878,15 @@ Total size: 7.03 KB
   Dim{:lat} Sampled{Float64} 1.0:0.2857142857142857:5.0 ForwardOrdered Regular Points,
   Dim{:Variable} Categorical{String} String["var1", "var2"] ForwardOrdered
 [:, :, 1, 1]
-                      1.0        2.0       …  8.0       9.0        10.0
-  2022-01-01  0.286084   0.605163     0.886795  0.215207    0.0455156
-  2022-01-02  0.69607    0.972043     0.816524  0.267071    0.641706
-  2022-01-03  0.237113   0.308398     0.89402   0.0637493   0.0707279
- ⋮                                         ⋱                        ⋮
-  2022-01-27  0.46023    0.12575   …  0.79797   0.327161    0.381711
-  2022-01-28  0.322262   0.151644     0.486609  0.588469    0.970926
-  2022-01-29  0.0161212  0.393317     0.994598  0.379869    0.844707
-  2022-01-30  0.0924798  0.21203      0.822697  0.187196    0.30726
+                      1.0        …  8.0          9.0       10.0
+  2022-01-01  0.983168      0.000412203  0.887738   0.0499707
+  2022-01-02  0.682249      0.619416     0.212247   0.736721
+  2022-01-03  0.609211      0.340381     0.427748   0.604847
+ ⋮                               ⋱                          ⋮
+  2022-01-27  0.356538   …  0.209179     0.264471   0.692029
+  2022-01-28  0.158023      0.157526     0.715724   0.840579
+  2022-01-29  0.513868      0.678145     0.771949   0.409703
+  2022-01-30  0.0508045     0.820546     0.284301   0.732006
 [and 29 more slices...]
 </code></pre></div>
 <p>Now, the syntax from DimensionalData.jl just works</p>
@@ -873,12 +903,12 @@ Total size: 7.03 KB
 and reference dimensions: 
   Dim{:Variable} Categorical{String} String["var2"] ForwardOrdered
 [:, :, 1]
-                      1.0        2.0
-  2022-01-01  0.749929   0.558516
-  2022-01-02  0.0641937  0.902774
- ⋮                               
-  2022-01-09  0.753253   0.590659
-  2022-01-10  0.394839   0.892724
+                      1.0       2.0
+  2022-01-01  0.166316  0.296807
+  2022-01-02  0.173826  0.46596
+ ⋮                              
+  2022-01-09  0.061522  0.223284
+  2022-01-10  0.275341  0.436815
 [and 14 more slices...]
 </code></pre></div>
 <p>And going back to our YAXArray view is done with</p>

@@ -16,7 +16,7 @@
         <link rel="prev" href="../../../../tutorials/tutorial/">
       
       
-        <link rel="next" href="../../UserGuide/examples_from_esdl/">
+        <link rel="next" href="../../UserGuide/examples_from_esdl_study_1/">
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.17">
@@ -454,14 +454,21 @@
       
         <li class="md-nav__item">
   <a href="#extract-the-axes-names-from-a-cube" class="md-nav__link">
-    extract the axes names from a Cube?
+    Extract the axes names from a Cube
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#obtain-values-from-axes-and-data-from-the-cube" class="md-nav__link">
+    Obtain values from axes and data from the cube
   </a>
   
 </li>
       
         <li class="md-nav__item">
   <a href="#concatenate-cubes" class="md-nav__link">
-    concatenate cubes?
+    Concatenate cubes
   </a>
   
 </li>
@@ -496,8 +503,38 @@
   
   
     <li class="md-nav__item">
-      <a href="../../UserGuide/examples_from_esdl/" class="md-nav__link">
-        Examples from ESDL
+      <a href="../../UserGuide/examples_from_esdl_study_1/" class="md-nav__link">
+        Examples from ESDL study 1
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../UserGuide/examples_from_esdl_study_2/" class="md-nav__link">
+        Examples from ESDL study 2
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../UserGuide/examples_from_esdl_study_3/" class="md-nav__link">
+        Examples from ESDL study 3
       </a>
     </li>
   
@@ -559,14 +596,21 @@
       
         <li class="md-nav__item">
   <a href="#extract-the-axes-names-from-a-cube" class="md-nav__link">
-    extract the axes names from a Cube?
+    Extract the axes names from a Cube
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#obtain-values-from-axes-and-data-from-the-cube" class="md-nav__link">
+    Obtain values from axes and data from the cube
   </a>
   
 </li>
       
         <li class="md-nav__item">
   <a href="#concatenate-cubes" class="md-nav__link">
-    concatenate cubes?
+    Concatenate cubes
   </a>
   
 </li>
@@ -606,9 +650,9 @@
 <div class="admonition question">
 <p class="admonition-title">Question</p>
 </div>
-<p><a id="extract-the-axes-names-from-a-Cube?"></a></p>
-<p><a id="extract-the-axes-names-from-a-Cube?-1"></a></p>
-<h2 id="extract-the-axes-names-from-a-cube">extract the axes names from a Cube?<a class="headerlink" href="#extract-the-axes-names-from-a-cube" title="Permanent link">¤</a></h2>
+<p><a id="Extract-the-axes-names-from-a-Cube"></a></p>
+<p><a id="Extract-the-axes-names-from-a-Cube-1"></a></p>
+<h2 id="extract-the-axes-names-from-a-cube">Extract the axes names from a Cube<a class="headerlink" href="#extract-the-axes-names-from-a-cube" title="Permanent link">¤</a></h2>
 <div class="highlight"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">YAXArrays</span>
 <span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">rand</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
 
@@ -622,9 +666,32 @@
 <div class="admonition question">
 <p class="admonition-title">Question</p>
 </div>
-<p><a id="concatenate-cubes?"></a></p>
-<p><a id="concatenate-cubes?-1"></a></p>
-<h2 id="concatenate-cubes">concatenate cubes?<a class="headerlink" href="#concatenate-cubes" title="Permanent link">¤</a></h2>
+<p><a id="Obtain-values-from-axes-and-data-from-the-cube"></a></p>
+<p><a id="Obtain-values-from-axes-and-data-from-the-cube-1"></a></p>
+<h2 id="obtain-values-from-axes-and-data-from-the-cube">Obtain values from axes and data from the cube<a class="headerlink" href="#obtain-values-from-axes-and-data-from-the-cube" title="Permanent link">¤</a></h2>
+<p>There are two options to collect values from axes. In this examples the axis ranges from 1 to 10. Later we will see that axes can be <code>RangeAxis</code> such as latitude and longitude values, or <code>CategoricalAxis</code> which are strings such as variable names.</p>
+<div class="highlight"><pre><span></span><code><span class="c"># this two examples bring the same result</span>
+<span class="n">collect</span><span class="p">(</span><span class="n">getAxis</span><span class="p">(</span><span class="s">"Dim_1"</span><span class="p">,</span><span class="w"> </span><span class="n">c</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+<span class="n">collect</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+
+<span class="c"># to collect data from a cube works exactly the same as doing it from an array</span>
+<span class="n">c</span><span class="p">[</span><span class="o">:</span><span class="p">,</span><span class="o">:</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>10×10 Matrix{Float64}:
+ 0.0634663  0.396789  0.7373    0.566706  …  0.631449   0.590723  0.40275
+ 0.773576   0.441902  0.726673  0.318699     0.269043   0.577087  0.946558
+ 0.214168   0.402321  0.158864  0.996368     0.52295    0.832788  0.823097
+ 0.662708   0.719463  0.456991  0.809577     0.201562   0.667184  0.368775
+ 0.049579   0.109157  0.15252   0.869511     0.603542   0.344464  0.619922
+ 0.345016   0.522787  0.286934  0.635472  …  0.0260072  0.292739  0.0684495
+ 0.475693   0.523942  0.251787  0.386671     0.956956   0.121949  0.965881
+ 0.887283   0.967919  0.71351   0.602405     0.305558   0.994223  0.535201
+ 0.634806   0.266007  0.906264  0.565973     0.39845    0.171709  0.848829
+ 0.305821   0.925353  0.904689  0.269021     0.0605914  0.436627  0.58968
+</code></pre></div>
+<p><a id="Concatenate-cubes"></a></p>
+<p><a id="Concatenate-cubes-1"></a></p>
+<h2 id="concatenate-cubes">Concatenate cubes<a class="headerlink" href="#concatenate-cubes" title="Permanent link">¤</a></h2>
 <p>It is possible to concatenate several cubes that shared the same dimensions using the [<code>concatenatecubes</code>]@ref function.</p>
 <p>let's create two dummy cubes</p>
 <div class="highlight"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">YAXArrays</span>
@@ -756,13 +823,13 @@ Total size: 23.44 KB
         
         
           
-          <a href="../../UserGuide/examples_from_esdl/" class="md-footer__link md-footer__link--next" aria-label="Next: Examples from ESDL" rel="next">
+          <a href="../../UserGuide/examples_from_esdl_study_1/" class="md-footer__link md-footer__link--next" aria-label="Next: Examples from ESDL study 1" rel="next">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Examples from ESDL
+                Examples from ESDL study 1
               </div>
             </div>
             <div class="md-footer__button md-icon">

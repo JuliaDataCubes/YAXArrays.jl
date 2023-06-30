@@ -496,8 +496,38 @@
   
   
     <li class="md-nav__item">
-      <a href="../../UserGuide/examples_from_esdl/" class="md-nav__link">
-        Examples from ESDL
+      <a href="../../UserGuide/examples_from_esdl_study_1/" class="md-nav__link">
+        Examples from ESDL study 1
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../UserGuide/examples_from_esdl_study_2/" class="md-nav__link">
+        Examples from ESDL study 2
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../UserGuide/examples_from_esdl_study_3/" class="md-nav__link">
+        Examples from ESDL study 3
       </a>
     </li>
   
@@ -604,7 +634,7 @@
 
 <div><div class="highlight"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">Zarr</span><span class="p">,</span><span class="w"> </span><span class="n">YAXArrays</span><span class="p">,</span><span class="w"> </span><span class="n">Dates</span>
 <span class="k">using</span><span class="w"> </span><span class="n">GLMakie</span><span class="p">,</span><span class="w"> </span><span class="n">GeoMakie</span>
-<span class="k">using</span><span class="w"> </span><span class="n">CairoMakie</span><span class="o">.</span><span class="n">GeometryBasics</span>
+<span class="k">using</span><span class="w"> </span><span class="n">GLMakie</span><span class="o">.</span><span class="n">GeometryBasics</span>
 
 <span class="n">store</span><span class="w"> </span><span class="o">=</span><span class="s">"gs://cmip6/CMIP6/ScenarioMIP/DKRZ/MPI-ESM1-2-HR/ssp585/r1i1p1f1/3hr/tas/gn/v20190710/"</span>
 <span class="n">g</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">open_dataset</span><span class="p">(</span><span class="n">zopen</span><span class="p">(</span><span class="n">store</span><span class="p">,</span><span class="w"> </span><span class="n">consolidated</span><span class="o">=</span><span class="nb">true</span><span class="p">))</span>
@@ -633,7 +663,7 @@ Total size: 69.02 GB
 <span class="n">heatmap!</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span><span class="w"> </span><span class="n">lon</span><span class="p">,</span><span class="w"> </span><span class="n">lat</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="p">;</span><span class="w"> </span><span class="n">colormap</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">:seaborn_icefire_gradient</span><span class="p">)</span>
 <span class="n">fig</span>
 </code></pre></div>
-<p><img alt="" src="../btrmymg.png"></p>
+<p><img alt="" src="../smtzkax.png"></p>
 <p><a id="Add-Coastlines-via-the-GeoAxis,-wintri-Projection"></a></p>
 <p><a id="Add-Coastlines-via-the-GeoAxis,-wintri-Projection-1"></a></p>
 <h2 id="add-coastlines-via-the-geoaxis-wintri-projection">Add Coastlines via the GeoAxis, wintri Projection<a class="headerlink" href="#add-coastlines-via-the-geoaxis-wintri-projection" title="Permanent link">¤</a></h2>
@@ -641,7 +671,7 @@ Total size: 69.02 GB
 <span class="n">nlon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">lon</span><span class="w"> </span><span class="o">.-</span><span class="w"> </span><span class="mi">180</span><span class="w"> </span><span class="o">.+</span><span class="w"> </span><span class="n">δlon</span>
 <span class="n">ndata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">circshift</span><span class="p">(</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">192</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
 
-<span class="n">GLMakie</span><span class="o">.</span><span class="n">activate!</span><span class="p">()</span>
+
 <span class="n">fig</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Figure</span><span class="p">(</span><span class="n">resolution</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">1200</span><span class="p">,</span><span class="mi">600</span><span class="p">))</span>
 <span class="n">ax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GeoAxis</span><span class="p">(</span><span class="n">fig</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
 <span class="n">surface!</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span><span class="w"> </span><span class="n">nlon</span><span class="p">,</span><span class="w"> </span><span class="n">lat</span><span class="p">,</span><span class="w"> </span><span class="n">ndata</span><span class="p">;</span><span class="w"> </span><span class="n">colormap</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">:seaborn_icefire_gradient</span><span class="p">,</span><span class="w"> </span><span class="n">shading</span><span class="o">=</span><span class="nb">false</span><span class="p">)</span>
@@ -649,7 +679,7 @@ Total size: 69.02 GB
 <span class="n">translate!</span><span class="p">(</span><span class="n">cl</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">1000</span><span class="p">)</span>
 <span class="n">fig</span>
 </code></pre></div>
-<p><img alt="" src="../xgbrdsh.png"></p>
+<p><img alt="" src="../sfaffqp.png"></p>
 <p><a id="Moll-projection"></a></p>
 <p><a id="Moll-projection-1"></a></p>
 <h2 id="moll-projection">Moll projection<a class="headerlink" href="#moll-projection" title="Permanent link">¤</a></h2>
@@ -660,7 +690,7 @@ Total size: 69.02 GB
 <span class="n">translate!</span><span class="p">(</span><span class="n">cl</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">1000</span><span class="p">)</span>
 <span class="n">fig</span>
 </code></pre></div>
-<p><img alt="" src="../aoaxkmn.png"></p>
+<p><img alt="" src="../vtljpwq.png"></p>
 <p><a id="D-sphere-plot"></a></p>
 <p><a id="D-sphere-plot-1"></a></p>
 <h2 id="3d-sphere-plot">3D sphere plot<a class="headerlink" href="#3d-sphere-plot" title="Permanent link">¤</a></h2>
@@ -679,7 +709,7 @@ Total size: 69.02 GB
 <span class="n">rotate!</span><span class="p">(</span><span class="n">ax</span><span class="o">.</span><span class="n">scene</span><span class="p">,</span><span class="w"> </span><span class="mf">2.5</span><span class="p">)</span>
 <span class="n">fig</span>
 </code></pre></div>
-<p><img alt="" src="../bsnnnox.png"></p>
+<p><img alt="" src="../wmgsgxl.png"></p>
 <hr>
 <p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></div>
 
