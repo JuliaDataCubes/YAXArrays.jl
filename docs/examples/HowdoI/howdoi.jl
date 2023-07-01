@@ -6,7 +6,7 @@
 # ## Extract the axes names from a Cube
 
 using YAXArrays
-c = YAXArray(rand(10,10,5))
+c = YAXArray(rand(10, 10, 5))
 
 caxes(c)
 
@@ -21,7 +21,7 @@ collect(getAxis("Dim_1", c).values)
 collect(c.axes[1].values)
 
 ## to collect data from a cube works exactly the same as doing it from an array
-c[:,:,1]
+c[:, :, 1]
 
 
 
@@ -46,25 +46,25 @@ ds2 = YAXArray(axlist, data2)
 
 # Now we can concatenate ```ds1``` and ```ds2``` cubes:
 
-dsfinal = concatenatecubes([ds1, ds2], 
+dsfinal = concatenatecubes([ds1, ds2],
     CategoricalAxis("Variables", ["var1", "var2"]))
 
 dsfinal
 
 
-# ##  Subsetting a Cube
+# ## How do I subset a Cube?
 
 # Let's start by creating a dummy cube
 
 ## define the time span of the cube
 using Dates
-t =  Date("2020-01-01"):Month(1):Date("2022-12-31")
+t = Date("2020-01-01"):Month(1):Date("2022-12-31")
 
 ## create cube axes
 axes = [RangeAxis("Lon", 1:10), RangeAxis("Lat", 1:10), RangeAxis("Time", t)]
 
 ## assign values to a cube
-c = YAXArray(axes, reshape(1:3600, (10,10,36)))
+c = YAXArray(axes, reshape(1:3600, (10, 10, 36)))
 
 # Now we subset the cube by any dimension
 
@@ -72,19 +72,50 @@ c = YAXArray(axes, reshape(1:3600, (10,10,36)))
 ctime = c[Time=2021:2022]
 
 ## subset cube by a specific date and date range
-ctime2 = c[Time=Date(2021-01-05)]
-ctime3 = c[Time=Date(2021-01-05)..Date(2021-01-12)] 
+ctime2 = c[Time=Date(2021 - 01 - 05)]
+ctime3 = c[Time=Date(2021 - 01 - 05) .. Date(2021 - 01 - 12)]
 
 ## subset cube by longitude and latitude
-clonlat = c[Lon=1..5, Lat=5..10] # check even numbers range, it is ommiting them
+clonlat = c[Lon=1 .. 5, Lat=5 .. 10] # check even numbers range, it is ommiting them
 
 
-# ##  Applying map algebra
+# ##  How do I apply map algebra?
 # Our next step is map algebra computations. This can be done effectively using the 'map' function. For example:
 
-## cubes with only spatio-temporal dimensions
-map((x,y)->x*y, ds1, ds2)
+## multiplying cubes with only spatio-temporal dimensions
+map((x, y) -> x * y, ds1, ds2)
 
 ## cubes with more than 3 dimensions
-map((x,y)->x*y, dsfinal[Variables="Var1"], dsfinal[Variables="Var2"])
+map((x, y) -> x * y, dsfinal[Variables="Var1"], dsfinal[Variables="Var2"])
 
+# To add some complexity, we will multiply each value for π and then divided for the sum of each time step. We will use the `ds1` cube for this purpose.
+mapslices(ds1, dims=("Lon", "Lat")) do xin
+    (xin * π) ./ maximum(skipmissing(xin))
+end
+
+# ## How do I use the CubeTable function?
+# The function "CubeTable" creates an iterable table and the result is a DataCube. It is therefore very handy for grouping data and computing statistics by class. It uses `OnlineStats.jl` to calculate statistics, and weighted statistics can be calculated as well.
+
+# Here we will use the `ds1` Cube  defined previously and we create a mask for data classification.
+
+## cube containing a mask with classes 1, 2 and 3
+classes = YAXArray([getAxis("lon", dsfinal), getAxis("lat", dsfinal)], rand(1:3, 10, 15))
+
+using CairoMakie
+CairoMakie.activate!()
+# This is how our classification map looks like
+heatmap(classes[:, :])
+
+# Now we define the input cubes that will be considered for the iterable table
+t = CubeTable(values=ds1, classes=classes)
+
+using DataFrames
+using OnlineStats
+## visualiztion of the CubeTable
+DataFrame(t[1])
+
+# In this line we calculate the `Mean` for each class
+fitcube = cubefittable(t, Mean, :values, by=(:classes))
+
+# We can also use more than one criteria for grouping the values. In the next example, the mean is calculated for each class and timestep.
+fitcube = cubefittable(t, Mean, :values, by=(:classes, :time))
