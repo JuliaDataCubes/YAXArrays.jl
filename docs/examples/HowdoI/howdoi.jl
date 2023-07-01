@@ -3,7 +3,7 @@
 
 # !!! question
 
-# ## extract the axes names from a Cube?
+# ## Extract the axes names from a Cube
 
 using YAXArrays
 c = YAXArray(rand(10,10,5))
@@ -12,7 +12,20 @@ caxes(c)
 
 # !!! question
 
-# ## concatenate cubes?
+# ## Obtain values from axes and data from the cube
+
+# There are two options to collect values from axes. In this examples the axis ranges from 1 to 10. Later we will see that axes can be `RangeAxis` such as latitude and longitude values, or `CategoricalAxis` which are strings such as variable names.
+
+## this two examples bring the same result
+collect(getAxis("Dim_1", c).values)
+collect(c.axes[1].values)
+
+## to collect data from a cube works exactly the same as doing it from an array
+c[:,:,1]
+
+
+
+# ## Concatenate cubes
 
 # It is possible to concatenate several cubes that shared the same dimensions using the [`concatenatecubes`]@ref function.
 

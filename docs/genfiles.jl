@@ -12,8 +12,8 @@ function getfiles()
     srcsfiles = []
     for f in folders
         names = readdir(joinpath(@__DIR__, ".", "examples", f))
-        setdiff!(names, [".DS_Store"])
-        fpaths  = "$(f)/" .* names
+        setdiff!(names, [".DS_Store", "examples_from_esdl_study_4.jl"])
+        fpaths = "$(f)/" .* names
         srcsfiles = vcat(srcsfiles, fpaths...)
     end
     return srcsfiles
@@ -23,7 +23,8 @@ srcsfiles = getfiles()
 
 for (d, paths) in (("tutorial", srcsfiles),)
     for p in paths
-    Literate.markdown(get_example_path(p), joinpath(OUTPUT, dirname(p));
+        Literate.markdown(get_example_path(p), joinpath(OUTPUT, dirname(p));
             documenter=true)
     end
+
 end

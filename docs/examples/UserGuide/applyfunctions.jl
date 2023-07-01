@@ -112,7 +112,7 @@ function mean_seasonal_cycle(c; ndays = 365)
     return msc
 end
 
-msc = mean_seasonal_cycle(c)
+msc = mean_seasonal_cycle(c);
 
 # ## Plot results: mean seasonal cycle
 

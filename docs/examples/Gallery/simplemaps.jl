@@ -1,6 +1,6 @@
 using Zarr, YAXArrays, Dates
 using GLMakie, GeoMakie
-using CairoMakie.GeometryBasics
+using GLMakie.GeometryBasics
 
 store ="gs://cmip6/CMIP6/ScenarioMIP/DKRZ/MPI-ESM1-2-HR/ssp585/r1i1p1f1/3hr/tas/gn/v20190710/"
 g = open_dataset(zopen(store, consolidated=true))
@@ -26,7 +26,7 @@ fig
 nlon = lon .- 180 .+ δlon
 ndata = circshift(data, (192,1))
 
-GLMakie.activate!()
+
 fig = Figure(resolution = (1200,600))
 ax = GeoAxis(fig[1,1])
 surface!(ax, nlon, lat, ndata; colormap = :seaborn_icefire_gradient, shading=false)
