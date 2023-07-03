@@ -13,7 +13,9 @@ using Distributed:
     remotecall, 
     @spawn, 
     AbstractWorkerPool, 
-    default_worker_pool
+    default_worker_pool, 
+    CachingPool
+import ..Cubes: cubechunks, iscompressed, chunkoffset, CubeAxis, YAXArray, caxes, YAXSlice
 import ..Cubes: cubechunks, iscompressed, chunkoffset, YAXArray, caxes, YAXSlice
 import ..YAXArrays: findAxis, getOutAxis, getAxis
 #import ..Cubes.Axes:
@@ -241,6 +243,8 @@ mutable struct DATConfig{NIN,NOUT}
     include_loopvars::Bool
     ""
     ntr::Any
+    "Flag if GC should be called explicitly. Probably necessary for many runs in Julia 1.9"
+    do_gc::Bool
     "Additional arguments for the inner function"
     addargs::Any
     "Additional keyword arguments for the inner function"
@@ -257,6 +261,7 @@ function DATConfig(
     include_loopvars,
     allow_irregular,
     nthreads,
+    do_gc,
     addargs,
     kwargs,
 )
@@ -287,6 +292,7 @@ function DATConfig(
         inplace,                                    # inplace
         include_loopvars,
         nthreads,
+        do_gc,
         addargs,                                    # addargs
         kwargs,
     )
@@ -425,6 +431,7 @@ function mapCube(
     nthreads = ispar ? Dict(i => remotecall_fetch(Threads.nthreads, i) for i in workers()) :
                [Threads.nthreads()],
     loopchunksize = Dict(),
+    do_gc = true,
     kwargs...,
 )
 
@@ -462,6 +469,7 @@ function mapCube(
         include_loopvars,
         irregular_loopranges,
         nthreads,
+        do_gc,
         addargs,
         kwargs,
     )
@@ -659,22 +667,6 @@ _writedata(d::Array{<:Any,0},cache::Array{<:Any,0},::Tuple{}) = d[] = cache[]
 updateinars(dc, r, incaches) = updatears(dc.incubes, r, :read, incaches)
 writeoutars(dc, r, outcaches) = updatears(dc.outcubes, r, :write, outcaches)
 
-function pmap_with_data(f, p::AbstractWorkerPool, c...; initfunc, progress=nothing, kwargs...)
-    d = Dict(ip=>remotecall(initfunc, ip) for ip in workers(p))
-    allrefs = @spawn d
-    function fnew(args...,)
-        refdict = fetch(allrefs)
-        myargs = fetch(refdict[myid()])
-        f(args..., myargs)
-    end
-    if progress !==nothing
-        progress_pmap(fnew,p,c...;progress=progress,kwargs...)
-    else
-        pmap(fnew,p,c...;kwargs...)
-    end
-end
-pmap_with_data(f,c...;initfunc,kwargs...) = pmap_with_data(f,default_worker_pool(),c...;initfunc,kwargs...) 
-
 function moduleloadedeverywhere()
     try
         isloaded = map(workers()) do w
@@ -695,14 +687,13 @@ function runLoop(dc::DATConfig, showprog)
         moduleloadedeverywhere() || error(
             "YAXArrays is not loaded on all workers. Please run `@everywhere using YAXArrays` to fix.",
         )
-        dcref = @spawn dc
-        prepfunc = ()->getallargs(fetch(dcref))
-        prog = showprog ? Progress(length(allRanges)) : nothing
-        pmap_with_data(allRanges, initfunc=prepfunc, progress=prog) do r, prep
-            incaches, outcaches, args = prep
+        mapfun = showprog ? progress_pmap : pmap
+        mapfun(CachingPool(workers()),allRanges, on_error=identity) do r
+            incaches, outcaches, args = getallargs(dc)
             updateinars(dc, r, incaches)
             innerLoop(r, args...)
             writeoutars(dc, r, outcaches)
+            dc.do_gc && GC.gc()
         end
     else
         incaches, outcaches, args = getallargs(dc)
@@ -711,6 +702,7 @@ function runLoop(dc::DATConfig, showprog)
             updateinars(dc, r, incaches)
             innerLoop(r, args...)
             writeoutars(dc, r, outcaches)
+            dc.do_gc && GC.gc()
         end
     end
     dc.outcubes

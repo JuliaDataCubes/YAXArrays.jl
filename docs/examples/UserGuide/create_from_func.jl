@@ -55,4 +55,4 @@ gen_cube = mapCube(g, (lon, lat, time);
 # !!! info "slicing dim"
 #     Note that now the broadcasted dimension is `lon`.
 
-gen_cube.data[:,:,1]
+gen_cube.data[:, :, 1]

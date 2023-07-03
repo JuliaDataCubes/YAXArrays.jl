@@ -102,7 +102,12 @@ function YAXColumn(t::YAXTableChunk,ivar)
             allax = Base.setindex(allax,true,il)
         end
         for il in ic.icolon
-            allax = Base.setindex(allax,Colon(),il)
+            i_insert = findfirst(==(il),cumsum(allax))
+            allax = if i_insert === nothing 
+                (allax...,Colon())
+            else
+                (allax[1:i_insert]...,Colon(),allax[i_insert+1:end]...)
+            end
         end
         inarbc = if ic.colonperm === nothing
             pa = PickAxisArray(buf, allax)
