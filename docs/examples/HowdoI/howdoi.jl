@@ -15,11 +15,11 @@ caxes(c)
 
 # ## Obtain values from axes and data from the cube
 
-# There are two options to collect values from axes. In this examples the axis ranges from 1 to 10. Later we will see that axes can be `RangeAxis` such as latitude and longitude values, or `CategoricalAxis` which are strings such as variable names.
+# There are two options to collect values from axes. In this examples the axis ranges from 1 to 10.
 
 ## this two examples bring the same result
-collect(getAxis("Dim_1", c).values)
-collect(c.axes[1].values)
+collect(getAxis("Dim_1", c).val)
+collect(c.axes[1].val)
 
 ## to collect data from a cube works exactly the same as doing it from an array
 c[:, :, 1]
@@ -105,7 +105,7 @@ classes = YAXArray((getAxis("lon", dsfinal), getAxis("lat", dsfinal)), rand(1:3,
 using CairoMakie
 CairoMakie.activate!()
 # This is how our classification map looks like
-heatmap(classes[:, :])
+heatmap(classes.data[:, :])
 
 # Now we define the input cubes that will be considered for the iterable table
 t = CubeTable(values=ds1, classes=classes)

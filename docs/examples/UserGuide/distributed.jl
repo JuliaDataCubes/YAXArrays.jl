@@ -1,6 +1,7 @@
 # # How to calculate a time mean
 
 using YAXArrays, Statistics, Zarr
+using DimensionalData
 using Dates
 axlist = (
     Dim{:time}(Date("2022-01-01"):Day(1):Date("2022-01-30")),

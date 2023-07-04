@@ -6,6 +6,7 @@ using Dates
 # !!! warning This is currently broken.
 # This is broken after the switch to DimensionalData
 
+#=
 f(lo, la, t) = (lo + la + Dates.dayofyear(t))
 
 # ## Wrap function for mapCube output
@@ -59,3 +60,4 @@ gen_cube = mapCube(g, (lon, lat, time);
 #     Note that now the broadcasted dimension is `lon`.
 
 gen_cube.data[:, :, 1]
+=#

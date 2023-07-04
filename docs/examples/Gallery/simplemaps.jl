@@ -1,4 +1,5 @@
 using Zarr, YAXArrays, Dates
+using DimensionalData
 using GLMakie, GeoMakie
 using GLMakie.GeometryBasics
 

@@ -13,6 +13,7 @@
 #If we set up a dummy data cube which has all numbers between 1 and 10000.
 
 using YAXArrays
+using DimensionalData
 axes = (Dim{:Lon}(1:10), Dim{:Lat}(1:10), Dim{:Time}(1:100))
 original = YAXArray(axes, reshape(1:10000, (10,10,100)))
 

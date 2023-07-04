@@ -10,14 +10,14 @@
 # The dimensions of a YAXArray are now `Dimension` types from DimensionalData 
 # and there is no difference anymore in the construction for categorical or 
 
-# ## Find the axis in a cube
-# This was previously done via the `findAxis` function and is now done via lookup
-
-lookup(arr, :x)
-
 
 # ## Get the axes of a YAXArray
 # To get the axes of a YAXArray use the `dims` function instead of the `caxes` function
+using DimensionalData
+using YAXArrays 
+
+axes = (Dim{:Lon}(1:10), Dim{:Lat}(1:10), Dim{:Time}(1:100))
+arr = YAXArray(axes, reshape(1:10000, (10,10,100)))
 
 dims(arr)
 
