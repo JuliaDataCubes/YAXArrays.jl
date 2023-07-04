@@ -13,17 +13,17 @@
       
       
       
-        <link rel="prev" href="../creating/">
+        <link rel="prev" href="../../../..">
       
       
-        <link rel="next" href="../setchuncks/">
+        <link rel="next" href="../../UserGuide/creating/">
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.18">
     
     
       
-        <title>Saving YAXArrays and Datasets - YAXArrays</title>
+        <title>Switch to DimensionalData - YAXArrays</title>
       
     
     
@@ -77,7 +77,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#saving-yaxarrays-and-datasets" class="md-skip">
+        <a href="#axis-lists-have-to-be-tuples-instead-of-vector" class="md-skip">
           Skip to content
         </a>
       
@@ -111,7 +111,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              Saving YAXArrays and Datasets
+              Switch to DimensionalData
             
           </span>
         </div>
@@ -271,36 +271,6 @@
 
   
   
-  
-    <li class="md-nav__item">
-      <a href="../../HowdoI/switchtodimarray/" class="md-nav__link">
-        Switch to DimensionalData
-      </a>
-    </li>
-  
-
-    
-      
-      
-      
-
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../creating/" class="md-nav__link">
-        Creating YAXArrays and Datasets
-      </a>
-    </li>
-  
-
-    
-      
-      
-      
-
-  
-  
     
   
   
@@ -309,16 +279,14 @@
       <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
       
       
-        
-      
       
         <label class="md-nav__link md-nav__link--active" for="__toc">
-          Saving YAXArrays and Datasets
+          Switch to DimensionalData
           <span class="md-nav__icon md-icon"></span>
         </label>
       
       <a href="./" class="md-nav__link md-nav__link--active">
-        Saving YAXArrays and Datasets
+        Switch to DimensionalData
       </a>
       
         
@@ -326,8 +294,6 @@
 <nav class="md-nav md-nav--secondary" aria-label="Table of contents">
   
   
-  
-    
   
   
     <label class="md-nav__title" for="__toc">
@@ -337,43 +303,36 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#saving-a-yaxarray-to-zarr" class="md-nav__link">
-    Saving a YAXArray to Zarr
+  <a href="#axis-lists-have-to-be-tuples-instead-of-vector" class="md-nav__link">
+    Axis lists have to be Tuples instead of Vector
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#saving-a-yaxarray-to-netcdf" class="md-nav__link">
-    Saving a YAXArray to NetCDF
+  <a href="#dim-instead-of-rangeaxis-and-categoricalaxis" class="md-nav__link">
+    Dim instead of RangeAxis and CategoricalAxis
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#saving-a-dataset" class="md-nav__link">
-    Saving a Dataset
+  <a href="#get-the-axes-of-a-yaxarray" class="md-nav__link">
+    Get the axes of a YAXArray
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#overwriting-a-dataset" class="md-nav__link">
-    Overwriting a Dataset
+  <a href="#copy-an-axes-with-the-same-name-but-different-values" class="md-nav__link">
+    Copy an axes with the same name but different values
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#appending-to-a-dataset" class="md-nav__link">
-    Appending to a Dataset
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#datacube-skeleton-without-the-actual-data" class="md-nav__link">
-    Datacube Skeleton without the actual data
+  <a href="#subsetting-is-including-not-excluding" class="md-nav__link">
+    Subsetting is including not excluding
   </a>
   
 </li>
@@ -394,7 +353,37 @@
   
   
     <li class="md-nav__item">
-      <a href="../setchuncks/" class="md-nav__link">
+      <a href="../../UserGuide/creating/" class="md-nav__link">
+        Creating YAXArrays and Datasets
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../UserGuide/saving/" class="md-nav__link">
+        Saving YAXArrays and Datasets
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../UserGuide/setchuncks/" class="md-nav__link">
         Setting chunks's size
       </a>
     </li>
@@ -409,7 +398,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../applyfunctions/" class="md-nav__link">
+      <a href="../../UserGuide/applyfunctions/" class="md-nav__link">
         Apply functions on YAXArrays
       </a>
     </li>
@@ -424,7 +413,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../openNetCDF/" class="md-nav__link">
+      <a href="../../UserGuide/openNetCDF/" class="md-nav__link">
         Open NetCDF
       </a>
     </li>
@@ -439,7 +428,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../openZarr/" class="md-nav__link">
+      <a href="../../UserGuide/openZarr/" class="md-nav__link">
         Open Zarr (Store)
       </a>
     </li>
@@ -454,7 +443,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../distributed/" class="md-nav__link">
+      <a href="../../UserGuide/distributed/" class="md-nav__link">
         Distributed processes
       </a>
     </li>
@@ -499,7 +488,7 @@
   
   
     <li class="md-nav__item">
-      <a href="../../HowdoI/howdoi/" class="md-nav__link">
+      <a href="../howdoi/" class="md-nav__link">
         How do I ...
       </a>
     </li>
@@ -553,8 +542,6 @@
   
   
   
-    
-  
   
     <label class="md-nav__title" for="__toc">
       <span class="md-nav__icon md-icon"></span>
@@ -563,43 +550,36 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#saving-a-yaxarray-to-zarr" class="md-nav__link">
-    Saving a YAXArray to Zarr
+  <a href="#axis-lists-have-to-be-tuples-instead-of-vector" class="md-nav__link">
+    Axis lists have to be Tuples instead of Vector
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#saving-a-yaxarray-to-netcdf" class="md-nav__link">
-    Saving a YAXArray to NetCDF
+  <a href="#dim-instead-of-rangeaxis-and-categoricalaxis" class="md-nav__link">
+    Dim instead of RangeAxis and CategoricalAxis
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#saving-a-dataset" class="md-nav__link">
-    Saving a Dataset
+  <a href="#get-the-axes-of-a-yaxarray" class="md-nav__link">
+    Get the axes of a YAXArray
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#overwriting-a-dataset" class="md-nav__link">
-    Overwriting a Dataset
+  <a href="#copy-an-axes-with-the-same-name-but-different-values" class="md-nav__link">
+    Copy an axes with the same name but different values
   </a>
   
 </li>
       
         <li class="md-nav__item">
-  <a href="#appending-to-a-dataset" class="md-nav__link">
-    Appending to a Dataset
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#datacube-skeleton-without-the-actual-data" class="md-nav__link">
-    Datacube Skeleton without the actual data
+  <a href="#subsetting-is-including-not-excluding" class="md-nav__link">
+    Subsetting is including not excluding
   </a>
   
 </li>
@@ -619,108 +599,41 @@
                   
 
 
-<div><p><a id="Saving-YAXArrays-and-Datasets"></a></p>
-<p><a id="Saving-YAXArrays-and-Datasets-1"></a></p>
-<h1 id="saving-yaxarrays-and-datasets">Saving YAXArrays and Datasets<a class="headerlink" href="#saving-yaxarrays-and-datasets" title="Permanent link">¤</a></h1>
-<p>Is possible to save datasets and YAXArray directly to zarr files.</p>
-<p><a id="Saving-a-YAXArray-to-Zarr"></a></p>
-<p><a id="Saving-a-YAXArray-to-Zarr-1"></a></p>
-<h2 id="saving-a-yaxarray-to-zarr">Saving a YAXArray to Zarr<a class="headerlink" href="#saving-a-yaxarray-to-zarr" title="Permanent link">¤</a></h2>
-<p>One can save any <code>YAXArray</code> using the <code>savecube</code> function. Simply add a path as an argument and the cube will be saved.</p>
-<div class="highlight"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">YAXArrays</span><span class="p">,</span><span class="w"> </span><span class="n">Zarr</span>
-<span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">rand</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">20</span><span class="p">))</span>
-<span class="n">f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tempname</span><span class="p">()</span>
-<span class="n">savecube</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">f</span><span class="p">,</span><span class="n">driver</span><span class="o">=</span><span class="ss">:zarr</span><span class="p">)</span>
+  <h1>Switch to DimensionalData</h1>
+
+<div><p>The purpose of this section is to show how to switch from the native YAXArray type to the new type based on DimensionalData.jl</p>
+<p><a id="Axis-lists-have-to-be-Tuples-instead-of-Vector"></a></p>
+<p><a id="Axis-lists-have-to-be-Tuples-instead-of-Vector-1"></a></p>
+<h2 id="axis-lists-have-to-be-tuples-instead-of-vector">Axis lists have to be Tuples instead of Vector<a class="headerlink" href="#axis-lists-have-to-be-tuples-instead-of-vector" title="Permanent link">¤</a></h2>
+<p>When you want to define a YAXArray from scratch the list of Axis has to be given as a Tuple instead of a vector. Otherwise you would run into a DimensionMismatch error.</p>
+<p><a id="Dim-instead-of-RangeAxis-and-CategoricalAxis"></a></p>
+<p><a id="Dim-instead-of-RangeAxis-and-CategoricalAxis-1"></a></p>
+<h2 id="dim-instead-of-rangeaxis-and-categoricalaxis">Dim instead of RangeAxis and CategoricalAxis<a class="headerlink" href="#dim-instead-of-rangeaxis-and-categoricalaxis" title="Permanent link">¤</a></h2>
+<p>The dimensions of a YAXArray are now <code>Dimension</code> types from DimensionalData and there is no difference anymore in the construction for categorical or</p>
+<p><a id="Get-the-axes-of-a-YAXArray"></a></p>
+<p><a id="Get-the-axes-of-a-YAXArray-1"></a></p>
+<h2 id="get-the-axes-of-a-yaxarray">Get the axes of a YAXArray<a class="headerlink" href="#get-the-axes-of-a-yaxarray" title="Permanent link">¤</a></h2>
+<p>To get the axes of a YAXArray use the <code>dims</code> function instead of the <code>caxes</code> function</p>
+<div class="highlight"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">DimensionalData</span>
+<span class="k">using</span><span class="w"> </span><span class="n">YAXArrays</span>
+
+<span class="n">axes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:Lon</span><span class="p">}(</span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">),</span><span class="w"> </span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:Lat</span><span class="p">}(</span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">),</span><span class="w"> </span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:Time</span><span class="p">}(</span><span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="p">))</span>
+<span class="n">arr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span><span class="w"> </span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="mi">10000</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">100</span><span class="p">)))</span>
+
+<span class="n">dims</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
-Dim{:Dim_1, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-Dim{:Dim_2, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
-Total size: 1.56 KB
+<div class="highlight"><pre><span></span><code>Dim{:Lon} Sampled{Int64} 1:10 ForwardOrdered Regular Points,
+Dim{:Lat} Sampled{Int64} 1:10 ForwardOrdered Regular Points,
+Dim{:Time} Sampled{Int64} 1:100 ForwardOrdered Regular Points
 </code></pre></div>
-<p><a id="Saving-a-YAXArray-to-NetCDF"></a></p>
-<p><a id="Saving-a-YAXArray-to-NetCDF-1"></a></p>
-<h2 id="saving-a-yaxarray-to-netcdf">Saving a YAXArray to NetCDF<a class="headerlink" href="#saving-a-yaxarray-to-netcdf" title="Permanent link">¤</a></h2>
-<p>Saving to NetCDF works exactly the same way.</p>
-<div class="highlight"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">YAXArrays</span><span class="p">,</span><span class="w"> </span><span class="n">Zarr</span><span class="p">,</span><span class="w"> </span><span class="n">NetCDF</span>
-<span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">rand</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">20</span><span class="p">))</span>
-<span class="n">f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tempname</span><span class="p">()</span>
-<span class="n">savecube</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">f</span><span class="p">,</span><span class="n">driver</span><span class="o">=</span><span class="ss">:netcdf</span><span class="p">)</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
-Dim{:Dim_1, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-Dim{:Dim_2, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
-Total size: 1.56 KB
-</code></pre></div>
-<p><a id="Saving-a-Dataset"></a></p>
-<p><a id="Saving-a-Dataset-1"></a></p>
-<h2 id="saving-a-dataset">Saving a Dataset<a class="headerlink" href="#saving-a-dataset" title="Permanent link">¤</a></h2>
-<p>Saving Datasets can be done using the <code>savedataset</code> function.</p>
-<div class="highlight"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">YAXArrays</span><span class="p">,</span><span class="w"> </span><span class="n">Zarr</span>
-<span class="n">ds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Dataset</span><span class="p">(</span><span class="n">x</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">rand</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">20</span><span class="p">)),</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">rand</span><span class="p">(</span><span class="mi">10</span><span class="p">)));</span>
-<span class="n">f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tempname</span><span class="p">();</span>
-<span class="n">savedataset</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span><span class="n">path</span><span class="o">=</span><span class="n">f</span><span class="p">,</span><span class="n">driver</span><span class="o">=</span><span class="ss">:zarr</span><span class="p">)</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code>YAXArray Dataset
-Shared Axes: 
-   Dim{:Dim_1, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-Variables: 
-x
- └── Dim{:Dim_2, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
-y
-</code></pre></div>
-<p><a id="Overwriting-a-Dataset"></a></p>
-<p><a id="Overwriting-a-Dataset-1"></a></p>
-<h2 id="overwriting-a-dataset">Overwriting a Dataset<a class="headerlink" href="#overwriting-a-dataset" title="Permanent link">¤</a></h2>
-<p>If a path already exists, an error will be thrown. Set <code>overwrite=true</code> to delete the existing dataset</p>
-<div class="highlight"><pre><span></span><code><span class="n">savedataset</span><span class="p">(</span><span class="n">ds</span><span class="p">,</span><span class="n">path</span><span class="o">=</span><span class="n">f</span><span class="p">,</span><span class="n">driver</span><span class="o">=</span><span class="ss">:zarr</span><span class="p">,</span><span class="w"> </span><span class="n">overwrite</span><span class="o">=</span><span class="nb">true</span><span class="p">)</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code>YAXArray Dataset
-Shared Axes: 
-   Dim{:Dim_1, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-Variables: 
-x
- └── Dim{:Dim_2, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
-y
-</code></pre></div>
-<p>Look at the docs for more information</p>
-<p>savedataset(ds::Dataset; path = "", persist = nothing, overwrite = false, append = false, skeleton=false, backend = :all,     driver = backend, max_cache = 5e8, writefac=4.0)</p>
-<p>Saves a Dataset into a file at <code>path</code> with the format given by <code>driver</code>, i.e., driver=:netcdf or driver=:zarr.</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>overwrite = true, deletes ALL your data and it will create a new file.</p>
-</div>
-<p><a id="Appending-to-a-Dataset"></a></p>
-<p><a id="Appending-to-a-Dataset-1"></a></p>
-<h2 id="appending-to-a-dataset">Appending to a Dataset<a class="headerlink" href="#appending-to-a-dataset" title="Permanent link">¤</a></h2>
-<p>New variables can be added to an existing dataset using the <code>append=true</code> keyword.</p>
-<div class="highlight"><pre><span></span><code><span class="n">ds2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Dataset</span><span class="p">(</span><span class="n">z</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">rand</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">20</span><span class="p">,</span><span class="mi">5</span><span class="p">)))</span>
-<span class="n">savedataset</span><span class="p">(</span><span class="n">ds2</span><span class="p">,</span><span class="w"> </span><span class="n">path</span><span class="o">=</span><span class="n">f</span><span class="p">,</span><span class="n">backend</span><span class="o">=</span><span class="ss">:zarr</span><span class="p">,</span><span class="n">append</span><span class="o">=</span><span class="nb">true</span><span class="p">)</span>
-<span class="n">open_dataset</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="n">driver</span><span class="o">=</span><span class="ss">:zarr</span><span class="p">)</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code>YAXArray Dataset
-Shared Axes: 
-   Dim{:Dim_1, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, StepRange{Int64, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-Variables: 
-x
- └── Dim{:Dim_2, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, StepRange{Int64, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
-z
- └── Dim{:Dim_2, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, StepRange{Int64, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
- └── Dim{:Dim_3, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, StepRange{Int64, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5])
-y
-</code></pre></div>
-<p><a id="Datacube-Skeleton-without-the-actual-data"></a></p>
-<p><a id="Datacube-Skeleton-without-the-actual-data-1"></a></p>
-<h2 id="datacube-skeleton-without-the-actual-data">Datacube Skeleton without the actual data<a class="headerlink" href="#datacube-skeleton-without-the-actual-data" title="Permanent link">¤</a></h2>
-<p>Sometimes one merely wants to create a datacube  "Skeleton" on disk and gradually fill it with data. Here we create YAXArray and write only the axis data and array metadata to disk, while no actual array data is copied:</p>
-<div class="highlight"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">YAXArrays</span><span class="p">,</span><span class="w"> </span><span class="n">Zarr</span>
-<span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">zeros</span><span class="p">(</span><span class="kt">Union</span><span class="p">{</span><span class="kt">Missing</span><span class="p">,</span><span class="w"> </span><span class="kt">Int32</span><span class="p">},</span><span class="mi">10</span><span class="p">,</span><span class="mi">20</span><span class="p">))</span>
-<span class="n">f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tempname</span><span class="p">();</span>
-<span class="n">r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">savecube</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">f</span><span class="p">,</span><span class="n">driver</span><span class="o">=</span><span class="ss">:zarr</span><span class="p">,</span><span class="n">skeleton</span><span class="o">=</span><span class="nb">true</span><span class="p">);</span>
-<span class="n">all</span><span class="p">(</span><span class="n">ismissing</span><span class="p">,</span><span class="n">r</span><span class="p">[</span><span class="o">:</span><span class="p">,</span><span class="o">:</span><span class="p">])</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code>true
-</code></pre></div>
-<p>The <code>skeleton</code> argument is also available for <code>savedataset</code>.</p>
+<p><a id="Copy-an-axes-with-the-same-name-but-different-values"></a></p>
+<p><a id="Copy-an-axes-with-the-same-name-but-different-values-1"></a></p>
+<h2 id="copy-an-axes-with-the-same-name-but-different-values">Copy an axes with the same name but different values<a class="headerlink" href="#copy-an-axes-with-the-same-name-but-different-values" title="Permanent link">¤</a></h2>
+<p>Use DD.rebuild(ax, values) instead of axcopy(ax, values)</p>
+<p><a id="Subsetting-is-including-not-excluding"></a></p>
+<p><a id="Subsetting-is-including-not-excluding-1"></a></p>
+<h2 id="subsetting-is-including-not-excluding">Subsetting is including not excluding<a class="headerlink" href="#subsetting-is-including-not-excluding" title="Permanent link">¤</a></h2>
+<p>Beware that the subsets in DimensionalData include the bounds. Thereby the size of the subset can differ by one on every bound. a[X=1..4]</p>
 <hr>
 <p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></div>
 
@@ -749,7 +662,7 @@ y
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../creating/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Creating YAXArrays and Datasets" rel="prev">
+          <a href="../../../.." class="md-footer__link md-footer__link--prev" aria-label="Previous: Home" rel="prev">
             <div class="md-footer__button md-icon">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
             </div>
@@ -758,20 +671,20 @@ y
                 Previous
               </span>
               <div class="md-ellipsis">
-                Creating YAXArrays and Datasets
+                Home
               </div>
             </div>
           </a>
         
         
           
-          <a href="../setchuncks/" class="md-footer__link md-footer__link--next" aria-label="Next: Setting chunks&#39;s size" rel="next">
+          <a href="../../UserGuide/creating/" class="md-footer__link md-footer__link--next" aria-label="Next: Creating YAXArrays and Datasets" rel="next">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Setting chunks's size
+                Creating YAXArrays and Datasets
               </div>
             </div>
             <div class="md-footer__button md-icon">
