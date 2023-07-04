@@ -211,7 +211,7 @@ caxes(c::YAXArray) = getfield(c, :axes)
 
 Embeds  Cube inside a new Cube
 """
-Cubes.caxes(x::DD.Dimension) = x
+Cubes.caxes(x::DD.Dimension) = (x,)
 
 """
     readcubedata(cube)

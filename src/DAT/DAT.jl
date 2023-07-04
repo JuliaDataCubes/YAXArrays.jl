@@ -15,7 +15,7 @@ using Distributed:
     AbstractWorkerPool, 
     default_worker_pool, 
     CachingPool
-import ..Cubes: cubechunks, iscompressed, chunkoffset, CubeAxis, YAXArray, caxes, YAXSlice
+import ..Cubes: cubechunks, iscompressed, chunkoffset, YAXArray, caxes, YAXSlice
 import ..Cubes: cubechunks, iscompressed, chunkoffset, YAXArray, caxes, YAXSlice
 import ..YAXArrays: findAxis, getOutAxis, getAxis
 #import ..Cubes.Axes:
