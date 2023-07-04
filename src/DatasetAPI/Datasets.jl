@@ -431,7 +431,7 @@ function append_dataset(backend, path, ds, axdata, arrayinfo)
     end
     for a in arrayinfo
         s = length.(a.axes)
-        dn = axname.(a.axes)
+        dn = string.(DD.name.(a.axes))
         add_var(dshandle, a.t, a.name, (s...,), dn, a.attr; chunksize = a.chunks)
     end
     
@@ -754,7 +754,7 @@ function createdataset(
     function arrayfromaxis(ax::DD.Dimension, offs)
         data, attr = dataattfromaxis(ax, offs,eltype(ax))
         attr["_ARRAY_OFFSET"] = offs
-        return (name = DD.name(ax), data = data, attrs = attr)
+        return (name = string(DD.name(ax)), data = data, attrs = attr)
     end
     
     prependrange(r::AbstractRange, n) =
