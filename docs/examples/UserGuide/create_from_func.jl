@@ -3,6 +3,9 @@ using Dates
 
 # Define function in space and time
 
+# !!! warning This is currently broken.
+# This is broken after the switch to DimensionalData
+
 f(lo, la, t) = (lo + la + Dates.dayofyear(t))
 
 # ## Wrap function for mapCube output
@@ -17,11 +20,11 @@ end
 # ## Create Cube's Axes
 
 # We do this via `RangeAxis` for every dimension
-lon = YAXArray(RangeAxis("lon", range(1, 15)))
-lat = YAXArray(RangeAxis("lat", range(1, 10)))
-# And a time Cube's Axes
+lon = (Dim{:lon}(range(1, 15)))
+lat = (Dim{:lat}(range(1, 10)))
+# And a time axis
 tspan =  Date("2022-01-01"):Day(1):Date("2022-01-30")
-time = YAXArray(RangeAxis("time", tspan))
+time = (Dim{:time}( tspan))
 
 
 # ## Generate Cube from function

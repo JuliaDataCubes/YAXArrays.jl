@@ -3,6 +3,8 @@
 # ## Creating a YAXArray
 
 using YAXArrays
+using DimensionalData: DimensionalData as DD
+using DimensionalData
 a = YAXArray(rand(10, 20, 5))
 
 # if not names are defined then default ones will be used, i.e. `Dim_1`, `Dim_2`.
@@ -18,19 +20,19 @@ getproperty(a, :Dim_1)
 
 # ### Axis definitions
 using Dates
-axlist = [
-    RangeAxis("time", Date("2022-01-01"):Day(1):Date("2022-01-30")),
-    RangeAxis("lon", range(1, 10, length=10)),
-    RangeAxis("lat", range(1, 5, length=15)),
-    CategoricalAxis("Variable", ["var1", "var2"])
-    ]
+axlist = (
+    Dim{:time}(Date("2022-01-01"):Day(1):Date("2022-01-30")),
+    Dim{:lon}(range(1, 10, length=10)),
+    Dim{:lat}(range(1, 5, length=15)),
+    Dim{:Variable}(["var1", "var2"])
+    )
 # And the corresponding data
 data = rand(30, 10, 15, 2)
 ds = YAXArray(axlist, data)
 
 # ### Select variables
 
-ds[Variable = "var1", lon = (1,2.1)]
+ds[Variable = At("var1"), lon = DD.Between(1,2.1)]
 
 # ### Indexing and subsetting
 # 
@@ -63,8 +65,8 @@ dim = yaxconvert(DimArray, ds)
 # Now, the syntax from DimensionalData.jl just works 
 
 subset = dim[
-    time = Between( Date("2022-01-01"),  Date("2022-01-10")),
-    lon=Between(1,2),
+    time = DD.Between( Date("2022-01-01"),  Date("2022-01-10")),
+    lon=DD.Between(1,2),
     Variable = At("var2")
     ]
 
@@ -100,10 +102,10 @@ ds.properties
 
 # ## Creating a Dataset
 #  Let's define first some range axis
-axs = [
-    RangeAxis("lon", range(0,1, length=10)),
-    RangeAxis("lat", range(0,1, length=5)),
-]
+axs = (
+    Dim{:lon}(range(0,1, length=10)),
+    Dim{:lat}(range(0,1, length=5)),
+)
 
 # And two toy random `YAXArrays` to assemble our dataset
 

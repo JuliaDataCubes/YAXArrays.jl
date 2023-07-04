@@ -6,6 +6,7 @@
 # ## Extract the axes names from a Cube
 
 using YAXArrays
+using DimensionalData
 c = YAXArray(rand(10, 10, 5))
 
 caxes(c)
@@ -32,7 +33,6 @@ c[:, :, 1]
 # let's create two dummy cubes
 
 using YAXArrays
-using DimensionalData
 
 axlist = (
     Dim{:time}(range(1, 20, length=20)),
@@ -62,7 +62,7 @@ using Dates
 t = Date("2020-01-01"):Month(1):Date("2022-12-31")
 
 ## create cube axes
-axes = [RangeAxis("Lon", 1:10), RangeAxis("Lat", 1:10), RangeAxis("Time", t)]
+axes = (Dim{:Lon}(1:10), Dim{:Lat}(1:10), Dim{:Time}(t))
 
 ## assign values to a cube
 c = YAXArray(axes, reshape(1:3600, (10, 10, 36)))
@@ -70,11 +70,11 @@ c = YAXArray(axes, reshape(1:3600, (10, 10, 36)))
 # Now we subset the cube by any dimension
 
 ## subset cube by years
-ctime = c[Time=2021:2022]
+ctime = c[Time=Between(Date(2021,1,1), Date(2021,12,31))]
 
 ## subset cube by a specific date and date range
-ctime2 = c[Time=Date(2021 - 01 - 05)]
-ctime3 = c[Time=Date(2021 - 01 - 05) .. Date(2021 - 01 - 12)]
+ctime2 = c[Time=At(Date("2021-05-01"))]
+ctime3 = c[Time=Date("2021-05-01") .. Date("2021-12-01")]
 
 ## subset cube by longitude and latitude
 clonlat = c[Lon=1 .. 5, Lat=5 .. 10] # check even numbers range, it is ommiting them
@@ -87,7 +87,7 @@ clonlat = c[Lon=1 .. 5, Lat=5 .. 10] # check even numbers range, it is ommiting 
 map((x, y) -> x * y, ds1, ds2)
 
 ## cubes with more than 3 dimensions
-map((x, y) -> x * y, dsfinal[Variables="Var1"], dsfinal[Variables="Var2"])
+map((x, y) -> x * y, dsfinal[Variables=At("var1")], dsfinal[Variables=At("var2")])
 
 # To add some complexity, we will multiply each value for π and then divided for the sum of each time step. We will use the `ds1` cube for this purpose.
 mapslices(ds1, dims=("Lon", "Lat")) do xin
@@ -100,7 +100,7 @@ end
 # Here we will use the `ds1` Cube  defined previously and we create a mask for data classification.
 
 ## cube containing a mask with classes 1, 2 and 3
-classes = YAXArray([getAxis("lon", dsfinal), getAxis("lat", dsfinal)], rand(1:3, 10, 15))
+classes = YAXArray((getAxis("lon", dsfinal), getAxis("lat", dsfinal)), rand(1:3, 10, 15))
 
 using CairoMakie
 CairoMakie.activate!()
