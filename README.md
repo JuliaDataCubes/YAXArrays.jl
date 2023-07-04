@@ -27,6 +27,14 @@
 [coveralls-img]: https://coveralls.io/repos/github/JuliaDataCubes/YAXArrays.jl/badge.svg?branch=master
 [coveralls-url]: https://coveralls.io/github/JuliaDataCubes/YAXArrays.jl?branch=master
 
+
+# Summary
+
+YAXArrays.jl is a package to handle gridded data that is larger than memory. It enables the DiskArray.jl package to access the data lazily and provides `map` and `mapCube` to apply user defined functions on arbitrary subsets of the axes. These computations are also easily parallelized either via Distributed or via Threads. 
+
+# Installation
+
+
 Install the YAXArrays package:
 ```julia
 julia>]
