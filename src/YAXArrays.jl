@@ -32,6 +32,7 @@ recalculate(x::Bool) = YAXDefaults.recal[] = x
 recalculate() = YAXDefaults.recal[]
 YAXdir() = YAXDefaults.workdir[]
 export YAXdir
+include("helpers.jl")
 
 include("YAXTools.jl")
 include("Cubes/Cubes.jl")
@@ -43,8 +44,10 @@ using YAXArrayBase: getattributes
 
 @reexport using Dates: Date, DateTime
 @reexport using IntervalSets: (..)
+@reexport using DimensionalData: Dim
 @reexport using .Cubes
-@reexport using .Cubes.Axes
+
+#@reexport using .Cubes.Axes
 
 @reexport using .DAT
 @reexport using .Datasets

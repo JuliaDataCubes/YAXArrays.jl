@@ -8,12 +8,14 @@ using Distributed: myid
 using Dates: TimeType
 using IntervalSets: Interval, (..)
 using Base.Iterators: take, drop
-using ..YAXArrays: workdir, YAXDefaults
+using ..YAXArrays: workdir, YAXDefaults, findAxis
 using YAXArrayBase: YAXArrayBase, iscompressed, dimnames, iscontdimval
 import YAXArrayBase: getattributes, iscontdim, dimnames, dimvals, getdata
 using DiskArrayTools: CFDiskArray
 using DocStringExtensions
 using Tables: istable, schema, columns
+using DimensionalData: DimensionalData as DD, AbstractDimArray, NoName
+import DimensionalData: name
 
 export concatenatecubes, caxes, subsetcube, readcubedata, renameaxis!, YAXArray, setchunks
 
@@ -26,6 +28,7 @@ function subsetcube end
 function caxes end
 
 # TODO: Give Axes an own module in YAXArrays
+#=
 include("Axes.jl")
 using .Axes:
     CubeAxis,
@@ -48,7 +51,7 @@ It provides the following exports:
 $(EXPORTS)
 """
 Axes
-
+=#
 """
     mutable struct CleanMe
 
@@ -88,9 +91,9 @@ It can wrap normal arrays or, more typically DiskArrays.
 
 $(FIELDS)
 """
-struct YAXArray{T,N,A<:AbstractArray{T,N},AxesTypes}
-    "`Vector{CubeAxis}` containing the Axes of the Cube"
-    axes::AxesTypes
+struct YAXArray{T,N,A<:AbstractArray{T,N}, D} <: AbstractDimArray{T,N,D,A} 
+    "`Tuple` of Dimensions containing the Axes of the Cube"
+    axes::D
     "length(axes)-dimensional array which holds the data, this can be a lazy DiskArray"
     data::A
     "Metadata properties describing the content of the data"
@@ -99,6 +102,7 @@ struct YAXArray{T,N,A<:AbstractArray{T,N},AxesTypes}
     chunks::GridChunks{N}
     "Cleaner objects to track which objects to tidy up when the YAXArray goes out of scope"
     cleaner::Vector{CleanMe}
+    "Name of the Array"
     function YAXArray(axes, data, properties, chunks, cleaner)
         if ndims(data) != length(axes) # case: mismatched Arguments
             throw(
@@ -115,6 +119,7 @@ struct YAXArray{T,N,A<:AbstractArray{T,N},AxesTypes}
         elseif ndims(chunks) != ndims(data)
             throw(ArgumentError("Can not construct YAXArray, supplied chunk dimension is $(ndims(chunks)) while the number of dims is $(length(axes))"))
         else
+            axes = DD.format(axes, data)
             return new{eltype(data),ndims(data),typeof(data),typeof(axes)}(
                 axes,
                 data,
@@ -125,6 +130,8 @@ struct YAXArray{T,N,A<:AbstractArray{T,N},AxesTypes}
         end
     end
 end
+
+name(::YAXArray) = NoName()
 
 YAXArray(axes, data, properties = Dict{String,Any}(); cleaner = CleanMe[], chunks = eachchunk(data)) =
     YAXArray(axes, data, properties, chunks, cleaner)
@@ -139,23 +146,23 @@ end
 # Base utility overloads
 Base.size(a::YAXArray) = size(getdata(a))
 Base.size(a::YAXArray, i::Int) = size(getdata(a), i)
-Base.size(a::YAXArray, desc) = size(a, findAxis(desc, a))
+#Base.size(a::YAXArray, desc) = size(a, findAxis(desc, a))
 # overload dot syntax for YAXArray to provide direct access to axes
 function Base.getproperty(a::YAXArray, s::Symbol)
-    ax = axsym.(caxes(a))
+    ax = name.(caxes(a))
     i = findfirst(isequal(s), ax)
     if i === nothing
         return getfield(a, s)
     else
-        return caxes(a)[i]
+        return DD.dims(a)[i]
     end
 end
 # because getproperty is overloaded, propertynames should be as well
 function Base.propertynames(a::YAXArray, private::Bool=false)
     if private
-        (axsym.(caxes(a))..., :axes, :data, :properties)
+        (DD.dim2key.(DD.dims(a))..., :axes, :data, :properties)
     else
-        (axsym.(caxes(a))..., :axes, :data)
+        (DD.dim2key.(DD.dims(a))..., :axes, :data)
     end
 end
 
@@ -167,14 +174,44 @@ function Base.permutedims(c::YAXArray, p)
     newchunks = DiskArrays.GridChunks(eachchunk(c).chunks[collect(p)])
     YAXArray(newaxes, permutedims(getdata(c), p), c.properties, newchunks, c.cleaner)
 end
+
+# DimensionalData overloads
+
+DD.dims(x::YAXArray) = getfield(x,:axes)
+DD.refdims(::YAXArray) = ()
+DD.metadata(x::YAXArray) = getfield(x,:properties)
+
+function DD.rebuild(A::YAXArray, data::AbstractArray, dims::Tuple, refdims::Tuple, name, metadata)
+    #chunks = map(dims, eachchunk(data).chunks) do d, chunk
+    #    @show d
+    #    if d in A.axes
+    #        @show d
+    #        dind = findAxis(d, A)
+    #        A.chunks.chunks[dind]
+    #    else
+    #       chunk
+    #    end
+    #end
+    YAXArray(dims, data, metadata; cleaner=A.cleaner)#, chunks=GridChunks(chunks))
+end
+
 function caxes(x)
-    map(enumerate(dimnames(x))) do a
+    #@show x
+    #@show typeof(x)
+    dims = map(enumerate(dimnames(x))) do a
         index, symbol = a
         values = YAXArrayBase.dimvals(x, index)
-        iscontdim(x, index) ? RangeAxis(symbol, values) : CategoricalAxis(symbol, values)
+        DD.Dim{symbol}(values)
     end
+    (dims... ,)
 end
 caxes(c::YAXArray) = getfield(c, :axes)
+"""
+    caxes
+
+Embeds  Cube inside a new Cube
+"""
+Cubes.caxes(x::DD.Dimension) = (x,)
 
 """
     readcubedata(cube)
@@ -182,7 +219,7 @@ caxes(c::YAXArray) = getfield(c, :axes)
 Given any array implementing the YAXArray interface it returns an in-memory [`YAXArray`](@ref) from it.
 """
 function readcubedata(x)
-    YAXArray(collect(CubeAxis, caxes(x)), getindex_all(x), getattributes(x))
+    YAXArray(caxes(x), getindex_all(x), getattributes(x))
 end
 
 interpret_cubechunks(cs::NTuple{N,Int},cube) where N = DiskArrays.GridChunks(getdata(cube),cs)
@@ -218,6 +255,8 @@ setchunks(c::YAXArray,chunks) = YAXArray(c.axes,c.data,c.properties,interpret_cu
 cubechunks(c) = approx_chunksize(eachchunk(c))
 DiskArrays.eachchunk(c::YAXArray) = c.chunks
 getindex_all(a) = getindex(a, ntuple(_ -> Colon(), ndims(a))...)
+
+#=
 function Base.getindex(x::YAXArray, i...) 
     if length(i)==1 && istable(first(i))
         batchextract(x,first(i))
@@ -225,7 +264,11 @@ function Base.getindex(x::YAXArray, i...)
         getdata(x)[i...]
     end
 end
+=#
+
+
 function batchextract(x,i)
+    # This function should be documented and moved to DimensionalData
     sch = schema(i)
     axinds = map(sch.names) do n
         findAxis(n,x)
@@ -279,7 +322,7 @@ function batchextract(x,i)
     else
         outaxis_from_column(i,newaxcol)
     end
-    outax = CubeAxis[axcopy(a) for a in cax][axrem]
+    outax = Tuple([axcopy(a) for a in cax][axrem]...)
     insert!(outax,minimum(axinds),newax)
     YAXArray(outax,d,x.properties)
 end
@@ -289,9 +332,9 @@ function outaxis_from_column(tab,icol)
     axname = schema(tab).names[icol]
     if eltype(axdata) <: AbstractString ||
         (!issorted(axdata) && !issorted(axdata, rev = true))
-        CategoricalAxis(axname, axdata)
+        DD.rebuild(DD.key2dim(Symbol(axname)), axdata)
     else
-        RangeAxis(axname, axdata)
+        DD.rebuild(DD.key2dim(Symbol(axname)), axdata)
     end
 end
 
@@ -305,20 +348,20 @@ function outaxis_from_data(cax,axinds,indlist)
             ax.values[i[ai-minai+1]]
         end
     end
-    CategoricalAxis(newname, mergevals)
+    DD.rebuild(DD.key2dim(Symbol(newname)), mergevals)
 end
 chunkoffset(c) = grid_offset(eachchunk(c))
 
 # Implementation for YAXArrayBase interface
-YAXArrayBase.dimvals(x::YAXArray, i) = caxes(x)[i].values
-YAXArrayBase.dimname(x::YAXArray, i) = axsym(caxes(x)[i])
+YAXArrayBase.dimvals(x::YAXArray, i) = caxes(x)[i].val
+YAXArrayBase.dimname(x::YAXArray, i) = DD.dim2key(DD.dims(x)[i])
 YAXArrayBase.getattributes(x::YAXArray) = x.properties
 YAXArrayBase.iscontdim(x::YAXArray, i) = isa(caxes(x)[i], RangeAxis)
 YAXArrayBase.getdata(x::YAXArray) = getfield(x, :data)
 function YAXArrayBase.yaxcreate(::Type{YAXArray}, data, dimnames, dimvals, atts)
-    axlist = map(dimnames, dimvals) do dn, dv
-        iscontdimval(dv) ? RangeAxis(dn, dv) : CategoricalAxis(dn, dv)
-    end
+    axlist = tuple(map(dimnames, dimvals) do dn, dv
+        DD.Dim{dn}(dv)
+    end...)
     if any(in(keys(atts)), ["missing_value", "scale_factor", "add_offset"]) && !(eltype(data) >: Missing)
         data = CFDiskArray(data, atts)
     end
@@ -330,7 +373,12 @@ _iscompressed(c::DiskArrays.SubDiskArray) = _iscompressed(c.v.parent)
 _iscompressed(c) = YAXArrayBase.iscompressed(c)
 
 # lift renameaxis functionality from Axes.jl to YAXArrays
+renameaxis!(c::YAXArray, p::Pair) = DD.set(c, Symbol(first(p)) => last(p))
+
+#=
 function renameaxis!(c::YAXArray, p::Pair)
+    #This needs to be deleted, because DimensionalData cannot update the axlist
+    # Because this is a tuple instead of a vector
     axlist = caxes(c)
     i = findAxis(p[1], axlist)
     axlist[i] = renameaxis(axlist[i], p[2])
@@ -344,7 +392,7 @@ function renameaxis!(c::YAXArray, p::Pair{<:Any,<:CubeAxis})
     caxes(c)[i] = p[2]
     c
 end
-
+=#
 function _subsetcube end
 
 function subsetcube(z::YAXArray{T}; kwargs...) where {T}
@@ -356,6 +404,7 @@ end
 sorted(x, y) = x < y ? (x, y) : (y, x)
 
 #TODO move everything that is subset-related to its own file or to axes.jl
+#=
 interpretsubset(subexpr::Union{CartesianIndices{1},LinearIndices{1}}, ax) =
     subexpr.indices[1]
 interpretsubset(subexpr::CartesianIndex{1}, ax) = subexpr.I[1]
@@ -371,14 +420,14 @@ interpretsubset(subexpr::UnitRange{<:Integer}, ax::RangeAxis{T}) where {T<:TimeT
 interpretsubset(subexpr::Interval, ax) = interpretsubset((subexpr.left, subexpr.right), ax)
 interpretsubset(subexpr::AbstractVector, ax::CategoricalAxis) =
     axVal2Index.(Ref(ax), subexpr, fuzzy=true)
-
+=#
 
 function _subsetcube(z, subs; kwargs...)
     kwargs = Dict{Any,Any}(kwargs)
     for f in YAXDefaults.subsetextensions
         f(kwargs)
     end
-    newaxes = deepcopy(collect(CubeAxis, caxes(z)))
+    newaxes = deepcopy(collect(DD.Dimension, caxes(z)))
     foreach(kwargs) do kw
         axdes, subexpr = kw
         axdes = string(axdes)
@@ -406,7 +455,7 @@ function _subsetcube(z, subs; kwargs...)
 end
 
 
-Base.getindex(a::YAXArray; kwargs...) = subsetcube(a; kwargs...)
+Base.getindex(a::YAXArray, args::DD.Dimension...; kwargs...) = view(a, args...; kwargs...)
 
 Base.read(d::YAXArray) = getindex_all(d)
 
@@ -422,10 +471,11 @@ end
 cubesize(c::YAXArray{T}) where {T} = (sizeof(T)) * prod(map(length, caxes(c)))
 cubesize(::YAXArray{T,0}) where {T} = sizeof(T)
 
-getCubeDes(::CubeAxis) = "Cube axis"
+getCubeDes(::DD.Dimension) = "Cube axis"
 getCubeDes(::YAXArray) = "YAXArray"
 getCubeDes(::Type{T}) where {T} = string(T)
 Base.show(io::IO, c::YAXArray) = show_yax(io, c)
+Base.show(io::IO, mime::MIME{Symbol("text/plain")}, c::YAXArray) = show_yax(io,c)
 
 function show_yax(io::IO, c)
     println(io, getCubeDes(c), " with the following dimensions")

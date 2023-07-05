@@ -1,10 +1,10 @@
 @testset "MovingWindow" begin
     using Zarr
     a = Array{Union{Float64,Missing}}(rand(40, 20, 10))
-    lon = RangeAxis("Lon", 1:40)
-    lat = RangeAxis("Lat", 1:20)
-    tim = RangeAxis("Time", 1:10)
-    c = YAXArray([lon, lat, tim], a)
+    lon = Dim{:Lon}(1:40)
+    lat = Dim{:Lat}(1:20)
+    tim = Dim{:Time}(1:10)
+    c = YAXArray((lon, lat, tim), a)
     d = tempname()
     # Why is this done in the Moving Window testset?
     c = savecube(setchunks(c,Dict("Lon" => 7, "Lat" => 9)), d, backend = :zarr)
@@ -44,11 +44,11 @@
     @test all(ismissing, r3.data[:, :, end])
 
     a = Array{Union{Float64,Missing}}(rand(10,4,  40, 20));
-    varax = CategoricalAxis("Variable", 'a':'d')
-    tim = RangeAxis("Time", 1:10)
-    lon = RangeAxis("Lon", 1:40)
-    lat = RangeAxis("Lat", 1:20)
-    c = YAXArray([tim, varax, lon,lat], a)
+    varax = Dim{:Variable}('a':'d')
+    tim = Dim{:Time}(1:10)
+    lon = Dim{:Lon}(1:40)
+    lat = Dim{:Lat}(1:20)
+    c = YAXArray((tim, varax, lon,lat), a)
     indims = InDims("Time",YAXArrays.MovingWindow("Lon",1,1))
     r1 = mapCube(c, indims=indims, outdims=OutDims("Time")) do xout,xin
         xout[:] = xin[:,1]

@@ -1,5 +1,5 @@
 import OnlineStats: OnlineStat, Extrema, fit!, value, HistogramStat, Ash
-import ...Cubes.Axes: CategoricalAxis, RangeAxis
+#import ...Cubes.Axes: CategoricalAxis, RangeAxis
 import IterTools
 using WeightedOnlineStats
 using Distributed: nworkers
@@ -139,23 +139,23 @@ function tooutaxis(
         if haskey(bycube.properties, "labels")
             idict = bycube.properties["labels"]
             axname = get(bycube.properties, "name", "Label")
-            outAxis = CategoricalAxis(axname, collect(String, values(idict)))
+            outAxis = DD.rebuild(DD.key2dim(Symbol(axname)), collect(String, values(idict)))
             convertdict = Dict(k => i for (i, k) in enumerate(keys(idict)))
         else
             sort!(k)
-            outAxis = CategoricalAxis(string(s), k)
+            outAxis = DD.rebuild(DD.key2dim(Symbol(s)), k)
             convertdict = Dict(k => i for (i, k) in enumerate(k))
         end
     else
         iax = findAxis(string(s), iter.dc.LoopAxes)
         outAxis = iter.dc.LoopAxes[iax]
-        convertdict = Dict(k => i for (i, k) in enumerate(outAxis.values))
+        convertdict = Dict(k => i for (i, k) in enumerate(DD.LookupArrays.val(outAxis)))
     end
     outAxis, convertdict
 end
 function tooutaxis(f, iter::CubeIterator, k, ibc)
     sort!(k)
-    outAxis = CategoricalAxis("Category$(ibc)", k)
+    outAxis = DD.rebuild(DD.key2dim(Symbol("Category$(ibc)")), k)
     convertdict = Dict(k => i for (i, k) in enumerate(k))
     outAxis, convertdict
 end
@@ -163,8 +163,8 @@ end
 varsym(::WeightOnlineAggregator{<:Any,S}) where {S} = S
 varsym(::OnlineAggregator{<:Any,S}) where {S} = S
 varsym(::GroupedOnlineAggregator{<:Any,S}) where {S} = S
-axt(::CategoricalAxis) = CategoricalAxis
-axt(::RangeAxis) = RangeAxis
+#axt(::CategoricalAxis) = CategoricalAxis
+#axt(::RangeAxis) = RangeAxis
 getStatType(::WeightOnlineAggregator{T}) where {T} = T
 getStatType(::OnlineAggregator{T}) where {T} = T
 getStatType(t::GroupedOnlineAggregator{T}) where {T} = getStatType(T)
@@ -173,7 +173,7 @@ getStatType(t::Type{<:Dict{<:Any,T}}) where {T} = T
 getStatOutAxes(tab, agg) = getStatOutAxes(tab, agg, getStatType(agg))
 getStatOutAxes(tab, agg, ::Type{<:OnlineStat}) = ()
 function getStatOutAxes(tab, agg, ::Type{<:Extrema})
-    (CategoricalAxis(:Extrema, ["min", "max"]),)
+    (DD.rebuild(DD.key2dim(:Extrema), ["min", "max"]),)
 end
 function getStatOutAxes(tab, agg, ::Type{<:WeightedCovMatrix})
     varn = tab.schema.names
@@ -190,8 +190,8 @@ function getStatOutAxes(tab, agg, ::Type{<:WeightedCovMatrix})
 end
 function getStatOutAxes(tab,agg,::Type{<:Union{Ash,HistogramStat, WeightedAdaptiveHist}})
     nbin = getnbins(agg)
-    a1 = RangeAxis("Bin", 1:nbin)
-    a2 = CategoricalAxis("Hist", ["MidPoints", "Frequency"])
+    a1 = DD.rebuild(DD.key2dim(Symbol("Bin")), 1:nbin)
+    a2 = DD.rebuild(DD.key2dim(Symbol("Hist")), ["MidPoints", "Frequency"])
     (a1, a2)
 end
 function getByAxes(iter, agg::GroupedOnlineAggregator)
@@ -213,8 +213,7 @@ function tooutcube(agg, iter, post)
     snew = map(length, outax)
     aout = fill!(zeros(Union{cubeeltype(agg),Missing}, snew), missing)
     filloutar(aout, convdictall, agg, map(i -> 1:length(i), outaxstat), post)
-
-    YAXArray(collect(outax), aout)
+    YAXArray(outax, aout)
 end
 function filloutar(aout, convdictall, agg::GroupedOnlineAggregator, s, post)
     for (k, v) in agg.d

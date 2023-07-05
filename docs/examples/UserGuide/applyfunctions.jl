@@ -13,7 +13,8 @@
 #If we set up a dummy data cube which has all numbers between 1 and 10000.
 
 using YAXArrays
-axes = [RangeAxis("Lon", 1:10), RangeAxis("Lat", 1:10), RangeAxis("Time", 1:100)]
+using DimensionalData
+axes = (Dim{:Lon}(1:10), Dim{:Lat}(1:10), Dim{:Time}(1:100))
 original = YAXArray(axes, reshape(1:10000, (10,10,100)))
 
 # with one at the first position:
@@ -35,7 +36,7 @@ substracted[1,:,1]
 # is easier to use for simple functions. 
 
 # If we set up a dummy data cube which has all numbers between 1 and 10000.
-axes = [RangeAxis("Lon", 1:10), RangeAxis("Lat", 1:10), RangeAxis("Time", 1:100)]
+axes = (Dim{:Lon}(1:10), Dim{:Lat}(1:10), Dim{:Time}(1:100))
 original = YAXArray(axes, reshape(1:10000, (10,10,100)))
 
 # and then we would like to compute the sum over the Time dimension:
@@ -90,7 +91,7 @@ ax.xticklabelalign = (:right, :center)
 fig
 
 # ## Define the cube
-axes = [RangeAxis("Time", t)]
+axes = (Dim{:Time}(t),)
 c = YAXArray(axes, var)
 
 # Let's calculate the mean seasonal cycle of our dummy variable 'var'

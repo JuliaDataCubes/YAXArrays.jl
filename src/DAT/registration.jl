@@ -1,6 +1,7 @@
 export InDims, OutDims, MovingWindow
-using ..Cubes.Axes: get_descriptor, findAxis, Axes, AxisDescriptor
-using ...YAXArrays: YAXDefaults
+#using ..Cubes.Axes: get_descriptor, findAxis, Axes
+import ..YAXArrays: get_descriptor, findAxis, AxisDescriptor
+using ..YAXArrays: YAXDefaults
 using YAXArrayBase: yaxcreate
 
 
@@ -21,12 +22,12 @@ struct MovingWindow
     pre::Int
     after::Int
 end
-Axes.get_descriptor(m::MovingWindow) = MovingWindow(get_descriptor(m.desc), m.pre, m.after)
-Axes.findAxis(m::MovingWindow, c) = findAxis(m.desc, c)
+get_descriptor(m::MovingWindow) = MovingWindow(get_descriptor(m.desc), m.pre, m.after)
+findAxis(m::MovingWindow, c) = findAxis(m.desc, c)
 
 wrapWorkArray(::Type{Array}, a, axes) = a
 wrapWorkArray(T, a, axes) =
-    yaxcreate(T, a, map(axsym, axes), map(i -> i.values, axes), Dict{String, Any}())
+    yaxcreate(T, a, map(DD.dim2key, axes), map(i -> i.values, axes), Dict{String, Any}())
 
 abstract type ProcFilter end
 struct AllMissing <: ProcFilter end
@@ -79,7 +80,8 @@ mutable struct InDims
     window_oob_value::Any
 end
 function InDims(
-    axisdesc::Union{String,CubeAxis,Symbol,MovingWindow,AxisDescriptor}...;
+
+    axisdesc::Union{String,DD.Dimension,Symbol,MovingWindow,AxisDescriptor}...;
     artype = Array,
     filter = AllMissing(),
     window_oob_value = missing,
@@ -88,7 +90,7 @@ function InDims(
     InDims(descs, artype, getprocfilter(filter), window_oob_value)
 end
 function InDims(
-    axisdesc::Tuple{Union{String,CubeAxis,Symbol,MovingWindow,AxisDescriptor}};
+    axisdesc::Tuple{Union{String,DD.Dimension,Symbol,MovingWindow, AxisDescriptor}};
     artype = Array,
     filter = AllMissing(),
     window_oob_value = missing,

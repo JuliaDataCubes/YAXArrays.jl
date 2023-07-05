@@ -1,18 +1,19 @@
 # # How to calculate a time mean
 
 using YAXArrays, Statistics, Zarr
+using DimensionalData
 using Dates
-axlist = [
-    RangeAxis("time", Date("2022-01-01"):Day(1):Date("2022-01-30")),
-    RangeAxis("lon", range(1, 10, length=10)),
-    RangeAxis("lat", range(1, 5, length=15)),
-    CategoricalAxis("Variable", ["var1", "var2"])
-    ]
+axlist = (
+    Dim{:time}(Date("2022-01-01"):Day(1):Date("2022-01-30")),
+    Dim{:lon}(range(1, 10, length=10)),
+    Dim{:lat}(range(1, 5, length=15)),
+    Dim{:Variable}(["var1", "var2"])
+    )
 # And the corresponding data
 data = rand(30, 10, 15, 2)
 ds = YAXArray(axlist, data)
 
-c = ds[Variable = "var1"] # see OpenNetCDF to get the file
+c = ds[Variable = At("var1")] # see OpenNetCDF to get the file
 mapslices(mean ∘ skipmissing, c, dims="Time")
 
 # ## Distributed calculations

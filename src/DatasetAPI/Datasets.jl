@@ -1,7 +1,7 @@
 module Datasets
-import ..Cubes.Axes: axsym, axname, CubeAxis, findAxis, CategoricalAxis, RangeAxis, caxes
-import ..Cubes: Cubes, YAXArray, concatenatecubes, CleanMe, subsetcube, copy_diskarray, setchunks
-using ...YAXArrays: YAXArrays, YAXDefaults
+#import ..Cubes.Axes: axsym, axname, CubeAxis, findAxis, CategoricalAxis, RangeAxis, caxes
+import ..Cubes: Cubes, YAXArray, concatenatecubes, CleanMe, subsetcube, copy_diskarray, setchunks, caxes
+using ...YAXArrays: YAXArrays, YAXDefaults, findAxis
 using DataStructures: OrderedDict, counter
 using Dates: Day, Hour, Minute, Second, Month, Year, Date, DateTime, TimeType, AbstractDateTime
 using IntervalSets: Interval, (..)
@@ -11,6 +11,7 @@ using YAXArrayBase: iscontdimval, add_var
 using DiskArrayTools: CFDiskArray, ConcatDiskArray
 using DiskArrays: DiskArrays, GridChunks
 using Glob: glob
+using DimensionalData: DimensionalData as DD
 
 export Dataset, Cube, open_dataset, to_dataset, savecube, savedataset
 
@@ -21,7 +22,7 @@ export Dataset, Cube, open_dataset, to_dataset, savecube, savedataset
 """
 struct Dataset
     cubes::OrderedDict{Symbol,YAXArray}
-    axes::Dict{Symbol,CubeAxis}
+    axes::Dict{Symbol,DD.Dimension}
     properties::Dict
 end
 """
@@ -30,14 +31,14 @@ Dataset(; properties = Dict{String,Any}, cubes...)
 Construct a YAXArray Dataset with global attributes `properties` a and a list of named YAXArrays cubes...
 """
 function Dataset(; properties = Dict{String,Any}(), cubes...)
-    axesall = Set{CubeAxis}()
+    axesall = Set{DD.Dimension}()
     foreach(values(cubes)) do c
-        ax = caxes(c)
+        ax = DD.dims(c)
         foreach(a -> push!(axesall, a), ax)
     end
     axesall = collect(axesall)
-    axnameall = axsym.(axesall)
-    axesnew = Dict{Symbol,CubeAxis}(axnameall[i] => axesall[i] for i = 1:length(axesall))
+    axnameall = DD.dim2key.(axesall)
+    axesnew = Dict{Symbol,DD.Dimension}(axnameall[i] => axesall[i] for i = 1:length(axesall))
     Dataset(OrderedDict(cubes), axesnew, properties)
 end
 
@@ -50,12 +51,12 @@ different parts that become variables in the Dataset. If no such
 axis is specified or found, there will only be a single variable 
 in the dataset with the name `name`
 """
-function to_dataset(c;datasetaxis = "Variable", name = get(c.properties,"name","layer"))
-    axlist = caxes(c)
+function to_dataset(c;datasetaxis = "Variable", layername = get(c.properties,"name","layer"))
+    axlist = DD.dims(c)
     splice_generic(x::AbstractArray, i) = [x[1:(i-1)]; x[(i+1:end)]]
     splice_generic(x::Tuple, i) = (x[1:(i-1)]..., x[(i+1:end)]...)
     finalperm = nothing
-    idatasetax = datasetaxis === nothing ? nothing : findAxis(datasetaxis, axlist)
+    idatasetax = datasetaxis === nothing ? nothing : findAxis(datasetaxis, collect(axlist))
     chunks = DiskArrays.eachchunk(c).chunks
     if idatasetax !== nothing
         groupaxis = axlist[idatasetax]
@@ -67,9 +68,9 @@ function to_dataset(c;datasetaxis = "Variable", name = get(c.properties,"name","
         groupaxis = nothing
     end
     if groupaxis === nothing
-        cubenames = [name]
+        cubenames = [layername]
     else
-        cubenames = groupaxis.values
+        cubenames = DD.lookup(groupaxis)
     end
     viewinds = ntuple(_->Colon(),ndims(c))
     atts = getattributes(c)
@@ -82,7 +83,8 @@ function to_dataset(c;datasetaxis = "Variable", name = get(c.properties,"name","
         end
         
     end
-    axlist = Dict(YAXArrays.Axes.axsym(ax)=>ax for ax in axlist)
+
+    axlist = Dict(Symbol(DD.name(ax))=>ax for ax in axlist)
     attrs = Dict{String,Any}()
     !isnothing(finalperm) && (attrs["_CubePerm"] = collect(finalperm))
     Dataset(OrderedDict(allcubes),axlist,attrs)
@@ -150,18 +152,26 @@ function Base.getindex(x::Dataset, i::Vector{String})
 end
 Base.getindex(x::Dataset, i::String) = getproperty(x, Symbol(i))
 function subsetifdimexists(a;kwargs...)
-    axlist = caxes(a)
+    axlist = DD.dims(a)
     kwargsshort = filter(kwargs) do kw
         findAxis(first(kw),axlist) !== nothing
     end
-    subsetcube(a;kwargsshort...)
+
+    # This makes no subsetting on cubes that do not have the respective axis.
+    # Is this the behaviour we would expect?
+    if !isempty(kwargsshort)
+        getindex(a;kwargsshort...)
+    else
+        a
+    end
 end
-function subsetcube(x::Dataset; var = nothing, kwargs...)
+
+function Base.getindex(x::Dataset; var = nothing, kwargs...)
     if var === nothing
         cc = x.cubes
         Dataset(; properties=x.properties, map(ds -> ds => subsetifdimexists(cc[ds]; kwargs...), collect(keys(cc)))...)
     elseif isa(var, String) || isa(var, Symbol)
-        subsetcube(getproperty(x, Symbol(var)); kwargs...)
+        getindex(getproperty(x, Symbol(var)); kwargs...)
     else
         cc = x[var].cubes
         Dataset(; properties=x.properties, map(ds -> ds => subsetifdimexists(cc[ds]; kwargs...), collect(keys(cc)))...)
@@ -192,9 +202,9 @@ function collectdims(g)
 end
 
 function toaxis(dimname, g, offs, len)
-    axname = dimname
+    axname = Symbol(dimname)
     if !haskey(g, dimname)
-        return RangeAxis(dimname, 1:len)
+        return DD.rebuild(DD.key2dim(dimname), 1:len)
     end
     ar = get_var_handle(g, dimname)
     aratts = get_var_attrs(g, dimname)
@@ -204,18 +214,18 @@ function toaxis(dimname, g, offs, len)
         catch
             ar[:]
         end
-        RangeAxis(dimname, tsteps[offs+1:end])
+        DD.Ti(tsteps[offs+1:end])
     elseif haskey(aratts, "_ARRAYVALUES")
         vals = identity.(aratts["_ARRAYVALUES"])
-        CategoricalAxis(axname, vals)
+        DD.rebuild(DD.key2dim(axname),(vals))
     else
         axdata = cleanaxiselement.(ar[offs+1:end])
         axdata = testrange(axdata)
         if eltype(axdata) <: AbstractString ||
             (!issorted(axdata) && !issorted(axdata, rev = true))
-            CategoricalAxis(axname, axdata)
+            DD.rebuild(DD.key2dim(axname), axdata)
         else
-            RangeAxis(axname, axdata)
+            DD.rebuild(DD.key2dim(axname), axdata)
         end
     end
 end
@@ -276,7 +286,7 @@ function open_dataset(g; driver = :all)
     allcubes = OrderedDict{Symbol,YAXArray}()
     for vname in varlist
         vardims = get_var_dims(g, vname)
-        iax = [dimlist[vd].ax for vd in vardims]
+        iax = tuple(collect(dimlist[vd].ax for vd in vardims)...)
         offs = [dimlist[vd].offs for vd in vardims]
         subs = if all(iszero, offs)
             nothing
@@ -302,7 +312,7 @@ function open_dataset(g; driver = :all)
     sdimlist = Dict(Symbol(k) => v.ax for (k, v) in dimlist)
     Dataset(allcubes, sdimlist,gatts)
 end
-Base.getindex(x::Dataset; kwargs...) = subsetcube(x; kwargs...)
+#Base.getindex(x::Dataset; kwargs...) = subsetcube(x; kwargs...)
 YAXDataset(; kwargs...) = Dataset(YAXArrays.YAXDefaults.cubedir[]; kwargs...)
 
 
@@ -342,7 +352,7 @@ function Cube(ds::Dataset; joinname = "Variable", target_type = nothing)
     if length(newkeys) == 1
         return ds.cubes[first(newkeys)]
     else
-        varax = CategoricalAxis(joinname, string.(newkeys))
+        varax = DD.rebuild(DD.key2dim(Symbol(joinname)), string.(newkeys))
         cubestomerge = map(newkeys) do k
             if eltype(ds.cubes[k]) <: prom_type
                 ds.cubes[k]
@@ -363,11 +373,11 @@ Extract necessary information to create a YAXArrayBase dataset from a name and Y
 """
 function getarrayinfo(entry,backend)
     k,c = entry
-    axlist = caxes(c)
+    axlist = DD.dims(c)
     chunks = DiskArrays.eachchunk(c)
     cs = DiskArrays.approx_chunksize(chunks)
     co = DiskArrays.grid_offset(chunks)
-    offs = Dict(axsym(ax)=>o for (ax,o) in zip(axlist,co))
+    offs = Dict(Symbol(DD.name(ax))=>o for (ax,o) in zip(axlist,co))
     s = map(length, axlist) .+ co
     #Potentially create a view
     subs = if !all(iszero, co)
@@ -421,7 +431,7 @@ function append_dataset(backend, path, ds, axdata, arrayinfo)
     end
     for a in arrayinfo
         s = length.(a.axes)
-        dn = axname.(a.axes)
+        dn = string.(DD.name.(a.axes))
         add_var(dshandle, a.t, a.name, (s...,), dn, a.attr; chunksize = a.chunks)
     end
     
@@ -546,12 +556,12 @@ function savedataset(
             backend, 
             path, 
             ds.properties,
-            getproperty.(axdata,:name), 
+            string.(getproperty.(axdata,:name)), 
             getproperty.(axdata,:data),
-            getproperty.(axdata,:attrs), 
+            getproperty.(axdata,:attrs),
             getproperty.(arrayinfo, :t), 
             getproperty.(arrayinfo, :name),
-            map(e -> axname.(e.axes), arrayinfo), 
+            map(e -> string.(DD.name.(e.axes)), arrayinfo), 
             getproperty.(arrayinfo, :attr), 
             getproperty.(arrayinfo, :chunks);
             kwargs...
@@ -591,7 +601,7 @@ The keyword arguments are:
 function savecube(
     c,
     path::AbstractString;
-    name = get(c.properties,"name","layer"),
+    layername = get(c.properties,"name","layer"),
     datasetaxis = "Variable",
     max_cache = 5e8,
     backend = :all,
@@ -606,7 +616,8 @@ function savecube(
     if chunks !== nothing
         error("Setting chunks in savecube is not supported anymore. Rechunk using `setchunks` before saving. ")
     end
-    ds = to_dataset(c; name, datasetaxis)
+
+    ds = to_dataset(c; layername, datasetaxis)
     ds = savedataset(ds; path, max_cache, driver, overwrite, append,skeleton, writefac, kwargs...)
     Cube(ds, joinname = datasetaxis)
 end
@@ -670,13 +681,13 @@ function createdataset(
         #Potentially create a view
         if !all(iszero, chunkoffset)
             subs = ntuple(length(axlist)) do i
-                (chunkoffset[i]+1):(length(axlist[i].values)+chunkoffset[i])
+                (chunkoffset[i]+1):(length(axlist[i])+chunkoffset[i])
             end
         end
         if groupaxis === nothing
             cubenames = ["layer"]
         else
-            cubenames = groupaxis.values
+            cubenames = DD.lookup(groupaxis)
         end
         cleaner = CleanMe[]
         persist || push!(cleaner, CleanMe(path, false))
@@ -689,12 +700,12 @@ function createdataset(
         DS, 
         path, 
         Dict{String,Any}(),
-        getproperty.(axdata,:name), 
+        string.(getproperty.(axdata,:name)),
         getproperty.(axdata,:data),
         getproperty.(axdata,:attrs), 
         fill(S, length(cubenames)), 
         cubenames, 
-        fill(getproperty.(axdata,:name),length(cubenames)), 
+        fill(string.(getproperty.(axdata,:name)),length(cubenames)), 
         fill(attr,length(cubenames)), 
         fill(chunksize, length(cubenames));
         kwargs...
@@ -740,10 +751,10 @@ function createdataset(
         end
     end
     
-    function arrayfromaxis(ax::CubeAxis, offs)
-        data, attr = dataattfromaxis(ax, offs)
+    function arrayfromaxis(ax::DD.Dimension, offs)
+        data, attr = dataattfromaxis(ax, offs,eltype(ax))
         attr["_ARRAY_OFFSET"] = offs
-        return (name = axname(ax), data = data, attrs = attr)
+        return (name = string(DD.name(ax)), data = data, attrs = attr)
     end
     
     prependrange(r::AbstractRange, n) =
@@ -771,15 +782,15 @@ function createdataset(
     toaxistype(x::Array{<:AbstractString}) = string.(x)
     toaxistype(x::Array{String}) = x
     
-    function dataattfromaxis(ax::CubeAxis, n)
-        prependrange(toaxistype(ax.values), n), Dict{String,Any}()
+    function dataattfromaxis(ax::DD.Dimension, n, _)
+        prependrange(toaxistype(DD.lookup(ax)), n), Dict{String,Any}()
     end
     
     # function dataattfromaxis(ax::CubeAxis,n)
     #     prependrange(1:length(ax.values),n), Dict{String,Any}("_ARRAYVALUES"=>collect(ax.values))
     # end
-    function dataattfromaxis(ax::CubeAxis{T}, n) where {T<:TimeType}
-        data = timeencode(datetodatetime(ax.values), "days since 1980-01-01", defaultcal(T))
+    function dataattfromaxis(ax::DD.Dimensions.Ti, n, T::Type{<:TimeType})
+        data = timeencode(datetodatetime(DD.lookup(ax)), "days since 1980-01-01", defaultcal(T))
         prependrange(data, n),
         Dict{String,Any}("units" => "days since 1980-01-01", "calendar" => defaultcal(T))
     end
@@ -863,7 +874,7 @@ function createdataset(
         for ds in dslist, k in keys(ds.axes)
             push!(allaxnames, k)
         end
-        dimvallist = Dict(ax => map(i -> i.axes[ax].values, dslist) for ax in keys(allaxnames))
+        dimvallist = Dict(ax => map(i -> DD.lookup(i.axes[ax]), dslist) for ax in keys(allaxnames))
         allmerges = create_mergedict(dimvallist)
         repvars = counter(Symbol)
         for ds in dslist, v in keys(ds.cubes)

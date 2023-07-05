@@ -2,6 +2,7 @@
 @testset "Loop chunk distribution" begin
 using DiskArrays: DiskArrays, GridChunks, RegularChunks, IrregularChunks, AbstractDiskArray
 using YAXArrayBase: YAXArrayBase
+using YAXArrays
 struct LargeDiskArray{N,CT<:GridChunks{N}} <: AbstractDiskArray{Float64,N}
     size::NTuple{N,Int}
     chunks::CT
@@ -30,7 +31,7 @@ incubes, outcubes = YAXArrays.DAT.getCubeCache(dc);
 
 
 #Test subsets and offset
-a2 = a1[Dim_3=200..1300.5]
+a2 = a1[Dim_3=201..1300.5]
 dc = mapslices(sum, a2, dims="Dim_1", debug = true)
 ch = YAXArrays.DAT.getloopchunks(dc)
 @test ch == (RegularChunks(4,0,2000), RegularChunks(700,200,1100))
@@ -58,7 +59,7 @@ incubes, outcubes = YAXArrays.DAT.getCubeCache(dc)
 @test 0.5 < (sum(sizeof,incubes) + sum(sizeof,outcubes))/YAXArrays.YAXDefaults.max_cache[] <= 1.0# Test that the allocated buffer is close to what the prescribes size
 
 #With offset
-a2 = a1[Dim_1=50..3050.5]
+a2 = a1[Dim_1=51..3050.5]
 dc = mapslices(sum, a2, dims="Dim_3", debug = true)
 ch = YAXArrays.DAT.getloopchunks(dc)
 @test ch == (RegularChunks(100,50,3000), RegularChunks(100,0,2000))
@@ -67,7 +68,7 @@ incubes, outcubes = YAXArrays.DAT.getCubeCache(dc)
 
 #With more working memory 
 YAXArrays.YAXDefaults.max_cache[] = 4.5e8
-a2 = a1[Dim_1=50..3050.5]
+a2 = a1[Dim_1=51..3050.5]
 dc = mapslices(sum, a1, dims="Dim_3", debug = true);
 ch = YAXArrays.DAT.getloopchunks(dc)
 @test ch == (RegularChunks(300,0,4000), RegularChunks(100,0,2000))
@@ -98,17 +99,17 @@ end
 
 @testitem "Map Cubes with Different Chunks Issue #182" begin
    using YAXArrays
+   using DimensionalData
    using Zarr
    d = tempdir()
-   x,y,z = (RangeAxis("x",1:400), RangeAxis("y", 1:500), RangeAxis("z", 1:600))
+   x,y,z = (X(1:400), Y(1:500), Z(1:600))
    a = rand(400,500,600)
-   a1 = YAXArray([x,y,z], a)
+   a1 = YAXArray((x,y,z), a)
    p1 = joinpath(d,tempname()) * ".zarr"
    p2 = joinpath(d,tempname()) * ".zarr"
    savecube(setchunks(a1, (40,50,1)), p2)
    savecube(setchunks(a1, (20,20,1)), p1)
    a2 = Cube(p2)
    a1 = Cube(p1)
-   mapped = map((x,y) -> x * y, a1, setchunks(a2, YAXArrays.Cubes.cubechunks(a1)))
-   @test_broken mapped[x=1] isa YAXArray
+   @test_throws ArgumentError mapped = map((x,y) -> x * y, a1, setchunks(a2, YAXArrays.Cubes.cubechunks(a1)))
 end

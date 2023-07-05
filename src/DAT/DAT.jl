@@ -15,11 +15,13 @@ using Distributed:
     AbstractWorkerPool, 
     default_worker_pool, 
     CachingPool
-import ..Cubes: cubechunks, iscompressed, chunkoffset, CubeAxis, YAXArray, caxes, YAXSlice
-import ..Cubes.Axes:
-    AxisDescriptor, axname, ByInference, axsym, getOutAxis, getAxis, findAxis, match_axis
+import ..Cubes: cubechunks, iscompressed, chunkoffset, YAXArray, caxes, YAXSlice
+import ..Cubes: cubechunks, iscompressed, chunkoffset, YAXArray, caxes, YAXSlice
+import ..YAXArrays: findAxis, getOutAxis, getAxis
+#import ..Cubes.Axes:
+#    AxisDescriptor, axname, ByInference, axsym, getOutAxis, getAxis, findAxis, match_axis
 import ..Datasets: Dataset, createdataset
-import ...YAXArrays
+using ..YAXArrays: ByInference, YAXArrays
 import ...YAXArrays.workdir
 import YAXArrayBase
 import ProgressMeter: Progress, next!, progress_pmap, progress_map
@@ -28,6 +30,7 @@ using DiskArrays: grid_offset, approx_chunksize, max_chunksize, RegularChunks,
   IrregularChunks, GridChunks, eachchunk, ChunkType
 using OffsetArrays: OffsetArray
 using Dates
+using DimensionalData: DimensionalData as DD
 
 export mapCube,
     getAxis,
@@ -92,7 +95,7 @@ function InputCube(c, desc::InDims)
     InputCube{ndims(c)}(
         c,
         desc,
-        collect(CubeAxis, axesSmall),
+        collect(axesSmall),
         collect(fullaxes),
         colonperm,
         Int[],
@@ -133,9 +136,9 @@ mutable struct OutputCube
     "The description of the output axes as given by users or registration"
     desc::OutDims
     "The list of output axes determined through the description"
-    axesSmall::Array{CubeAxis}
+    axesSmall::Array{DD.Dimension} # Should this be a Vector?
     "List of all the axes of the cube"
-    allAxes::Vector{CubeAxis}
+    allAxes::Vector{DD.Dimension}
     "Index of the loop axes that are broadcasted for this output cube"
     loopinds::Vector{Int}
     innerchunks::Any
@@ -167,7 +170,7 @@ function getworkarray(c::InOutCube, ntr)
                 i1 = findfirst(isequal(i), c.icolon)
                 i1 === nothing || return caxes(c.cube)[c.icolon[i1]]
                 i2 = findfirst(isequal(i), c.iwindow)
-                RangeAxis(axname(caxes(c.cube)[c.iwindow[i2]]), UnitRange(-c.window[i2][1], c.window[i2][2]))
+                DD.rebuild(DD.key2dim(DD.dim2key(caxes(c.cube)[c.iwindow[i2]])),UnitRange(-c.window[i2][1], c.window[i2][2]))
             end
             wrapWorkArray(c.desc.artype, w, axes)
         end
@@ -180,12 +183,12 @@ function interpretoutchunksizes(desc, axesSmall, incubes)
     elseif desc.chunksize == :input
         map(axesSmall) do ax
             for cc in incubes
-                i = findAxis(axname(ax), cc)
+                i = findAxis(string(DD.name(ax)), cc)
                 if i !== nothing
-                    return axname(ax) => eachchunk(cc.data).chunks[i]
+                    return string(DD.name(ax)) => eachchunk(cc.data).chunks[i]
                 end
             end
-            return axname(ax) => length(ax)
+            return string(DD.name(ax)) => length(ax)
         end
     else
         desc.chunksize
@@ -202,8 +205,8 @@ function OutputCube(desc::OutDims, inAxes, incubes, pargs, f)
         nothing,
         nothing,
         desc,
-        collect(CubeAxis, axesSmall),
-        CubeAxis[],
+        collect(DD.Dimension, axesSmall),
+        DD.Dimension[],
         Int[],
         innerchunks,
         outtype,
@@ -280,7 +283,7 @@ function DATConfig(
         incubes,
         outcubes,
         allInAxes,
-        CubeAxis[],                                 # LoopAxes
+        DD.Dimension[],                                 # LoopAxes
         ispar,
         Int[],
         allow_irregular,
@@ -711,7 +714,7 @@ struct AllLoopAxes{S,V} <: AxValCreator
     loopsyms::S
     loopaxvals::V
 end
-AllLoopAxes(a) = AllLoopAxes(map(axsym, a), map(i -> i.values, a))
+AllLoopAxes(a) = AllLoopAxes(map(DD.dim2key, a), map(i -> i.values, a))
 getlaxvals(::NoLoopAxes, cI, offscur) = ()
 getlaxvals(a::AllLoopAxes, cI, offscur) = (
     NamedTuple{a.loopsyms}(
@@ -819,7 +822,7 @@ function generateOutCube(
     newsize = map(length, oc.allAxes)
     outar = Array{elementtype}(undef, newsize...)
     fill!(outar,_zero(elementtype))
-    oc.cube = YAXArray(oc.allAxes, outar)
+    oc.cube = YAXArray(tuple(oc.allAxes...), outar)
     oc.cube_unpermuted = oc.cube
 end
 _zero(T) = zero(T)
@@ -873,7 +876,7 @@ function analyzeAxes(dc::DATConfig{NIN,NOUT}) where {NIN,NOUT}
     for cube in dc.incubes
         for (iax,a) in enumerate(caxes(cube.cube))
             if !in(a, cube.axesSmall)
-                s = axsym(a)
+                s = DD.name(a)
                 is = findfirst(isequal(s), loopaxsyms) 
                 if is === nothing
                     push!(dc.LoopAxes, a)
@@ -890,12 +893,12 @@ function analyzeAxes(dc::DATConfig{NIN,NOUT}) where {NIN,NOUT}
         end
     end
     for outcube in dc.outcubes
-        LoopAxesAdd = CubeAxis[]
+        LoopAxesAdd = DD.Dimension[]
         for (il, loopax) in enumerate(dc.LoopAxes)
             push!(outcube.loopinds, il)
             push!(LoopAxesAdd, loopax)
         end
-        outcube.allAxes = CubeAxis[outcube.axesSmall; LoopAxesAdd]
+        outcube.allAxes = DD.Dimension[outcube.axesSmall; LoopAxesAdd]
         dold = outcube.innerchunks
         newchunks = ntuple(_->nothing, length(outcube.allAxes))
         for (k, v) in dold
@@ -962,7 +965,6 @@ function getCacheSizes(dc::DATConfig, loopchunksizes)
     foreach(dc.LoopAxes, 1:length(dc.LoopAxes)) do lax, ilax
         haskey(userchunks, ilax) && return nothing
         for ic in dc.incubes
-            #@show lax
             #@show ic.cube.axes
             ii = findAxis(lax, ic.cube)
             if !isa(ii, Nothing)

@@ -1,4 +1,5 @@
 using Zarr, YAXArrays, Dates
+using DimensionalData
 using GLMakie, GeoMakie
 using GLMakie.GeometryBasics
 
@@ -7,9 +8,9 @@ g = open_dataset(zopen(store, consolidated=true))
 c = g["tas"]
 
 # Subset, first time step
-ct1 = c[time = Date("2015-01-01")]
-lon = ct1.lon
-lat = ct1.lat
+ct1 = c[Ti = Near(Date("2015-01-01"))]
+lon = ct1.lon.val
+lat = ct1.lat.val
 data = ct1.data[:,:];
 
 # ## Heatmap plot

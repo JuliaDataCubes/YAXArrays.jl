@@ -1,12 +1,13 @@
 name = "YAXArrays"
 uuid = "c21b50f5-aa40-41ea-b809-c0f5e47bfa5c"
 authors = ["Fabian Gans <fgans@bgc-jena.mpg.de>"]
-version = "0.4.7"
+version = "0.5"
 
 [deps]
 CFTime = "179af706-886a-5703-950a-314cd64e0468"
 DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+DimensionalData = "0703355e-b756-11e9-17c0-8b28908087d0"
 DiskArrayTools = "fcd2136c-9f69-4db6-97e5-f31981721d63"
 DiskArrays = "3c3547ce-8d99-4f5e-a174-61eb10b00ae3"
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"

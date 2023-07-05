@@ -7,10 +7,10 @@
     m[1,1,3] = missing
     m[3,1,6:10] .=missing
     m[4,1,:] .= 10
-    lon = RangeAxis("Lon", 1:4)
-    lat = RangeAxis("Lat", 1:2)
-    tim = RangeAxis("Time", 1:10)
-    c = YAXArray([lon, lat, tim], m)
+    lon = X(1:4)
+    lat = Y(1:2)
+    tim = Ti(1:10)
+    c = YAXArray((lon, lat, tim), m)
     indims = InDims("Time")
     outdims = OutDims()
     r = mapCube(c, indims=indims, outdims=outdims) do xout, xin
