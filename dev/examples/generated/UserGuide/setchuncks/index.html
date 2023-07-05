@@ -681,14 +681,16 @@
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>YAXArray Dataset
 Shared Axes: 
-   Dim{:Dim_1, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+Dim{:Dim_1} Sampled{Int64} Base.OneTo(10) ForwardOrdered Regular Points
 Variables: 
+
 x
- └── Dim{:Dim_2, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
-y
+ with dimensions: 
+  Dim{:Dim_2} Sampled{Int64} Base.OneTo(20) ForwardOrdered Regular Pointsy, 
 z
- └── Dim{:Dim_2, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
- └── Dim{:Dim_3, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5])
+ with dimensions: 
+  Dim{:Dim_2} Sampled{Int64} Base.OneTo(20) ForwardOrdered Regular Points,
+  Dim{:Dim_3} Sampled{Int64} Base.OneTo(5) ForwardOrdered Regular Points
 </code></pre></div>
 <p><a id="Set-chunking-by-Variable"></a></p>
 <p><a id="Set-chunking-by-Variable-1"></a></p>
@@ -718,14 +720,16 @@ z
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>YAXArray Dataset
 Shared Axes: 
-   Dim{:Dim_1, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+Dim{:Dim_1} Sampled{Int64} Base.OneTo(10) ForwardOrdered Regular Points
 Variables: 
+
 x
- └── Dim{:Dim_2, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
-y
+ with dimensions: 
+  Dim{:Dim_2} Sampled{Int64} Base.OneTo(20) ForwardOrdered Regular Pointsy, 
 z
- └── Dim{:Dim_2, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
- └── Dim{:Dim_3, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5])
+ with dimensions: 
+  Dim{:Dim_2} Sampled{Int64} Base.OneTo(20) ForwardOrdered Regular Points,
+  Dim{:Dim_3} Sampled{Int64} Base.OneTo(5) ForwardOrdered Regular Points
 </code></pre></div>
 <p><a id="Set-chunking-for-all-variables"></a></p>
 <p><a id="Set-chunking-for-all-variables-1"></a></p>
@@ -757,12 +761,10 @@ z
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>YAXArray Dataset
 Shared Axes: 
-   Dim{:Dim_1, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-   Dim{:Dim_2, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
+Dim{:Dim_1} Sampled{Int64} Base.OneTo(10) ForwardOrdered Regular Points,
+Dim{:Dim_2} Sampled{Int64} Base.OneTo(20) ForwardOrdered Regular Points
 Variables: 
-x
-y
-z
+x, y, z, 
 </code></pre></div>
 <hr>
 <p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></div>

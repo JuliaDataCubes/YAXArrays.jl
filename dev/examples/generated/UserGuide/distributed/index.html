@@ -588,9 +588,9 @@ Dim{:Variable} String["var1", "var2"]
 <span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ds</span><span class="p">[</span><span class="n">Variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">At</span><span class="p">(</span><span class="s">"var1"</span><span class="p">)]</span><span class="w"> </span><span class="c"># see OpenNetCDF to get the file</span>
 <span class="n">mapslices</span><span class="p">(</span><span class="n">mean</span><span class="w"> </span><span class="o">∘</span><span class="w"> </span><span class="n">skipmissing</span><span class="p">,</span><span class="w"> </span><span class="n">c</span><span class="p">,</span><span class="w"> </span><span class="n">dims</span><span class="o">=</span><span class="s">"Time"</span><span class="p">)</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
-Dim{:lon, DimensionalData.Dimensions.LookupArrays.Sampled{Float64, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Float64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0])
-Dim{:lat, DimensionalData.Dimensions.LookupArrays.Sampled{Float64, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Float64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1.0, 1.2857142857142858, 1.5714285714285714, 1.8571428571428572, 2.142857142857143, 2.4285714285714284, 2.7142857142857144, 3.0, 3.2857142857142856, 3.5714285714285716, 3.857142857142857, 4.142857142857143, 4.428571428571429, 4.714285714285714, 5.0])
+<div class="highlight"><pre><span></span><code>10×15 YAXArray{Union{Missing, Float64},2} with dimensions: 
+  Dim{:lon} Sampled{Float64} 1.0:1.0:10.0 ForwardOrdered Regular Points,
+  Dim{:lat} Sampled{Float64} 1.0:0.2857142857142857:5.0 ForwardOrdered Regular Points
 Total size: 1.17 KB
 </code></pre></div>
 <p><a id="Distributed-calculations"></a></p>
@@ -616,9 +616,9 @@ Total size: 1.17 KB
 <p>In the last example, <code>mapCube</code> was used to map the <code>mymean</code> function. <code>mapslices</code> is a convenient function that can replace <code>mapCube</code>, where you can omit defining an extra function with the output argument as an input (e.g. <code>mymean</code>). It is possible to simply use <code>mapslice</code></p>
 <div class="highlight"><pre><span></span><code><span class="n">resultcube</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mapslices</span><span class="p">(</span><span class="n">mean</span><span class="w"> </span><span class="o">∘</span><span class="w"> </span><span class="n">skipmissing</span><span class="p">,</span><span class="w"> </span><span class="n">c</span><span class="p">,</span><span class="w"> </span><span class="n">dims</span><span class="o">=</span><span class="s">"time"</span><span class="p">)</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
-Dim{:lon, DimensionalData.Dimensions.LookupArrays.Sampled{Float64, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Float64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0])
-Dim{:lat, DimensionalData.Dimensions.LookupArrays.Sampled{Float64, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Float64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1.0, 1.2857142857142858, 1.5714285714285714, 1.8571428571428572, 2.142857142857143, 2.4285714285714284, 2.7142857142857144, 3.0, 3.2857142857142856, 3.5714285714285716, 3.857142857142857, 4.142857142857143, 4.428571428571429, 4.714285714285714, 5.0])
+<div class="highlight"><pre><span></span><code>10×15 YAXArray{Union{Missing, Float64},2} with dimensions: 
+  Dim{:lon} Sampled{Float64} 1.0:1.0:10.0 ForwardOrdered Regular Points,
+  Dim{:lat} Sampled{Float64} 1.0:0.2857142857142857:5.0 ForwardOrdered Regular Points
 Total size: 1.17 KB
 </code></pre></div>
 <p><a id="SLURM-cluster"></a></p>

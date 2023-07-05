@@ -632,9 +632,9 @@
 <span class="n">f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tempname</span><span class="p">()</span>
 <span class="n">savecube</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">f</span><span class="p">,</span><span class="n">driver</span><span class="o">=</span><span class="ss">:zarr</span><span class="p">)</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
-Dim{:Dim_1, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-Dim{:Dim_2, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
+<div class="highlight"><pre><span></span><code>10×20 YAXArray{Float64,2} with dimensions: 
+  Dim{:Dim_1} Sampled{Int64} Base.OneTo(10) ForwardOrdered Regular Points,
+  Dim{:Dim_2} Sampled{Int64} Base.OneTo(20) ForwardOrdered Regular Points
 Total size: 1.56 KB
 </code></pre></div>
 <p><a id="Saving-a-YAXArray-to-NetCDF"></a></p>
@@ -646,9 +646,9 @@ Total size: 1.56 KB
 <span class="n">f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tempname</span><span class="p">()</span>
 <span class="n">savecube</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">f</span><span class="p">,</span><span class="n">driver</span><span class="o">=</span><span class="ss">:netcdf</span><span class="p">)</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
-Dim{:Dim_1, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
-Dim{:Dim_2, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
+<div class="highlight"><pre><span></span><code>10×20 YAXArray{Float64,2} with dimensions: 
+  Dim{:Dim_1} Sampled{Int64} Base.OneTo(10) ForwardOrdered Regular Points,
+  Dim{:Dim_2} Sampled{Int64} Base.OneTo(20) ForwardOrdered Regular Points
 Total size: 1.56 KB
 </code></pre></div>
 <p><a id="Saving-a-Dataset"></a></p>
@@ -662,11 +662,12 @@ Total size: 1.56 KB
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>YAXArray Dataset
 Shared Axes: 
-   Dim{:Dim_1, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+Dim{:Dim_1} Sampled{Int64} Base.OneTo(10) ForwardOrdered Regular Points
 Variables: 
+
 x
- └── Dim{:Dim_2, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
-y
+ with dimensions: 
+  Dim{:Dim_2} Sampled{Int64} Base.OneTo(20) ForwardOrdered Regular Pointsy, 
 </code></pre></div>
 <p><a id="Overwriting-a-Dataset"></a></p>
 <p><a id="Overwriting-a-Dataset-1"></a></p>
@@ -676,11 +677,12 @@ y
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>YAXArray Dataset
 Shared Axes: 
-   Dim{:Dim_1, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+Dim{:Dim_1} Sampled{Int64} Base.OneTo(10) ForwardOrdered Regular Points
 Variables: 
+
 x
- └── Dim{:Dim_2, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
-y
+ with dimensions: 
+  Dim{:Dim_2} Sampled{Int64} Base.OneTo(20) ForwardOrdered Regular Pointsy, 
 </code></pre></div>
 <p>Look at the docs for more information</p>
 <p>savedataset(ds::Dataset; path = "", persist = nothing, overwrite = false, append = false, skeleton=false, backend = :all,     driver = backend, max_cache = 5e8, writefac=4.0)</p>
@@ -699,14 +701,16 @@ y
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>YAXArray Dataset
 Shared Axes: 
-   Dim{:Dim_1, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, StepRange{Int64, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+Dim{:Dim_1} Sampled{Int64} 1:1:10 ForwardOrdered Regular Points
 Variables: 
+
 x
- └── Dim{:Dim_2, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, StepRange{Int64, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
+ with dimensions: 
+  Dim{:Dim_2} Sampled{Int64} 1:1:20 ForwardOrdered Regular Points
 z
- └── Dim{:Dim_2, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, StepRange{Int64, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
- └── Dim{:Dim_3, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, StepRange{Int64, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5])
-y
+ with dimensions: 
+  Dim{:Dim_2} Sampled{Int64} 1:1:20 ForwardOrdered Regular Points,
+  Dim{:Dim_3} Sampled{Int64} 1:1:5 ForwardOrdered Regular Pointsy, 
 </code></pre></div>
 <p><a id="Datacube-Skeleton-without-the-actual-data"></a></p>
 <p><a id="Datacube-Skeleton-without-the-actual-data-1"></a></p>
