@@ -817,14 +817,14 @@ Total size: 7.03 KB
   Dim{:Variable} Categorical{String} String["var1", "var2"] ForwardOrdered
 [:, :, 1, 1]
                       1.0       2.0       …  8.0       9.0       10.0
-  2022-01-01  0.239257  0.482512     0.806489  0.286717   0.721453
-  2022-01-02  0.173185  0.202899     0.128374  0.431471   0.0643761
-  2022-01-03  0.595907  0.386563     0.37027   0.991823   0.918407
+  2022-01-01  0.487961  0.255842     0.370717  0.130856   0.176446
+  2022-01-02  0.798295  0.550535     0.155687  0.896298   0.825745
+  2022-01-03  0.066507  0.940723     0.608596  0.633089   0.962967
  ⋮                                        ⋱                       ⋮
-  2022-01-27  0.793835  0.135064  …  0.259827  0.790958   0.809565
-  2022-01-28  0.679792  0.472429     0.866953  0.446178   0.119403
-  2022-01-29  0.185115  0.180078     0.208841  0.120068   0.967061
-  2022-01-30  0.909907  0.697119     0.9032    0.884405   0.366261
+  2022-01-27  0.994503  0.99393   …  0.606172  0.906661   0.164051
+  2022-01-28  0.062962  0.936129     0.518636  0.609456   0.786812
+  2022-01-29  0.219669  0.370075     0.290926  0.708791   0.410919
+  2022-01-30  0.571469  0.842687     0.638791  0.924826   0.215066
 [and 29 more slices...]
 </code></pre></div>
 <p>Now, the syntax from DimensionalData.jl just works</p>
@@ -842,11 +842,11 @@ and reference dimensions:
   Dim{:Variable} Categorical{String} String["var2"] ForwardOrdered
 [:, :, 1]
                       1.0       2.0
-  2022-01-01  0.364362  0.0629971
-  2022-01-02  0.397076  0.598774
+  2022-01-01  0.456528  0.850803
+  2022-01-02  0.938397  0.741533
  ⋮                              
-  2022-01-09  0.868581  0.44376
-  2022-01-10  0.4761    0.907936
+  2022-01-09  0.943662  0.457904
+  2022-01-10  0.449186  0.643499
 [and 14 more slices...]
 </code></pre></div>
 <p>And going back to our YAXArray view is done with</p>
@@ -920,17 +920,21 @@ Dim{:lat} 0.0:0.25:1.0
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>YAXArray Dataset
 Shared Axes: 
+()
 Variables: 
-t2m
- └── Dim{:lon, DimensionalData.Dimensions.LookupArrays.Sampled{Float64, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Float64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([0.0, 0.1111111111111111, 0.2222222222222222, 0.3333333333333333, 0.4444444444444444, 0.5555555555555556, 0.6666666666666666, 0.7777777777777778, 0.8888888888888888, 1.0])
- └── Dim{:lat, DimensionalData.Dimensions.LookupArrays.Sampled{Float64, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Float64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([0.0, 0.25, 0.5, 0.75, 1.0])
-prec
- └── Dim{:lon, DimensionalData.Dimensions.LookupArrays.Sampled{Float64, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Float64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([0.0, 0.1111111111111111, 0.2222222222222222, 0.3333333333333333, 0.4444444444444444, 0.5555555555555556, 0.6666666666666666, 0.7777777777777778, 0.8888888888888888, 1.0])
- └── Dim{:lat, DimensionalData.Dimensions.LookupArrays.Sampled{Float64, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Float64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([0.0, 0.25, 0.5, 0.75, 1.0])
-num
- └── Dim{:Dim_1, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 
-Properties: reference =&gt; your global references space =&gt; lon/lat 
+t2m
+ with dimensions: 
+  Dim{:lon} Sampled{Float64} 0.0:0.1111111111111111:1.0 ForwardOrdered Regular Points,
+  Dim{:lat} Sampled{Float64} 0.0:0.25:1.0 ForwardOrdered Regular Points
+prec
+ with dimensions: 
+  Dim{:lon} Sampled{Float64} 0.0:0.1111111111111111:1.0 ForwardOrdered Regular Points,
+  Dim{:lat} Sampled{Float64} 0.0:0.25:1.0 ForwardOrdered Regular Points
+num
+ with dimensions: 
+  Dim{:Dim_1} Sampled{Int64} Base.OneTo(10) ForwardOrdered Regular Points
+Properties: Dict("reference" =&gt; "your global references", "space" =&gt; "lon/lat")
 </code></pre></div>
 <p>Note that the YAXArrays used not necessarily shared the same dimensions. Hence, using a Dataset if more versatile than a plain YAXArray.</p>
 <p><a id="Selected-Variables-into-a-Data-Cube"></a></p>
