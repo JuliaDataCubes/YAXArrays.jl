@@ -474,14 +474,7 @@ cubesize(::YAXArray{T,0}) where {T} = sizeof(T)
 getCubeDes(::DD.Dimension) = "Cube axis"
 getCubeDes(::YAXArray) = "YAXArray"
 getCubeDes(::Type{T}) where {T} = string(T)
-Base.show(io::IO, c::YAXArray) = show_yax(io, c)
-Base.show(io::IO, mime::MIME{Symbol("text/plain")}, c::YAXArray) = show_yax(io,c)
-
-function show_yax(io::IO, c)
-    println(io, getCubeDes(c), " with the following dimensions")
-    for a in caxes(c)
-        println(io, a)
-    end
+function DD.show_after(io::IO,mime, c::YAXArray)
     foreach(getattributes(c)) do p
         if p[1] in ("labels", "name", "units")
             println(io, p[1], ": ", p[2])
