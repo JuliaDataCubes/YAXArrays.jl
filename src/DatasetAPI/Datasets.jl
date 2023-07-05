@@ -547,6 +547,7 @@ function savedataset(
     chunkoffset = [alloffsets[k] for k in keys(ds.axes)]
     axdata = arrayfromaxis.(axesall, chunkoffset)
 
+
     
     dshandle = if ispath(path)
         # We go into append mode
@@ -719,7 +720,7 @@ function createdataset(
             if hasmissings
                 v = CFDiskArray(v, attr)
             end
-            YAXArray(axlist, v, propfromattr(attr), cleaner = cleaner)
+            YAXArray((axlist...,), v, propfromattr(attr), cleaner = cleaner)
         end
         if groupaxis === nothing
             return allcubes[1], allcubes[1]
@@ -789,7 +790,7 @@ function createdataset(
     # function dataattfromaxis(ax::CubeAxis,n)
     #     prependrange(1:length(ax.values),n), Dict{String,Any}("_ARRAYVALUES"=>collect(ax.values))
     # end
-    function dataattfromaxis(ax::DD.Dimensions.Ti, n, T::Type{<:TimeType})
+    function dataattfromaxis(ax::DD.Dimension, n, T::Type{<:TimeType})
         data = timeencode(datetodatetime(DD.lookup(ax)), "days since 1980-01-01", defaultcal(T))
         prependrange(data, n),
         Dict{String,Any}("units" => "days since 1980-01-01", "calendar" => defaultcal(T))
