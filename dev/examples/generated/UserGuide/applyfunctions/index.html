@@ -16,10 +16,10 @@
         <link rel="prev" href="../setchuncks/">
       
       
-        <link rel="next" href="../create_from_func/">
+        <link rel="next" href="../openNetCDF/">
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.17">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.18">
     
     
       
@@ -273,6 +273,21 @@
   
   
     <li class="md-nav__item">
+      <a href="../../HowdoI/switchtodimarray/" class="md-nav__link">
+        Switch to DimensionalData
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../creating/" class="md-nav__link">
         Creating YAXArrays and Datasets
       </a>
@@ -405,21 +420,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../create_from_func/" class="md-nav__link">
-        Generate a cube from function
-      </a>
-    </li>
-  
-
-    
-      
-      
-      
-
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../openNetCDF/" class="md-nav__link">
         Open NetCDF
       </a>
@@ -497,51 +497,6 @@
     <li class="md-nav__item">
       <a href="../../HowdoI/howdoi/" class="md-nav__link">
         How do I ...
-      </a>
-    </li>
-  
-
-    
-      
-      
-      
-
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples_from_esdl_study_1/" class="md-nav__link">
-        Examples from ESDL study 1
-      </a>
-    </li>
-  
-
-    
-      
-      
-      
-
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples_from_esdl_study_2/" class="md-nav__link">
-        Examples from ESDL study 2
-      </a>
-    </li>
-  
-
-    
-      
-      
-      
-
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples_from_esdl_study_3/" class="md-nav__link">
-        Examples from ESDL study 3
       </a>
     </li>
   
@@ -669,96 +624,74 @@
 <div class="highlight"><pre><span></span><code><span class="c">#If we set up a dummy data cube which has all numbers between 1 and 10000.</span>
 
 <span class="k">using</span><span class="w"> </span><span class="n">YAXArrays</span>
-<span class="n">axes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="n">RangeAxis</span><span class="p">(</span><span class="s">"Lon"</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">),</span><span class="w"> </span><span class="n">RangeAxis</span><span class="p">(</span><span class="s">"Lat"</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">),</span><span class="w"> </span><span class="n">RangeAxis</span><span class="p">(</span><span class="s">"Time"</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="p">)]</span>
+<span class="k">using</span><span class="w"> </span><span class="n">DimensionalData</span>
+<span class="n">axes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:Lon</span><span class="p">}(</span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">),</span><span class="w"> </span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:Lat</span><span class="p">}(</span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">),</span><span class="w"> </span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:Time</span><span class="p">}(</span><span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="p">))</span>
 <span class="n">original</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span><span class="w"> </span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="mi">10000</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">100</span><span class="p">)))</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
-Lon                 Axis with 10 Elements from 1 to 10
-Lat                 Axis with 10 Elements from 1 to 10
-Time                Axis with 100 Elements from 1 to 100
+Dim{:Lon, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, UnitRange{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+Dim{:Lat, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, UnitRange{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+Dim{:Time, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, UnitRange{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10  …  91, 92, 93, 94, 95, 96, 97, 98, 99, 100])
 Total size: 78.12 KB
 </code></pre></div>
 <p>with one at the first position:</p>
 <div class="highlight"><pre><span></span><code><span class="n">original</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="o">:</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>10-element Vector{Int64}:
-  1
- 11
- 21
- 31
- 41
- 51
- 61
- 71
- 81
- 91
+<div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
+Dim{:Lat, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, UnitRange{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+Total size: 80.0 bytes
 </code></pre></div>
 <p>now we can substract <code>1</code> from all elements of this cube</p>
 <div class="highlight"><pre><span></span><code><span class="n">substracted</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">map</span><span class="p">(</span><span class="n">x</span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">original</span><span class="p">)</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
-Lon                 Axis with 10 Elements from 1 to 10
-Lat                 Axis with 10 Elements from 1 to 10
-Time                Axis with 100 Elements from 1 to 100
+Dim{:Lon, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, UnitRange{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+Dim{:Lat, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, UnitRange{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+Dim{:Time, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, UnitRange{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10  …  91, 92, 93, 94, 95, 96, 97, 98, 99, 100])
 Total size: 78.12 KB
 </code></pre></div>
 <p><code>substracted</code> is a cube of the same size as <code>original</code>, and the applied function is registered, so that it is applied as soon as the elements of <code>substracted</code> are either accessed or further used in other computations.</p>
 <div class="highlight"><pre><span></span><code><span class="n">substracted</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="o">:</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>10-element Vector{Int64}:
-  0
- 10
- 20
- 30
- 40
- 50
- 60
- 70
- 80
- 90
+<div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
+Dim{:Lat, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, UnitRange{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+Total size: 80.0 bytes
 </code></pre></div>
 <p><a id="Apply-a-function-along-dimensions-of-a-single-cube"></a></p>
 <p><a id="Apply-a-function-along-dimensions-of-a-single-cube-1"></a></p>
 <h2 id="apply-a-function-along-dimensions-of-a-single-cube">Apply a function along dimensions of a single cube<a class="headerlink" href="#apply-a-function-along-dimensions-of-a-single-cube" title="Permanent link">¤</a></h2>
 <p>If an function should work along a certain dimension of the data you can use the 'mapslices' function to easily apply this function. This doesn't give you the flexibility of the <code>mapCube</code> function but it is easier to use for simple functions.</p>
 <p>If we set up a dummy data cube which has all numbers between 1 and 10000.</p>
-<div class="highlight"><pre><span></span><code><span class="n">axes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="n">RangeAxis</span><span class="p">(</span><span class="s">"Lon"</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">),</span><span class="w"> </span><span class="n">RangeAxis</span><span class="p">(</span><span class="s">"Lat"</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">),</span><span class="w"> </span><span class="n">RangeAxis</span><span class="p">(</span><span class="s">"Time"</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="p">)]</span>
+<div class="highlight"><pre><span></span><code><span class="n">axes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:Lon</span><span class="p">}(</span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">),</span><span class="w"> </span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:Lat</span><span class="p">}(</span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">),</span><span class="w"> </span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:Time</span><span class="p">}(</span><span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="p">))</span>
 <span class="n">original</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span><span class="w"> </span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="mi">10000</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">100</span><span class="p">)))</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
-Lon                 Axis with 10 Elements from 1 to 10
-Lat                 Axis with 10 Elements from 1 to 10
-Time                Axis with 100 Elements from 1 to 100
+Dim{:Lon, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, UnitRange{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+Dim{:Lat, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, UnitRange{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+Dim{:Time, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, UnitRange{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10  …  91, 92, 93, 94, 95, 96, 97, 98, 99, 100])
 Total size: 78.12 KB
 </code></pre></div>
 <p>and then we would like to compute the sum over the Time dimension:</p>
 <div class="highlight"><pre><span></span><code><span class="n">timesum</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mapslices</span><span class="p">(</span><span class="n">sum</span><span class="p">,</span><span class="w"> </span><span class="n">original</span><span class="p">,</span><span class="w"> </span><span class="n">dims</span><span class="o">=</span><span class="s">"Time"</span><span class="p">)</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
-Lon                 Axis with 10 Elements from 1 to 10
-Lat                 Axis with 10 Elements from 1 to 10
+Dim{:Lon, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, UnitRange{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+Dim{:Lat, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, UnitRange{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 Total size: 800.0 bytes
 </code></pre></div>
 <p>this reduces over the time dimension and gives us the following values</p>
 <div class="highlight"><pre><span></span><code><span class="n">timesum</span><span class="p">[</span><span class="o">:</span><span class="p">,</span><span class="o">:</span><span class="p">]</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>10×10 Matrix{Union{Missing, Int64}}:
- 495100  496100  497100  498100  499100  …  501100  502100  503100  504100
- 495200  496200  497200  498200  499200     501200  502200  503200  504200
- 495300  496300  497300  498300  499300     501300  502300  503300  504300
- 495400  496400  497400  498400  499400     501400  502400  503400  504400
- 495500  496500  497500  498500  499500     501500  502500  503500  504500
- 495600  496600  497600  498600  499600  …  501600  502600  503600  504600
- 495700  496700  497700  498700  499700     501700  502700  503700  504700
- 495800  496800  497800  498800  499800     501800  502800  503800  504800
- 495900  496900  497900  498900  499900     501900  502900  503900  504900
- 496000  497000  498000  499000  500000     502000  503000  504000  505000
+<div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
+Dim{:Lon, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, UnitRange{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+Dim{:Lat, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, UnitRange{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+Total size: 800.0 bytes
 </code></pre></div>
 <p>You can also apply a function along multiple dimensions of the same data cube.</p>
 <div class="highlight"><pre><span></span><code><span class="n">lonlatsum</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mapslices</span><span class="p">(</span><span class="n">sum</span><span class="p">,</span><span class="w"> </span><span class="n">original</span><span class="p">,</span><span class="w"> </span><span class="n">dims</span><span class="o">=</span><span class="p">(</span><span class="s">"Lon"</span><span class="p">,</span><span class="w"> </span><span class="s">"Lat"</span><span class="p">))</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
-Time                Axis with 100 Elements from 1 to 100
+Dim{:Time, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, UnitRange{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10  …  91, 92, 93, 94, 95, 96, 97, 98, 99, 100])
 Total size: 800.0 bytes
 </code></pre></div>
 <p><a id="How-to-combine-multiple-cubes-in-one-computation"></a></p>
@@ -784,7 +717,7 @@ Total size: 800.0 bytes
 <span class="w">    </span><span class="n">figure</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(;</span><span class="w"> </span><span class="n">resolution</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">600</span><span class="p">,</span><span class="mi">400</span><span class="p">))</span>
 <span class="w">    </span><span class="p">)</span>
 </code></pre></div>
-<p><img alt="" src="../tfbuivf.png"></p>
+<p><img alt="" src="../qnqoupb.png"></p>
 <p>Currently makie doesn't support time axis natively, but the following function can do the work for now.</p>
 <div class="highlight"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">time_ticks</span><span class="p">(</span><span class="n">dates</span><span class="p">;</span><span class="w"> </span><span class="n">frac</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
 <span class="w">    </span><span class="n">tempo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">string</span><span class="o">.</span><span class="p">(</span><span class="n">dates</span><span class="p">)</span>
@@ -807,15 +740,15 @@ Total size: 800.0 bytes
 <span class="n">ax</span><span class="o">.</span><span class="n">xticklabelalign</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="ss">:right</span><span class="p">,</span><span class="w"> </span><span class="ss">:center</span><span class="p">)</span>
 <span class="n">fig</span>
 </code></pre></div>
-<p><img alt="" src="../xatokep.png"></p>
+<p><img alt="" src="../pragbbc.png"></p>
 <p><a id="Define-the-cube"></a></p>
 <p><a id="Define-the-cube-1"></a></p>
 <h2 id="define-the-cube">Define the cube<a class="headerlink" href="#define-the-cube" title="Permanent link">¤</a></h2>
-<div class="highlight"><pre><span></span><code><span class="n">axes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="n">RangeAxis</span><span class="p">(</span><span class="s">"Time"</span><span class="p">,</span><span class="w"> </span><span class="n">t</span><span class="p">)]</span>
+<div class="highlight"><pre><span></span><code><span class="n">axes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:Time</span><span class="p">}(</span><span class="n">t</span><span class="p">),)</span>
 <span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span><span class="w"> </span><span class="n">var</span><span class="p">)</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
-Time                Axis with 1095 Elements from 2021-01-01 to 2023-12-31
+Dim{:Time, DimensionalData.Dimensions.LookupArrays.Sampled{Date, StepRange{Date, Dates.Day}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Dates.Day}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([Date("2021-01-01"), Date("2021-01-02"), Date("2021-01-03"), Date("2021-01-04"), Date("2021-01-05"), Date("2021-01-06"), Date("2021-01-07"), Date("2021-01-08"), Date("2021-01-09"), Date("2021-01-10")  …  Date("2023-12-22"), Date("2023-12-23"), Date("2023-12-24"), Date("2023-12-25"), Date("2023-12-26"), Date("2023-12-27"), Date("2023-12-28"), Date("2023-12-29"), Date("2023-12-30"), Date("2023-12-31")])
 Total size: 8.55 KB
 </code></pre></div>
 <p>Let's calculate the mean seasonal cycle of our dummy variable 'var'</p>
@@ -859,7 +792,7 @@ Total size: 8.55 KB
 <span class="n">fig</span>
 <span class="n">current_figure</span><span class="p">()</span>
 </code></pre></div>
-<p><img alt="" src="../tlcherl.png"></p>
+<p><img alt="" src="../csqhgst.png"></p>
 <hr>
 <p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></div>
 
@@ -904,13 +837,13 @@ Total size: 8.55 KB
         
         
           
-          <a href="../create_from_func/" class="md-footer__link md-footer__link--next" aria-label="Next: Generate a cube from function" rel="next">
+          <a href="../openNetCDF/" class="md-footer__link md-footer__link--next" aria-label="Next: Open NetCDF" rel="next">
             <div class="md-footer__title">
               <span class="md-footer__direction">
                 Next
               </span>
               <div class="md-ellipsis">
-                Generate a cube from function
+                Open NetCDF
               </div>
             </div>
             <div class="md-footer__button md-icon">
@@ -942,10 +875,10 @@ Total size: 8.55 KB
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.top", "navigation.footer", "search.highlight", "search.share", "search.suggest", "toc.follow", "header.autohide"], "search": "../../../../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.top", "navigation.footer", "search.highlight", "search.share", "search.suggest", "toc.follow", "header.autohide"], "search": "../../../../assets/javascripts/workers/search.74e28a9f.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.b425cdc4.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.220ee61c.min.js"></script>
       
         
           <script src="../../../../javascripts/mathjax.js"></script>

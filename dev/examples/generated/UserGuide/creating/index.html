@@ -13,13 +13,13 @@
       
       
       
-        <link rel="prev" href="../../../..">
+        <link rel="prev" href="../../HowdoI/switchtodimarray/">
       
       
         <link rel="next" href="../saving/">
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.17">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.18">
     
     
       
@@ -271,6 +271,21 @@
 
   
   
+  
+    <li class="md-nav__item">
+      <a href="../../HowdoI/switchtodimarray/" class="md-nav__link">
+        Switch to DimensionalData
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
     
   
   
@@ -455,21 +470,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../create_from_func/" class="md-nav__link">
-        Generate a cube from function
-      </a>
-    </li>
-  
-
-    
-      
-      
-      
-
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../openNetCDF/" class="md-nav__link">
         Open NetCDF
       </a>
@@ -547,51 +547,6 @@
     <li class="md-nav__item">
       <a href="../../HowdoI/howdoi/" class="md-nav__link">
         How do I ...
-      </a>
-    </li>
-  
-
-    
-      
-      
-      
-
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples_from_esdl_study_1/" class="md-nav__link">
-        Examples from ESDL study 1
-      </a>
-    </li>
-  
-
-    
-      
-      
-      
-
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples_from_esdl_study_2/" class="md-nav__link">
-        Examples from ESDL study 2
-      </a>
-    </li>
-  
-
-    
-      
-      
-      
-
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples_from_esdl_study_3/" class="md-nav__link">
-        Examples from ESDL study 3
       </a>
     </li>
   
@@ -763,43 +718,27 @@
 <p><a id="Creating-a-YAXArray-1"></a></p>
 <h2 id="creating-a-yaxarray">Creating a YAXArray<a class="headerlink" href="#creating-a-yaxarray" title="Permanent link">¤</a></h2>
 <div class="highlight"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">YAXArrays</span>
+<span class="k">using</span><span class="w"> </span><span class="n">DimensionalData</span><span class="o">:</span><span class="w"> </span><span class="n">DimensionalData</span><span class="w"> </span><span class="n">as</span><span class="w"> </span><span class="n">DD</span>
+<span class="k">using</span><span class="w"> </span><span class="n">DimensionalData</span>
 <span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">rand</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">))</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
-Dim_1               Axis with 10 Elements from 1 to 10
-Dim_2               Axis with 20 Elements from 1 to 20
-Dim_3               Axis with 5 Elements from 1 to 5
+Dim{:Dim_1, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+Dim{:Dim_2, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
+Dim{:Dim_3, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5])
 Total size: 7.81 KB
 </code></pre></div>
 <p>if not names are defined then default ones will be used, i.e. <code>Dim_1</code>, <code>Dim_2</code>. Get data from each Dimension with</p>
 <div class="highlight"><pre><span></span><code><span class="n">a</span><span class="o">.</span><span class="n">Dim_1</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>10-element RangeAxis{Int64, :Dim_1, Base.OneTo{Int64}}:
-  1
-  2
-  3
-  4
-  5
-  6
-  7
-  8
-  9
- 10
+<div class="highlight"><pre><span></span><code>Dim{:Dim_1} Sampled{Int64} ForwardOrdered Regular Points
+wrapping: Base.OneTo(10)
 </code></pre></div>
 <p>or with</p>
 <div class="highlight"><pre><span></span><code><span class="n">getproperty</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="ss">:Dim_1</span><span class="p">)</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>10-element RangeAxis{Int64, :Dim_1, Base.OneTo{Int64}}:
-  1
-  2
-  3
-  4
-  5
-  6
-  7
-  8
-  9
- 10
+<div class="highlight"><pre><span></span><code>Dim{:Dim_1} Sampled{Int64} ForwardOrdered Regular Points
+wrapping: Base.OneTo(10)
 </code></pre></div>
 <p><a id="Creating-a-YAXArray-with-named-axis"></a></p>
 <p><a id="Creating-a-YAXArray-with-named-axis-1"></a></p>
@@ -809,39 +748,38 @@ Total size: 7.81 KB
 <p><a id="Axis-definitions-1"></a></p>
 <h3 id="axis-definitions">Axis definitions<a class="headerlink" href="#axis-definitions" title="Permanent link">¤</a></h3>
 <div class="highlight"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">Dates</span>
-<span class="n">axlist</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
-<span class="w">    </span><span class="n">RangeAxis</span><span class="p">(</span><span class="s">"time"</span><span class="p">,</span><span class="w"> </span><span class="n">Date</span><span class="p">(</span><span class="s">"2022-01-01"</span><span class="p">)</span><span class="o">:</span><span class="n">Day</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">:</span><span class="n">Date</span><span class="p">(</span><span class="s">"2022-01-30"</span><span class="p">)),</span>
-<span class="w">    </span><span class="n">RangeAxis</span><span class="p">(</span><span class="s">"lon"</span><span class="p">,</span><span class="w"> </span><span class="n">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="o">=</span><span class="mi">10</span><span class="p">)),</span>
-<span class="w">    </span><span class="n">RangeAxis</span><span class="p">(</span><span class="s">"lat"</span><span class="p">,</span><span class="w"> </span><span class="n">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="o">=</span><span class="mi">15</span><span class="p">)),</span>
-<span class="w">    </span><span class="n">CategoricalAxis</span><span class="p">(</span><span class="s">"Variable"</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="s">"var1"</span><span class="p">,</span><span class="w"> </span><span class="s">"var2"</span><span class="p">])</span>
-<span class="w">    </span><span class="p">]</span>
+<span class="n">axlist</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:time</span><span class="p">}(</span><span class="n">Date</span><span class="p">(</span><span class="s">"2022-01-01"</span><span class="p">)</span><span class="o">:</span><span class="n">Day</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">:</span><span class="n">Date</span><span class="p">(</span><span class="s">"2022-01-30"</span><span class="p">)),</span>
+<span class="w">    </span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:lon</span><span class="p">}(</span><span class="n">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="o">=</span><span class="mi">10</span><span class="p">)),</span>
+<span class="w">    </span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:lat</span><span class="p">}(</span><span class="n">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="o">=</span><span class="mi">15</span><span class="p">)),</span>
+<span class="w">    </span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:Variable</span><span class="p">}([</span><span class="s">"var1"</span><span class="p">,</span><span class="w"> </span><span class="s">"var2"</span><span class="p">])</span>
+<span class="w">    </span><span class="p">)</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>4-element Vector{CubeAxis}:
- time                Axis with 30 Elements from 2022-01-01 to 2022-01-30
- lon                 Axis with 10 Elements from 1.0 to 10.0
- lat                 Axis with 15 Elements from 1.0 to 5.0
- Variable            Axis with 2 elements: var1 var2 
+<div class="highlight"><pre><span></span><code>Dim{:time} Date("2022-01-01"):Dates.Day(1):Date("2022-01-30"),
+Dim{:lon} 1.0:1.0:10.0,
+Dim{:lat} 1.0:0.2857142857142857:5.0,
+Dim{:Variable} String["var1", "var2"]
 </code></pre></div>
 <p>And the corresponding data</p>
 <div class="highlight"><pre><span></span><code><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">15</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
 <span class="n">ds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">axlist</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="p">)</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
-time                Axis with 30 Elements from 2022-01-01 to 2022-01-30
-lon                 Axis with 10 Elements from 1.0 to 10.0
-lat                 Axis with 15 Elements from 1.0 to 5.0
-Variable            Axis with 2 elements: var1 var2 
+Dim{:time, DimensionalData.Dimensions.LookupArrays.Sampled{Date, StepRange{Date, Dates.Day}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Dates.Day}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([Date("2022-01-01"), Date("2022-01-02"), Date("2022-01-03"), Date("2022-01-04"), Date("2022-01-05"), Date("2022-01-06"), Date("2022-01-07"), Date("2022-01-08"), Date("2022-01-09"), Date("2022-01-10")  …  Date("2022-01-21"), Date("2022-01-22"), Date("2022-01-23"), Date("2022-01-24"), Date("2022-01-25"), Date("2022-01-26"), Date("2022-01-27"), Date("2022-01-28"), Date("2022-01-29"), Date("2022-01-30")])
+Dim{:lon, DimensionalData.Dimensions.LookupArrays.Sampled{Float64, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Float64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0])
+Dim{:lat, DimensionalData.Dimensions.LookupArrays.Sampled{Float64, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Float64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1.0, 1.2857142857142858, 1.5714285714285714, 1.8571428571428572, 2.142857142857143, 2.4285714285714284, 2.7142857142857144, 3.0, 3.2857142857142856, 3.5714285714285716, 3.857142857142857, 4.142857142857143, 4.428571428571429, 4.714285714285714, 5.0])
+Dim{:Variable, DimensionalData.Dimensions.LookupArrays.Categorical{String, Vector{String}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.NoMetadata}}(["var1", "var2"])
 Total size: 70.31 KB
 </code></pre></div>
 <p><a id="Select-variables"></a></p>
 <p><a id="Select-variables-1"></a></p>
 <h3 id="select-variables">Select variables<a class="headerlink" href="#select-variables" title="Permanent link">¤</a></h3>
-<div class="highlight"><pre><span></span><code><span class="n">ds</span><span class="p">[</span><span class="n">Variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"var1"</span><span class="p">,</span><span class="w"> </span><span class="n">lon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mf">2.1</span><span class="p">)]</span>
+<div class="highlight"><pre><span></span><code><span class="n">ds</span><span class="p">[</span><span class="n">Variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">At</span><span class="p">(</span><span class="s">"var1"</span><span class="p">),</span><span class="w"> </span><span class="n">lon</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DD</span><span class="o">.</span><span class="n">Between</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mf">2.1</span><span class="p">)]</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
-time                Axis with 30 Elements from 2022-01-01 to 2022-01-30
-lon                 Axis with 2 Elements from 1.0 to 2.0
-lat                 Axis with 15 Elements from 1.0 to 5.0
+Dim{:time, DimensionalData.Dimensions.LookupArrays.Sampled{Date, StepRange{Date, Dates.Day}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Dates.Day}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([Date("2022-01-01"), Date("2022-01-02"), Date("2022-01-03"), Date("2022-01-04"), Date("2022-01-05"), Date("2022-01-06"), Date("2022-01-07"), Date("2022-01-08"), Date("2022-01-09"), Date("2022-01-10")  …  Date("2022-01-21"), Date("2022-01-22"), Date("2022-01-23"), Date("2022-01-24"), Date("2022-01-25"), Date("2022-01-26"), Date("2022-01-27"), Date("2022-01-28"), Date("2022-01-29"), Date("2022-01-30")])
+Dim{:lon, DimensionalData.Dimensions.LookupArrays.Sampled{Float64, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Float64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1.0, 2.0])
+Dim{:lat, DimensionalData.Dimensions.LookupArrays.Sampled{Float64, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Float64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1.0, 1.2857142857142858, 1.5714285714285714, 1.8571428571428572, 2.142857142857143, 2.4285714285714284, 2.7142857142857144, 3.0, 3.2857142857142856, 3.5714285714285716, 3.857142857142857, 4.142857142857143, 4.428571428571429, 4.714285714285714, 5.0])
 Total size: 7.03 KB
 </code></pre></div>
 <p><a id="Indexing-and-subsetting"></a></p>
@@ -878,21 +816,21 @@ Total size: 7.03 KB
   Dim{:lat} Sampled{Float64} 1.0:0.2857142857142857:5.0 ForwardOrdered Regular Points,
   Dim{:Variable} Categorical{String} String["var1", "var2"] ForwardOrdered
 [:, :, 1, 1]
-                      1.0        …  8.0          9.0       10.0
-  2022-01-01  0.983168      0.000412203  0.887738   0.0499707
-  2022-01-02  0.682249      0.619416     0.212247   0.736721
-  2022-01-03  0.609211      0.340381     0.427748   0.604847
- ⋮                               ⋱                          ⋮
-  2022-01-27  0.356538   …  0.209179     0.264471   0.692029
-  2022-01-28  0.158023      0.157526     0.715724   0.840579
-  2022-01-29  0.513868      0.678145     0.771949   0.409703
-  2022-01-30  0.0508045     0.820546     0.284301   0.732006
+                      1.0       2.0        …  8.0        9.0       10.0
+  2022-01-01  0.880631  0.17835       0.576021   0.943775   0.462394
+  2022-01-02  0.380391  0.477461      0.579719   0.715683   0.523038
+  2022-01-03  0.814958  0.0908787     0.0688752  0.307134   0.915464
+ ⋮                                         ⋱                        ⋮
+  2022-01-27  0.885236  0.348281   …  0.675888   0.812732   0.28505
+  2022-01-28  0.159811  0.932391      0.219152   0.434722   0.263395
+  2022-01-29  0.148303  0.558153      0.894759   0.599269   0.757874
+  2022-01-30  0.410572  0.377089      0.720965   0.999732   0.0501396
 [and 29 more slices...]
 </code></pre></div>
 <p>Now, the syntax from DimensionalData.jl just works</p>
 <div class="highlight"><pre><span></span><code><span class="n">subset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dim</span><span class="p">[</span>
-<span class="w">    </span><span class="n">time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Between</span><span class="p">(</span><span class="w"> </span><span class="n">Date</span><span class="p">(</span><span class="s">"2022-01-01"</span><span class="p">),</span><span class="w">  </span><span class="n">Date</span><span class="p">(</span><span class="s">"2022-01-10"</span><span class="p">)),</span>
-<span class="w">    </span><span class="n">lon</span><span class="o">=</span><span class="n">Between</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span>
+<span class="w">    </span><span class="n">time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DD</span><span class="o">.</span><span class="n">Between</span><span class="p">(</span><span class="w"> </span><span class="n">Date</span><span class="p">(</span><span class="s">"2022-01-01"</span><span class="p">),</span><span class="w">  </span><span class="n">Date</span><span class="p">(</span><span class="s">"2022-01-10"</span><span class="p">)),</span>
+<span class="w">    </span><span class="n">lon</span><span class="o">=</span><span class="n">DD</span><span class="o">.</span><span class="n">Between</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span>
 <span class="w">    </span><span class="n">Variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">At</span><span class="p">(</span><span class="s">"var2"</span><span class="p">)</span>
 <span class="w">    </span><span class="p">]</span>
 </code></pre></div>
@@ -904,20 +842,20 @@ and reference dimensions:
   Dim{:Variable} Categorical{String} String["var2"] ForwardOrdered
 [:, :, 1]
                       1.0       2.0
-  2022-01-01  0.166316  0.296807
-  2022-01-02  0.173826  0.46596
+  2022-01-01  0.279101  0.61819
+  2022-01-02  0.907492  0.192473
  ⋮                              
-  2022-01-09  0.061522  0.223284
-  2022-01-10  0.275341  0.436815
+  2022-01-09  0.444972  0.979285
+  2022-01-10  0.578844  0.0168522
 [and 14 more slices...]
 </code></pre></div>
 <p>And going back to our YAXArray view is done with</p>
 <div class="highlight"><pre><span></span><code><span class="n">yax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">yaxconvert</span><span class="p">(</span><span class="n">YAXArray</span><span class="p">,</span><span class="w"> </span><span class="n">subset</span><span class="p">)</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
-time                Axis with 10 Elements from 2022-01-01 to 2022-01-10
-lon                 Axis with 2 Elements from 1.0 to 2.0
-lat                 Axis with 15 Elements from 1.0 to 5.0
+Dim{:time, DimensionalData.Dimensions.LookupArrays.Sampled{Date, StepRange{Date, Dates.Day}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Dates.Day}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([Date("2022-01-01"), Date("2022-01-02"), Date("2022-01-03"), Date("2022-01-04"), Date("2022-01-05"), Date("2022-01-06"), Date("2022-01-07"), Date("2022-01-08"), Date("2022-01-09"), Date("2022-01-10")])
+Dim{:lon, DimensionalData.Dimensions.LookupArrays.Sampled{Float64, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Float64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1.0, 2.0])
+Dim{:lat, DimensionalData.Dimensions.LookupArrays.Sampled{Float64, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Float64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1.0, 1.2857142857142858, 1.5714285714285714, 1.8571428571428572, 2.142857142857143, 2.4285714285714284, 2.7142857142857144, 3.0, 3.2857142857142856, 3.5714285714285716, 3.857142857142857, 4.142857142857143, 4.428571428571429, 4.714285714285714, 5.0])
 Total size: 2.34 KB
 </code></pre></div>
 <p>This will be supported by default in the next release.</p>
@@ -944,10 +882,10 @@ Total size: 2.34 KB
 <div class="highlight"><pre><span></span><code><span class="n">ds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">axlist</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">props</span><span class="p">)</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
-time                Axis with 30 Elements from 2022-01-01 to 2022-01-30
-lon                 Axis with 10 Elements from 1.0 to 10.0
-lat                 Axis with 15 Elements from 1.0 to 5.0
-Variable            Axis with 2 elements: var1 var2 
+Dim{:time, DimensionalData.Dimensions.LookupArrays.Sampled{Date, StepRange{Date, Dates.Day}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Dates.Day}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([Date("2022-01-01"), Date("2022-01-02"), Date("2022-01-03"), Date("2022-01-04"), Date("2022-01-05"), Date("2022-01-06"), Date("2022-01-07"), Date("2022-01-08"), Date("2022-01-09"), Date("2022-01-10")  …  Date("2022-01-21"), Date("2022-01-22"), Date("2022-01-23"), Date("2022-01-24"), Date("2022-01-25"), Date("2022-01-26"), Date("2022-01-27"), Date("2022-01-28"), Date("2022-01-29"), Date("2022-01-30")])
+Dim{:lon, DimensionalData.Dimensions.LookupArrays.Sampled{Float64, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Float64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0])
+Dim{:lat, DimensionalData.Dimensions.LookupArrays.Sampled{Float64, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Float64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1.0, 1.2857142857142858, 1.5714285714285714, 1.8571428571428572, 2.142857142857143, 2.4285714285714284, 2.7142857142857144, 3.0, 3.2857142857142856, 3.5714285714285716, 3.857142857142857, 4.142857142857143, 4.428571428571429, 4.714285714285714, 5.0])
+Dim{:Variable, DimensionalData.Dimensions.LookupArrays.Categorical{String, Vector{String}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.NoMetadata}}(["var1", "var2"])
 Total size: 70.31 KB
 </code></pre></div>
 <p>Access these properties with</p>
@@ -965,14 +903,13 @@ Total size: 70.31 KB
 <p><a id="Creating-a-Dataset-1"></a></p>
 <h2 id="creating-a-dataset">Creating a Dataset<a class="headerlink" href="#creating-a-dataset" title="Permanent link">¤</a></h2>
 <p>Let's define first some range axis</p>
-<div class="highlight"><pre><span></span><code><span class="n">axs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span>
-<span class="w">    </span><span class="n">RangeAxis</span><span class="p">(</span><span class="s">"lon"</span><span class="p">,</span><span class="w"> </span><span class="n">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="o">=</span><span class="mi">10</span><span class="p">)),</span>
-<span class="w">    </span><span class="n">RangeAxis</span><span class="p">(</span><span class="s">"lat"</span><span class="p">,</span><span class="w"> </span><span class="n">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="o">=</span><span class="mi">5</span><span class="p">)),</span>
-<span class="p">]</span>
+<div class="highlight"><pre><span></span><code><span class="n">axs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:lon</span><span class="p">}(</span><span class="n">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="o">=</span><span class="mi">10</span><span class="p">)),</span>
+<span class="w">    </span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:lat</span><span class="p">}(</span><span class="n">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="o">=</span><span class="mi">5</span><span class="p">)),</span>
+<span class="p">)</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>2-element Vector{RangeAxis{Float64, S, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}} where S}:
- lon                 Axis with 10 Elements from 0.0 to 1.0
- lat                 Axis with 5 Elements from 0.0 to 1.0
+<div class="highlight"><pre><span></span><code>Dim{:lon} 0.0:0.1111111111111111:1.0,
+Dim{:lat} 0.0:0.25:1.0
 </code></pre></div>
 <p>And two toy random <code>YAXArrays</code> to assemble our dataset</p>
 <div class="highlight"><pre><span></span><code><span class="n">t2m</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">axs</span><span class="p">,</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">5</span><span class="p">),</span><span class="w"> </span><span class="kt">Dict</span><span class="p">(</span><span class="s">"units"</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">"K"</span><span class="p">,</span><span class="w"> </span><span class="s">"reference"</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="s">"your references"</span><span class="p">))</span>
@@ -985,13 +922,13 @@ Total size: 70.31 KB
 Shared Axes: 
 Variables: 
 t2m
- └── lon                 Axis with 10 Elements from 0.0 to 1.0
- └── lat                 Axis with 5 Elements from 0.0 to 1.0
+ └── Dim{:lon, DimensionalData.Dimensions.LookupArrays.Sampled{Float64, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Float64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([0.0, 0.1111111111111111, 0.2222222222222222, 0.3333333333333333, 0.4444444444444444, 0.5555555555555556, 0.6666666666666666, 0.7777777777777778, 0.8888888888888888, 1.0])
+ └── Dim{:lat, DimensionalData.Dimensions.LookupArrays.Sampled{Float64, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Float64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([0.0, 0.25, 0.5, 0.75, 1.0])
 prec
- └── lon                 Axis with 10 Elements from 0.0 to 1.0
- └── lat                 Axis with 5 Elements from 0.0 to 1.0
+ └── Dim{:lon, DimensionalData.Dimensions.LookupArrays.Sampled{Float64, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Float64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([0.0, 0.1111111111111111, 0.2222222222222222, 0.3333333333333333, 0.4444444444444444, 0.5555555555555556, 0.6666666666666666, 0.7777777777777778, 0.8888888888888888, 1.0])
+ └── Dim{:lat, DimensionalData.Dimensions.LookupArrays.Sampled{Float64, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Float64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([0.0, 0.25, 0.5, 0.75, 1.0])
 num
- └── Dim_1               Axis with 10 Elements from 1 to 10
+ └── Dim{:Dim_1, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 
 Properties: reference =&gt; your global references space =&gt; lon/lat 
 </code></pre></div>
@@ -1003,9 +940,9 @@ Properties: reference =&gt; your global references space =&gt; lon/lat
 <div class="highlight"><pre><span></span><code><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Cube</span><span class="p">(</span><span class="n">ds</span><span class="p">[[</span><span class="s">"t2m"</span><span class="p">,</span><span class="w"> </span><span class="s">"prec"</span><span class="p">]])</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
-lon                 Axis with 10 Elements from 0.0 to 1.0
-lat                 Axis with 5 Elements from 0.0 to 1.0
-Variable            Axis with 2 elements: t2m prec 
+Dim{:lon, DimensionalData.Dimensions.LookupArrays.Sampled{Float64, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Float64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([0.0, 0.1111111111111111, 0.2222222222222222, 0.3333333333333333, 0.4444444444444444, 0.5555555555555556, 0.6666666666666666, 0.7777777777777778, 0.8888888888888888, 1.0])
+Dim{:lat, DimensionalData.Dimensions.LookupArrays.Sampled{Float64, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Float64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([0.0, 0.25, 0.5, 0.75, 1.0])
+Dim{:Variable, DimensionalData.Dimensions.LookupArrays.Categorical{String, Vector{String}, DimensionalData.Dimensions.LookupArrays.ReverseOrdered, DimensionalData.Dimensions.LookupArrays.NoMetadata}}(["t2m", "prec"])
 units: mm
 Total size: 800.0 bytes
 </code></pre></div>
@@ -1013,7 +950,7 @@ Total size: 800.0 bytes
 <div class="highlight"><pre><span></span><code><span class="n">Cube</span><span class="p">(</span><span class="n">ds</span><span class="p">[[</span><span class="s">"num"</span><span class="p">]])</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
-Dim_1               Axis with 10 Elements from 1 to 10
+Dim{:Dim_1, DimensionalData.Dimensions.LookupArrays.Sampled{Int64, Base.OneTo{Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Int64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
 Total size: 80.0 bytes
 </code></pre></div>
 <p><a id="Variable-properties"></a></p>
@@ -1069,7 +1006,7 @@ Total size: 80.0 bytes
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../../../.." class="md-footer__link md-footer__link--prev" aria-label="Previous: Home" rel="prev">
+          <a href="../../HowdoI/switchtodimarray/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Switch to DimensionalData" rel="prev">
             <div class="md-footer__button md-icon">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
             </div>
@@ -1078,7 +1015,7 @@ Total size: 80.0 bytes
                 Previous
               </span>
               <div class="md-ellipsis">
-                Home
+                Switch to DimensionalData
               </div>
             </div>
           </a>
@@ -1123,10 +1060,10 @@ Total size: 80.0 bytes
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.top", "navigation.footer", "search.highlight", "search.share", "search.suggest", "toc.follow", "header.autohide"], "search": "../../../../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.top", "navigation.footer", "search.highlight", "search.share", "search.suggest", "toc.follow", "header.autohide"], "search": "../../../../assets/javascripts/workers/search.74e28a9f.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.b425cdc4.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.220ee61c.min.js"></script>
       
         
           <script src="../../../../javascripts/mathjax.js"></script>

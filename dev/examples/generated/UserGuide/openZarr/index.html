@@ -19,7 +19,7 @@
         <link rel="next" href="../distributed/">
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.17">
+      <meta name="generator" content="mkdocs-1.4.3, mkdocs-material-9.1.18">
     
     
       
@@ -268,6 +268,21 @@
   
   
     <li class="md-nav__item">
+      <a href="../../HowdoI/switchtodimarray/" class="md-nav__link">
+        Switch to DimensionalData
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../creating/" class="md-nav__link">
         Creating YAXArrays and Datasets
       </a>
@@ -315,21 +330,6 @@
     <li class="md-nav__item">
       <a href="../applyfunctions/" class="md-nav__link">
         Apply functions on YAXArrays
-      </a>
-    </li>
-  
-
-    
-      
-      
-      
-
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../create_from_func/" class="md-nav__link">
-        Generate a cube from function
       </a>
     </li>
   
@@ -441,51 +441,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples_from_esdl_study_1/" class="md-nav__link">
-        Examples from ESDL study 1
-      </a>
-    </li>
-  
-
-    
-      
-      
-      
-
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples_from_esdl_study_2/" class="md-nav__link">
-        Examples from ESDL study 2
-      </a>
-    </li>
-  
-
-    
-      
-      
-      
-
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples_from_esdl_study_3/" class="md-nav__link">
-        Examples from ESDL study 3
-      </a>
-    </li>
-  
-
-    
-      
-      
-      
-
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../contribute/contribute/" class="md-nav__link">
         Contribute to docs
       </a>
@@ -547,9 +502,9 @@
 <span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">g</span><span class="p">[</span><span class="s">"tas"</span><span class="p">]</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>YAXArray with the following dimensions
-lon                 Axis with 384 Elements from 0.0 to 359.0625
-lat                 Axis with 192 Elements from -89.28422753251364 to 89.28422753251364
-time                Axis with 251288 Elements from 2015-01-01T03:00:00 to 2101-01-01T00:00:00
+Dim{:lon, DimensionalData.Dimensions.LookupArrays.Sampled{Float64, StepRangeLen{Float64, Base.TwicePrecision{Float64}, Base.TwicePrecision{Float64}, Int64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Regular{Float64}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([0.0, 0.9375, 1.875, 2.8125, 3.75, 4.6875, 5.625, 6.5625, 7.5, 8.4375  …  350.625, 351.5625, 352.5, 353.4375, 354.375, 355.3125, 356.25, 357.1875, 358.125, 359.0625])
+Dim{:lat, DimensionalData.Dimensions.LookupArrays.Sampled{Float64, Vector{Float64}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Irregular{Tuple{Nothing, Nothing}}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([-89.28422753251364, -88.35700351866494, -87.42430374606988, -86.49036676628116, -85.55596048489265, -84.6213271076488, -83.68656681656385, -82.75172847343066, -81.81683872860319, -80.8819133467975  …  80.8819133467975, 81.81683872860319, 82.75172847343066, 83.68656681656385, 84.6213271076488, 85.55596048489265, 86.49036676628116, 87.42430374606988, 88.35700351866494, 89.28422753251364])
+DimensionalData.Dimensions.Ti{DimensionalData.Dimensions.LookupArrays.Sampled{DateTime, Vector{DateTime}, DimensionalData.Dimensions.LookupArrays.ForwardOrdered, DimensionalData.Dimensions.LookupArrays.Irregular{Tuple{Nothing, Nothing}}, DimensionalData.Dimensions.LookupArrays.Points, DimensionalData.Dimensions.LookupArrays.NoMetadata}}([DateTime("2015-01-01T03:00:00"), DateTime("2015-01-01T06:00:00"), DateTime("2015-01-01T09:00:00"), DateTime("2015-01-01T12:00:00"), DateTime("2015-01-01T15:00:00"), DateTime("2015-01-01T18:00:00"), DateTime("2015-01-01T21:00:00"), DateTime("2015-01-02T00:00:00"), DateTime("2015-01-02T03:00:00"), DateTime("2015-01-02T06:00:00")  …  DateTime("2100-12-30T21:00:00"), DateTime("2100-12-31T00:00:00"), DateTime("2100-12-31T03:00:00"), DateTime("2100-12-31T06:00:00"), DateTime("2100-12-31T09:00:00"), DateTime("2100-12-31T12:00:00"), DateTime("2100-12-31T15:00:00"), DateTime("2100-12-31T18:00:00"), DateTime("2100-12-31T21:00:00"), DateTime("2101-01-01T00:00:00")])
 units: K
 name: tas
 Total size: 69.02 GB
@@ -636,10 +591,10 @@ Total size: 69.02 GB
       <div class="md-dialog__inner md-typeset"></div>
     </div>
     
-    <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.top", "navigation.footer", "search.highlight", "search.share", "search.suggest", "toc.follow", "header.autohide"], "search": "../../../../assets/javascripts/workers/search.208ed371.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.top", "navigation.footer", "search.highlight", "search.share", "search.suggest", "toc.follow", "header.autohide"], "search": "../../../../assets/javascripts/workers/search.74e28a9f.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.b425cdc4.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.220ee61c.min.js"></script>
       
         
           <script src="../../../../javascripts/mathjax.js"></script>
