@@ -180,12 +180,11 @@ function getStatOutAxes(tab, agg, ::Type{<:WeightedCovMatrix})
     s = varsym(agg)
     icube = findfirst(isequal(s), varn)
     ax = tab.dc.incubes[icube].axesSmall[1]
-    oldname = YAXArrays.Cubes.Axes.axname(ax)
+    oldname = DD.name(ax)
     coname = string("Co", oldname)
-    v = ax.values
-    axtype = axt(ax)
-    a1 = axtype(oldname, copy(v))
-    a2 = axtype(coname, copy(v))
+    v = ax.val
+    a1 = DD.Dim{oldname}(copy(v))
+    a2 = DD.Dim{Symbol(coname)}(copy(v))
     (a1, a2)
 end
 function getStatOutAxes(tab,agg,::Type{<:Union{Ash,HistogramStat, WeightedAdaptiveHist}})
