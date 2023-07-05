@@ -93,19 +93,34 @@ end
 function Base.show(io::IO, ds::Dataset)
     sharedaxs = intersect([caxes(c) for (n,c) in ds.cubes]...)
     println(io, "YAXArray Dataset")
+
     println(io, "Shared Axes: ")
-    foreach(a -> println(io, "   ", a), sharedaxs)
+    show(io, MIME("text/plain"), tuple(sharedaxs...))
+    println(io,"")
     println(io, "Variables: ")
     for (k,c) in ds.cubes
-        println(io, k)
         specaxes = setdiff(caxes(c), sharedaxs)
-        foreach(i-> println(io," └── ", i), specaxes)
+        if !isempty(specaxes)
+            println(io)
+            println(io, k)
+            specaxes = setdiff(caxes(c), sharedaxs)
+            DD.Dimensions.print_dims(io, MIME("text/plain"), tuple(specaxes...))
+        else
+            print(io,k)
+            print(io, ", ")
+        end
+            #for ax in specaxes
+        #    println(io," └── ")
+        #    DD.Dimensions.show_compact(io, MIME("text/plain"),ax)
+        #end
     end
     #foreach(i -> print(io, i, " "), keys(ds.cubes))
+    #show(io, ds.properties)
     if !isempty(ds.properties)
         println(io)
         print(io,"Properties: ")
-        foreach(i -> print(io, i[1], " => ", i[2], " "), ds.properties)
+        println(io, ds.properties)
+    #    foreach(i -> print(io, i[1], " => ", i[2], " "), ds.properties)
     end
 end
 function Base.propertynames(x::Dataset, private::Bool = false)
