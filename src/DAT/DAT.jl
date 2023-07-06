@@ -654,7 +654,7 @@ function updatear(f, r, cube, indscol, loopinds, cache)
     else
         if f == :read
             d = getdata(cube)[indsall...]
-            cache[:] = d
+            cache .= d
         else
             _writedata(getdata(cube), cache, indsall)
         end
