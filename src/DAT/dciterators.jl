@@ -147,11 +147,11 @@ function CubeTable(; expandaxes = (), cubes...)
             axn = filter(collect(expandaxes)) do ax
                 findAxis(ax, i) !== nothing
             end
-            foreach(j -> push!(inaxnames, DD.name(getAxis(j, i))), axn)
+            foreach(j -> push!(inaxnames, string(DD.name(getAxis(j, i)))), axn)
             InDims(axn...)
         end
     end
-    axnames = map(i -> DD.name.(caxes(i)), c)
+    axnames = map(i -> string.(DD.name.(caxes(i))), c)
     foreach(1:length(axnames)) do i
         otheraxes = axnames[[1:i-1;i+1:length(axnames)]]
         if !isempty(otheraxes) && isempty(intersect(axnames[i], union(otheraxes...)))
@@ -160,7 +160,6 @@ function CubeTable(; expandaxes = (), cubes...)
     end
     allvars = union(axnames...)
     allnums = collect(1:length(allvars))
-
     configiter =
         mapCube(identity, c, debug = true, indims = indims, outdims = (), ispar = false)
     # if inax !== nothing

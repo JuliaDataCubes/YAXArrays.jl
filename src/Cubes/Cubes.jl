@@ -5,10 +5,10 @@ Data types that
 module Cubes
 using DiskArrays: DiskArrays, eachchunk, approx_chunksize, max_chunksize, grid_offset, GridChunks
 using Distributed: myid
-using Dates: TimeType
+using Dates: TimeType, Date
 using IntervalSets: Interval, (..)
 using Base.Iterators: take, drop
-using ..YAXArrays: workdir, YAXDefaults, findAxis
+using ..YAXArrays: workdir, YAXDefaults, findAxis, getAxis
 using YAXArrayBase: YAXArrayBase, iscompressed, dimnames, iscontdimval
 import YAXArrayBase: getattributes, iscontdim, dimnames, dimvals, getdata
 using DiskArrayTools: CFDiskArray
@@ -254,7 +254,7 @@ of this chunking, use `savecube` on the resulting array. The `chunks` argument c
 setchunks(c::YAXArray,chunks) = YAXArray(c.axes,c.data,c.properties,interpret_cubechunks(chunks,c),c.cleaner)
 cubechunks(c) = approx_chunksize(eachchunk(c))
 DiskArrays.eachchunk(c::YAXArray) = c.chunks
-getindex_all(a) = getindex(a, ntuple(_ -> Colon(), ndims(a))...)
+getindex_all(a) = getindex(a, ntuple(_ -> Colon(), ndims(a))...).data
 
 #=
 function Base.getindex(x::YAXArray, i...) 
@@ -455,7 +455,29 @@ function _subsetcube(z, subs; kwargs...)
 end
 
 
-Base.getindex(a::YAXArray, args::DD.Dimension...; kwargs...) = view(a, args...; kwargs...)
+function Base.getindex(a::YAXArray, args::DD.Dimension...; kwargs...) 
+    kwargsdict = Dict(kwargs...)
+    for ext in YAXDefaults.subsetextensions
+        ext(kwargsdict)
+    end
+    d2 = Dict()
+    for (k,v) in kwargsdict
+        d = getAxis(k,a)
+        if d !== nothing
+            if d isa DD.Ti
+                if v isa UnitRange{Int}
+                    v = Date(first(v))..Date(last(v),12,31)
+                end
+                d2[:Ti] = v
+            else
+                d2[DD.name(d)] = v
+            end
+        else
+            d2[k] = v
+        end
+    end
+    view(a, args...; d2...)
+end
 
 Base.read(d::YAXArray) = getindex_all(d)
 
@@ -474,6 +496,7 @@ cubesize(::YAXArray{T,0}) where {T} = sizeof(T)
 getCubeDes(::DD.Dimension) = "Cube axis"
 getCubeDes(::YAXArray) = "YAXArray"
 getCubeDes(::Type{T}) where {T} = string(T)
+
 function DD.show_after(io::IO,mime, c::YAXArray)
     foreach(getattributes(c)) do p
         if p[1] in ("labels", "name", "units")
