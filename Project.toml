@@ -1,7 +1,7 @@
 name = "YAXArrays"
 uuid = "c21b50f5-aa40-41ea-b809-c0f5e47bfa5c"
 authors = ["Fabian Gans <fgans@bgc-jena.mpg.de>"]
-version = "0.5"
+version = "0.5.0"
 
 [deps]
 CFTime = "179af706-886a-5703-950a-314cd64e0468"
@@ -34,6 +34,7 @@ YAXArrayBase = "90b8fcef-0c2d-428d-9c56-5f86629e9d14"
 [compat]
 CFTime = "0.0, 0.1"
 DataStructures = "0.17, 0.18"
+DimensionalData = "0.24"
 DiskArrayTools = "0.1"
 DiskArrays = "0.3"
 DocStringExtensions = "0.8, 0.9"
