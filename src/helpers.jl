@@ -107,7 +107,7 @@ function getOutAxis(desc::Tuple{ByInference}, axlist, incubes, pargs, f)
                 @info "Found multiple matching axes for output dimension $il"
             end
         end
-        return RangeAxis("OutAxis$(il)", 1:s)
+        return Dim{Symbol("OutAxis$(il)")}( 1:s)
     end
     if !allunique(outaxes)
         #TODO: fallback with axis renaming in this case
