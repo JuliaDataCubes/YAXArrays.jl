@@ -179,7 +179,7 @@ end
 
 function interpretoutchunksizes(desc, axesSmall, incubes)
     if desc.chunksize == :max
-        map(ax -> axname(ax) => RegularChunks(length(ax),0,length(ax)), axesSmall)
+        map(ax -> string(DD.name(ax)) => RegularChunks(length(ax),0,length(ax)), axesSmall)
     elseif desc.chunksize == :input
         map(axesSmall) do ax
             for cc in incubes
