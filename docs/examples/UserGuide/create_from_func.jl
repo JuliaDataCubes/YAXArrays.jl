@@ -6,7 +6,7 @@ using Dates
 # !!! warning This is currently broken.
 # This is broken after the switch to DimensionalData
 
-#=
+
 f(lo, la, t) = (lo + la + Dates.dayofyear(t))
 
 # ## Wrap function for mapCube output
@@ -20,12 +20,12 @@ end
 
 # ## Create Cube's Axes
 
-# We do this via `RangeAxis` for every dimension
-lon = (Dim{:lon}(range(1, 15)))
-lat = (Dim{:lat}(range(1, 10)))
+# We wrap the dimensions of every axis into a YAXArray to use them in the mapCube function.
+lon = YAXArray(Dim{:lon}(range(1, 15)))
+lat = YAXArray(Dim{:lat}(range(1, 10)))
 # And a time axis
 tspan =  Date("2022-01-01"):Day(1):Date("2022-01-30")
-time = (Dim{:time}( tspan))
+time = YAXArray(Dim{:time}( tspan))
 
 
 # ## Generate Cube from function
@@ -60,4 +60,3 @@ gen_cube = mapCube(g, (lon, lat, time);
 #     Note that now the broadcasted dimension is `lon`.
 
 gen_cube.data[:, :, 1]
-=#

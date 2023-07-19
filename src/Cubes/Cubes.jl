@@ -143,6 +143,9 @@ function YAXArray(x::AbstractArray)
     YAXArray(ax, x, props,chunks=chunks)
 end
 
+
+# Overload the YAXArray constructor for dimensional data to use them inside of mapCube
+YAXArray(dim::DD.Dimension) = YAXArray((dim,), dim.val)
 # Base utility overloads
 Base.size(a::YAXArray) = size(getdata(a))
 Base.size(a::YAXArray, i::Int) = size(getdata(a), i)
