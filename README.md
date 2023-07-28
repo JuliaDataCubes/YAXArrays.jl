@@ -61,14 +61,15 @@ using YAXArrays
 
 ## Quick start
 
-Let's assemble a `YAXArray` with 3 `RangeAxis`, i.e. time, x,y and a `CategoricalAxis` with two variables.
+Let's assemble a `YAXArray` with 4 dimensions i.e. time, x,y and a variable dimension with two variables.
 
 ```julia
-axlist = [
-    RangeAxis("time", range(1, 20, length=20)),
-    RangeAxis("x", range(1, 10, length=10)),
-    RangeAxis("y", range(1, 5, length=15)),
-    CategoricalAxis("Variable", ["var1", "var2"])]
+using YAXArrays, DimensionalData
+axlist = (
+    Dim{:time}(range(1, 20, length=20)),
+    X(range(1, 10, length=10)),
+    Y(range(1, 5, length=15)),
+    Dim{:Variable}(["var1", "var2"]))
 ```
 and the corresponding data.
 ```julia
