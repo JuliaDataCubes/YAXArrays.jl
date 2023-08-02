@@ -1,0 +1,1164 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Yet Another XArray-like Julia Package">
+      
+      
+        <meta name="author" content="Lazaro Alonso">
+      
+      
+      
+        <link rel="prev" href="../../HowdoI/howdoi/">
+      
+      
+        <link rel="next" href="../examples_from_esdl_study_4/">
+      
+      <link rel="icon" href="../../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.1.21">
+    
+    
+      
+        <title>Examples from ESDL study 3 - YAXArrays</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.eebd395e.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.ecc896b0.min.css">
+      
+      
+
+    
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Lato";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../../stylesheets/custom.css">
+    
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="amber">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#examples-from-the-esdl-paper" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../../.." title="YAXArrays" class="md-header__button md-logo" aria-label="YAXArrays" data-md-component="logo">
+      
+  <img src="../../../../assets/view-grid-plus-outline.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            YAXArrays
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Examples from ESDL study 3
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_1">
+            
+              <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_2" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7M9 21a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1H9v1Z"/></svg>
+              </label>
+            
+          
+            
+            
+            
+            <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_2">
+            
+              <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_1" hidden>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7M9 21v-1h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1m3-17a5 5 0 0 0-5 5c0 2.05 1.23 3.81 3 4.58V16h4v-2.42c1.77-.77 3-2.53 3-4.58a5 5 0 0 0-5-5Z"/></svg>
+              </label>
+            
+          
+        </form>
+      
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        
+<a href="https://github.com/JuliaDataCubes/YAXArrays.jl" title="" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    YAXArrays
+  </div>
+</a>
+
+
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../../.." title="YAXArrays" class="md-nav__button md-logo" aria-label="YAXArrays" data-md-component="logo">
+      
+  <img src="../../../../assets/view-grid-plus-outline.svg" alt="logo">
+
+    </a>
+    YAXArrays
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/JuliaDataCubes/YAXArrays.jl" title="" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.4.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    YAXArrays
+  </div>
+</a>
+
+
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../.." class="md-nav__link">
+        Home
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../HowdoI/switchtodimarray/" class="md-nav__link">
+        Switch to DimensionalData
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../creating/" class="md-nav__link">
+        Creating YAXArrays and Datasets
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../saving/" class="md-nav__link">
+        Saving YAXArrays and Datasets
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../setchuncks/" class="md-nav__link">
+        Setting chunks's size
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../applyfunctions/" class="md-nav__link">
+        Apply functions on YAXArrays
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../create_from_func/" class="md-nav__link">
+        Generate a cube from function
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../openNetCDF/" class="md-nav__link">
+        Open NetCDF
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../openZarr/" class="md-nav__link">
+        Open Zarr (Store)
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../distributed/" class="md-nav__link">
+        Distributed processes
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Gallery/simplemaps/" class="md-nav__link">
+        Simple maps
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../tutorials/tutorial/" class="md-nav__link">
+        Tutorial
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../HowdoI/howdoi/" class="md-nav__link">
+        How do I ...
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Examples from ESDL study 3
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        Examples from ESDL study 3
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#earth-syst-dynam-11-201234-2020-doi" class="md-nav__link">
+    Earth Syst. Dynam., 11, 201–234, 2020 doi
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#case-study-3-model-parameter-estimation-in-the-esdl" class="md-nav__link">
+    Case study 3: Model-parameter estimation in the ESDL
+  </a>
+  
+    <nav class="md-nav" aria-label="Case study 3: Model-parameter estimation in the ESDL">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-of-the-temperature-sensitivity-of-ecosystem-respiration" class="md-nav__link">
+    Example of the temperature sensitivity of ecosystem respiration
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#new-steps-in-workflows-are-introduced-with-bold-headers" class="md-nav__link">
+    New steps in workflows are introduced with bold headers
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#select-and-subet-an-earth-system-data-cube" class="md-nav__link">
+    Select and subet an Earth system data cube
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#for-estimating-the-temperature-sensitivities" class="md-nav__link">
+    For estimating the temperature sensitivities
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#application-of-these-functions-on-the-prepared-cubes" class="md-nav__link">
+    Application of these functions on the prepared cubes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-rest-is-plotting-in-this-example-we-use-geomakie" class="md-nav__link">
+    The rest is plotting. In this example we use GeoMakie.
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-following-are-some-additional-analyses-not-included-in-the-paper" class="md-nav__link">
+    The following are some additional analyses, not included in the paper.
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples_from_esdl_study_4/" class="md-nav__link">
+        Examples from ESDL study 4
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contribute/contribute/" class="md-nav__link">
+        Contribute to docs
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../api/" class="md-nav__link">
+        API
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#earth-syst-dynam-11-201234-2020-doi" class="md-nav__link">
+    Earth Syst. Dynam., 11, 201–234, 2020 doi
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#case-study-3-model-parameter-estimation-in-the-esdl" class="md-nav__link">
+    Case study 3: Model-parameter estimation in the ESDL
+  </a>
+  
+    <nav class="md-nav" aria-label="Case study 3: Model-parameter estimation in the ESDL">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#example-of-the-temperature-sensitivity-of-ecosystem-respiration" class="md-nav__link">
+    Example of the temperature sensitivity of ecosystem respiration
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#new-steps-in-workflows-are-introduced-with-bold-headers" class="md-nav__link">
+    New steps in workflows are introduced with bold headers
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#select-and-subet-an-earth-system-data-cube" class="md-nav__link">
+    Select and subet an Earth system data cube
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#for-estimating-the-temperature-sensitivities" class="md-nav__link">
+    For estimating the temperature sensitivities
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#application-of-these-functions-on-the-prepared-cubes" class="md-nav__link">
+    Application of these functions on the prepared cubes
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-rest-is-plotting-in-this-example-we-use-geomakie" class="md-nav__link">
+    The rest is plotting. In this example we use GeoMakie.
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-following-are-some-additional-analyses-not-included-in-the-paper" class="md-nav__link">
+    The following are some additional analyses, not included in the paper.
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+<div><p><a id="Examples-from-the-ESDL-paper"></a></p>
+<p><a id="Examples-from-the-ESDL-paper-1"></a></p>
+<h1 id="examples-from-the-esdl-paper">Examples from the ESDL paper<a class="headerlink" href="#examples-from-the-esdl-paper" title="Permanent link">¤</a></h1>
+<p><a id='Earth-Syst.-Dynam.,-11,-201–234,-2020-&lt;a href="https://doi.org/10.5194/esd-11-201-2020"&gt;doi&lt;/a&gt;'></a></p>
+<p><a id='Earth-Syst.-Dynam.,-11,-201–234,-2020-&lt;a href="https://doi.org/10.5194/esd-11-201-2020"&gt;doi&lt;/a&gt;-1'></a></p>
+<h2 id="earth-syst-dynam-11-201234-2020-doi">Earth Syst. Dynam., 11, 201–234, 2020 <a href="https://doi.org/10.5194/esd-11-201-2020">doi</a><a class="headerlink" href="#earth-syst-dynam-11-201234-2020-doi" title="Permanent link">¤</a></h2>
+<p><strong>NOTE:</strong> This section is based on the case studies from the paper "Earth system data cubes unravel global multivariate dynamics" by Mahecha, Gans et al. (2019), available <a href="https://github.com/esa-esdl/ESDLPaperCode.jl">here</a>.</p>
+<ul>
+<li>We have slightly adjusted the scripts. A few differences are that these new scripts are updated to Julia 1.9, and the YAXArrays.jl package is used.</li>
+<li>The dataset has been updated but it has less available variables. Therefore the results might differ.</li>
+<li>The calculations are performed with a very coarse spatial (2.5°) and temporal resolution (monthly).</li>
+<li>These are examples for illustrative purposes of the packages and do not intend any deeper scientific interpretation. For scientific analysis use the higher spatio-temporal resolution datasets.</li>
+</ul>
+<p><a id="Case-study-3:-Model-parameter-estimation-in-the-ESDL"></a></p>
+<p><a id="Case-study-3:-Model-parameter-estimation-in-the-ESDL-1"></a></p>
+<h2 id="case-study-3-model-parameter-estimation-in-the-esdl">Case study 3: Model-parameter estimation in the ESDL<a class="headerlink" href="#case-study-3-model-parameter-estimation-in-the-esdl" title="Permanent link">¤</a></h2>
+<p><a id="Example-of-the-temperature-sensitivity-of-ecosystem-respiration"></a></p>
+<p><a id="Example-of-the-temperature-sensitivity-of-ecosystem-respiration-1"></a></p>
+<h3 id="example-of-the-temperature-sensitivity-of-ecosystem-respiration">Example of the temperature sensitivity of ecosystem respiration<a class="headerlink" href="#example-of-the-temperature-sensitivity-of-ecosystem-respiration" title="Permanent link">¤</a></h3>
+<ul>
+<li>Script to reproduce and understand examples in the paper <em>Earth system data cubes unravel global multivariate dynamics</em> .</li>
+<li>The code is written on Julia 1.9 and uses GeoMakie for plotting.</li>
+<li>Normal text are explanations referring to notation and equations in the paper</li>
+<li><code># comments in the code are intended explain specific aspects of the coding</code></li>
+<li>
+<h3 id="new-steps-in-workflows-are-introduced-with-bold-headers">New steps in workflows are introduced with <strong>bold headers</strong><a class="headerlink" href="#new-steps-in-workflows-are-introduced-with-bold-headers" title="Permanent link">¤</a></h3>
+</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="c"># Load requiered packages</span>
+<span class="k">using</span><span class="w"> </span><span class="n">Pkg</span>
+
+<span class="c"># for operating data cubes</span>
+<span class="k">using</span><span class="w"> </span><span class="n">EarthDataLab</span>
+<span class="k">using</span><span class="w"> </span><span class="n">DimensionalData</span>
+<span class="k">using</span><span class="w"> </span><span class="n">Zarr</span><span class="p">,</span><span class="w"> </span><span class="n">YAXArrays</span><span class="p">,</span><span class="w"> </span><span class="n">NetCDF</span><span class="p">,</span><span class="w"> </span><span class="n">DiskArrays</span>
+
+<span class="c"># other relevant packages</span>
+<span class="k">using</span><span class="w"> </span><span class="n">Statistics</span><span class="p">,</span><span class="w"> </span><span class="n">Dates</span><span class="p">,</span><span class="w"> </span><span class="n">SkipNan</span>
+</code></pre></div>
+<p><a id="Select-and-subet-an-Earth-system-data-cube"></a></p>
+<p><a id="Select-and-subet-an-Earth-system-data-cube-1"></a></p>
+<h3 id="select-and-subet-an-earth-system-data-cube">Select and subet an Earth system data cube<a class="headerlink" href="#select-and-subet-an-earth-system-data-cube" title="Permanent link">¤</a></h3>
+<p>We have to choose a cube and here we select a monthly global cube of 2.5° resolution. This very low-resolution cube aims at fast processing for the safety of computational time and resources.</p>
+<div class="highlight"><pre><span></span><code><span class="n">cube_handle</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">esdc</span><span class="p">(</span><span class="n">res</span><span class="o">=</span><span class="s">"tiny"</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>144×72×989×42 YAXArray{Union{Missing, Float32},4} with dimensions: 
+  Dim{:lon} Sampled{Float64} -178.75:2.5:178.75 ForwardOrdered Regular Points,
+  Dim{:lat} Sampled{Float64} -88.75:2.5:88.75 ForwardOrdered Regular Points,
+  Ti Sampled{DateTime} DateTime[1979-01-09T00:00:00, …, 2021-12-27T00:00:00] ForwardOrdered Irregular Points,
+  Dim{:Variable} Categorical{String} String[sensible_heat, potential_evaporation, …, net_ecosystem_exchange, snow_sublimation] Unordered
+units: mm d^-1
+Total size: 1.6 GB
+</code></pre></div>
+<p>In this case it is better to have one cube for the Tair and one for terrestrial ecosystem respiration <code>R$_{eco}$</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="n">world_tair</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cube_handle</span><span class="p">[</span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">At</span><span class="p">(</span><span class="s">"air_temperature_2m"</span><span class="p">)]</span>
+<span class="n">world_resp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cube_handle</span><span class="p">[</span><span class="n">variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">At</span><span class="p">(</span><span class="s">"terrestrial_ecosystem_respiration"</span><span class="p">)]</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>144×72×989 YAXArray{Union{Missing, Float32},3} with dimensions: 
+  Dim{:lon} Sampled{Float64} -178.75:2.5:178.75 ForwardOrdered Regular Points,
+  Dim{:lat} Sampled{Float64} -88.75:2.5:88.75 ForwardOrdered Regular Points,
+  Ti Sampled{DateTime} DateTime[1979-01-09T00:00:00, …, 2021-12-27T00:00:00] ForwardOrdered Irregular Points
+units: mm d^-1
+Total size: 39.12 MB
+</code></pre></div>
+<p>Find overlapping time between variables</p>
+<div class="highlight"><pre><span></span><code><span class="n">span_starts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">first</span><span class="p">(</span><span class="n">findall</span><span class="p">(</span><span class="n">i</span><span class="o">-&gt;</span><span class="w"> </span><span class="o">!</span><span class="n">ismissing</span><span class="p">(</span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="n">world_tair</span><span class="p">[</span><span class="o">:</span><span class="p">,</span><span class="o">:</span><span class="p">,</span><span class="o">:</span><span class="p">]))</span>
+<span class="n">axtime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">collect</span><span class="p">(</span><span class="n">cube_handle</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">3</span><span class="p">]);</span>
+<span class="n">println</span><span class="p">(</span><span class="s">"Data span of `air_temperature_2m` starts on "</span><span class="p">,</span><span class="w"> </span><span class="n">axtime</span><span class="p">[</span><span class="n">span_starts</span><span class="p">[</span><span class="mi">3</span><span class="p">]])</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>Data span of `air_temperature_2m` starts on 1979-01-09T00:00:00
+</code></pre></div>
+<p>similarly</p>
+<div class="highlight"><pre><span></span><code><span class="n">span_starts</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">first</span><span class="p">(</span><span class="n">findall</span><span class="p">(</span><span class="n">i</span><span class="o">-&gt;</span><span class="w"> </span><span class="o">!</span><span class="n">ismissing</span><span class="p">(</span><span class="n">i</span><span class="p">),</span><span class="w"> </span><span class="n">world_resp</span><span class="p">[</span><span class="o">:</span><span class="p">,</span><span class="o">:</span><span class="p">,</span><span class="o">:</span><span class="p">]))</span>
+<span class="n">axtime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">collect</span><span class="p">(</span><span class="n">cube_handle</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">3</span><span class="p">]);</span>
+<span class="n">println</span><span class="p">(</span><span class="s">"Data span of `terrestrial_ecosystem_respiration` starts on "</span><span class="p">,</span><span class="w"> </span><span class="n">axtime</span><span class="p">[</span><span class="n">span_starts</span><span class="p">[</span><span class="mi">3</span><span class="p">]])</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>Data span of `terrestrial_ecosystem_respiration` starts on 2001-01-09T00:00:00
+</code></pre></div>
+<p>susbet again based on overlapping period</p>
+<div class="highlight"><pre><span></span><code><span class="n">world_tair</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">world_tair</span><span class="p">[</span><span class="n">time</span><span class="o">=</span><span class="mi">2001</span><span class="o">:</span><span class="mi">2015</span><span class="p">]</span>
+<span class="n">world_resp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">world_resp</span><span class="p">[</span><span class="n">time</span><span class="o">=</span><span class="mi">2001</span><span class="o">:</span><span class="mi">2015</span><span class="p">]</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>144×72×345 YAXArray{Union{Missing, Float32},3} with dimensions: 
+  Dim{:lon} Sampled{Float64} -178.75:2.5:178.75 ForwardOrdered Regular Points,
+  Dim{:lat} Sampled{Float64} -88.75:2.5:88.75 ForwardOrdered Regular Points,
+  Ti Sampled{DateTime} DateTime[2001-01-09T00:00:00, …, 2015-12-27T00:00:00] ForwardOrdered Irregular Points
+units: mm d^-1
+Total size: 13.65 MB
+</code></pre></div>
+<p>The objective is to estimate  <span class="arithmatex">\(Q_{10}\)</span> from the decomposed time series. For details we refere the reader to Mahecha, M.D. et al. (2010) <em>Global convergence in the temperature sensitivity of respiration at ecosystem level.</em> Science, 329, 838-840.</p>
+<p>The first step is the transformation of both variables, so that the <span class="arithmatex">\(Q_{10}\)</span> model becomes linear and Tair the exponent:</p>
+<div class="highlight"><pre><span></span><code><span class="c"># Element-wise transformations using `map` are done in a lazy manner, so the</span>
+<span class="c"># transformation will be applied only when the data is read or further processed</span>
+<span class="c"># We forced `world_τ` output format as Float32 to assure the output data type is equal, and to avoid further incompatibilities</span>
+<span class="n">world_τ</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">map</span><span class="p">(</span><span class="n">tair</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">(</span><span class="n">tair</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="kt">Float32</span><span class="p">(</span><span class="mf">273.15</span><span class="o">+</span><span class="mi">15</span><span class="p">))</span><span class="o">/</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="n">world_tair</span><span class="p">)</span>
+<span class="n">world_ρ</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">map</span><span class="p">(</span><span class="n">log</span><span class="p">,</span><span class="w"> </span><span class="n">world_resp</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>144×72×345 YAXArray{Union{Missing, Float32},3} with dimensions: 
+  Dim{:lon} Sampled{Float64} -178.75:2.5:178.75 ForwardOrdered Regular Points,
+  Dim{:lat} Sampled{Float64} -88.75:2.5:88.75 ForwardOrdered Regular Points,
+  Ti Sampled{DateTime} DateTime[2001-01-09T00:00:00, …, 2015-12-27T00:00:00] ForwardOrdered Irregular Points
+units: mm d^-1
+Total size: 13.65 MB
+</code></pre></div>
+<p>... and we combine them into a Data Cube again using <code>concatenatecubes</code></p>
+<div class="highlight"><pre><span></span><code><span class="n">world_new</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">concatenatecubes</span><span class="p">([</span><span class="n">world_τ</span><span class="p">,</span><span class="w"> </span><span class="n">world_ρ</span><span class="p">],</span><span class="w"> </span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:Variable</span><span class="p">}([</span><span class="s">"τ"</span><span class="p">,</span><span class="s">"ρ"</span><span class="p">]))</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>144×72×345×2 YAXArray{Union{Missing, Float32},4} with dimensions: 
+  Dim{:lon} Sampled{Float64} -178.75:2.5:178.75 ForwardOrdered Regular Points,
+  Dim{:lat} Sampled{Float64} -88.75:2.5:88.75 ForwardOrdered Regular Points,
+  Ti Sampled{DateTime} DateTime[2001-01-09T00:00:00, …, 2015-12-27T00:00:00] ForwardOrdered Irregular Points,
+  Dim{:Variable} Categorical{String} String["τ", "ρ"] ReverseOrdered
+units: mm d^-1
+Total size: 27.29 MB
+</code></pre></div>
+<p>First we need a function for time-series filtering. Using a moving average filter is the simplest way to decomposes a signal into fast and slow oscillations by caluclating a moving average over a window of points. This creates a smoothed curve (slow osc.) which can be subtracted from the original signal to obtain fast oscillations separately. We could have likewise used FFTs, SSA, EMD, or any other method for discrete time-series decomposition. Moving Average decomposes a signal into fast and slow oscillations by calculating a moving average over a window of points. This creates a smoothed curve (slow osc.) which can be subtracted from the original signal, to obtain fast oscillations separately.</p>
+<div class="highlight"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">movingAverage</span><span class="p">(</span><span class="n">xout</span><span class="p">,</span><span class="w"> </span><span class="n">xin</span><span class="p">;</span><span class="w"> </span><span class="n">windowsize</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">4</span><span class="p">)</span>
+<span class="w">    </span><span class="n">Z</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">length</span><span class="p">(</span><span class="n">xin</span><span class="p">)</span>
+<span class="w">    </span><span class="c"># calculate moving average over window</span>
+<span class="w">    </span><span class="c"># truncating windows for data points at beginning and end</span>
+<span class="w">    </span><span class="n">movAv</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">map</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="n">Z</span><span class="p">)</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">i</span>
+<span class="w">        </span><span class="n">r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">max</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="n">i</span><span class="o">-</span><span class="n">windowsize</span><span class="p">)</span><span class="o">:</span><span class="n">min</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="n">windowsize</span><span class="p">,</span><span class="n">Z</span><span class="p">)</span>
+<span class="w">        </span><span class="n">mean</span><span class="p">(</span><span class="n">view</span><span class="p">(</span><span class="n">xin</span><span class="p">,</span><span class="n">r</span><span class="p">))</span>
+<span class="w">    </span><span class="k">end</span>
+<span class="w">    </span><span class="c"># return slow oscillations in col 1 and fast oscillations in col 2</span>
+<span class="w">    </span><span class="n">xout</span><span class="p">[</span><span class="o">:</span><span class="p">,</span><span class="mi">1</span><span class="p">]</span><span class="w"> </span><span class="o">.=</span><span class="w"> </span><span class="n">movAv</span>
+<span class="w">    </span><span class="n">xout</span><span class="p">[</span><span class="o">:</span><span class="p">,</span><span class="mi">2</span><span class="p">]</span><span class="w"> </span><span class="o">.=</span><span class="w"> </span><span class="n">xin</span><span class="w"> </span><span class="o">.-</span><span class="w"> </span><span class="n">movAv</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">xout</span>
+<span class="k">end</span>
+
+<span class="c"># here we define the input and output dimensions for the decomposition</span>
+<span class="n">indims</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">InDims</span><span class="p">(</span><span class="s">"Time"</span><span class="p">)</span>
+<span class="n">outdims</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OutDims</span><span class="p">(</span><span class="s">"Time"</span><span class="p">,</span><span class="w"> </span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:Scale</span><span class="p">}([</span><span class="s">"Slow"</span><span class="p">,</span><span class="s">"Fast"</span><span class="p">]))</span>
+<span class="n">cube_decomp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mapCube</span><span class="p">(</span><span class="n">movingAverage</span><span class="p">,</span><span class="w"> </span><span class="n">world_new</span><span class="p">,</span><span class="w"> </span><span class="n">indims</span><span class="o">=</span><span class="n">indims</span><span class="p">,</span><span class="w"> </span><span class="n">outdims</span><span class="o">=</span><span class="n">outdims</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>345×2×144×72×2 YAXArray{Union{Missing, Float32},5} with dimensions: 
+  Ti Sampled{DateTime} DateTime[2001-01-09T00:00:00, …, 2015-12-27T00:00:00] ForwardOrdered Irregular Points,
+  Dim{:Scale} Categorical{String} String["Slow", "Fast"] ReverseOrdered,
+  Dim{:lon} Sampled{Float64} -178.75:2.5:178.75 ForwardOrdered Regular Points,
+  Dim{:lat} Sampled{Float64} -88.75:2.5:88.75 ForwardOrdered Regular Points,
+  Dim{:Variable} Categorical{String} String["τ", "ρ"] ReverseOrdered
+Total size: 54.58 MB
+</code></pre></div>
+<p><a id="For-estimating-the-temperature-sensitivities"></a></p>
+<p><a id="For-estimating-the-temperature-sensitivities-1"></a></p>
+<h3 id="for-estimating-the-temperature-sensitivities">For estimating the temperature sensitivities<a class="headerlink" href="#for-estimating-the-temperature-sensitivities" title="Permanent link">¤</a></h3>
+<div class="highlight"><pre><span></span><code><span class="c"># The classical $Q_{10}$ estimation could be realized with the following function</span>
+<span class="k">function</span><span class="w"> </span><span class="n">Q10direct</span><span class="p">(</span><span class="n">xout_Q10</span><span class="p">,</span><span class="w"> </span><span class="n">xout_rb</span><span class="p">,</span><span class="w"> </span><span class="n">xin</span><span class="p">)</span>
+<span class="w">    </span><span class="n">τ</span><span class="p">,</span><span class="w"> </span><span class="n">ρ</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">eachcol</span><span class="p">(</span><span class="n">xin</span><span class="p">)</span>
+<span class="w">    </span><span class="c"># solve the regression</span>
+<span class="w">    </span><span class="n">b</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="n">cor</span><span class="p">(</span><span class="n">τ</span><span class="p">,</span><span class="w"> </span><span class="n">ρ</span><span class="p">)</span><span class="o">*</span><span class="n">std</span><span class="p">(</span><span class="n">ρ</span><span class="p">)</span><span class="o">/</span><span class="n">std</span><span class="p">(</span><span class="n">τ</span><span class="p">)</span>
+<span class="w">    </span><span class="n">a</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">ρ</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">b</span><span class="o">*</span><span class="n">mean</span><span class="p">(</span><span class="n">τ</span><span class="p">)</span>
+
+<span class="w">    </span><span class="n">Q10</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">exp</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+<span class="w">    </span><span class="n">Rb</span><span class="w">   </span><span class="o">=</span><span class="w"> </span><span class="n">exp</span><span class="p">(</span><span class="n">a</span><span class="p">)</span>
+<span class="w">    </span><span class="c"># the returned Rb is a constant time series</span>
+<span class="w">    </span><span class="n">xout_rb</span><span class="w"> </span><span class="o">.=</span><span class="w"> </span><span class="n">Rb</span>
+<span class="w">    </span><span class="n">xout_Q10</span><span class="w"> </span><span class="o">.=</span><span class="w"> </span><span class="n">Q10</span>
+<span class="k">end</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>Q10direct (generic function with 1 method)
+</code></pre></div>
+<p>For the scale dependent parameter estimation, the function is a bit more complex. And the numbers in the code comment refer to the  supporting online materials in Mahecha et al. (2010)</p>
+<div class="highlight"><pre><span></span><code><span class="k">function</span><span class="w"> </span><span class="n">Q10SCAPE</span><span class="p">(</span><span class="n">xout_Q10</span><span class="p">,</span><span class="w"> </span><span class="n">xout_rb</span><span class="p">,</span><span class="w"> </span><span class="n">xin</span><span class="p">)</span>
+<span class="w">    </span><span class="c"># xin is now a 3D array with dimensions Time x Scale x Variable</span>
+<span class="w">    </span><span class="n">τ_slow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xin</span><span class="p">[</span><span class="o">:</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">]</span>
+<span class="w">    </span><span class="n">τ_fast</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xin</span><span class="p">[</span><span class="o">:</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">]</span>
+<span class="w">    </span><span class="n">ρ_slow</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xin</span><span class="p">[</span><span class="o">:</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">]</span>
+<span class="w">    </span><span class="n">ρ_fast</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">xin</span><span class="p">[</span><span class="o">:</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">]</span>
+<span class="w">    </span><span class="n">τ</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="n">τ_slow</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">τ_fast</span>
+<span class="w">    </span><span class="n">ρ</span><span class="w">      </span><span class="o">=</span><span class="w"> </span><span class="n">ρ_slow</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">ρ_fast</span>
+
+<span class="w">    </span><span class="c"># EQ S5</span>
+<span class="w">    </span><span class="c"># Q10 calculated on fast oscillations only</span>
+<span class="w">    </span><span class="n">d</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="n">cor</span><span class="p">(</span><span class="n">τ_fast</span><span class="p">,</span><span class="w"> </span><span class="n">ρ_fast</span><span class="p">)</span><span class="o">*</span><span class="n">std</span><span class="p">(</span><span class="n">ρ_fast</span><span class="p">)</span><span class="o">/</span><span class="n">std</span><span class="p">(</span><span class="n">τ_fast</span><span class="p">)</span>
+<span class="w">    </span><span class="n">c</span><span class="w">    </span><span class="o">=</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">ρ_fast</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">d</span><span class="o">*</span><span class="n">mean</span><span class="p">(</span><span class="n">τ_fast</span><span class="p">)</span>
+<span class="w">    </span><span class="n">Q10</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">exp</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+
+<span class="w">    </span><span class="c"># EQ S6: Influence of low frequency temperature on Rb</span>
+<span class="w">    </span><span class="n">ρ_sc</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">τ_slow</span><span class="w"> </span><span class="o">.+</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">τ</span><span class="p">))</span><span class="w"> </span><span class="o">.*</span><span class="w"> </span><span class="n">d</span>
+
+<span class="w">    </span><span class="c"># EQ S7: Time varying estimate for Rb</span>
+<span class="w">    </span><span class="n">ρ_b</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">ρ_slow</span><span class="w"> </span><span class="o">.+</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">ρ</span><span class="p">)</span><span class="w"> </span><span class="o">.-</span><span class="w"> </span><span class="n">ρ_sc</span>
+<span class="w">    </span><span class="n">Rb_b</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">exp</span><span class="o">.</span><span class="p">(</span><span class="n">ρ_b</span><span class="p">)</span>
+
+<span class="w">    </span><span class="n">xout_Q10</span><span class="w"> </span><span class="o">.=</span><span class="w"> </span><span class="n">Q10</span>
+<span class="w">    </span><span class="n">xout_rb</span><span class="w">  </span><span class="o">.=</span><span class="w"> </span><span class="n">Rb_b</span>
+<span class="k">end</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>Q10SCAPE (generic function with 1 method)
+</code></pre></div>
+<p><a id="Application-of-these-functions-on-the-prepared-cubes"></a></p>
+<p><a id="Application-of-these-functions-on-the-prepared-cubes-1"></a></p>
+<h3 id="application-of-these-functions-on-the-prepared-cubes">Application of these functions on the prepared cubes<a class="headerlink" href="#application-of-these-functions-on-the-prepared-cubes" title="Permanent link">¤</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">indims_q10</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">InDims</span><span class="p">(</span><span class="s">"Time"</span><span class="p">,</span><span class="s">"Var"</span><span class="p">)</span>
+<span class="n">outdims_q10</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OutDims</span><span class="p">()</span><span class="w"> </span><span class="c">## Just a single number, the first output cube</span>
+<span class="n">outdims_rb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OutDims</span><span class="p">(</span><span class="s">"Time"</span><span class="p">)</span><span class="w"> </span><span class="c">## The Rb time series, the second output cube</span>
+<span class="n">q10_direct</span><span class="p">,</span><span class="w"> </span><span class="n">rb_direct</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mapCube</span><span class="p">(</span><span class="n">Q10direct</span><span class="p">,</span><span class="w"> </span><span class="n">world_new</span><span class="p">,</span><span class="w"> </span><span class="n">indims</span><span class="o">=</span><span class="n">indims_q10</span><span class="p">,</span><span class="w"> </span><span class="n">outdims</span><span class="o">=</span><span class="p">(</span><span class="n">outdims_q10</span><span class="p">,</span><span class="w"> </span><span class="n">outdims_rb</span><span class="p">))</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>(Union{Missing, Float32}[missing missing … missing missing; missing missing … missing missing; … ; missing missing … missing missing; missing missing … missing missing], [missing missing … missing missing; missing missing … missing missing; … ; missing missing … missing missing; missing missing … missing missing;;; missing missing … missing missing; missing missing … missing missing; … ; missing missing … missing missing; missing missing … missing missing;;; missing missing … missing missing; missing missing … missing missing; … ; missing missing … missing missing; missing missing … missing missing;;; … ;;; missing missing … missing missing; missing missing … missing missing; … ; missing missing … missing missing; missing missing … missing missing;;; missing missing … missing missing; missing missing … missing missing; … ; missing missing … missing missing; missing missing … missing missing;;; missing missing … missing missing; missing missing … missing missing; … ; missing missing … missing missing; missing missing … missing missing])
+</code></pre></div>
+<p>For the SCAPE approach, the parameter estimation on the decomposed appraoch is then</p>
+<div class="highlight"><pre><span></span><code><span class="n">indims_scape</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">InDims</span><span class="p">(</span><span class="s">"Time"</span><span class="p">,</span><span class="s">"Scale"</span><span class="p">,</span><span class="s">"Var"</span><span class="p">)</span>
+<span class="n">q10_scape</span><span class="p">,</span><span class="w"> </span><span class="n">rb_scape</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mapCube</span><span class="p">(</span><span class="n">Q10SCAPE</span><span class="p">,</span><span class="n">cube_decomp</span><span class="p">,</span><span class="w"> </span><span class="n">indims</span><span class="o">=</span><span class="n">indims_scape</span><span class="p">,</span><span class="w"> </span><span class="n">outdims</span><span class="o">=</span><span class="p">(</span><span class="n">outdims_q10</span><span class="p">,</span><span class="w"> </span><span class="n">outdims_rb</span><span class="p">))</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>(Union{Missing, Float32}[missing missing … missing missing; missing missing … missing missing; … ; missing missing … missing missing; missing missing … missing missing], [missing missing … missing missing; missing missing … missing missing; … ; missing missing … missing missing; missing missing … missing missing;;; missing missing … missing missing; missing missing … missing missing; … ; missing missing … missing missing; missing missing … missing missing;;; missing missing … missing missing; missing missing … missing missing; … ; missing missing … missing missing; missing missing … missing missing;;; … ;;; missing missing … missing missing; missing missing … missing missing; … ; missing missing … missing missing; missing missing … missing missing;;; missing missing … missing missing; missing missing … missing missing; … ; missing missing … missing missing; missing missing … missing missing;;; missing missing … missing missing; missing missing … missing missing; … ; missing missing … missing missing; missing missing … missing missing])
+</code></pre></div>
+<p><a id="The-rest-is-plotting.-In-this-example-we-use-GeoMakie."></a></p>
+<p><a id="The-rest-is-plotting.-In-this-example-we-use-GeoMakie.-1"></a></p>
+<h3 id="the-rest-is-plotting-in-this-example-we-use-geomakie">The rest is plotting. In this example we use GeoMakie.<a class="headerlink" href="#the-rest-is-plotting-in-this-example-we-use-geomakie" title="Permanent link">¤</a></h3>
+<div class="highlight"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">CairoMakie</span><span class="p">,</span><span class="w"> </span><span class="n">GeoMakie</span>
+<span class="n">CairoMakie</span><span class="o">.</span><span class="n">activate!</span><span class="p">()</span>
+<span class="k">using</span><span class="w"> </span><span class="n">MakieTeX</span>
+<span class="k">using</span><span class="w"> </span><span class="n">LaTeXStrings</span>
+
+<span class="k">function</span><span class="w"> </span><span class="n">geoplotsfx</span><span class="p">(</span><span class="n">xin</span><span class="p">,</span><span class="w"> </span><span class="n">titlein</span><span class="p">,</span><span class="w"> </span><span class="n">labelin</span><span class="p">,</span><span class="w"> </span><span class="n">crange</span><span class="p">,</span><span class="w"> </span><span class="n">cmap</span><span class="p">)</span>
+<span class="w">    </span><span class="n">fig</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Figure</span><span class="p">(</span><span class="n">fontsize</span><span class="o">=</span><span class="mi">19</span><span class="p">)</span>
+<span class="w">    </span><span class="n">ax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">GeoAxis</span><span class="p">(</span><span class="n">fig</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">];</span><span class="w"> </span><span class="n">coastlines</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">,</span><span class="n">lonlims</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span><span class="w"> </span><span class="mi">180</span><span class="p">),</span><span class="w"> </span><span class="n">latlims</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="o">-</span><span class="mi">90</span><span class="p">,</span><span class="mi">90</span><span class="p">))</span>
+<span class="w">    </span><span class="n">sf</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">surface!</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">180</span><span class="o">:</span><span class="mf">2.5</span><span class="o">:</span><span class="mi">180</span><span class="p">,</span><span class="w"> </span><span class="o">-</span><span class="mi">90</span><span class="o">:</span><span class="mf">2.5</span><span class="o">:</span><span class="mi">90</span><span class="p">,</span><span class="w"> </span><span class="n">xin</span><span class="p">;</span><span class="w"> </span><span class="n">shading</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">,</span>
+<span class="w">        </span><span class="n">colormap</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">cmap</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">,),</span>
+<span class="w">        </span><span class="n">colorrange</span><span class="o">=</span><span class="n">crange</span><span class="p">,</span>
+<span class="w">        </span><span class="n">highclip</span><span class="o">=</span><span class="ss">:red</span>
+<span class="w">        </span><span class="p">)</span>
+<span class="w">    </span><span class="n">Colorbar</span><span class="p">(</span><span class="n">fig</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="n">sf</span><span class="p">;</span><span class="w"> </span><span class="n">label</span><span class="o">=</span><span class="n">labelin</span><span class="p">,</span><span class="w"> </span><span class="n">width</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Relative</span><span class="p">(</span><span class="mf">0.5</span><span class="p">),</span><span class="w"> </span><span class="n">vertical</span><span class="o">=</span><span class="nb">false</span><span class="p">)</span>
+<span class="w">    </span><span class="n">Label</span><span class="p">(</span><span class="n">fig</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="n">titlein</span><span class="p">,</span><span class="w"> </span><span class="n">fontsize</span><span class="o">=</span><span class="mi">25</span><span class="p">,</span><span class="w"> </span><span class="n">width</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Relative</span><span class="p">(</span><span class="mf">0.5</span><span class="p">))</span>
+<span class="w">    </span><span class="n">fig</span>
+<span class="k">end</span>
+
+<span class="n">label_direct</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sa">L</span><span class="s">"</span><span class="si">$Q_</span><span class="s">{10}$"</span>
+<span class="n">label_scape</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="sa">L</span><span class="s">"</span><span class="si">$SCAPE</span><span class="s"> Q_{10}$"</span>
+<span class="n">crange</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">cmap</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">:GnBu</span>
+
+<span class="n">fig1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">geoplotsfx</span><span class="p">(</span><span class="n">q10_direct</span><span class="p">[</span><span class="o">:</span><span class="p">,</span><span class="o">:</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="s">"a) Confounded Parameter Estimation"</span><span class="p">,</span><span class="w"> </span><span class="n">label_direct</span><span class="p">,</span><span class="w"> </span><span class="n">crange</span><span class="p">,</span><span class="w"> </span><span class="n">cmap</span><span class="p">)</span>
+</code></pre></div>
+<p><img alt="" src="../cziszem.png"></p>
+<p>and for the other case</p>
+<div class="highlight"><pre><span></span><code><span class="n">fig2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">geoplotsfx</span><span class="p">(</span><span class="n">q10_scape</span><span class="p">[</span><span class="o">:</span><span class="p">,</span><span class="o">:</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="s">"b) Scale Dependent Parameter Estimation"</span><span class="p">,</span><span class="w"> </span><span class="n">label_scape</span><span class="p">,</span><span class="w"> </span><span class="n">crange</span><span class="p">,</span><span class="w"> </span><span class="n">cmap</span><span class="p">)</span>
+</code></pre></div>
+<p><img alt="" src="../jmxqphc.png"></p>
+<p><a id="The-following-are-some-additional-analyses,-not-included-in-the-paper."></a></p>
+<p><a id="The-following-are-some-additional-analyses,-not-included-in-the-paper.-1"></a></p>
+<h2 id="the-following-are-some-additional-analyses-not-included-in-the-paper">The following are some additional analyses, not included in the paper.<a class="headerlink" href="#the-following-are-some-additional-analyses-not-included-in-the-paper" title="Permanent link">¤</a></h2>
+<p>For this analysis we need to construct a new cube by concatenating a couple of previous cube outputs. To do this, there are two important remarks; (1) the cubes' axes order must be the same in both cubes (2) as well they both must have the same data chunking</p>
+<div class="highlight"><pre><span></span><code><span class="c"># checking cubes axes order</span>
+<span class="n">world_tair</span><span class="o">.</span><span class="n">axes</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>Dim{:lon} Sampled{Float64} -178.75:2.5:178.75 ForwardOrdered Regular Points,
+Dim{:lat} Sampled{Float64} -88.75:2.5:88.75 ForwardOrdered Regular Points,
+Ti Sampled{DateTime} DateTime[2001-01-09T00:00:00, …, 2015-12-27T00:00:00] ForwardOrdered Irregular Points
+</code></pre></div>
+<p>and</p>
+<div class="highlight"><pre><span></span><code><span class="n">rb_scape</span><span class="o">.</span><span class="n">axes</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>Ti Sampled{DateTime} DateTime[2001-01-09T00:00:00, …, 2015-12-27T00:00:00] ForwardOrdered Irregular Points,
+Dim{:lon} Sampled{Float64} -178.75:2.5:178.75 ForwardOrdered Regular Points,
+Dim{:lat} Sampled{Float64} -88.75:2.5:88.75 ForwardOrdered Regular Points
+</code></pre></div>
+<p>Now we need to sort the rb_scape axes order. Axes order must be the same for the cubes concatenation.</p>
+<div class="highlight"><pre><span></span><code><span class="n">data_reshaped</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">permutedims</span><span class="p">(</span><span class="n">rb_scape</span><span class="o">.</span><span class="n">data</span><span class="p">,(</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
+<span class="n">rb_scape_reshaped</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">rb_scape</span><span class="o">.</span><span class="n">axes</span><span class="p">[[</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">1</span><span class="p">]],</span><span class="n">data_reshaped</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>144×72×345 YAXArray{Union{Missing, Float32},3} with dimensions: 
+  Dim{:lon} Sampled{Float64} -178.75:2.5:178.75 ForwardOrdered Regular Points,
+  Dim{:lat} Sampled{Float64} -88.75:2.5:88.75 ForwardOrdered Regular Points,
+  Ti Sampled{DateTime} DateTime[2001-01-09T00:00:00, …, 2015-12-27T00:00:00] ForwardOrdered Irregular Points
+Total size: 13.65 MB
+</code></pre></div>
+<p>checking cubes chunking</p>
+<div class="highlight"><pre><span></span><code><span class="n">eachchunk</span><span class="p">(</span><span class="n">world_tair</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>1×1×8 DiskArrays.GridChunks{3}:
+[:, :, 1] =
+ (1:144, 1:72, 1:46)
+
+[:, :, 2] =
+ (1:144, 1:72, 47:92)
+
+[:, :, 3] =
+ (1:144, 1:72, 93:138)
+
+[:, :, 4] =
+ (1:144, 1:72, 139:184)
+
+[:, :, 5] =
+ (1:144, 1:72, 185:230)
+
+[:, :, 6] =
+ (1:144, 1:72, 231:276)
+
+[:, :, 7] =
+ (1:144, 1:72, 277:322)
+
+[:, :, 8] =
+ (1:144, 1:72, 323:345)
+</code></pre></div>
+<p>and</p>
+<div class="highlight"><pre><span></span><code><span class="n">eachchunk</span><span class="p">(</span><span class="n">rb_scape_reshaped</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>1×1×1 DiskArrays.GridChunks{3}:
+[:, :, 1] =
+ (1:144, 1:72, 1:345)
+</code></pre></div>
+<p>setting up the same chunking</p>
+<div class="highlight"><pre><span></span><code><span class="n">rb_scape_reshaped</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">setchunks</span><span class="p">(</span><span class="n">rb_scape_reshaped</span><span class="p">,</span><span class="w"> </span><span class="kt">Dict</span><span class="p">(</span><span class="s">"lon"</span><span class="o">=&gt;</span><span class="mi">144</span><span class="p">,</span><span class="w"> </span><span class="s">"lat"</span><span class="o">=&gt;</span><span class="mi">72</span><span class="p">,</span><span class="w"> </span><span class="s">"time"</span><span class="o">=&gt;</span><span class="mi">44</span><span class="p">))</span>
+<span class="n">rb_chunking</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">eachchunk</span><span class="p">(</span><span class="n">rb_scape_reshaped</span><span class="p">);</span>
+<span class="n">first</span><span class="p">(</span><span class="n">rb_chunking</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>(1:144, 1:72, 1:44)
+</code></pre></div>
+<p>and</p>
+<div class="highlight"><pre><span></span><code><span class="n">world_tair</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">setchunks</span><span class="p">(</span><span class="n">world_tair</span><span class="p">,</span><span class="w"> </span><span class="kt">Dict</span><span class="p">(</span><span class="s">"lon"</span><span class="o">=&gt;</span><span class="mi">144</span><span class="p">,</span><span class="w"> </span><span class="s">"lat"</span><span class="o">=&gt;</span><span class="mi">72</span><span class="p">,</span><span class="w"> </span><span class="s">"time"</span><span class="o">=&gt;</span><span class="mi">44</span><span class="p">))</span>
+<span class="n">tair_chunking</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">eachchunk</span><span class="p">(</span><span class="n">world_tair</span><span class="p">);</span>
+<span class="n">first</span><span class="p">(</span><span class="n">tair_chunking</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>(1:144, 1:72, 1:44)
+</code></pre></div>
+<p>concatenate the cubes</p>
+<div class="highlight"><pre><span></span><code><span class="n">ds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">concatenatecubes</span><span class="p">([</span><span class="n">world_tair</span><span class="p">,</span><span class="w"> </span><span class="n">rb_scape_reshaped</span><span class="p">],</span><span class="w"> </span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:Variables</span><span class="p">}([</span><span class="s">"tair"</span><span class="p">,</span><span class="w"> </span><span class="s">"rb"</span><span class="p">]))</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>144×72×345×2 YAXArray{Union{Missing, Float32},4} with dimensions: 
+  Dim{:lon} Sampled{Float64} -178.75:2.5:178.75 ForwardOrdered Regular Points,
+  Dim{:lat} Sampled{Float64} -88.75:2.5:88.75 ForwardOrdered Regular Points,
+  Ti Sampled{DateTime} DateTime[2001-01-09T00:00:00, …, 2015-12-27T00:00:00] ForwardOrdered Irregular Points,
+  Dim{:Variables} Categorical{String} String["tair", "rb"] ReverseOrdered
+units: mm d^-1
+Total size: 27.29 MB
+</code></pre></div>
+<p>And compute the correlation between Air temperature and Base respiration</p>
+<div class="highlight"><pre><span></span><code><span class="n">cor_tair_rb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mapslices</span><span class="p">(</span><span class="n">i</span><span class="o">-&gt;</span><span class="n">cor</span><span class="p">(</span><span class="n">eachcol</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">...</span><span class="p">),</span><span class="n">ds</span><span class="p">,</span><span class="w"> </span><span class="n">dims</span><span class="o">=</span><span class="p">(</span><span class="s">"Time"</span><span class="p">,</span><span class="s">"Variable"</span><span class="p">))</span>
+<span class="n">q10_diff</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">map</span><span class="p">((</span><span class="n">x</span><span class="p">,</span><span class="n">y</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">x</span><span class="o">-</span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">q10_direct</span><span class="p">,</span><span class="w"> </span><span class="n">q10_scape</span><span class="p">)</span>
+
+<span class="n">crange</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">cmap</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="ss">:PRGn</span>
+
+<span class="n">fig3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">geoplotsfx</span><span class="p">(</span><span class="n">cor_tair_rb</span><span class="p">[</span><span class="o">:</span><span class="p">,</span><span class="o">:</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="s">"Correlation Tair and Rb"</span><span class="p">,</span><span class="w"> </span><span class="s">"Coefficient"</span><span class="p">,</span><span class="w"> </span><span class="n">crange</span><span class="p">,</span><span class="w"> </span><span class="n">cmap</span><span class="p">)</span>
+</code></pre></div>
+<p><img alt="" src="../ajdxnkn.png"></p>
+<p>and also</p>
+<div class="highlight"><pre><span></span><code><span class="n">fig4</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">geoplotsfx</span><span class="p">(</span><span class="n">q10_diff</span><span class="p">[</span><span class="o">:</span><span class="p">,</span><span class="o">:</span><span class="p">]</span><span class="o">.</span><span class="n">data</span><span class="p">,</span><span class="w"> </span><span class="n">string</span><span class="p">(</span><span class="s">"Ratio of Q10 conv and Q10 Scape"</span><span class="p">),</span><span class="w"> </span><span class="s">"Ratio"</span><span class="p">,</span><span class="w"> </span><span class="n">crange</span><span class="p">,</span><span class="w"> </span><span class="n">cmap</span><span class="p">)</span>
+</code></pre></div>
+<p><img alt="" src="../grhwkjk.png"></p>
+<hr>
+<p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></div>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+            Back to top
+          </button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../../HowdoI/howdoi/" class="md-footer__link md-footer__link--prev" aria-label="Previous: How do I ..." rel="prev">
+            <div class="md-footer__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                How do I ...
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../examples_from_esdl_study_4/" class="md-footer__link md-footer__link--next" aria-label="Next: Examples from ESDL study 4" rel="next">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Examples from ESDL study 4
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    <script id="__config" type="application/json">{"base": "../../../..", "features": ["navigation.top", "navigation.footer", "search.highlight", "search.share", "search.suggest", "toc.follow", "header.autohide"], "search": "../../../../assets/javascripts/workers/search.74e28a9f.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../../../assets/javascripts/bundle.220ee61c.min.js"></script>
+      
+        
+          <script src="../../../../javascripts/mathjax.js"></script>
+        
+      
+        
+          <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+        
+      
+        
+          <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        
+      
+    
+  </body>
+</html>
