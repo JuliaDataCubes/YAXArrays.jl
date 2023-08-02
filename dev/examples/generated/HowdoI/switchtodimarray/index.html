@@ -19,7 +19,7 @@
         <link rel="next" href="../../UserGuide/creating/">
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.1, mkdocs-material-9.1.21">
+      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.1.21">
     
     
       
@@ -413,6 +413,21 @@
   
   
     <li class="md-nav__item">
+      <a href="../../UserGuide/create_from_func/" class="md-nav__link">
+        Generate a cube from function
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../UserGuide/openNetCDF/" class="md-nav__link">
         Open NetCDF
       </a>
@@ -490,6 +505,36 @@
     <li class="md-nav__item">
       <a href="../howdoi/" class="md-nav__link">
         How do I ...
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../UserGuide/examples_from_esdl_study_3/" class="md-nav__link">
+        Examples from ESDL study 3
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../UserGuide/examples_from_esdl_study_4/" class="md-nav__link">
+        Examples from ESDL study 4
       </a>
     </li>
   
@@ -601,7 +646,7 @@
 
   <h1>Switch to DimensionalData</h1>
 
-<div><p>The purpose of this section is to show how to switch from the native YAXArray type to the new type based on DimensionalData.jl</p>
+<div><p>The purpose of this section is to show how to switch from the native <code>YAXArray</code> type to the new type based on <code>DimensionalData.jl</code></p>
 <p><a id="Axis-lists-have-to-be-Tuples-instead-of-Vector"></a></p>
 <p><a id="Axis-lists-have-to-be-Tuples-instead-of-Vector-1"></a></p>
 <h2 id="axis-lists-have-to-be-tuples-instead-of-vector">Axis lists have to be Tuples instead of Vector<a class="headerlink" href="#axis-lists-have-to-be-tuples-instead-of-vector" title="Permanent link">¤</a></h2>
@@ -619,7 +664,6 @@
 
 <span class="n">axes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:Lon</span><span class="p">}(</span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">),</span><span class="w"> </span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:Lat</span><span class="p">}(</span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">),</span><span class="w"> </span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:Time</span><span class="p">}(</span><span class="mi">1</span><span class="o">:</span><span class="mi">100</span><span class="p">))</span>
 <span class="n">arr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span><span class="w"> </span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="mi">10000</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">10</span><span class="p">,</span><span class="mi">100</span><span class="p">)))</span>
-
 <span class="n">dims</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>Dim{:Lon} Sampled{Int64} 1:10 ForwardOrdered Regular Points,
@@ -629,11 +673,11 @@ Dim{:Time} Sampled{Int64} 1:100 ForwardOrdered Regular Points
 <p><a id="Copy-an-axes-with-the-same-name-but-different-values"></a></p>
 <p><a id="Copy-an-axes-with-the-same-name-but-different-values-1"></a></p>
 <h2 id="copy-an-axes-with-the-same-name-but-different-values">Copy an axes with the same name but different values<a class="headerlink" href="#copy-an-axes-with-the-same-name-but-different-values" title="Permanent link">¤</a></h2>
-<p>Use DD.rebuild(ax, values) instead of axcopy(ax, values)</p>
-<p><a id="Subsetting-is-including-not-excluding"></a></p>
-<p><a id="Subsetting-is-including-not-excluding-1"></a></p>
-<h2 id="subsetting-is-including-not-excluding">Subsetting is including not excluding<a class="headerlink" href="#subsetting-is-including-not-excluding" title="Permanent link">¤</a></h2>
-<p>Beware that the subsets in DimensionalData include the bounds. Thereby the size of the subset can differ by one on every bound. a[X=1..4]</p>
+<p>Use <strong><code>DD.rebuild(ax, values)</code></strong> instead of <code>axcopy(ax, values)</code>.</p>
+<p><a id="Subsetting-is-**including**-not-excluding"></a></p>
+<p><a id="Subsetting-is-**including**-not-excluding-1"></a></p>
+<h2 id="subsetting-is-including-not-excluding">Subsetting is <strong>including</strong> not excluding<a class="headerlink" href="#subsetting-is-including-not-excluding" title="Permanent link">¤</a></h2>
+<p>Beware that the subsets in DimensionalData include the bounds. Thereby the size of the subset can differ by one on every bound <code>a[X=1..4]</code>.</p>
 <hr>
 <p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></div>
 

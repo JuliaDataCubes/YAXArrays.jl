@@ -19,7 +19,7 @@
         <link rel="next" href="../saving/">
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.1, mkdocs-material-9.1.21">
+      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.1.21">
     
     
       
@@ -351,26 +351,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#indexing-and-subsetting" class="md-nav__link">
-    Indexing and subsetting
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#select-variables-with-dimensionaldatajl" class="md-nav__link">
-    Select variables with DimensionalData.jl
-  </a>
-  
-    <nav class="md-nav" aria-label="Select variables with DimensionalData.jl">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
   <a href="#properties-attributes" class="md-nav__link">
     Properties / Attributes
   </a>
@@ -457,6 +437,21 @@
     <li class="md-nav__item">
       <a href="../applyfunctions/" class="md-nav__link">
         Apply functions on YAXArrays
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../create_from_func/" class="md-nav__link">
+        Generate a cube from function
       </a>
     </li>
   
@@ -560,6 +555,36 @@
   
   
     <li class="md-nav__item">
+      <a href="../examples_from_esdl_study_3/" class="md-nav__link">
+        Examples from ESDL study 3
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples_from_esdl_study_4/" class="md-nav__link">
+        Examples from ESDL study 4
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../contribute/contribute/" class="md-nav__link">
         Contribute to docs
       </a>
@@ -636,26 +661,6 @@
   </a>
   
 </li>
-        
-          <li class="md-nav__item">
-  <a href="#indexing-and-subsetting" class="md-nav__link">
-    Indexing and subsetting
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#select-variables-with-dimensionaldatajl" class="md-nav__link">
-    Select variables with DimensionalData.jl
-  </a>
-  
-    <nav class="md-nav" aria-label="Select variables with DimensionalData.jl">
-      <ul class="md-nav__list">
         
           <li class="md-nav__item">
   <a href="#properties-attributes" class="md-nav__link">
@@ -740,6 +745,12 @@ wrapping: Base.OneTo(10)
 <div class="highlight"><pre><span></span><code>Dim{:Dim_1} Sampled{Int64} ForwardOrdered Regular Points
 wrapping: Base.OneTo(10)
 </code></pre></div>
+<p>or even better with the <code>DD</code> <code>lookup</code> function</p>
+<div class="highlight"><pre><span></span><code><span class="n">lookup</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="ss">:Dim_1</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>Sampled{Int64} ForwardOrdered Regular Points
+wrapping: Base.OneTo(10)
+</code></pre></div>
 <p><a id="Creating-a-YAXArray-with-named-axis"></a></p>
 <p><a id="Creating-a-YAXArray-with-named-axis-1"></a></p>
 <h2 id="creating-a-yaxarray-with-named-axis">Creating a YAXArray with named axis<a class="headerlink" href="#creating-a-yaxarray-with-named-axis" title="Permanent link">¤</a></h2>
@@ -782,75 +793,15 @@ Total size: 70.31 KB
   Dim{:lat} Sampled{Float64} 1.0:0.2857142857142857:5.0 ForwardOrdered Regular Points
 Total size: 7.03 KB
 </code></pre></div>
-<p><a id="Indexing-and-subsetting"></a></p>
-<p><a id="Indexing-and-subsetting-1"></a></p>
-<h3 id="indexing-and-subsetting">Indexing and subsetting<a class="headerlink" href="#indexing-and-subsetting" title="Permanent link">¤</a></h3>
-<p>As for most array types, YAXArray also provides special indexing behavior   when using the square brackets for indexing.  Assuming that <code>c</code> is a YAXArray,   there are 3 different semantics to use the square brackets with, depending on   the types of the arguments provided to getindex.</p>
-<ol>
-<li><strong>Ranges and Integers only</strong> as for example <code>c[1,4:8,:]</code> will access the underlying data according to the provided index in index space and read the</li>
-</ol>
-<p>data <em>into memory</em> as a plain Julia Array. It is equivalent to <code>c.data[1,4:8,:]</code>.</p>
-<ol>
-<li><strong>Keyword arguments with values or Intervals</strong> as for example <code>c[longitude = 30..50, time=Date(2005,6,1), variable="air_temperature"]</code>.</li>
-</ol>
-<p>This always creates a <em>view</em> into the specified subset of the data and   return a new YAXArray with new axes without reading the data. Intervals and   values are always interpreted in the units as provided by the axis values.</p>
-<ol>
-<li><strong>A Tables.jl-compatible object</strong> for irregular extraction of a list of points or sub-arrays and random locations.</li>
-</ol>
-<p>For example calling <code>c[[(lon=30,lat=42),(lon=-50,lat=2.5)]]</code> will extract data at the specified coordinates and along all additional axes into memory.   It returns a new YAXArray with a new Multi-Index axis along the selected   longitudes and latitudes.</p>
 <div class="admonition info">
 <p class="admonition-title">Info</p>
-<p>Overall, selecting elements in YAXArrays is brittle.   Hence using DimensionalData.jl and YAXArrayBase.jl is recomended.</p>
+<p>Please note that selecting elements in YAXArrays is done via the <code>DimensionalData.jl</code> syntax.   For more information checkout the (docs)[https://rafaqz.github.io/DimensionalData.jl/].</p>
 </div>
-<p><a id="Select-variables-with-DimensionalData.jl"></a></p>
-<p><a id="Select-variables-with-DimensionalData.jl-1"></a></p>
-<h2 id="select-variables-with-dimensionaldatajl">Select variables with DimensionalData.jl<a class="headerlink" href="#select-variables-with-dimensionaldatajl" title="Permanent link">¤</a></h2>
-<div class="highlight"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">DimensionalData</span><span class="p">,</span><span class="w"> </span><span class="n">YAXArrayBase</span>
-</code></pre></div>
-<p>First we wrap the yaxarray into a DimArray via</p>
-<div class="highlight"><pre><span></span><code><span class="n">dim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">yaxconvert</span><span class="p">(</span><span class="n">DimArray</span><span class="p">,</span><span class="w"> </span><span class="n">ds</span><span class="p">)</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code>30×10×15×2 DimArray{Float64,4} with dimensions: 
-  Dim{:time} Sampled{Date} Date("2022-01-01"):Dates.Day(1):Date("2022-01-30") ForwardOrdered Regular Points,
-  Dim{:lon} Sampled{Float64} 1.0:1.0:10.0 ForwardOrdered Regular Points,
-  Dim{:lat} Sampled{Float64} 1.0:0.2857142857142857:5.0 ForwardOrdered Regular Points,
-  Dim{:Variable} Categorical{String} String["var1", "var2"] ForwardOrdered
-[:, :, 1, 1]
-                      1.0       2.0       …  8.0       9.0       10.0
-  2022-01-01  0.268645  0.187528     0.832129  0.581566   0.619254
-  2022-01-02  0.859517  0.169624     0.420219  0.913751   0.543289
-  2022-01-03  0.722075  0.174857     0.460432  0.343246   0.567612
- ⋮                                        ⋱                       ⋮
-  2022-01-27  0.270984  0.916232  …  0.111964  0.547316   0.516252
-  2022-01-28  0.734334  0.532801     0.465078  0.696161   0.412166
-  2022-01-29  0.17165   0.292652     0.782278  0.987164   0.126431
-  2022-01-30  0.625113  0.864931     0.765851  0.391255   0.797139
-[and 29 more slices...]
-</code></pre></div>
-<p>Now, the syntax from DimensionalData.jl just works</p>
-<div class="highlight"><pre><span></span><code><span class="n">subset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dim</span><span class="p">[</span>
+<div class="highlight"><pre><span></span><code><span class="n">subset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ds</span><span class="p">[</span>
 <span class="w">    </span><span class="n">time</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DD</span><span class="o">.</span><span class="n">Between</span><span class="p">(</span><span class="w"> </span><span class="n">Date</span><span class="p">(</span><span class="s">"2022-01-01"</span><span class="p">),</span><span class="w">  </span><span class="n">Date</span><span class="p">(</span><span class="s">"2022-01-10"</span><span class="p">)),</span>
 <span class="w">    </span><span class="n">lon</span><span class="o">=</span><span class="n">DD</span><span class="o">.</span><span class="n">Between</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span>
 <span class="w">    </span><span class="n">Variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">At</span><span class="p">(</span><span class="s">"var2"</span><span class="p">)</span>
 <span class="w">    </span><span class="p">]</span>
-</code></pre></div>
-<div class="highlight"><pre><span></span><code>10×2×15 DimArray{Float64,3} with dimensions: 
-  Dim{:time} Sampled{Date} Date("2022-01-01"):Dates.Day(1):Date("2022-01-10") ForwardOrdered Regular Points,
-  Dim{:lon} Sampled{Float64} 1.0:1.0:2.0 ForwardOrdered Regular Points,
-  Dim{:lat} Sampled{Float64} 1.0:0.2857142857142857:5.0 ForwardOrdered Regular Points
-and reference dimensions: 
-  Dim{:Variable} Categorical{String} String["var2"] ForwardOrdered
-[:, :, 1]
-                      1.0       2.0
-  2022-01-01  0.179995  0.238706
-  2022-01-02  0.40141   0.130054
- ⋮                              
-  2022-01-09  0.9525    0.978758
-  2022-01-10  0.700838  0.0361384
-[and 14 more slices...]
-</code></pre></div>
-<p>And going back to our YAXArray view is done with</p>
-<div class="highlight"><pre><span></span><code><span class="n">yax</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">yaxconvert</span><span class="p">(</span><span class="n">YAXArray</span><span class="p">,</span><span class="w"> </span><span class="n">subset</span><span class="p">)</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>10×2×15 YAXArray{Float64,3} with dimensions: 
   Dim{:time} Sampled{Date} Date("2022-01-01"):Dates.Day(1):Date("2022-01-10") ForwardOrdered Regular Points,
@@ -858,7 +809,6 @@ and reference dimensions:
   Dim{:lat} Sampled{Float64} 1.0:0.2857142857142857:5.0 ForwardOrdered Regular Points
 Total size: 2.34 KB
 </code></pre></div>
-<p>This will be supported by default in the next release.</p>
 <p><a id="Properties-/-Attributes"></a></p>
 <p><a id="Properties-/-Attributes-1"></a></p>
 <h3 id="properties-attributes">Properties / Attributes<a class="headerlink" href="#properties-attributes" title="Permanent link">¤</a></h3>

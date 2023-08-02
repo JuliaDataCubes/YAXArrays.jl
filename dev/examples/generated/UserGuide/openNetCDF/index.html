@@ -13,13 +13,13 @@
       
       
       
-        <link rel="prev" href="../applyfunctions/">
+        <link rel="prev" href="../create_from_func/">
       
       
         <link rel="next" href="../openZarr/">
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.1, mkdocs-material-9.1.21">
+      <meta name="generator" content="mkdocs-1.5.2, mkdocs-material-9.1.21">
     
     
       
@@ -75,6 +75,11 @@
     <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
+      
+        
+        <a href="#one-variable" class="md-skip">
+          Skip to content
+        </a>
       
     </div>
     <div data-md-component="announce">
@@ -341,6 +346,21 @@
 
   
   
+  
+    <li class="md-nav__item">
+      <a href="../create_from_func/" class="md-nav__link">
+        Generate a cube from function
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
     
   
   
@@ -350,9 +370,45 @@
       
       
       
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          Open NetCDF
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
       <a href="./" class="md-nav__link md-nav__link--active">
         Open NetCDF
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#one-variable" class="md-nav__link">
+    One variable
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multiple-variables-mixed-dimensions" class="md-nav__link">
+    Multiple variables, mixed dimensions
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
       
     </li>
   
@@ -441,6 +497,36 @@
   
   
     <li class="md-nav__item">
+      <a href="../examples_from_esdl_study_3/" class="md-nav__link">
+        Examples from ESDL study 3
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../examples_from_esdl_study_4/" class="md-nav__link">
+        Examples from ESDL study 4
+      </a>
+    </li>
+  
+
+    
+      
+      
+      
+
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../../contribute/contribute/" class="md-nav__link">
         Contribute to docs
       </a>
@@ -481,6 +567,28 @@
   
   
   
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#one-variable" class="md-nav__link">
+    One variable
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multiple-variables-mixed-dimensions" class="md-nav__link">
+    Multiple variables, mixed dimensions
+  </a>
+  
+</li>
+      
+    </ul>
+  
 </nav>
                   </div>
                 </div>
@@ -497,6 +605,9 @@
   <h1>Open NetCDF</h1>
 
 <div><p>In this example we are going to use a <code>NetCDF</code> file but this should be very similar for other data backends. To open a single data file we first need to load the appropriate backend package via <code>using NetCDF</code>.</p>
+<p><a id="One-variable"></a></p>
+<p><a id="One-variable-1"></a></p>
+<h2 id="one-variable">One variable<a class="headerlink" href="#one-variable" title="Permanent link">¤</a></h2>
 <div class="highlight"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">YAXArrays</span><span class="p">,</span><span class="w"> </span><span class="n">NetCDF</span>
 <span class="k">using</span><span class="w"> </span><span class="n">Downloads</span>
 <span class="n">url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"https://www.unidata.ucar.edu/software/netcdf/examples/tos_O1_2001-2002.nc"</span>
@@ -511,6 +622,56 @@ units: K
 name: tos
 Total size: 2.8 MB
 </code></pre></div>
+<p><a id="Multiple-variables,-mixed-dimensions"></a></p>
+<p><a id="Multiple-variables,-mixed-dimensions-1"></a></p>
+<h2 id="multiple-variables-mixed-dimensions">Multiple variables, mixed dimensions<a class="headerlink" href="#multiple-variables-mixed-dimensions" title="Permanent link">¤</a></h2>
+<p>When the dataset contains variables with different dimensions you should use <code>open_dataset</code> as in</p>
+<div class="highlight"><pre><span></span><code><span class="n">path2file</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">"https://www.unidata.ucar.edu/software/netcdf/examples/sresa1b_ncar_ccsm3-example.nc"</span>
+<span class="n">filename</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Downloads</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="n">path2file</span><span class="p">,</span><span class="w"> </span><span class="s">"sresa1b_ncar_ccsm3-example.nc"</span><span class="p">)</span>
+<span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">open_dataset</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>YAXArray Dataset
+Shared Axes: 
+Dim{:lon} Sampled{Float32} 0.0f0:1.40625f0:358.59375f0 ForwardOrdered Regular Points,
+Dim{:lat} Sampled{Float32} -88.927734f0:1.4004368f0:88.927734f0 ForwardOrdered Regular Points
+Variables: 
+
+pr
+ with dimensions: 
+  Ti Sampled{CFTime.DateTimeNoLeap} CFTime.DateTimeNoLeap[CFTime.DateTimeNoLeap(2000-05-16T12:00:00)] ForwardOrdered Irregular Pointsmsk_rgn, area, 
+ua
+ with dimensions: 
+  Dim{:plev} Sampled{Float64} Float64[100000.0, 92500.0, …, 2000.0, 1000.0] ReverseOrdered Irregular Points,
+  Ti Sampled{CFTime.DateTimeNoLeap} CFTime.DateTimeNoLeap[CFTime.DateTimeNoLeap(2000-05-16T12:00:00)] ForwardOrdered Irregular Points
+tas
+ with dimensions: 
+  Ti Sampled{CFTime.DateTimeNoLeap} CFTime.DateTimeNoLeap[CFTime.DateTimeNoLeap(2000-05-16T12:00:00)] ForwardOrdered Irregular Points
+Properties: Dict{String, Any}("cmd_ln" =&gt; "bds -x 256 -y 128 -m 23 -o /data/zender/data/dst_T85.nc", "references" =&gt; "Collins, W.D., et al., 2005:\n The Community Climate System Model, Version 3\n Journal of Climate\n \n Main website: http://www.ccsm.ucar.edu", "CVS_Id" =&gt; "\$Id\$", "model_name_english" =&gt; "NCAR CCSM", "creation_date" =&gt; "", "acknowledgment" =&gt; " Any use of CCSM data should acknowledge the contribution\n of the CCSM project and CCSM sponsor agencies with the \n following citation:\n 'This research uses data provided by the Community Climate\n System Model project (www.ccsm.ucar.edu), supported by the\n Directorate for Geosciences of the National Science Foundation\n and the Office of Biological and Environmental Research of\n the U.S. Department of Energy.'\nIn addition, the words 'Community Climate System Model' and\n 'CCSM' should be included as metadata for webpages referencing\n work using CCSM data or as keywords provided to journal or book\npublishers of your manuscripts.\nUsers of CCSM data accept the responsibility of emailing\n citations of publications of research using CCSM data to\n ccsm@ucar.edu.\nAny redistribution of CCSM data must include this data\n acknowledgement statement.", "realization" =&gt; 1, "contact" =&gt; "ccsm@ucar.edu", "Conventions" =&gt; "CF-1.0", "history" =&gt; "Tue Oct 25 15:08:51 2005: ncks -O -x -v va -m sresa1b_ncar_ccsm3_0_run1_200001.nc sresa1b_ncar_ccsm3_0_run1_200001.nc\nTue Oct 25 15:07:21 2005: ncks -d time,0 sresa1b_ncar_ccsm3_0_run1_200001_201912.nc sresa1b_ncar_ccsm3_0_run1_200001.nc\nTue Oct 25 13:29:43 2005: ncks -d time,0,239 sresa1b_ncar_ccsm3_0_run1_200001_209912.nc /var/www/html/tmp/sresa1b_ncar_ccsm3_0_run1_200001_201912.nc\nThu Oct 20 10:47:50 2005: ncks -A -v va /data/brownmc/sresa1b/atm/mo/va/ncar_ccsm3_0/run1/sresa1b_ncar_ccsm3_0_run1_va_200001_209912.nc /data/brownmc/sresa1b/atm/mo/tas/ncar_ccsm3_0/run1/sresa1b_ncar_ccsm3_0_run1_200001_209912.nc\nWed Oct 19 14:55:04 2005: ncks -F -d time,01,1200 /data/brownmc/sresa1b/atm/mo/va/ncar_ccsm3_0/run1/sresa1b_ncar_ccsm3_0_run1_va_200001_209912.nc /data/brownmc/sresa1b/atm/mo/va/ncar_ccsm3_0/run1/sresa1b_ncar_ccsm3_0_run1_va_200001_209912.nc\nWed Oct 19 14:53:28 2005: ncrcat /data/brownmc/sresa1b/atm/mo/va/ncar_ccsm3_0/run1/foo_05_1200.nc /data/brownmc/sresa1b/atm/mo/va/ncar_ccsm3_0/run1/foo_1192_1196.nc /data/brownmc/sresa1b/atm/mo/va/ncar_ccsm3_0/run1/sresa1b_ncar_ccsm3_0_run1_va_200001_209912.nc\nWed Oct 19 14:50:38 2005: ncks -F -d time,05,1200 /data/brownmc/sresa1b/atm/mo/va/ncar_ccsm3_0/run1/va_A1.SRESA1B_1.CCSM.atmm.2000-01_cat_2099-12.nc /data/brownmc/sresa1b/atm/mo/va/ncar_ccsm3_0/run1/foo_05_1200.nc\nWed Oct 19 14:49:45 2005: ncrcat /data/brownmc/sresa1b/atm/mo/va/ncar_ccsm3_0/run1/va_A1.SRESA1B_1.CCSM.atmm.2000-01_cat_2079-12.nc /data/brownmc/sresa1b/atm/mo/va/ncar_ccsm3_0/run1/va_A1.SRESA1B_1.CCSM.atmm.2080-01_cat_2099-12.nc /data/brownmc/sresa1b/atm/mo/va/ncar_ccsm3_0/run1/va_A1.SRESA1B_1.CCSM.atmm.2000-01_cat_2099-12.nc\nCreated from CCSM3 case b30.040a\n by wgstrand@ucar.edu\n on Wed Nov 17 14:12:57 EST 2004\n \n For all data, added IPCC requested metadata"…)
+</code></pre></div>
+<p>Afterwards, selecting a variable as usual works, i.e.</p>
+<div class="highlight"><pre><span></span><code><span class="n">c</span><span class="p">[</span><span class="s">"ua"</span><span class="p">]</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>256×128×17×1 YAXArray{Union{Missing, Float32},4} with dimensions: 
+  Dim{:lon} Sampled{Float32} 0.0f0:1.40625f0:358.59375f0 ForwardOrdered Regular Points,
+  Dim{:lat} Sampled{Float32} -88.927734f0:1.4004368f0:88.927734f0 ForwardOrdered Regular Points,
+  Dim{:plev} Sampled{Float64} Float64[100000.0, 92500.0, …, 2000.0, 1000.0] ReverseOrdered Irregular Points,
+  Ti Sampled{CFTime.DateTimeNoLeap} CFTime.DateTimeNoLeap[CFTime.DateTimeNoLeap(2000-05-16T12:00:00)] ForwardOrdered Irregular Points
+name: ua
+units: m s-1
+Total size: 2.12 MB
+</code></pre></div>
+<p>or</p>
+<div class="highlight"><pre><span></span><code><span class="n">c</span><span class="p">[</span><span class="s">"tas"</span><span class="p">]</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>256×128×1 YAXArray{Union{Missing, Float32},3} with dimensions: 
+  Dim{:lon} Sampled{Float32} 0.0f0:1.40625f0:358.59375f0 ForwardOrdered Regular Points,
+  Dim{:lat} Sampled{Float32} -88.927734f0:1.4004368f0:88.927734f0 ForwardOrdered Regular Points,
+  Ti Sampled{CFTime.DateTimeNoLeap} CFTime.DateTimeNoLeap[CFTime.DateTimeNoLeap(2000-05-16T12:00:00)] ForwardOrdered Irregular Points
+name: tas
+units: K
+Total size: 128.0 KB
+</code></pre></div>
+<p>Note that their output is a YAXArray.</p>
 <hr>
 <p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></div>
 
@@ -539,7 +700,7 @@ Total size: 2.8 MB
       <nav class="md-footer__inner md-grid" aria-label="Footer" >
         
           
-          <a href="../applyfunctions/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Apply functions on YAXArrays" rel="prev">
+          <a href="../create_from_func/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Generate a cube from function" rel="prev">
             <div class="md-footer__button md-icon">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
             </div>
@@ -548,7 +709,7 @@ Total size: 2.8 MB
                 Previous
               </span>
               <div class="md-ellipsis">
-                Apply functions on YAXArrays
+                Generate a cube from function
               </div>
             </div>
           </a>
