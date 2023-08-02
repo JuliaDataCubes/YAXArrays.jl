@@ -13,6 +13,9 @@ a.Dim_1
 # or with 
 getproperty(a, :Dim_1)
 
+# or even better with the `DD` `lookup` function
+lookup(a, :Dim_1)
+
 # ## Creating a YAXArray with named axis
 
 # The two most used axis are `RangeAxis` and `CategoricalAxis`. Here, we use a combination of them
@@ -34,47 +37,17 @@ ds = YAXArray(axlist, data)
 
 ds[Variable = At("var1"), lon = DD.Between(1,2.1)]
 
-# ### Indexing and subsetting
-# 
-#   As for most array types, YAXArray also provides special indexing behavior 
-#   when using the square brackets for indexing.  Assuming that `c` is a YAXArray, 
-#   there are 3 different semantics to use the square brackets with, depending on 
-#   the types of the arguments provided to getindex. 
-#   1. **Ranges and Integers only** as for example `c[1,4:8,:]` will access the underlying data according to the provided index in index space and read the 
-#   data *into memory* as a plain Julia Array. It is equivalent to `c.data[1,4:8,:]`. 
-#   2. **Keyword arguments with values or Intervals** as for example `c[longitude = 30..50, time=Date(2005,6,1), variable="air_temperature"]`.
-#   This always creates a *view* into the specified subset of the data and 
-#   return a new YAXArray with new axes without reading the data. Intervals and
-#   values are always interpreted in the units as provided by the axis values.
-#   3. **A Tables.jl-compatible object** for irregular extraction of a list of points or sub-arrays and random locations. 
-#   For example calling `c[[(lon=30,lat=42),(lon=-50,lat=2.5)]]` will extract data at the specified coordinates and along all additional axes into memory. 
-#   It returns a new YAXArray with a new Multi-Index axis along the selected 
-#   longitudes and latitudes.
-
 # !!! info 
-#       Overall, selecting elements in YAXArrays is brittle.
-#       Hence using DimensionalData.jl and YAXArrayBase.jl is recomended. 
+#       Please note that selecting elements in YAXArrays is done via the `DimensionalData.jl` syntax.
+#       For more information checkout the (docs)[https://rafaqz.github.io/DimensionalData.jl/].
 
-# ## Select variables with DimensionalData.jl
 
-using DimensionalData, YAXArrayBase
-# First we wrap the yaxarray into a DimArray via
-
-dim = yaxconvert(DimArray, ds)
-
-# Now, the syntax from DimensionalData.jl just works 
-
-subset = dim[
+subset = ds[
     time = DD.Between( Date("2022-01-01"),  Date("2022-01-10")),
     lon=DD.Between(1,2),
     Variable = At("var2")
     ]
 
-# And going back to our YAXArray view is done with
-
-yax = yaxconvert(YAXArray, subset)
-
-# This will be supported by default in the next release.
 
 # ### Properties / Attributes
 

@@ -94,11 +94,11 @@ And our first YAXArray is built with:
 ds = YAXArray(axlist, data, props)
 ```
 ```
-YAXArray with the following dimensions
-time                Axis with 20 Elements from 1.0 to 20.0
-x                   Axis with 10 Elements from 1.0 to 10.0
-y                   Axis with 15 Elements from 1.0 to 5.0
-Variable            Axis with 2 elements: var1 var2 
+20×10×15×2 YAXArray{Float64,4} with dimensions: 
+  Dim{:time} Sampled{Float64} 1.0:1.0:20.0 ForwardOrdered Regular Points,
+  X Sampled{Float64} 1.0:1.0:10.0 ForwardOrdered Regular Points,
+  Y Sampled{Float64} 1.0:0.2857142857142857:5.0 ForwardOrdered Regular Points,
+  Dim{:Variable} Categorical{String} String["var1", "var2"] ForwardOrdered
 Total size: 46.88 KB
 ```
 
@@ -107,16 +107,44 @@ Total size: 46.88 KB
 For axis can be via `.` 
 
 ```julia
-ds.x.values
+ds.X
+```
+```
+X Sampled{Float64} ForwardOrdered Regular Points
+wrapping: 1.0:1.0:10.0
+```
+
+or better yet via `lookup`
+
+```julia
+lookup(ds, :X)
+```
+```
+Sampled{Float64} ForwardOrdered Regular Points
+wrapping: 1.0:1.0:10.0
+```
+
+note that also the `.data` field can be use
+```julia
+lookup(ds, :X).data
 ```
 ```
 1.0:1.0:10.0
 ```
 
-and the complete data for one of our variables, i.e. `var1` can be accessed via:
+The data for one variables, i.e. `var1` can be accessed via:
 
 ```julia
-ds[variable = "var1"].data
+ds[Variable=At("var1")]
 ```
+```
+20×10×15 YAXArray{Float64,3} with dimensions: 
+  Dim{:time} Sampled{Float64} 1.0:1.0:20.0 ForwardOrdered Regular Points,
+  X Sampled{Float64} 1.0:1.0:10.0 ForwardOrdered Regular Points,
+  Y Sampled{Float64} 1.0:0.2857142857142857:5.0 ForwardOrdered Regular Points
+Total size: 23.44 KB
+```
+and again, you can use the `.data` field to actually get the data.
+
 
 For more please take a look at the documentation. 

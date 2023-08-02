@@ -1,4 +1,4 @@
-# The purpose of this section is to show how to switch from the native YAXArray type to the new type based on DimensionalData.jl
+# The purpose of this section is to show how to switch from the native `YAXArray` type to the new type based on `DimensionalData.jl`
 
 # ## Axis lists have to be Tuples instead of Vector
 
@@ -18,14 +18,13 @@ using YAXArrays
 
 axes = (Dim{:Lon}(1:10), Dim{:Lat}(1:10), Dim{:Time}(1:100))
 arr = YAXArray(axes, reshape(1:10000, (10,10,100)))
-
 dims(arr)
 
 # ## Copy an axes with the same name but different values
-# Use DD.rebuild(ax, values) instead of axcopy(ax, values)
+# Use __`DD.rebuild(ax, values)`__ instead of `axcopy(ax, values)`.
 
 
-# ## Subsetting is including not excluding
+# ## Subsetting is **including** not excluding
 # Beware that the subsets in DimensionalData include the bounds.
-# Thereby the size of the subset can differ by one on every bound.
-# a[X=1..4]
+# Thereby the size of the subset can differ by one on every bound
+# `a[X=1..4]`.

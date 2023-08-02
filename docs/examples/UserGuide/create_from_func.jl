@@ -3,10 +3,6 @@ using Dates
 
 # Define function in space and time
 
-# !!! warning This is currently broken.
-# This is broken after the switch to DimensionalData
-
-
 f(lo, la, t) = (lo + la + Dates.dayofyear(t))
 
 # ## Wrap function for mapCube output
@@ -15,8 +11,7 @@ function g(xout,lo,la,t)
     xout .= f.(lo,la,t)
 end
 
-# Note the applied `.` after `f`, this is because we will slice across time,
-# hence the application is broadcasted along this dimension.
+# Note the applied `.` after `f`, this is because we will slice/broadcasted across time.
 
 # ## Create Cube's Axes
 

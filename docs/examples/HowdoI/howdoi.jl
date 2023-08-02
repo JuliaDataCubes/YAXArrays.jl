@@ -49,7 +49,6 @@ ds2 = YAXArray(axlist, data2)
 # Now we can concatenate ```ds1``` and ```ds2``` cubes:
 
 dsfinal = concatenatecubes([ds1, ds2], Dim{:Variables}(["var1", "var2"]))
-
 dsfinal
 
 
@@ -105,18 +104,72 @@ classes = YAXArray((getAxis("lon", dsfinal), getAxis("lat", dsfinal)), rand(1:3,
 using CairoMakie
 CairoMakie.activate!()
 # This is how our classification map looks like
-heatmap(classes.data[:, :])
+fig, ax, obj = heatmap(classes.data[:, :];
+    colormap = cgrad([:black, :orange, :dodgerblue], 3, categorical=true))
+cbar = Colorbar(fig[1,2], obj)
+mn, mx, N = 1,3,3
+δn = (mx - mn)/N
+ticks_position = [mn + δn/2 + (i-1)*δn for i in 1:N]
+cbar.ticks = (ticks_position, string.(mn:mx))
+fig
 
 # Now we define the input cubes that will be considered for the iterable table
 t = CubeTable(values=ds1, classes=classes)
 
 using DataFrames
 using OnlineStats
-## visualiztion of the CubeTable
-DataFrame(t[1])
+## visualization of the CubeTable
+c_tbl = DataFrame(t[1])
+first(c_tbl, 5)
 
 # In this line we calculate the `Mean` for each class
 fitcube = cubefittable(t, Mean, :values, by=(:classes))
 
 # We can also use more than one criteria for grouping the values. In the next example, the mean is calculated for each class and timestep.
 fitcube = cubefittable(t, Mean, :values, by=(:classes, :time))
+
+# !!! question
+
+# ## convertions types  `DimArray` & `YAXArray`
+
+using YAXArrays, YAXArrayBase
+using DimensionalData
+
+# ### `DimArray` to `YAXArray`
+dim_arr = rand(X(1:5), Y(10.0:15.0), metadata = Dict{String, Any}())
+
+# !!! warning "metadata"
+#     Note the `metadata` argument. Needed by `yaxconvert`.
+
+yax_arr = yaxconvert(YAXArray, dim_arr)
+
+# And saving it:
+using Zarr, NetCDF
+savecube(yax_arr, "yax_arr.nc", driver=:netcdf)
+
+# or as a `zarr` file
+
+savecube(yax_arr, "yax_arr.zarr", driver=:zarr)
+
+
+# And going back to the DimArray type is also possible.
+
+# ### `YAXArray` into a `DimArray`
+dim_arr = yaxconvert(DimArray, yax_arr)
+
+# at the moment there is no support to save a DimArray directly into disk as a `NetCDF` or a `Zarr` file.
+
+# !!! question
+
+# ## Assing variable names to `YAXArrays` in a `Dataset`
+
+# ### One variable name
+
+ds = YAXArrays.Dataset(; (:a => YAXArray(rand(10)),)...)
+
+# ### Multiple variable names
+keylist = (:a, :b, :c)
+varlist = (YAXArray(rand(10)), YAXArray(rand(10,5)), YAXArray(rand(2,5)))
+
+ds = YAXArrays.Dataset(; (keylist .=> varlist)...)
+
