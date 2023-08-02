@@ -9,8 +9,8 @@ c = g["tas"]
 
 # Subset, first time step
 ct1 = c[Ti = Near(Date("2015-01-01"))]
-lon = ct1.lon.val
-lat = ct1.lat.val
+lon = lookup(ct1, :lon)
+lat = lookup(ct1, :lat)
 data = ct1.data[:,:];
 
 # ## Heatmap plot
@@ -46,16 +46,16 @@ fig
 
 # ## 3D sphere plot
 
-#using JSServe, WGLMakie
-#WGLMakie.activate!()
-#Page(exportable=true, offline=true)
+using JSServe, WGLMakie
+WGLMakie.activate!()
+Page(exportable=true, offline=true)
 
 ds = replace(ndata, missing =>NaN)
 sphere = uv_normal_mesh(Tesselation(Sphere(Point3f(0), 1), 128))
 
-fig = Figure()
+fig = Figure(backgroundcolor=:grey25, resolution=(800,800))
 ax = LScene(fig[1,1], show_axis=false)
-mesh!(ax, sphere; color = ds'[end:-1:1,:],
+mesh!(ax, sphere; color = ds'[end:-1:1,:], shading=false,
     colormap = :seaborn_icefire_gradient)
 zoom!(ax.scene, cameracontrols(ax.scene), 0.65)
 rotate!(ax.scene, 2.5)

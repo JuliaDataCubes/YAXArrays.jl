@@ -25,7 +25,7 @@ using Pkg
 
 ## for operating data cubes
 using Zarr, YAXArrays
-
+using DimensionalData
 ## for operating the Earth system data lab
 using EarthDataLab
 
@@ -38,20 +38,26 @@ CairoMakie.activate!()
 using GeoMakie
 
 
-# In this study we investigate the redundancy of the different variables in each pixel. Therefore we calculate a linear dimensionality reduction (PCA) and check how many dimensions are needed to explain 90% of the variance of a cube that contained originally 11 variables.
+# In this study we investigate the redundancy of the different variables in each pixel.
+# Therefore we calculate a linear dimensionality reduction (PCA) and check how many dimensions
+# are needed to explain 90% of the variance of a cube that contained originally 11 variables.
 
 # ### Select and prepare (subset/gapfill) an Earth system data cube.
 
 
-# We need to choose a cube and here select a monthly, 2.5° resolution global cube. This very low resolution cube aims at rapid processing for the safe of time and computational resources.
+# We need to choose a cube and here select a monthly, 2.5° resolution global cube.
+# This very low resolution cube aims at rapid processing for the safe of time and computational resources.
+
 cube_handle = esdc(res="tiny")
 
 # Check which variables are avaiable in the data cube:
 
 ## if we want the names of the variables:
-println(getAxis("Var", cube_handle).values)
+println.(getAxis("Var", cube_handle));
 
-# Having the variable names allows us to make a selection, such that we can subset the global cube. We should also take care that the variables are as complete as possible in the time window we analyze. This has been explored a priori.
+# Having the variable names allows us to make a selection, such that we can subset the global cube.
+# We should also take care that the variables are as complete as possible in the time window we analyze.
+# This has been explored a priori.
 
 ## vector of variables we will work with
 vars = ["evaporative_stress",
@@ -71,11 +77,13 @@ vars = ["evaporative_stress",
 timespan = Date("2003-01-01")..Date("2011-12-31")
 
 ## subset the grand cube and get the cube we will analyse here
-cube_subset = subsetcube(cube_handle, time = timespan, variable = vars)
+cube_subset = cube_handle[time = timespan, variable = At(vars)]
 
-println(getAxis("Var", cube_subset).values)
+println.(getAxis("Var", cube_subset));
 
-# An important preprocessing step is gapfilling. We do not want to enter the debate on the optimal gapfilling method. What we do here is gapfilling first with the mean seasonal cycle (where it can be estimated), and interpolating long-recurrent gaps (typically in winter seasons).
+# An important preprocessing step is gapfilling. We do not want to enter the debate on the optimal gapfilling method.
+# What we do here is gapfilling first with the mean seasonal cycle (where it can be estimated), and interpolating
+# long-recurrent gaps (typically in winter seasons).
 # use the EarthDataLab buit-in function
 @time cube_fill = gapFillMSC(cube_subset)
 
@@ -113,11 +121,15 @@ end
     #   f_{\{time\}}^{\{time}\} : \mathcal{C}(\{lat, lon, time, var\}) \rightarrow \mathcal{C}(\{lat, lon, time, var\}).
     # \end{equation}
     
-#  For operations of this kind, the best is to use the `mapslices` function. In the EarthDataLab package, this function needs the input function, the cube handle, and an indication on which dimension we would apply it. The function can then infer that the output dimension here is also an axis of type `Time`:
+#  For operations of this kind, the best is to use the `mapslices` function. In the EarthDataLab package,
+# this function needs the input function, the cube handle, and an indication on which dimension we would apply it.
+# The function can then infer that the output dimension here is also an axis of type `Time`:
 
 cube_fill_itp = mapslices(LinInterp, cube_fill, dims = "Time")
     
-# As we describe in the paper, we estimate the intrinsic dimensions from the raw, yet gapfilled, data cube (`cube_fill_itp`), but also based on spectrally decomposed data. The decomposition via discrete FFTs is an atomic operation of the following form (Eq. 12),
+# As we describe in the paper, we estimate the intrinsic dimensions from the raw, yet gapfilled,
+# data cube (`cube_fill_itp`), but also based on spectrally decomposed data. The decomposition via discrete FFTs
+# is an atomic operation of the following form (Eq. 12),
 
 # \begin{equation}
 #   f_{\{time\}}^{\{time, freq\}} : \mathcal{C}(\{lat, lon, time, var\}) \rightarrow \mathcal{C}(\{lat, lon, time, var, freq\}).
@@ -129,18 +141,23 @@ cube_decomp = filterTSFFT(cube_fill_itp)
 
 # ### Estimate intrinsic dimension via PCA
 
-# For estimating the intrinsic estimation via PCA from a multivariate time series we need essentially two atomic functions. First, dimensionality reduction,
+# For estimating the intrinsic estimation via PCA from a multivariate time series we need essentially
+# two atomic functions. First, dimensionality reduction,
 
 # \begin{equation}
 #      f_{\{time, var\}}^{\{time, princomp \}} : \mathcal{C}(\{time, var\}) \rightarrow \mathcal{C}(\{time, princomp\})
 # \end{equation}
 
-# And second estimating from the reduced space the number of dimensions that represent more variance than the threshold (for details see paper):
+# And second estimating from the reduced space the number of dimensions that represent more variance than
+# the threshold (for details see paper):
+
 # \begin{equation}
 #      f_{\{time, princomp\}}^{\{ \}} : \mathcal{C}(\{time, var\}) \rightarrow \mathcal{C}(\{int dim\})
 # \end{equation}
 
-# However, we as both steps emerge from the same analysis it is more efficient to wrap these two steps in a single atomic functions which has the structure:
+# However, we as both steps emerge from the same analysis it is more efficient to wrap these two steps
+# in a single atomic functions which has the structure:
+
 # \begin{equation}
 #      f_{\{time, var\}}^{\{ \}} : \mathcal{C}(\{time, var\}) \rightarrow \mathcal{C}(\{\})
 # \end{equation}
