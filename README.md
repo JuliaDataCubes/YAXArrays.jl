@@ -1,19 +1,10 @@
-<div align="center">
-
+# YAXArrays.jl
 *Yet Another XArray-like Julia Package*
 
-</div>
+[![][docs-dev-img]][docs-dev-url][![][ci-img]][ci-url] [![][codecov-img]][codecov-url]
+[![][coveralls-img]][coveralls-url]
 
-<img align="left" width=200 src="docs/src/assets/logo.png">
-
-<div align="center">
-
-| **Documentation**                                                               | **Build Status**                                                                                |
-|:-------------------------------------------------------------------------------:|:-----------------------------------------------------------------------------------------------:|
-| [![][docs-dev-img]][docs-dev-url] | [![][ci-img]][ci-url] [![][codecov-img]][codecov-url] |
-|  |  [![][coveralls-img]][coveralls-url] |
-
-</div>
+<img src="docs/src/assets/logo.png" align="right" style="padding-left:10px;" width="150"/>
 
 [docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
 [docs-dev-url]: https://JuliaDataCubes.github.io/YAXArrays.jl/dev/
@@ -27,8 +18,7 @@
 [coveralls-img]: https://coveralls.io/repos/github/JuliaDataCubes/YAXArrays.jl/badge.svg?branch=master
 [coveralls-url]: https://coveralls.io/github/JuliaDataCubes/YAXArrays.jl?branch=master
 
-
-# Summary
+## What is YAXArrays.jl?
 
 YAXArrays.jl is a package to handle gridded data that is larger than memory. It enables the DiskArray.jl package to access the data lazily and provides `map` and `mapCube` to apply user defined functions on arbitrary subsets of the axes. These computations are also easily parallelized either via Distributed or via Threads. 
 
