@@ -1,8 +1,8 @@
 # YAXArrays.jl
-*Yet Another XArray-like Julia Package*
-
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/JuliaDataCubes/YAXArrays.jl/blob/main/LICENSE)
 [![][docs-dev-img]][docs-dev-url][![][ci-img]][ci-url] [![][codecov-img]][codecov-url]
-[![][coveralls-img]][coveralls-url]
+[![][coveralls-img]][coveralls-url][![Downloads](https://shields.io/endpoint?url=https://pkgs.genieframework.com/api/v1/badge/YAXArrays&label=Downloads)](https://pkgs.genieframework.com?packages=YAXArrays)
+
 
 <img src="docs/src/assets/logo.png" align="right" style="padding-left:10px;" width="150"/>
 
@@ -19,11 +19,12 @@
 [coveralls-url]: https://coveralls.io/github/JuliaDataCubes/YAXArrays.jl?branch=master
 
 ## What is YAXArrays.jl?
+*Yet Another XArray-like Julia Package*
 
 YAXArrays.jl is a package to handle gridded data that is larger than memory. It enables the DiskArray.jl package to access the data lazily and provides `map` and `mapCube` to apply user defined functions on arbitrary subsets of the axes. These computations are also easily parallelized either via Distributed or via Threads. 
 
 
-# Switch to DimensionalData
+## Switch to DimensionalData
 
 With YAXArrays.jl 0.5 we switched the underlying data type to be a subtype of the DimensionalData.jl types. 
 Therefore the indexing with named dimensions changed to the DimensionalData syntax. 
@@ -31,13 +32,11 @@ See the [DimensionalData.jl docs](https://rafaqz.github.io/DimensionalData.jl/st
 
 # Installation
 
-
 Install the YAXArrays package:
 ```julia
 julia>]
 pkg> add YAXArrays
 ```
-<br> </br>
 
 You may check the installed version with:
 ```julia
