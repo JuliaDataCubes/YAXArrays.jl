@@ -23,6 +23,50 @@
 
 YAXArrays.jl is a package to handle gridded data that is larger than memory. It enables the DiskArray.jl package to access the data lazily and provides `map` and `mapCube` to apply user defined functions on arbitrary subsets of the axes. These computations are also easily parallelized either via Distributed or via Threads. 
 
+## Citing YAXArrays
+If you use YAXArrays for a scientific publication, please cite the Zenodo upload the following way:
+
+```
+Fabian Gans, Felix Cremer, Lazaro Alonso, Guido Kraemer, Pavel V. Dimens, Martin Gutwin, Martin,
+Francesco Martinuzzi, Daniel E. Pabon-Moreno, Daniel Loos, Markus Zehner, Mohammed Ayoub Chettouh,
+Philippe Roy, Qi Zhang, ckrich, Felix Glaser, & linamaes. (2023).
+JuliaDataCubes/YAXArrays.jl: v0.5.0 (v0.5.0) Zenodo. https://doi.org/10.5281/zenodo.7505394
+```
+
+<details>
+  <summary>BibTeX entry:</summary>
+
+```bib
+@software{fabian_gans_2023_8121199,
+  author       = {Fabian Gans and
+                  Felix Cremer and
+                  Lazaro Alonso and
+                  Guido Kraemer and
+                  Pavel V. Dimens and
+                  Martin Gutwin and
+                  Martin and
+                  Francesco Martinuzzi and
+                  Daniel E. Pabon-Moreno and
+                  Daniel Loos and
+                  Markus Zehner and
+                  Mohammed Ayoub Chettouh and
+                  Philippe Roy and
+                  Qi Zhang and
+                  ckrich and
+                  Felix Glaser and
+                  linamaes},
+  title        = {JuliaDataCubes/YAXArrays.jl: v0.5.0},
+  month        = jul,
+  year         = 2023,
+  publisher    = {Zenodo},
+  version      = {v0.5.0},
+  doi          = {10.5281/zenodo.8121199},
+  url          = {https://doi.org/10.5281/zenodo.8121199}
+}
+```
+</details>
+
+Citing all versions by using [10.5281/zenodo.7505394](https://doi.org/10.5281/zenodo.7505394).
 
 ## Switch to DimensionalData
 
