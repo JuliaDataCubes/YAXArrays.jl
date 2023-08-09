@@ -1,10 +1,16 @@
-# YAXArrays.jl
+<div align="center">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" 
+        srcset="docs/src/assets/logo.png" >
+      <img alt="YAXArrays.jl logo" 
+        src="/assets/docs/src/assets/logo.png" width="150">
+    </picture>
+</div>
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/JuliaDataCubes/YAXArrays.jl/blob/main/LICENSE)
 [![][docs-dev-img]][docs-dev-url][![][ci-img]][ci-url] [![][codecov-img]][codecov-url]
 [![][coveralls-img]][coveralls-url][![Downloads](https://shields.io/endpoint?url=https://pkgs.genieframework.com/api/v1/badge/YAXArrays&label=Downloads)](https://pkgs.genieframework.com?packages=YAXArrays)
 
-
-<img src="docs/src/assets/logo.png" align="right" style="padding-left:10px;" width="150"/>
 
 [docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
 [docs-dev-url]: https://JuliaDataCubes.github.io/YAXArrays.jl/dev/
@@ -24,13 +30,13 @@
 YAXArrays.jl is a package to handle gridded data that is larger than memory. It enables the DiskArray.jl package to access the data lazily and provides `map` and `mapCube` to apply user defined functions on arbitrary subsets of the axes. These computations are also easily parallelized either via Distributed or via Threads. 
 
 ## Citing YAXArrays
-If you use YAXArrays for a scientific publication, please cite the Zenodo upload the following way:
+If you use YAXArrays for a scientific publication, please cite the[Zenodo upload](https://doi.org/10.5281/zenodo.7505394) the following way:
 
 ```
 Fabian Gans, Felix Cremer, Lazaro Alonso, Guido Kraemer, Pavel V. Dimens, Martin Gutwin, Martin,
 Francesco Martinuzzi, Daniel E. Pabon-Moreno, Daniel Loos, Markus Zehner, Mohammed Ayoub Chettouh,
 Philippe Roy, Qi Zhang, ckrich, Felix Glaser, & linamaes. (2023).
-JuliaDataCubes/YAXArrays.jl: v0.5.0 (v0.5.0) Zenodo. https://doi.org/10.5281/zenodo.7505394
+JuliaDataCubes/YAXArrays.jl: v0.5.0 (v0.5.0) Zenodo. https://doi.org/10.5281/zenodo.8121199
 ```
 
 <details>
@@ -66,7 +72,7 @@ JuliaDataCubes/YAXArrays.jl: v0.5.0 (v0.5.0) Zenodo. https://doi.org/10.5281/zen
 ```
 </details>
 
-Citing all versions by using [10.5281/zenodo.7505394](https://doi.org/10.5281/zenodo.7505394).
+Cite all versions by using [10.5281/zenodo.7505394](https://doi.org/10.5281/zenodo.7505394).
 
 ## Switch to DimensionalData
 
