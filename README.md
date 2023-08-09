@@ -1,4 +1,5 @@
 # YAXArrays.jl
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/JuliaDataCubes/YAXArrays.jl/blob/main/LICENSE)
 [![][docs-dev-img]][docs-dev-url][![][ci-img]][ci-url] [![][codecov-img]][codecov-url]
 [![][coveralls-img]][coveralls-url][![Downloads](https://shields.io/endpoint?url=https://pkgs.genieframework.com/api/v1/badge/YAXArrays&label=Downloads)](https://pkgs.genieframework.com?packages=YAXArrays)
@@ -21,14 +22,62 @@
 ## What is YAXArrays.jl?
 *Yet Another XArray-like Julia Package*
 
-YAXArrays.jl is a package to handle gridded data that is larger than memory. It enables the DiskArray.jl package to access the data lazily and provides `map` and `mapCube` to apply user defined functions on arbitrary subsets of the axes. These computations are also easily parallelized either via Distributed or via Threads. 
+YAXArrays.jl is a package to handle gridded data that is larger than memory. It enables the [DiskArrays.jl](https://github.com/meggart/DiskArrays.jl) package to access the data lazily and provides `map` and `mapCube` to apply user defined functions on arbitrary subsets of the axes. These computations are also easily parallelized either via Distributed or via Threads. 
+
+### Citing YAXArrays
+If you use YAXArrays for a scientific publication, please cite the [Zenodo upload](https://doi.org/10.5281/zenodo.7505394) the following way:
+
+```
+Fabian Gans, Felix Cremer, Lazaro Alonso, Guido Kraemer, Pavel V. Dimens, Martin Gutwin, Martin,
+Francesco Martinuzzi, Daniel E. Pabon-Moreno, Daniel Loos, Markus Zehner, Mohammed Ayoub Chettouh,
+Philippe Roy, Qi Zhang, ckrich, Felix Glaser, & linamaes. (2023).
+JuliaDataCubes/YAXArrays.jl: v0.5.0 (v0.5.0) Zenodo. https://doi.org/10.5281/zenodo.8121199
+```
+
+<details>
+  <summary>BibTeX entry:</summary>
+
+```bib
+@software{fabian_gans_2023_8121199,
+  author       = {Fabian Gans and
+                  Felix Cremer and
+                  Lazaro Alonso and
+                  Guido Kraemer and
+                  Pavel V. Dimens and
+                  Martin Gutwin and
+                  Martin and
+                  Francesco Martinuzzi and
+                  Daniel E. Pabon-Moreno and
+                  Daniel Loos and
+                  Markus Zehner and
+                  Mohammed Ayoub Chettouh and
+                  Philippe Roy and
+                  Qi Zhang and
+                  ckrich and
+                  Felix Glaser and
+                  linamaes},
+  title        = {JuliaDataCubes/YAXArrays.jl: v0.5.0},
+  month        = jul,
+  year         = 2023,
+  publisher    = {Zenodo},
+  version      = {v0.5.0},
+  doi          = {10.5281/zenodo.8121199},
+  url          = {https://doi.org/10.5281/zenodo.8121199}
+}
+```
+</details>
+
+Cite all versions by using [10.5281/zenodo.7505394](https://doi.org/10.5281/zenodo.7505394).
+
+<details>
+  <summary> ℹ️ Switch to DimensionalData ℹ️ </summary>
 
 
-## Switch to DimensionalData
-
-With YAXArrays.jl 0.5 we switched the underlying data type to be a subtype of the DimensionalData.jl types. 
+With `YAXArrays.jl 0.5` we switched the underlying data type to be a subtype of the DimensionalData.jl types. 
 Therefore the indexing with named dimensions changed to the DimensionalData syntax. 
-See the [DimensionalData.jl docs](https://rafaqz.github.io/DimensionalData.jl/stable/) and the `Switch to DimensionalData section in our docs.
+See the [DimensionalData.jl docs](https://rafaqz.github.io/DimensionalData.jl/stable/) and the `Switch` to DimensionalData section in our docs.
+
+</details>
 
 # Installation
 
