@@ -1,16 +1,11 @@
-<div align="center">
-    <picture>
-      <source media="(prefers-color-scheme: dark)" 
-        srcset="docs/src/assets/logo.png" >
-      <img alt="YAXArrays.jl logo" 
-        src="/assets/docs/src/assets/logo.png" width="150">
-    </picture>
-</div>
+# YAXArrays.jl
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/JuliaDataCubes/YAXArrays.jl/blob/main/LICENSE)
 [![][docs-dev-img]][docs-dev-url][![][ci-img]][ci-url] [![][codecov-img]][codecov-url]
 [![][coveralls-img]][coveralls-url][![Downloads](https://shields.io/endpoint?url=https://pkgs.genieframework.com/api/v1/badge/YAXArrays&label=Downloads)](https://pkgs.genieframework.com?packages=YAXArrays)
 
+
+<img src="docs/src/assets/logo.png" align="right" style="padding-left:10px;" width="150"/>
 
 [docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
 [docs-dev-url]: https://JuliaDataCubes.github.io/YAXArrays.jl/dev/
@@ -74,11 +69,14 @@ JuliaDataCubes/YAXArrays.jl: v0.5.0 (v0.5.0) Zenodo. https://doi.org/10.5281/zen
 
 Cite all versions by using [10.5281/zenodo.7505394](https://doi.org/10.5281/zenodo.7505394).
 
-## Switch to DimensionalData
+<details>
+  <summary> ℹ️ Switch to DimensionalData ℹ️ </summary>
 
 With YAXArrays.jl 0.5 we switched the underlying data type to be a subtype of the DimensionalData.jl types. 
 Therefore the indexing with named dimensions changed to the DimensionalData syntax. 
 See the [DimensionalData.jl docs](https://rafaqz.github.io/DimensionalData.jl/stable/) and the `Switch to DimensionalData section in our docs.
+
+</details>
 
 # Installation
 
