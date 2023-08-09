@@ -22,10 +22,10 @@
 ## What is YAXArrays.jl?
 *Yet Another XArray-like Julia Package*
 
-YAXArrays.jl is a package to handle gridded data that is larger than memory. It enables the DiskArray.jl package to access the data lazily and provides `map` and `mapCube` to apply user defined functions on arbitrary subsets of the axes. These computations are also easily parallelized either via Distributed or via Threads. 
+YAXArrays.jl is a package to handle gridded data that is larger than memory. It enables the [DiskArrays.jl](https://github.com/meggart/DiskArrays.jl) package to access the data lazily and provides `map` and `mapCube` to apply user defined functions on arbitrary subsets of the axes. These computations are also easily parallelized either via Distributed or via Threads. 
 
-## Citing YAXArrays
-If you use YAXArrays for a scientific publication, please cite the[Zenodo upload](https://doi.org/10.5281/zenodo.7505394) the following way:
+### Citing YAXArrays
+If you use YAXArrays for a scientific publication, please cite the [Zenodo upload](https://doi.org/10.5281/zenodo.7505394) the following way:
 
 ```
 Fabian Gans, Felix Cremer, Lazaro Alonso, Guido Kraemer, Pavel V. Dimens, Martin Gutwin, Martin,
@@ -72,9 +72,10 @@ Cite all versions by using [10.5281/zenodo.7505394](https://doi.org/10.5281/zeno
 <details>
   <summary> ℹ️ Switch to DimensionalData ℹ️ </summary>
 
-With YAXArrays.jl 0.5 we switched the underlying data type to be a subtype of the DimensionalData.jl types. 
+
+With `YAXArrays.jl 0.5` we switched the underlying data type to be a subtype of the DimensionalData.jl types. 
 Therefore the indexing with named dimensions changed to the DimensionalData syntax. 
-See the [DimensionalData.jl docs](https://rafaqz.github.io/DimensionalData.jl/stable/) and the `Switch to DimensionalData section in our docs.
+See the [DimensionalData.jl docs](https://rafaqz.github.io/DimensionalData.jl/stable/) and the `Switch` to DimensionalData section in our docs.
 
 </details>
 
