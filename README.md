@@ -1,9 +1,8 @@
 # YAXArrays.jl
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/JuliaDataCubes/YAXArrays.jl/blob/main/LICENSE)
-[![][docs-dev-img]][docs-dev-url][![][ci-img]][ci-url] [![][codecov-img]][codecov-url]
+[![][docs-dev-img]][docs-dev-url][![DOI][zenodo-img]][zenodo-url][![][ci-img]][ci-url] [![][codecov-img]][codecov-url]
 [![][coveralls-img]][coveralls-url][![Downloads](https://shields.io/endpoint?url=https://pkgs.genieframework.com/api/v1/badge/YAXArrays&label=Downloads)](https://pkgs.genieframework.com?packages=YAXArrays)
-
 
 <img src="docs/src/assets/logo.png" align="right" style="padding-left:10px;" width="150"/>
 
@@ -18,6 +17,10 @@
 
 [coveralls-img]: https://coveralls.io/repos/github/JuliaDataCubes/YAXArrays.jl/badge.svg?branch=master
 [coveralls-url]: https://coveralls.io/github/JuliaDataCubes/YAXArrays.jl?branch=master
+
+[zenodo-url]: https://doi.org/10.5281/zenodo.7505394
+[zenodo-img]: https://zenodo.org/badge/DOI/10.5281/zenodo.7505394.svg
+
 
 ## What is YAXArrays.jl?
 *Yet Another XArray-like Julia Package*
