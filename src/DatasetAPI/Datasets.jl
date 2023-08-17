@@ -219,7 +219,7 @@ end
 function toaxis(dimname, g, offs, len)
     axname = Symbol(dimname)
     if !haskey(g, dimname)
-        return DD.rebuild(DD.key2dim(dimname), 1:len)
+        return DD.rebuild(DD.key2dim(axname), 1:len)
     end
     ar = get_var_handle(g, dimname)
     aratts = get_var_attrs(g, dimname)
