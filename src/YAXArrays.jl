@@ -44,7 +44,16 @@ using YAXArrayBase: getattributes
 
 @reexport using Dates: Date, DateTime
 @reexport using IntervalSets: (..)
-@reexport using DimensionalData: Dim
+@reexport begin
+    using DimensionalData:
+        Dim,
+        lookup,
+        At,
+        Touches,
+        Near,
+        Where,
+        Contains
+end
 @reexport using .Cubes
 
 #@reexport using .Cubes.Axes
