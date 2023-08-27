@@ -1,7 +1,7 @@
 # The purpose of this section is to do a collection of small 
 # convinient pieces of code on how to do simple things.
 
-# !!! question
+# <Badge type="tip" text="question" />
 
 # ## Extract the axes names from a Cube
 
@@ -11,7 +11,7 @@ c = YAXArray(rand(10, 10, 5))
 
 caxes(c)
 
-# !!! question
+# <Badge type="tip" text="question" />
 
 # ## Obtain values from axes and data from the cube
 
@@ -128,7 +128,7 @@ fitcube = cubefittable(t, Mean, :values, by=(:classes))
 # We can also use more than one criteria for grouping the values. In the next example, the mean is calculated for each class and timestep.
 fitcube = cubefittable(t, Mean, :values, by=(:classes, :time))
 
-# !!! question
+# <Badge type="tip" text="question" />
 
 # ## convertions types  `DimArray` & `YAXArray`
 
@@ -138,8 +138,12 @@ using DimensionalData
 # ### `DimArray` to `YAXArray`
 dim_arr = rand(X(1:5), Y(10.0:15.0), metadata = Dict{String, Any}())
 
-# !!! warning "metadata"
+# ::: warning metadata
+#
 #     Note the `metadata` argument. Needed by `yaxconvert`.
+#
+# :::
+#
 
 yax_arr = yaxconvert(YAXArray, dim_arr)
 
@@ -159,7 +163,7 @@ dim_arr = yaxconvert(DimArray, yax_arr)
 
 # at the moment there is no support to save a DimArray directly into disk as a `NetCDF` or a `Zarr` file.
 
-# !!! question
+# # <Badge type="tip" text="question" />
 
 # ## Assing variable names to `YAXArrays` in a `Dataset`
 

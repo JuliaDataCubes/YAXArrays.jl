@@ -1,4 +1,3 @@
-using Documenter, DocumenterMarkdown
 using Literate
 
 get_example_path(p) = joinpath(@__DIR__, ".", "examples", p)
@@ -15,6 +14,7 @@ function getfiles()
         setdiff!(names, [".DS_Store",
             "examples_from_esdl_study_1.jl",
             "examples_from_esdl_study_2.jl",
+            "create_from_func.jl"
             ]
             )
         fpaths = "$(f)/" .* names

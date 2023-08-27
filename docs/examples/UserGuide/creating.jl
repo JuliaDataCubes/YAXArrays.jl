@@ -18,7 +18,7 @@ lookup(a, :Dim_1)
 
 # ## Creating a YAXArray with named axis
 
-# The two most used axis are `RangeAxis` and `CategoricalAxis`. Here, we use a combination of them
+# The main axis constructor is `Dim`. Here, we use a combination of them
 # to create a `time`, `lon` and `lat` axis and a Categorical Axis for two variables.
 
 # ### Axis definitions
@@ -37,9 +37,13 @@ ds = YAXArray(axlist, data)
 
 ds[Variable = At("var1"), lon = DD.Between(1,2.1)]
 
-# !!! info 
-#       Please note that selecting elements in YAXArrays is done via the `DimensionalData.jl` syntax.
-#       For more information checkout the (docs)[https://rafaqz.github.io/DimensionalData.jl/].
+# :::info
+#
+#   Please note that selecting elements in YAXArrays is done via the `DimensionalData.jl` syntax.
+#   For more information checkout the (docs)[https://rafaqz.github.io/DimensionalData.jl/].
+#
+# :::
+
 
 
 subset = ds[

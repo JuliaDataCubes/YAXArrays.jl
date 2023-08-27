@@ -40,19 +40,19 @@ c[lon =Interval{:open,:closed}(-9,-7)]
 c[lon =Interval{:closed,:open}(-9,-7)]
 
 # ## Touches
-Docs.doc(Touches) # hide
+# Docs.doc(Touches) # hide
 
 # ## Near
-Docs.doc(Near) # hide
+# Docs.doc(Near) # hide
 
 # ## Where
-Docs.doc(Where) # hide
+# Docs.doc(Where) # hide
 
 # ## Contains
-Docs.doc(Contains) # hide
+# Docs.doc(Contains) # hide
 
 # Another important function is
 
 # ## lookup
-Docs.doc(lookup) # hide
+# Docs.doc(lookup) # hide
 

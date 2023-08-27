@@ -2,6 +2,7 @@ using Zarr, YAXArrays, Dates
 using DimensionalData
 using GLMakie, GeoMakie
 using GLMakie.GeometryBasics
+GLMakie.activate!()
 
 store ="gs://cmip6/CMIP6/ScenarioMIP/DKRZ/MPI-ESM1-2-HR/ssp585/r1i1p1f1/3hr/tas/gn/v20190710/"
 g = open_dataset(zopen(store, consolidated=true))
@@ -12,10 +13,10 @@ ct1 = c[Ti = Near(Date("2015-01-01"))]
 lon = lookup(ct1, :lon)
 lat = lookup(ct1, :lat)
 data = ct1.data[:,:];
+nothing # hide
 
 # ## Heatmap plot
 
-GLMakie.activate!()
 fig = Figure(resolution = (1200,600))
 ax = Axis(fig[1,1]; aspect = DataAspect())
 heatmap!(ax, lon, lat, data; colormap = :seaborn_icefire_gradient)
@@ -26,7 +27,7 @@ fig
 δlon = (lon[2]-lon[1])/2
 nlon = lon .- 180 .+ δlon
 ndata = circshift(data, (192,1))
-
+nothing # hide
 
 fig = Figure(resolution = (1200,600))
 ax = GeoAxis(fig[1,1])
@@ -46,19 +47,19 @@ fig
 
 # ## 3D sphere plot
 
-using JSServe, WGLMakie
-WGLMakie.activate!()
-Page(exportable=true, offline=true)
+#
+# using JSServe, WGLMakie
+# WGLMakie.activate!()
+# Page(exportable=true, offline=true)
 
-ds = replace(ndata, missing =>NaN)
-sphere = uv_normal_mesh(Tesselation(Sphere(Point3f(0), 1), 128))
+# ds = replace(ndata, missing =>NaN)
+# sphere = uv_normal_mesh(Tesselation(Sphere(Point3f(0), 1), 128))
 
-fig = Figure(backgroundcolor=:grey25, resolution=(800,800))
-ax = LScene(fig[1,1], show_axis=false)
-mesh!(ax, sphere; color = ds'[end:-1:1,:], shading=false,
-    colormap = :seaborn_icefire_gradient)
-zoom!(ax.scene, cameracontrols(ax.scene), 0.65)
-rotate!(ax.scene, 2.5)
-fig
-
-
+# fig = Figure(backgroundcolor=:grey25, resolution=(600,600))
+# ax = LScene(fig[1,1], show_axis=false)
+# mesh!(ax, sphere; color = ds'[end:-1:1,:], shading=false,
+#     colormap = :seaborn_icefire_gradient)
+# zoom!(ax.scene, cameracontrols(ax.scene), 0.65)
+# rotate!(ax.scene, 2.5)
+# fig
+#
