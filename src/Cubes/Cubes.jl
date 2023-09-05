@@ -391,24 +391,6 @@ _iscompressed(c) = YAXArrayBase.iscompressed(c)
 # lift renameaxis functionality from Axes.jl to YAXArrays
 renameaxis!(c::YAXArray, p::Pair) = DD.set(c, Symbol(first(p)) => last(p))
 
-#=
-function renameaxis!(c::YAXArray, p::Pair)
-    #This needs to be deleted, because DimensionalData cannot update the axlist
-    # Because this is a tuple instead of a vector
-    axlist = caxes(c)
-    i = findAxis(p[1], axlist)
-    axlist[i] = renameaxis(axlist[i], p[2])
-    c
-end
-function renameaxis!(c::YAXArray, p::Pair{<:Any,<:CubeAxis})
-    i = findAxis(p[1], caxes(c))
-    i === nothing && throw(ArgumentError("$(p[1]) Axis not found"))
-    length(caxes(c)[i].values) == length(p[2].values) ||
-        throw(ArgumentError("Length of replacement axis must equal length of old axis"))
-    caxes(c)[i] = p[2]
-    c
-end
-=#
 function _subsetcube end
 
 function subsetcube(z::YAXArray{T}; kwargs...) where {T}
