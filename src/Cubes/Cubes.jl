@@ -27,31 +27,6 @@ function subsetcube end
 "Returns the axes of a Cube"
 function caxes end
 
-# TODO: Give Axes an own module in YAXArrays
-#=
-include("Axes.jl")
-using .Axes:
-    CubeAxis,
-    RangeAxis,
-    CategoricalAxis,
-    findAxis,
-    getAxis,
-    axVal2Index,
-    axname,
-    axsym,
-    axVal2Index_lb,
-    axVal2Index_ub,
-    renameaxis,
-    axcopy
-
-"""
-The `Axes` module handles the Axes of a data cube. 
-It provides the following exports:
-
-$(EXPORTS)
-"""
-Axes
-=#
 """
     mutable struct CleanMe
 
