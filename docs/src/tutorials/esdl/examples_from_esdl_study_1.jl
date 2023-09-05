@@ -46,6 +46,7 @@ vars = ["gross_primary_productivity", "air_temperature_2m", "surface_moisture"]
 time_overlap = Date("2001-01-01")..Date("2020-12-31")
 
 # So we "virtually get" the cube data virtually:
+cube_subset = cube_handle[Variable=At(vars), time=At(time_overlap)]
 cube_subset = subsetcube(cube_handle, variable=vars, time=time_overlap)
 
 # The next function estimates the median seasonal cycle. This changes the dimension of the cube, as the time domain is replaced by day of year (doy); Eq. 9 in the manuscript:
