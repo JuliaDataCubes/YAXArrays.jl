@@ -419,24 +419,6 @@ end
 
 sorted(x, y) = x < y ? (x, y) : (y, x)
 
-#TODO move everything that is subset-related to its own file or to axes.jl
-#=
-interpretsubset(subexpr::Union{CartesianIndices{1},LinearIndices{1}}, ax) =
-    subexpr.indices[1]
-interpretsubset(subexpr::CartesianIndex{1}, ax) = subexpr.I[1]
-interpretsubset(subexpr, ax) = axVal2Index(ax, subexpr, fuzzy=true)
-function interpretsubset(subexpr::NTuple{2,Any}, ax)
-    x, y = sorted(subexpr...)
-    Colon()(sorted(axVal2Index_lb(ax, x), axVal2Index_ub(ax, y))...)
-end
-interpretsubset(subexpr::NTuple{2,Int}, ax::RangeAxis{T}) where {T<:TimeType} =
-    interpretsubset(map(T, subexpr), ax)
-interpretsubset(subexpr::UnitRange{<:Integer}, ax::RangeAxis{T}) where {T<:TimeType} =
-    interpretsubset(T(first(subexpr)) .. T(last(subexpr) + 1), ax)
-interpretsubset(subexpr::Interval, ax) = interpretsubset((subexpr.left, subexpr.right), ax)
-interpretsubset(subexpr::AbstractVector, ax::CategoricalAxis) =
-    axVal2Index.(Ref(ax), subexpr, fuzzy=true)
-=#
 
 function _subsetcube(z, subs; kwargs...)
     kwargs = Dict{Any,Any}(kwargs)
