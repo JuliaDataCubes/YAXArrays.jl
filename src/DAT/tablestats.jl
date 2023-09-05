@@ -1,5 +1,4 @@
 import OnlineStats: OnlineStat, Extrema, fit!, value, HistogramStat, Ash
-#import ...Cubes.Axes: CategoricalAxis, RangeAxis
 import IterTools
 using WeightedOnlineStats
 using Distributed: nworkers
