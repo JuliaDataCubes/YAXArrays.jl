@@ -502,10 +502,6 @@ end
 cubesize(c::YAXArray{T}) where {T} = (sizeof(T)) * prod(map(length, caxes(c)))
 cubesize(::YAXArray{T,0}) where {T} = sizeof(T)
 
-getCubeDes(::DD.Dimension) = "Cube axis"
-getCubeDes(::YAXArray) = "YAXArray"
-getCubeDes(::Type{T}) where {T} = string(T)
-
 loadingstatus(x) = "loaded in memory"
 loadingstatus(x::DiskArrays.AbstractDiskArray) = "loaded lazily"
 
