@@ -272,16 +272,6 @@ cubechunks(c) = approx_chunksize(eachchunk(c))
 DiskArrays.eachchunk(c::YAXArray) = c.chunks
 getindex_all(a) = getindex(a, ntuple(_ -> Colon(), ndims(a))...).data
 
-#=
-function Base.getindex(x::YAXArray, i...) 
-    if length(i)==1 && istable(first(i))
-        batchextract(x,first(i))
-    else
-        getdata(x)[i...]
-    end
-end
-=#
-
 
 function batchextract(x,i)
     # This function should be documented and moved to DimensionalData
