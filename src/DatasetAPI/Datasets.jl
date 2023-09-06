@@ -1,5 +1,5 @@
 module Datasets
-import ..Cubes: Cubes, YAXArray, concatenatecubes, CleanMe, subsetcube, copy_diskarray, setchunks, caxes
+import ..Cubes: Cubes, YAXArray, concatenatecubes, CleanMe, copy_diskarray, setchunks, caxes
 using ...YAXArrays: YAXArrays, YAXDefaults, findAxis
 using DataStructures: OrderedDict, counter
 using Dates: Day, Hour, Minute, Second, Month, Year, Date, DateTime, TimeType, AbstractDateTime, Period
@@ -478,7 +478,6 @@ function open_dataset(g; skip_keys=(), driver = :all)
         Dataset(allcubes, sdimlist,gatts)
     end
 end
-#Base.getindex(x::Dataset; kwargs...) = subsetcube(x; kwargs...)
 YAXDataset(; kwargs...) = Dataset(YAXArrays.YAXDefaults.cubedir[]; kwargs...)
 
 

@@ -19,10 +19,6 @@ import DimensionalData: name
 
 export concatenatecubes, caxes, subsetcube, readcubedata, renameaxis!, YAXArray, setchunks, cache
 
-"""
-This function calculates a subset of a cube's data
-"""
-function subsetcube end
 
 "Returns the axes of a Cube"
 function caxes end
@@ -353,51 +349,10 @@ _iscompressed(c::DiskArrays.PermutedDiskArray) = _iscompressed(c.a.parent)
 _iscompressed(c::DiskArrays.SubDiskArray) = _iscompressed(c.v.parent)
 _iscompressed(c) = YAXArrayBase.iscompressed(c)
 
-# lift renameaxis functionality from Axes.jl to YAXArrays
+# lift renameaxis functionality from DimensionalData to YAXArrays
 renameaxis!(c::YAXArray, p::Pair) = DD.set(c, Symbol(first(p)) => last(p))
 
-function _subsetcube end
-
-function subsetcube(z::YAXArray{T}; kwargs...) where {T}
-    newaxes, substuple = _subsetcube(z, collect(Any, map(Base.OneTo, size(z))); kwargs...)
-    newdata = view(getdata(z), substuple...)
-    YAXArray(newaxes, newdata, z.properties, cleaner=z.cleaner)
-end
-
 sorted(x, y) = x < y ? (x, y) : (y, x)
-
-
-function _subsetcube(z, subs; kwargs...)
-    kwargs = Dict{Any,Any}(kwargs)
-    for f in YAXDefaults.subsetextensions
-        f(kwargs)
-    end
-    newaxes = deepcopy(collect(DD.Dimension, caxes(z)))
-    foreach(kwargs) do kw
-        axdes, subexpr = kw
-        axdes = string(axdes)
-        iax = findAxis(axdes, caxes(z))
-        if isa(iax, Nothing)
-            throw(ArgumentError("Axis $axdes not found in cube"))
-        else
-            oldax = newaxes[iax]
-            subinds = interpretsubset(subexpr, oldax)
-            subs2 = subs[iax][subinds]
-            subs[iax] = subs2
-            if !isa(subinds, AbstractVector) && !isa(subinds, AbstractRange)
-                newaxes[iax] = axcopy(oldax, oldax.values[subinds:subinds])
-            else
-                newaxes[iax] = axcopy(oldax, oldax.values[subinds])
-            end
-        end
-    end
-    substuple = ntuple(i -> subs[i], length(subs))
-    inewaxes = findall(i -> isa(i, AbstractVector), substuple)
-    newaxes = newaxes[inewaxes]
-    @assert length.(newaxes) ==
-            map(length, filter(i -> isa(i, AbstractVector), collect(substuple)))
-    newaxes, substuple
-end
 
 
 function Base.getindex(a::YAXArray, args::DD.Dimension...; kwargs...) 
