@@ -714,7 +714,7 @@ struct AllLoopAxes{S,V} <: AxValCreator
     loopsyms::S
     loopaxvals::V
 end
-AllLoopAxes(a) = AllLoopAxes(map(DD.dim2key, a), map(i -> i.values, a))
+AllLoopAxes(a) = AllLoopAxes(map(DD.dim2key, a), map(i -> i.val, a))
 getlaxvals(::NoLoopAxes, cI, offscur) = ()
 getlaxvals(a::AllLoopAxes, cI, offscur) = (
     NamedTuple{a.loopsyms}(
