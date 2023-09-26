@@ -28,4 +28,36 @@
         @test r.data[] == sum(yax.data)
 
     end
+
+    @testset "max cache inputs" begin
+
+        x,y,z = X(1:4), Y(1:5), Z(1:6)
+        a1 = YAXArray((x,y,z), rand(4,5,6))
+        a2 = YAXArray((x,z,y), rand(4,6,5))
+        a3 = YAXArray((x,y), rand(4,5))
+        indims = InDims("x")
+        outdims = OutDims("x")
+
+        function simple_fun(xout, x1,x2)
+            xout .= x1 .+ x2
+        end
+
+        # Float64 
+        r = mapCube(simple_fun, (a1, a2), indims=(indims, indims), outdims=outdims, max_cache = 6.0e8)
+        @test r.data == a1.data .+ permutedims(a2.data,(1,3,2))
+
+        # MB
+        r = mapCube(simple_fun, (a1, a2), indims=(indims, indims), outdims=outdims, max_cache = "0.5MB")
+        @test r.data == a1.data .+ permutedims(a2.data,(1,3,2))
+
+        r = mapCube(simple_fun, (a1, a2), indims=(indims, indims), outdims=outdims, max_cache = "3MB")
+        @test r.data == a1.data .+ permutedims(a2.data,(1,3,2))
+
+        r = mapCube(simple_fun, (a1, a2), indims=(indims, indims), outdims=outdims, max_cache = "10MB")
+        @test r.data == a1.data .+ permutedims(a2.data,(1,3,2))
+
+        # GB
+        r = mapCube(simple_fun, (a1, a2), indims=(indims, indims), outdims=outdims, max_cache = "0.1GB")
+        @test r.data == a1.data .+ permutedims(a2.data,(1,3,2))
+    end
 end

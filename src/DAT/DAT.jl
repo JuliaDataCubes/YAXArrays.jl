@@ -401,9 +401,9 @@ Map a given function `fun` over slices of the data cube `cube`.
     Use InDims to discribe the input dimensions and OutDims to describe the output dimensions of the function.
 ### Keyword arguments
 
-* `max_cache=YAXDefaults.max_cache` maximum size of blocks that are read into memory, defaults to approx 10Mb
-* `indims::InDims` List of input cube descriptors of type [`InDims`](@ref) for each input data cube
-* `outdims::OutDims` List of output cube descriptors of type [`OutDims`](@ref) for each output cube
+* `max_cache=YAXDefaults.max_cache` Float64 maximum size of blocks that are read into memory in bits e.g. ```max_cache=5.0e8```. Or String. e.g. ```max_cache="10MB" or ```max_cache=1GB``` defaults to approx 10Mb.
+* `indims::InDims` List of input cube descriptors of type [`InDims`](@ref) for each input data cube.
+* `outdims::OutDims` List of output cube descriptors of type [`OutDims`](@ref) for each output cube.
 * `inplace` does the function write to an output array inplace or return a single value> defaults to `true`
 * `ispar` boolean to determine if parallelisation should be applied, defaults to `true` if workers are available.
 * `showprog` boolean indicating if a ProgressMeter shall be shown
@@ -434,6 +434,18 @@ function mapCube(
     do_gc = true,
     kwargs...,
 )
+    if typeof(max_cache) == String
+        if last(max_cache, 2) == "MB"
+        max_cache = parse(Float64, max_cache[begin:end-2]) / (10^-6)
+
+    elseif last(max_cache, 2) == "GB"
+
+        max_cache = parse(Float64, max_cache[begin:end-2]) / (10^-9)
+
+    else
+        error("only MB or GB values are accepted for max_cache")
+    end
+    end
 
     #Translate slices
     if any(i -> isa(i, YAXSlice), cdata)
