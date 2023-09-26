@@ -28,4 +28,36 @@
         @test r.data[] == sum(yax.data)
 
     end
+
+    @testset "max cache inputs" begin
+
+        # Float64 
+        r = mapCube((a1, a2), indims=(indims, indims), outdims=outdims, max_cache = 6.0e8) do xout, x1, x2
+            xout .= x1 .+ x2
+        end
+        @test r.data == a1.data .+ permutedims(a2.data,(1,3,2))
+
+        # MB
+
+        r = mapCube((a1, a2), indims=(indims, indims), outdims=outdims, max_cache = "0.5MB") do xout, x1, x2
+            xout .= x1 .+ x2
+        end
+        @test r.data == a1.data .+ permutedims(a2.data,(1,3,2))
+
+        r = mapCube((a1, a2), indims=(indims, indims), outdims=outdims, max_cache = "3MB") do xout, x1, x2
+            xout .= x1 .+ x2
+        end
+        @test r.data == a1.data .+ permutedims(a2.data,(1,3,2))
+
+        r = mapCube((a1, a2), indims=(indims, indims), outdims=outdims, max_cache = "10MB") do xout, x1, x2
+            xout .= x1 .+ x2
+        end
+        @test r.data == a1.data .+ permutedims(a2.data,(1,3,2))
+
+        # GB
+        r = mapCube((a1, a2), indims=(indims, indims), outdims=outdims, max_cache = "0.1GB") do xout, x1, x2
+            xout .= x1 .+ x2
+        end
+        @test r.data == a1.data .+ permutedims(a2.data,(1,3,2))
+    end
 end
