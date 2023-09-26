@@ -74,7 +74,7 @@ finalizer function for CleanMe struct. The main process removes all directories/
 function clean(c::CleanMe)
     if !c.persist && myid() == 1
         if !isdir(c.path) && !isfile(c.path)
-            @warn "Cube directory $(c.path) does not exist. Can not clean"
+            #@warn "Cube directory $(c.path) does not exist. Can not clean"
         else
             rm(c.path, recursive=true)
         end
