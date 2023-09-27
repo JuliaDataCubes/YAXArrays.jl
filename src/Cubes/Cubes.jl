@@ -459,7 +459,7 @@ end
 
 
 function Base.getindex(a::YAXArray, args::DD.Dimension...; kwargs...) 
-    kwargsdict = Dict(kwargs...)
+    kwargsdict = Dict{Any,Any}(kwargs...)
     for ext in YAXDefaults.subsetextensions
         ext(kwargsdict)
     end
