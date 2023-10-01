@@ -5,7 +5,7 @@ using Dates
 
 
 @testset "Datasets axes Ti" begin
-  using Zarr
+  using Zarr, NetCDF
 
   ## first example
   data = [rand(4, 5, 12), rand(4, 5, 12), rand(4, 5)]
