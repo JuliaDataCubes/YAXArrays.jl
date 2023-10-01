@@ -1,4 +1,5 @@
 using DataStructures: OrderedDict
+using DimensionalData
 using DimensionalData: DimensionalData as DD
 using Dates
 
@@ -168,7 +169,7 @@ using Dates
             ar = Cube(ds)
             @test ar isa YAXArray
             @test size(ar) == (10, 5, 2, 2)
-            @test DD.name.(ar.axes) == (:time, :d2, :d3, :Variable)
+            @test DD.name.(ar.axes) == (:Time, :d2, :d3, :Variable)
             @test DD.lookup(ar.axes[4]) == ["Var1", "Var3"]
         end
         @testset "Dataset creation" begin
@@ -179,7 +180,7 @@ using Dates
             )
             # Basic
             newds, newds2 = YAXArrays.Datasets.createdataset(MockDataset, al)
-            @test DD.dim2key.(newds2.axes) == [:Time, :Xvals, :Variable]
+            @test DD.dim2key.(newds2.axes) == (:Time, :Xvals, :Variable)
             @test DD.lookup(newds2.axes[1]) == Date(2001):Month(1):Date(2001, 12, 31)
             @test DD.lookup(newds2.axes[3]) == ["A", "B"]
             @test DD.lookup(newds2.axes[2]) == 1:10
@@ -221,7 +222,7 @@ end
     ax1 = Dim{:Ax1}(string.(1:10))
     ax2 = Dim{:Ax2}(1:5)
     p = string(tempname(),".zarr")
-    savecube(YAXArray([ax1, ax2], x), p, backend = :zarr)
+    savecube(YAXArray((ax1, ax2), x), p, backend = :zarr)
     @test ispath(p)
     cube1 = Cube(p)
     @test cube1.Ax1 == ax1
@@ -380,7 +381,7 @@ end
     c = Cube(ds)
     @test size(c) == (10,10,4)
     @test eltype(c) <: Float64
-    x = c[var="c"][:,:]
+    x = c[var=At("c")][:,:]
     @test eltype(x) <: Float64
     @test x == Float64.(a3.data)
 
