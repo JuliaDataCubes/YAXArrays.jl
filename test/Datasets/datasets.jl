@@ -1,6 +1,57 @@
 using DataStructures: OrderedDict
+using DimensionalData
 using DimensionalData: DimensionalData as DD
 using Dates
+
+
+@testset "Datasets axes Ti" begin
+  using Zarr, NetCDF
+
+  ## first example
+  data = [rand(4, 5, 12), rand(4, 5, 12), rand(4, 5)]
+  # dim_time = DD.Dim{:Time}(Date(2001, 1, 15):Month(1):Date(2001, 12, 15))
+  dim_time = Ti(Date(2001, 1, 15):Month(1):Date(2001, 12, 15))
+  axlist1 = (
+    DD.Dim{:XVals}(1.0:4.0),
+    DD.Dim{:YVals}([1, 2, 3, 4, 5]),
+    dim_time
+  )
+  axlist2 = (DD.Dim{:XVals}(1.0:4.0), DD.Dim{:YVals}([1, 2, 3, 4, 5]))
+  props = [Dict("att$i" => i) for i = 1:3]
+  c1, c2, c3 = (
+    YAXArray(axlist1, data[1], props[1]),
+    YAXArray(axlist1, data[2], props[2]),
+    YAXArray(axlist2, data[3], props[3]),
+  )
+  ds = Dataset(avar=c1, something=c2, smaller=c3)
+  # previous version will throw this error: `KeyError: key :Ti not found`
+  f = "./temp.zarr"
+  @test_nowarn savedataset(ds; path=f)
+  rm(f, recursive=true, force=true)
+
+
+  ## second example
+  using Downloads
+  path2file = "https://www.unidata.ucar.edu/software/netcdf/examples/sresa1b_ncar_ccsm3-example.nc"
+  filename = Downloads.download(path2file, "sresa1b_ncar_ccsm3-example.nc")
+  ds = open_dataset(filename)
+  f = "./temp.zarr"
+  savedataset(ds, path=f, driver=:zarr, overwrite=true)
+  rm(f, recursive=true, force=true)
+  rm(filename)
+
+  ## third example
+  # using EarthDataLab
+  # using DimensionalData
+  # using Zarr, YAXArrays, ra = esdc(res="tiny")
+  # ra_tair = ra[variable=At("air_temperature_2m")]
+  # ra_resp = ra[variable=At("terrestrial_ecosystem_respiration")]
+  # ds = Dataset(tair=ra_tair, resp=ra_resp)
+  # f = "./temp.zarr"
+  # savedataset(ds, path=f, driver=:zarr, overwrite=true)
+  # rm(f, recursive=true, force=true)
+end
+
 
 @testset "Datasets" begin
     data = [rand(4, 5, 12), rand(4, 5, 12), rand(4, 5)]
@@ -168,7 +219,7 @@ using Dates
             ar = Cube(ds)
             @test ar isa YAXArray
             @test size(ar) == (10, 5, 2, 2)
-            @test DD.name.(ar.axes) == (:time, :d2, :d3, :Variable)
+            @test DD.name.(ar.axes) == (:Time, :d2, :d3, :Variable)
             @test DD.lookup(ar.axes[4]) == ["Var1", "Var3"]
         end
         @testset "Dataset creation" begin
@@ -179,7 +230,7 @@ using Dates
             )
             # Basic
             newds, newds2 = YAXArrays.Datasets.createdataset(MockDataset, al)
-            @test DD.dim2key.(newds2.axes) == [:Time, :Xvals, :Variable]
+            @test DD.dim2key.(newds2.axes) == (:Time, :Xvals, :Variable)
             @test DD.lookup(newds2.axes[1]) == Date(2001):Month(1):Date(2001, 12, 31)
             @test DD.lookup(newds2.axes[3]) == ["A", "B"]
             @test DD.lookup(newds2.axes[2]) == 1:10
@@ -221,7 +272,7 @@ end
     ax1 = Dim{:Ax1}(string.(1:10))
     ax2 = Dim{:Ax2}(1:5)
     p = string(tempname(),".zarr")
-    savecube(YAXArray([ax1, ax2], x), p, backend = :zarr)
+    savecube(YAXArray((ax1, ax2), x), p, backend = :zarr)
     @test ispath(p)
     cube1 = Cube(p)
     @test cube1.Ax1 == ax1
@@ -380,7 +431,7 @@ end
     c = Cube(ds)
     @test size(c) == (10,10,4)
     @test eltype(c) <: Float64
-    x = c[var="c"][:,:]
+    x = c[var=At("c")][:,:]
     @test eltype(x) <: Float64
     @test x == Float64.(a3.data)
 

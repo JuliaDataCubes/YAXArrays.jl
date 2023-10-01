@@ -37,7 +37,7 @@ function Dataset(; properties = Dict{String,Any}(), cubes...)
         foreach(a -> push!(axesall, a), ax)
     end
     axesall = collect(axesall)
-    axnameall = DD.dim2key.(axesall)
+    axnameall = DD.name.(axesall)
     axesnew = Dict{Symbol,DD.Dimension}(axnameall[i] => axesall[i] for i = 1:length(axesall))
     Dataset(OrderedDict(cubes), axesnew, properties)
 end
@@ -559,7 +559,7 @@ function savedataset(
     end
     
     axesall = values(ds.axes)
-    chunkoffset = [alloffsets[k] for k in keys(ds.axes)]
+    chunkoffset = [alloffsets[k] for k in DD.name.(axesall)] # keys(ds.axes)
     axdata = arrayfromaxis.(axesall, chunkoffset)
 
 

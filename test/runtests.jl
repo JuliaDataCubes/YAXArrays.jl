@@ -12,7 +12,7 @@ include("Cubes/cubes.jl")
 include("Cubes/transformedcubes.jl")
 include("Cubes/batchextraction.jl")
 
-#include("Datasets/datasets.jl")
+include("Datasets/datasets.jl")
 
 include("DAT/PickAxisArray.jl")
 include("DAT/MovingWindow.jl")
