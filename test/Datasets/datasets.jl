@@ -3,6 +3,56 @@ using DimensionalData
 using DimensionalData: DimensionalData as DD
 using Dates
 
+
+@testset "Datasets axes Ti" begin
+  using Zarr
+
+  ## first example
+  data = [rand(4, 5, 12), rand(4, 5, 12), rand(4, 5)]
+  # dim_time = DD.Dim{:Time}(Date(2001, 1, 15):Month(1):Date(2001, 12, 15))
+  dim_time = Ti(Date(2001, 1, 15):Month(1):Date(2001, 12, 15))
+  axlist1 = (
+    DD.Dim{:XVals}(1.0:4.0),
+    DD.Dim{:YVals}([1, 2, 3, 4, 5]),
+    dim_time
+  )
+  axlist2 = (DD.Dim{:XVals}(1.0:4.0), DD.Dim{:YVals}([1, 2, 3, 4, 5]))
+  props = [Dict("att$i" => i) for i = 1:3]
+  c1, c2, c3 = (
+    YAXArray(axlist1, data[1], props[1]),
+    YAXArray(axlist1, data[2], props[2]),
+    YAXArray(axlist2, data[3], props[3]),
+  )
+  ds = Dataset(avar=c1, something=c2, smaller=c3)
+  # previous version will throw this error: `KeyError: key :Ti not found`
+  f = "./temp.zarr"
+  @test_nowarn savedataset(ds; path=f)
+  rm(f, recursive=true, force=true)
+
+
+  ## second example
+  using Downloads
+  path2file = "https://www.unidata.ucar.edu/software/netcdf/examples/sresa1b_ncar_ccsm3-example.nc"
+  filename = Downloads.download(path2file, "sresa1b_ncar_ccsm3-example.nc")
+  ds = open_dataset(filename)
+  f = "./temp.zarr"
+  savedataset(ds, path=f, driver=:zarr, overwrite=true)
+  rm(f, recursive=true, force=true)
+  rm(filename)
+
+  ## third example
+  # using EarthDataLab
+  # using DimensionalData
+  # using Zarr, YAXArrays, ra = esdc(res="tiny")
+  # ra_tair = ra[variable=At("air_temperature_2m")]
+  # ra_resp = ra[variable=At("terrestrial_ecosystem_respiration")]
+  # ds = Dataset(tair=ra_tair, resp=ra_resp)
+  # f = "./temp.zarr"
+  # savedataset(ds, path=f, driver=:zarr, overwrite=true)
+  # rm(f, recursive=true, force=true)
+end
+
+
 @testset "Datasets" begin
     data = [rand(4, 5, 12), rand(4, 5, 12), rand(4, 5)]
     axlist1 = (
