@@ -39,7 +39,7 @@ ds[Variable = At("var1"), lon = DD.Between(1,2.1)]
 
 # !!! info 
 #       Please note that selecting elements in YAXArrays is done via the `DimensionalData.jl` syntax.
-#       For more information checkout the (docs)[https://rafaqz.github.io/DimensionalData.jl/].
+#       For more information checkout the [docs](https://rafaqz.github.io/DimensionalData.jl/).
 
 
 subset = ds[
