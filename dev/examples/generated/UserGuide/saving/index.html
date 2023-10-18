@@ -845,15 +845,16 @@ z
 <p><a id="Datacube-Skeleton-without-the-actual-data"></a></p>
 <p><a id="Datacube-Skeleton-without-the-actual-data-1"></a></p>
 <h2 id="datacube-skeleton-without-the-actual-data">Datacube Skeleton without the actual data<a class="headerlink" href="#datacube-skeleton-without-the-actual-data" title="Permanent link">¤</a></h2>
-<p>Sometimes one merely wants to create a datacube  "Skeleton" on disk and gradually fill it with data. Here we create YAXArray and write only the axis data and array metadata to disk, while no actual array data is copied:</p>
-<div class="highlight"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">YAXArrays</span><span class="p">,</span><span class="w"> </span><span class="n">Zarr</span>
-<span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">zeros</span><span class="p">(</span><span class="kt">Union</span><span class="p">{</span><span class="kt">Missing</span><span class="p">,</span><span class="w"> </span><span class="kt">Int32</span><span class="p">},</span><span class="mi">10</span><span class="p">,</span><span class="mi">20</span><span class="p">))</span>
+<p>Sometimes one merely wants to create a datacube  "Skeleton" on disk and gradually fill it with data. Here we make use of FillArrays to create a YAXArray and write only the axis data and array metadata to disk, while no actual array data is copied:</p>
+<div class="highlight"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">YAXArrays</span><span class="p">,</span><span class="w"> </span><span class="n">Zarr</span><span class="p">,</span><span class="w"> </span><span class="n">FillArrays</span>
+<span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">Zeros</span><span class="p">(</span><span class="kt">Union</span><span class="p">{</span><span class="kt">Missing</span><span class="p">,</span><span class="w"> </span><span class="kt">Int32</span><span class="p">},</span><span class="mi">10</span><span class="p">,</span><span class="mi">20</span><span class="p">))</span>
 <span class="n">f</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">tempname</span><span class="p">();</span>
 <span class="n">r</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">savecube</span><span class="p">(</span><span class="n">a</span><span class="p">,</span><span class="n">f</span><span class="p">,</span><span class="n">driver</span><span class="o">=</span><span class="ss">:zarr</span><span class="p">,</span><span class="n">skeleton</span><span class="o">=</span><span class="nb">true</span><span class="p">);</span>
 <span class="n">all</span><span class="p">(</span><span class="n">ismissing</span><span class="p">,</span><span class="n">r</span><span class="p">[</span><span class="o">:</span><span class="p">,</span><span class="o">:</span><span class="p">])</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code>true
 </code></pre></div>
+<p>If using FillArrays is not possible, using the <code>zeros</code> function works as well, though it does allocate the array in memory.</p>
 <p>The <code>skeleton</code> argument is also available for <code>savedataset</code>.</p>
 <hr>
 <p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></div>
