@@ -42,13 +42,16 @@ open_dataset(f, driver=:zarr)
     
 # ## Datacube Skeleton without the actual data
 # Sometimes one merely wants to create a datacube  "Skeleton" on disk and gradually fill it with data.
-# Here we create YAXArray and write only the axis data and array metadata to disk,
+# Here we make use of FillArrays to create a YAXArray and write only the axis data and array metadata to disk,
 # while no actual array data is copied:
     
-using YAXArrays, Zarr
-a = YAXArray(zeros(Union{Missing, Int32},10,20))
+using YAXArrays, Zarr, FillArrays
+a = YAXArray(Zeros(Union{Missing, Int32},10,20))
 f = tempname();
 r = savecube(a,f,driver=:zarr,skeleton=true);
 all(ismissing,r[:,:])
+
+# If using FillArrays is not possible, using the `zeros` function works as well, though it does allocate the array
+# in memory.
 
 # The `skeleton` argument is also available for `savedataset`. 
