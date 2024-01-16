@@ -173,9 +173,11 @@ end
 Base.ndims(a::YAXArray{<:Any,N}) where {N} = N
 Base.eltype(a::YAXArray{T}) where {T} = T
 function Base.permutedims(c::YAXArray, p) 
-    newaxes = caxes(c)[collect(p)]
-    newchunks = DiskArrays.GridChunks(eachchunk(c).chunks[collect(p)])
-    YAXArray(newaxes, permutedims(getdata(c), p), c.properties, newchunks, c.cleaner)
+    newdims = DD.sortdims(DD.dims(c), Tuple(p))
+    dimnums = map(d -> DD.dimnum(c, d), p)
+    newdata = permutedims(getdata(c), dimnums)
+    newchunks = DiskArrays.GridChunks(eachchunk(c).chunks[collect(dimnums)])
+    YAXArray(newdims, newdata, c.properties, newchunks, c.cleaner)
 end
 
 # DimensionalData overloads
@@ -196,6 +198,9 @@ function DD.rebuild(A::YAXArray, data::AbstractArray, dims::Tuple, refdims::Tupl
     #    end
     #end
     YAXArray(dims, data, metadata; cleaner=A.cleaner)#, chunks=GridChunks(chunks))
+end
+function DD.rebuild(A::YAXArray; data=parent(A), dims=dims(A), metadata=DD.metadata(A), kw...)
+    YAXArray(dims, data, metadata; cleaner=A.cleaner)
 end
 
 function caxes(x)
