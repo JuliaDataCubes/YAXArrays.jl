@@ -1,5 +1,4 @@
 export InDims, OutDims, MovingWindow
-#using ..Cubes.Axes: get_descriptor, findAxis, Axes
 import ..YAXArrays: get_descriptor, findAxis, AxisDescriptor
 using ..YAXArrays: YAXDefaults
 using YAXArrayBase: yaxcreate

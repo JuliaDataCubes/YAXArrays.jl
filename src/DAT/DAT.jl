@@ -18,8 +18,6 @@ using Distributed:
 import ..Cubes: cubechunks, iscompressed, chunkoffset, YAXArray, caxes, YAXSlice
 import ..Cubes: cubechunks, iscompressed, chunkoffset, YAXArray, caxes, YAXSlice
 import ..YAXArrays: findAxis, getOutAxis, getAxis
-#import ..Cubes.Axes:
-#    AxisDescriptor, axname, ByInference, axsym, getOutAxis, getAxis, findAxis, match_axis
 import ..Datasets: Dataset, createdataset
 using ..YAXArrays: ByInference, YAXArrays
 import ...YAXArrays.workdir

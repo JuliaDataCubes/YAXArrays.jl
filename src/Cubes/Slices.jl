@@ -36,8 +36,7 @@ function getdata(x::YAXSlice)
     PickAxisArray(x.c.data, m)
 end
 
-getCubeDes(s::YAXSlice) =
-    string(join(axname.(s.sliceaxes[2]), " x "), " slices over an ", getCubeDes(s.c))
+
 cubesize(s::YAXSlice) = cubesize(s.c)
 Base.ndims(::YAXSlice{<:Any,N}) where {N} = N
 

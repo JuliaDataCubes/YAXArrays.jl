@@ -7,7 +7,6 @@ using YAXArrayBase
 @run_package_tests
 
 include("tools.jl")
-#include("Cubes/axes.jl")
 include("Cubes/cubes.jl")
 include("Cubes/transformedcubes.jl")
 include("Cubes/batchextraction.jl")
