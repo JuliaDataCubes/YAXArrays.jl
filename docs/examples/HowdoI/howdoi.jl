@@ -101,16 +101,12 @@ end
 ## cube containing a mask with classes 1, 2 and 3
 classes = YAXArray((getAxis("lon", dsfinal), getAxis("lat", dsfinal)), rand(1:3, 10, 15))
 
-using CairoMakie
-CairoMakie.activate!()
+using GLMakie
+GLMakie.activate!()
 # This is how our classification map looks like
-fig, ax, obj = heatmap(classes.data[:, :];
-    colormap = cgrad([:black, :orange, :dodgerblue], 3, categorical=true))
+fig, ax, obj = heatmap(classes;
+    colormap=Makie.Categorical(cgrad([:grey15, :orangered, :snow3])))
 cbar = Colorbar(fig[1,2], obj)
-mn, mx, N = 1,3,3
-δn = (mx - mn)/N
-ticks_position = [mn + δn/2 + (i-1)*δn for i in 1:N]
-cbar.ticks = (ticks_position, string.(mn:mx))
 fig
 
 # Now we define the input cubes that will be considered for the iterable table

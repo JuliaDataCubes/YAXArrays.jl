@@ -108,6 +108,7 @@ nav:
   - "Creating YAXArrays and Datasets" : "examples/generated/UserGuide/creating.md"
   - "Saving YAXArrays and Datasets" : "examples/generated/UserGuide/saving.md"
   - "Setting chunks's size": "examples/generated/UserGuide/setchuncks.md"
+  - "Indexing and subsetting": "examples/generated/UserGuide/indexing_subsetting.md"
   - "Apply functions on YAXArrays": "examples/generated/UserGuide/applyfunctions.md"
   - "Generate a cube from function": "examples/generated/UserGuide/create_from_func.md"
   - "Open NetCDF" : "examples/generated/UserGuide/openNetCDF.md"
