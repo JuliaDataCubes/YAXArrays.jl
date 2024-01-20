@@ -22,7 +22,7 @@ function PickAxisArray(parent, indmask, perm = nothing)
     o = isempty(f2) ? o : replace(o, map(i -> i => Colon(), f2)...)
     o = isempty(f3) ? o : replace(o, map(i -> i => Window(i, indmask[i]...), f3)...)
     nsub = 0
-    for i = 1:length(o)
+    for i = eachindex(o)
         if o[i] isa Colon
             nsub += 1
         elseif o[i] isa Window

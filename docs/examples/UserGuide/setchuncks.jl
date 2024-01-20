@@ -19,6 +19,7 @@ Cube(f).chunks
 
 a_chunked = setchunks(a, (Dim_2=10, Dim_1=5))
 a_chunked.chunks
+
 # ## Chunking Datasets
 # ### Set Chunks by Axis
 
@@ -29,11 +30,11 @@ using YAXArrays, Zarr
 ds = Dataset(x = YAXArray(rand(10,20)), y = YAXArray(rand(10)), z = YAXArray(rand(10,20,5)))
 dschunked = setchunks(ds, Dict("Dim_1"=>5, "Dim_2"=>10, "Dim_3"=>2))
 Cube(dschunked).chunks
+
 # Saving...
 
 f = tempname()
 savedataset(dschunked, path=f,driver=:zarr)
-
 
 # ### Set chunking by Variable
 
@@ -52,8 +53,7 @@ savedataset(dschunked,path=f,driver=:zarr)
 
 # ### Set chunking for all variables
 
-#The following code snippet only works when all member variables of the dataset have 
-# the same shape and sets the output chunks for all arrays. 
+# The following code snippet only works when all member variables of the dataset have the same shape and sets the output chunks for all arrays. 
 
 using YAXArrays, Zarr
 ds = Dataset(x = YAXArray(rand(10,20)), y = YAXArray(rand(10,20)), z = YAXArray(rand(10,20)))

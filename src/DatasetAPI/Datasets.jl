@@ -38,7 +38,7 @@ function Dataset(; properties = Dict{String,Any}(), cubes...)
     end
     axesall = collect(axesall)
     axnameall = DD.name.(axesall)
-    axesnew = Dict{Symbol,DD.Dimension}(axnameall[i] => axesall[i] for i = 1:length(axesall))
+    axesnew = Dict{Symbol,DD.Dimension}(axnameall[i] => axesall[i] for i = eachindex(axesall))
     Dataset(OrderedDict(cubes), axesnew, properties)
 end
 
