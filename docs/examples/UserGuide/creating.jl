@@ -7,13 +7,17 @@ using DimensionalData: DimensionalData as DD
 using DimensionalData
 a = YAXArray(rand(10, 20, 5))
 
-# if not names are defined then default ones will be used, i.e. `Dim_1`, `Dim_2`.
-# Get data from each Dimension with
+# if no names are defined then default ones will be used, i.e. `Dim_1`, `Dim_2`.
+
+## Get data from each Dimension with
 a.Dim_1
+
 # or with 
+
 getproperty(a, :Dim_1)
 
 # or even better with the `DD` `lookup` function
+
 lookup(a, :Dim_1)
 
 # ## Creating a YAXArray with named axis
@@ -29,7 +33,9 @@ axlist = (
     Dim{:lat}(range(1, 5, length=15)),
     Dim{:Variable}(["var1", "var2"])
     )
+
 # And the corresponding data
+
 data = rand(30, 10, 15, 2)
 ds = YAXArray(axlist, data)
 
@@ -66,6 +72,7 @@ props = Dict(
 ds = YAXArray(axlist, data, props)
 
 # Access these properties with
+
 ds.properties
 
 # Note that this properties are shared for both variables `var1` and `var2`.
@@ -93,6 +100,7 @@ ds = Dataset(t2m=t2m, prec= prec, num = YAXArray(rand(10)),
 
 # ### Selected Variables into a Data Cube
 # Being able to collect variables that share dimensions into a data cube is possible with
+
 c = Cube(ds[["t2m", "prec"]])
 
 # or simply the one that does not share all dimensions
@@ -105,9 +113,11 @@ Cube(ds[["num"]])
 Cube(ds[["t2m"]]).properties
 
 # and 
+
 Cube(ds[["prec"]]).properties
 
 # Note also that the global properties for the Dataset are accessed with
+
 ds.properties
 
 # Saving and different chunking modes are discussed in [here]().

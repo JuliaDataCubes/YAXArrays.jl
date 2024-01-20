@@ -18,7 +18,7 @@ end
 # We wrap the dimensions of every axis into a YAXArray to use them in the mapCube function.
 lon = YAXArray(Dim{:lon}(range(1, 15)))
 lat = YAXArray(Dim{:lat}(range(1, 10)))
-# And a time axis
+# # And a time axis
 tspan =  Date("2022-01-01"):Day(1):Date("2022-01-30")
 time = YAXArray(Dim{:time}( tspan))
 
@@ -30,7 +30,7 @@ gen_cube = mapCube(g, (lon, lat, time);
     indims = (InDims(), InDims(), InDims("time")),
     outdims = OutDims("time", overwrite=true,
     path = "my_gen_cube.zarr", backend=:zarr, outtype=Float32),
-    #max_cache=1e9
+    ## max_cache=1e9
     )
 
 # !!! warning "time axis is first"
@@ -48,7 +48,7 @@ gen_cube = mapCube(g, (lon, lat, time);
     indims = (InDims("lon"), InDims(), InDims()),
     outdims = OutDims("lon", overwrite=true,
     path = "my_gen_cube.zarr", backend=:zarr, outtype=Float32),
-    #max_cache=1e9
+    ## max_cache=1e9
     )
 
 # !!! info "slicing dim"

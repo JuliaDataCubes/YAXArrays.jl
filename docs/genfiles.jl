@@ -6,7 +6,6 @@ OUTPUT = joinpath(@__DIR__, "src", "examples", "generated")
 
 folders = readdir(joinpath(@__DIR__, ".", "examples"))
 setdiff!(folders, [".DS_Store", "tos_O1_2001-2002.nc"])
-#setdiff!(folders, ["cheat_sheets"])
 
 function getfiles()
     srcsfiles = []
@@ -15,6 +14,8 @@ function getfiles()
         setdiff!(names, [".DS_Store",
             "examples_from_esdl_study_1.jl",
             "examples_from_esdl_study_2.jl",
+            "examples_from_esdl_study_3.jl",
+            "examples_from_esdl_study_4.jl",
             ]
             )
         fpaths = "$(f)/" .* names

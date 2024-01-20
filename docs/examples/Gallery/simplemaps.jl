@@ -46,18 +46,20 @@ fig
 
 # ## 3D sphere plot
 
-using JSServe, WGLMakie
-WGLMakie.activate!()
+using Bonito, WGLMakie
 Page(exportable=true, offline=true)
+
+WGLMakie.activate!()
+Makie.inline!(true) # Make sure to inline plots into Documenter output!
 
 ds = replace(ndata, missing =>NaN)
 sphere = uv_normal_mesh(Tesselation(Sphere(Point3f(0), 1), 128))
 
-fig = Figure(backgroundcolor=:grey25, resolution=(800,800))
+fig = Figure(backgroundcolor=:grey25, resolution=(500,500))
 ax = LScene(fig[1,1], show_axis=false)
 mesh!(ax, sphere; color = ds'[end:-1:1,:], shading=false,
     colormap = :seaborn_icefire_gradient)
-zoom!(ax.scene, cameracontrols(ax.scene), 0.65)
+zoom!(ax.scene, cameracontrols(ax.scene), 0.5)
 rotate!(ax.scene, 2.5)
 fig
 

@@ -34,15 +34,15 @@ You may check the installed version with:
 
 Start using the package:
 
-```julia
+````julia
 using YAXArrays
-```
+````
 
 The [YAXArray tutorial](@ref) provides a tutorial explaining how to get started using YAXArrays.
 
 ## Quick start
 
-```julia
+````julia
 using YAXArrays
 yax = YAXArray(rand(10,20,30))
-```
+````
