@@ -20,7 +20,7 @@
       
       
       <link rel="icon" href="../../../../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.1">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.4">
     
     
       
@@ -28,7 +28,7 @@
       
     
     
-      <link rel="stylesheet" href="../../../../assets/stylesheets/main.45e1311d.min.css">
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.50c56a3b.min.css">
       
         
         <link rel="stylesheet" href="../../../../assets/stylesheets/palette.06af60db.min.css">
@@ -368,6 +368,26 @@
   
   
     <li class="md-nav__item">
+      <a href="../indexing_subsetting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Indexing and subsetting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
       <a href="../applyfunctions/" class="md-nav__link">
         
   
@@ -457,17 +477,6 @@
         
       
       
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  <span class="md-ellipsis">
-    Distributed processes
-  </span>
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
       <a href="./" class="md-nav__link md-nav__link--active">
         
   
@@ -477,43 +486,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#distributed-calculations" class="md-nav__link">
-    <span class="md-ellipsis">
-      Distributed calculations
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#slurm-cluster" class="md-nav__link">
-    <span class="md-ellipsis">
-      SLURM cluster
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
       
     </li>
   
@@ -586,46 +558,6 @@
   
   
     <li class="md-nav__item">
-      <a href="../examples_from_esdl_study_3/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Examples from ESDL study 3
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../examples_from_esdl_study_4/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Examples from ESDL study 4
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-    
-      
-      
-  
-  
-  
-  
-    <li class="md-nav__item">
       <a href="../../contribute/contribute/" class="md-nav__link">
         
   
@@ -679,32 +611,6 @@
     
   
   
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#distributed-calculations" class="md-nav__link">
-    <span class="md-ellipsis">
-      Distributed calculations
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#slurm-cluster" class="md-nav__link">
-    <span class="md-ellipsis">
-      SLURM cluster
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
 </nav>
                   </div>
                 </div>
@@ -725,19 +631,21 @@
 <span class="k">using</span><span class="w"> </span><span class="n">DimensionalData</span>
 <span class="k">using</span><span class="w"> </span><span class="n">Dates</span>
 <span class="n">axlist</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span>
-<span class="w">    </span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:time</span><span class="p">}(</span><span class="n">Date</span><span class="p">(</span><span class="s">"2022-01-01"</span><span class="p">)</span><span class="o">:</span><span class="n">Day</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">:</span><span class="n">Date</span><span class="p">(</span><span class="s">"2022-01-30"</span><span class="p">)),</span>
+<span class="w">    </span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:time</span><span class="p">}(</span><span class="n">Date</span><span class="p">(</span><span class="s">"2022-01-01"</span><span class="p">)</span><span class="o">:</span><span class="n">Day</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">:</span><span class="n">Date</span><span class="p">(</span><span class="s">"2022-01-10"</span><span class="p">)),</span>
 <span class="w">    </span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:lon</span><span class="p">}(</span><span class="n">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="o">=</span><span class="mi">10</span><span class="p">)),</span>
 <span class="w">    </span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:lat</span><span class="p">}(</span><span class="n">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="o">=</span><span class="mi">15</span><span class="p">)),</span>
 <span class="w">    </span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:Variable</span><span class="p">}([</span><span class="s">"var1"</span><span class="p">,</span><span class="w"> </span><span class="s">"var2"</span><span class="p">])</span>
 <span class="w">    </span><span class="p">)</span>
 </code></pre></div>
-<div class="highlight"><pre><span></span><code>Dim{:time} Date("2022-01-01"):Dates.Day(1):Date("2022-01-30"),
+<div class="highlight"><pre><span></span><code>Dim{:time} Date("2022-01-01"):Dates.Day(1):Date("2022-01-10"),
 Dim{:lon} 1.0:1.0:10.0,
 Dim{:lat} 1.0:0.2857142857142857:5.0,
 Dim{:Variable} String["var1", "var2"]
 </code></pre></div>
-<p>And the corresponding data</p>
-<div class="highlight"><pre><span></span><code><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">15</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
+<p><a id="And-the-corresponding-data"></a></p>
+<p><a id="And-the-corresponding-data-1"></a></p>
+<h1 id="and-the-corresponding-data">And the corresponding data<a class="headerlink" href="#and-the-corresponding-data" title="Permanent link">¤</a></h1>
+<div class="highlight"><pre><span></span><code><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">15</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">)</span>
 <span class="n">ds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">axlist</span><span class="p">,</span><span class="w"> </span><span class="n">data</span><span class="p">)</span>
 
 <span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ds</span><span class="p">[</span><span class="n">Variable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">At</span><span class="p">(</span><span class="s">"var1"</span><span class="p">)]</span><span class="w"> </span><span class="c"># see OpenNetCDF to get the file</span>
@@ -752,21 +660,21 @@ Total size: 1.17 KB
 <p><a id="Distributed-calculations-1"></a></p>
 <h2 id="distributed-calculations">Distributed calculations<a class="headerlink" href="#distributed-calculations" title="Permanent link">¤</a></h2>
 <p>It is possible to distribute the calculations over multiple process. The following code does a time mean over all grid points using multiple CPU over a local machine.</p>
-<div class="highlight"><pre><span></span><code><span class="c">#using Distributed</span>
-<span class="c">#addprocs(2)</span>
-<span class="c">#@everywhere using Pkg</span>
-<span class="c">#@everywhere Pkg.activate(".")</span>
-<span class="c">#@everywhere begin</span>
-</code></pre></div>
-<p>using NetCDF   using YAXArrays   using Statistics   using Zarr</p>
-<div class="highlight"><pre><span></span><code><span class="c">#end</span>
-<span class="c">#@everywhere function mymean(output, pixel)</span>
-</code></pre></div>
-<p>@show "doing a mean"      output[:] .= mean(pixel)</p>
-<div class="highlight"><pre><span></span><code><span class="c">#end</span>
-<span class="c">#indims = InDims("time")</span>
-<span class="c">#outdims = OutDims()</span>
-<span class="c">#resultcube = mapCube(mymean, c, indims=indims, outdims=outdims)</span>
+<div class="highlight"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">Distributed</span>
+<span class="n">addprocs</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<span class="nd">@everywhere</span><span class="w"> </span><span class="k">begin</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">NetCDF</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">YAXArrays</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Statistics</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Zarr</span>
+<span class="k">end</span>
+<span class="nd">@everywhere</span><span class="w"> </span><span class="k">function</span><span class="w"> </span><span class="n">mymean</span><span class="p">(</span><span class="n">output</span><span class="p">,</span><span class="w"> </span><span class="n">pixel</span><span class="p">)</span>
+<span class="w">  </span><span class="nd">@show</span><span class="w"> </span><span class="s">"doing a mean"</span>
+<span class="w">     </span><span class="n">output</span><span class="p">[</span><span class="o">:</span><span class="p">]</span><span class="w"> </span><span class="o">.=</span><span class="w"> </span><span class="n">mean</span><span class="p">(</span><span class="n">pixel</span><span class="p">)</span>
+<span class="k">end</span>
+<span class="n">indims</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">InDims</span><span class="p">(</span><span class="s">"time"</span><span class="p">)</span>
+<span class="n">outdims</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">OutDims</span><span class="p">()</span>
+<span class="n">resultcube</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mapCube</span><span class="p">(</span><span class="n">mymean</span><span class="p">,</span><span class="w"> </span><span class="n">c</span><span class="p">,</span><span class="w"> </span><span class="n">indims</span><span class="o">=</span><span class="n">indims</span><span class="p">,</span><span class="w"> </span><span class="n">outdims</span><span class="o">=</span><span class="n">outdims</span><span class="p">)</span>
 </code></pre></div>
 <p>In the last example, <code>mapCube</code> was used to map the <code>mymean</code> function. <code>mapslices</code> is a convenient function that can replace <code>mapCube</code>, where you can omit defining an extra function with the output argument as an input (e.g. <code>mymean</code>). It is possible to simply use <code>mapslice</code></p>
 <div class="highlight"><pre><span></span><code><span class="n">resultcube</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">mapslices</span><span class="p">(</span><span class="n">mean</span><span class="w"> </span><span class="o">∘</span><span class="w"> </span><span class="n">skipmissing</span><span class="p">,</span><span class="w"> </span><span class="n">c</span><span class="p">,</span><span class="w"> </span><span class="n">dims</span><span class="o">=</span><span class="s">"time"</span><span class="p">)</span>
@@ -776,20 +684,10 @@ Total size: 1.17 KB
   Dim{:lat} Sampled{Float64} 1.0:0.2857142857142857:5.0 ForwardOrdered Regular Points
 Total size: 1.17 KB
 </code></pre></div>
-<p><a id="SLURM-cluster"></a></p>
-<p><a id="SLURM-cluster-1"></a></p>
-<h2 id="slurm-cluster">SLURM cluster<a class="headerlink" href="#slurm-cluster" title="Permanent link">¤</a></h2>
-<p>It is also possible to distribute easily the workload on a cluster, with little modification to the code. The following code does a time mean over all grid points using multiple CPU over a SLURM cluster. To do so, we use the <code>ClusterManagers</code> package.</p>
-<div class="highlight"><pre><span></span><code><span class="c">#using Distributed</span>
-<span class="c">#using ClusterManagers</span>
-<span class="c">#addprocs(SlurmManager(10))</span>
-<span class="c">#@everywhere using Pkg</span>
-<span class="c">#@everywhere Pkg.activate(".")</span>
-<span class="c">#@everywhere using ESDL</span>
-<span class="c">#@everywhere using Statistics</span>
-<span class="c">#inpath="zg1000_AERday_CanESM5_esm-hist_r6i1p1f1_gn_18500101-20141231.nc"</span>
-<span class="c">#c = Cube(inpath, "zg1000")</span>
-<span class="c">#resultcube = mapslices(mean ∘ skipmissing, c, dims="time")</span>
+<p>It is also possible to distribute easily the workload on a cluster, with little modification to the code. To do so, we use the <code>ClusterManagers</code> package.</p>
+<div class="highlight"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">Distributed</span>
+<span class="k">using</span><span class="w"> </span><span class="n">ClusterManagers</span>
+<span class="n">addprocs</span><span class="p">(</span><span class="n">SlurmManager</span><span class="p">(</span><span class="mi">10</span><span class="p">))</span>
 </code></pre></div>
 <hr>
 <p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></div>
@@ -885,10 +783,10 @@ Total size: 1.17 KB
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "../../../..", "features": ["content.code.copy", "content.code.annotate", "navigation.top", "navigation.footer", "search.highlight", "search.share", "search.suggest", "toc.follow", "header.autohide"], "search": "../../../../assets/javascripts/workers/search.f886a092.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    <script id="__config" type="application/json">{"base": "../../../..", "features": ["content.code.copy", "content.code.annotate", "navigation.top", "navigation.footer", "search.highlight", "search.share", "search.suggest", "toc.follow", "header.autohide"], "search": "../../../../assets/javascripts/workers/search.c011b7c0.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
     
     
-      <script src="../../../../assets/javascripts/bundle.d7c377c4.min.js"></script>
+      <script src="../../../../assets/javascripts/bundle.7389ff0e.min.js"></script>
       
         <script src="../../../../javascripts/mathjax.js"></script>
       
