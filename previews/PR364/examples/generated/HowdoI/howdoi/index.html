@@ -1,0 +1,1300 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Yet Another XArray-like Julia Package">
+      
+      
+        <meta name="author" content="Lazaro Alonso">
+      
+      
+      
+        <link rel="prev" href="../../../../tutorials/tutorial/">
+      
+      
+        <link rel="next" href="../../contribute/contribute/">
+      
+      
+      <link rel="icon" href="../../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.6">
+    
+    
+      
+        <title>How do I ... - YAXArrays</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../../assets/stylesheets/main.50c56a3b.min.css">
+      
+        
+        <link rel="stylesheet" href="../../../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Lato:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Lato";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../../../stylesheets/custom.css">
+    
+    <script>__md_scope=new URL("../../../..",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#extract-the-axes-names-from-a-cube" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../../.." title="YAXArrays" class="md-header__button md-logo" aria-label="YAXArrays" data-md-component="logo">
+      
+  <img src="../../../../assets/logo.png" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            YAXArrays
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              How do I ...
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="blue" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7M9 21a1 1 0 0 0 1 1h4a1 1 0 0 0 1-1v-1H9v1Z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2a7 7 0 0 1 7 7c0 2.38-1.19 4.47-3 5.74V17a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1v-2.26C6.19 13.47 5 11.38 5 9a7 7 0 0 1 7-7M9 21v-1h6v1a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1m3-17a5 5 0 0 0-5 5c0 2.05 1.23 3.81 3 4.58V16h4v-2.42c1.77-.77 3-2.53 3-4.58a5 5 0 0 0-5-5Z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var media,input,key,value,palette=__md_get("__palette");if(palette&&palette.color){"(prefers-color-scheme)"===palette.color.media&&(media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']"),palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent"));for([key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7 0-.24-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91 1.61 0 2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08Z"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        
+<a href="https://github.com/JuliaDataCubes/YAXArrays.jl" title="source.link.title" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    YAXArrays
+  </div>
+</a>
+
+
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../../.." title="YAXArrays" class="md-nav__button md-logo" aria-label="YAXArrays" data-md-component="logo">
+      
+  <img src="../../../../assets/logo.png" alt="logo">
+
+    </a>
+    YAXArrays
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/JuliaDataCubes/YAXArrays.jl" title="source.link.title" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    YAXArrays
+  </div>
+</a>
+
+
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../switchtodimarray/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Switch to DimensionalData
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../UserGuide/creating/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Creating YAXArrays and Datasets
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../UserGuide/saving/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Saving YAXArrays and Datasets
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../UserGuide/setchuncks/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Setting chunks's size
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../UserGuide/indexing_subsetting/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Indexing and subsetting
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../UserGuide/applyfunctions/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Apply functions on YAXArrays
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../UserGuide/create_from_func/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Generate a cube from function
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../UserGuide/openNetCDF/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Open NetCDF
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../UserGuide/openZarr/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Open Zarr (Store)
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../UserGuide/distributed/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Distributed processes
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../Gallery/simplemaps/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Simple maps
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../tutorials/tutorial/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Tutorial
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    How do I ...
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    How do I ...
+  </span>
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#extract-the-axes-names-from-a-cube" class="md-nav__link">
+    <span class="md-ellipsis">
+      Extract the axes names from a Cube
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#obtain-values-from-axes-and-data-from-the-cube" class="md-nav__link">
+    <span class="md-ellipsis">
+      Obtain values from axes and data from the cube
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#concatenate-cubes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Concatenate cubes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-do-i-subset-a-cube" class="md-nav__link">
+    <span class="md-ellipsis">
+      How do I subset a Cube?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-do-i-apply-map-algebra" class="md-nav__link">
+    <span class="md-ellipsis">
+      How do I apply map algebra?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-do-i-use-the-cubetable-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      How do I use the CubeTable function?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#convertions-types-dimarray-yaxarray" class="md-nav__link">
+    <span class="md-ellipsis">
+      convertions types  DimArray &amp; YAXArray
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="convertions types DimArray & YAXArray">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dimarray-to-yaxarray" class="md-nav__link">
+    <span class="md-ellipsis">
+      DimArray to YAXArray
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#yaxarray-into-a-dimarray" class="md-nav__link">
+    <span class="md-ellipsis">
+      YAXArray into a DimArray
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#assing-variable-names-to-yaxarrays-in-a-dataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      Assing variable names to YAXArrays in a Dataset
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Assing variable names to YAXArrays in a Dataset">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#one-variable-name" class="md-nav__link">
+    <span class="md-ellipsis">
+      One variable name
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multiple-variable-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multiple variable names
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contribute/contribute/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Contribute to docs
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../../api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#extract-the-axes-names-from-a-cube" class="md-nav__link">
+    <span class="md-ellipsis">
+      Extract the axes names from a Cube
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#obtain-values-from-axes-and-data-from-the-cube" class="md-nav__link">
+    <span class="md-ellipsis">
+      Obtain values from axes and data from the cube
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#concatenate-cubes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Concatenate cubes
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-do-i-subset-a-cube" class="md-nav__link">
+    <span class="md-ellipsis">
+      How do I subset a Cube?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-do-i-apply-map-algebra" class="md-nav__link">
+    <span class="md-ellipsis">
+      How do I apply map algebra?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-do-i-use-the-cubetable-function" class="md-nav__link">
+    <span class="md-ellipsis">
+      How do I use the CubeTable function?
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#convertions-types-dimarray-yaxarray" class="md-nav__link">
+    <span class="md-ellipsis">
+      convertions types  DimArray &amp; YAXArray
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="convertions types DimArray & YAXArray">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#dimarray-to-yaxarray" class="md-nav__link">
+    <span class="md-ellipsis">
+      DimArray to YAXArray
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#yaxarray-into-a-dimarray" class="md-nav__link">
+    <span class="md-ellipsis">
+      YAXArray into a DimArray
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#assing-variable-names-to-yaxarrays-in-a-dataset" class="md-nav__link">
+    <span class="md-ellipsis">
+      Assing variable names to YAXArrays in a Dataset
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Assing variable names to YAXArrays in a Dataset">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#one-variable-name" class="md-nav__link">
+    <span class="md-ellipsis">
+      One variable name
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multiple-variable-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      Multiple variable names
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  <h1>How do I ...</h1>
+
+<div><p>The purpose of this section is to do a collection of small convinient pieces of code on how to do simple things.</p>
+<div class="admonition question">
+<p class="admonition-title">Question</p>
+</div>
+<p><a id="Extract-the-axes-names-from-a-Cube"></a></p>
+<p><a id="Extract-the-axes-names-from-a-Cube-1"></a></p>
+<h2 id="extract-the-axes-names-from-a-cube">Extract the axes names from a Cube<a class="headerlink" href="#extract-the-axes-names-from-a-cube" title="Permanent link">¤</a></h2>
+<div class="highlight"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">YAXArrays</span>
+<span class="k">using</span><span class="w"> </span><span class="n">DimensionalData</span>
+<span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">rand</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">))</span>
+
+<span class="n">caxes</span><span class="p">(</span><span class="n">c</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>Dim{:Dim_1} Sampled{Int64} Base.OneTo(10) ForwardOrdered Regular Points,
+Dim{:Dim_2} Sampled{Int64} Base.OneTo(10) ForwardOrdered Regular Points,
+Dim{:Dim_3} Sampled{Int64} Base.OneTo(5) ForwardOrdered Regular Points
+</code></pre></div>
+<div class="admonition question">
+<p class="admonition-title">Question</p>
+</div>
+<p><a id="Obtain-values-from-axes-and-data-from-the-cube"></a></p>
+<p><a id="Obtain-values-from-axes-and-data-from-the-cube-1"></a></p>
+<h2 id="obtain-values-from-axes-and-data-from-the-cube">Obtain values from axes and data from the cube<a class="headerlink" href="#obtain-values-from-axes-and-data-from-the-cube" title="Permanent link">¤</a></h2>
+<p>There are two options to collect values from axes. In this examples the axis ranges from 1 to 10.</p>
+<div class="highlight"><pre><span></span><code><span class="c"># this two examples bring the same result</span>
+<span class="n">collect</span><span class="p">(</span><span class="n">getAxis</span><span class="p">(</span><span class="s">"Dim_1"</span><span class="p">,</span><span class="w"> </span><span class="n">c</span><span class="p">)</span><span class="o">.</span><span class="n">val</span><span class="p">)</span>
+<span class="n">collect</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">val</span><span class="p">)</span>
+
+<span class="c"># to collect data from a cube works exactly the same as doing it from an array</span>
+<span class="n">c</span><span class="p">[</span><span class="o">:</span><span class="p">,</span><span class="w"> </span><span class="o">:</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">]</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>10×10 YAXArray{Float64,2} with dimensions: 
+  Dim{:Dim_1} Sampled{Int64} 1:10 ForwardOrdered Regular Points,
+  Dim{:Dim_2} Sampled{Int64} 1:10 ForwardOrdered Regular Points
+Total size: 800.0 bytes
+</code></pre></div>
+<p><a id="Concatenate-cubes"></a></p>
+<p><a id="Concatenate-cubes-1"></a></p>
+<h2 id="concatenate-cubes">Concatenate cubes<a class="headerlink" href="#concatenate-cubes" title="Permanent link">¤</a></h2>
+<p>It is possible to concatenate several cubes that shared the same dimensions using the [<code>concatenatecubes</code>]@ref function.</p>
+<p>let's create two dummy cubes</p>
+<div class="highlight"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">YAXArrays</span>
+
+<span class="n">axlist</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span>
+<span class="w">    </span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:time</span><span class="p">}(</span><span class="n">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">20</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="o">=</span><span class="mi">20</span><span class="p">)),</span>
+<span class="w">    </span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:lon</span><span class="p">}(</span><span class="n">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="o">=</span><span class="mi">10</span><span class="p">)),</span>
+<span class="w">    </span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:lat</span><span class="p">}(</span><span class="n">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="n">length</span><span class="o">=</span><span class="mi">15</span><span class="p">))</span>
+<span class="w">    </span><span class="p">)</span>
+
+<span class="n">data1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">15</span><span class="p">)</span>
+<span class="n">ds1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">axlist</span><span class="p">,</span><span class="w"> </span><span class="n">data1</span><span class="p">)</span>
+
+<span class="n">data2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">15</span><span class="p">)</span>
+<span class="n">ds2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">axlist</span><span class="p">,</span><span class="w"> </span><span class="n">data2</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>20×10×15 YAXArray{Float64,3} with dimensions: 
+  Dim{:time} Sampled{Float64} 1.0:1.0:20.0 ForwardOrdered Regular Points,
+  Dim{:lon} Sampled{Float64} 1.0:1.0:10.0 ForwardOrdered Regular Points,
+  Dim{:lat} Sampled{Float64} 1.0:0.2857142857142857:5.0 ForwardOrdered Regular Points
+Total size: 23.44 KB
+</code></pre></div>
+<p>Now we can concatenate <code>ds1</code> and <code>ds2</code> cubes:</p>
+<div class="highlight"><pre><span></span><code><span class="n">dsfinal</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">concatenatecubes</span><span class="p">([</span><span class="n">ds1</span><span class="p">,</span><span class="w"> </span><span class="n">ds2</span><span class="p">],</span><span class="w"> </span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:Variables</span><span class="p">}([</span><span class="s">"var1"</span><span class="p">,</span><span class="w"> </span><span class="s">"var2"</span><span class="p">]))</span>
+<span class="n">dsfinal</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>20×10×15×2 YAXArray{Float64,4} with dimensions: 
+  Dim{:time} Sampled{Float64} 1.0:1.0:20.0 ForwardOrdered Regular Points,
+  Dim{:lon} Sampled{Float64} 1.0:1.0:10.0 ForwardOrdered Regular Points,
+  Dim{:lat} Sampled{Float64} 1.0:0.2857142857142857:5.0 ForwardOrdered Regular Points,
+  Dim{:Variables} Categorical{String} String["var1", "var2"] ForwardOrdered
+Total size: 46.88 KB
+</code></pre></div>
+<p><a id="How-do-I-subset-a-Cube?"></a></p>
+<p><a id="How-do-I-subset-a-Cube?-1"></a></p>
+<h2 id="how-do-i-subset-a-cube">How do I subset a Cube?<a class="headerlink" href="#how-do-i-subset-a-cube" title="Permanent link">¤</a></h2>
+<p>Let's start by creating a dummy cube</p>
+<div class="highlight"><pre><span></span><code><span class="c"># define the time span of the cube</span>
+<span class="k">using</span><span class="w"> </span><span class="n">Dates</span>
+<span class="n">t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Date</span><span class="p">(</span><span class="s">"2020-01-01"</span><span class="p">)</span><span class="o">:</span><span class="n">Month</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">:</span><span class="n">Date</span><span class="p">(</span><span class="s">"2022-12-31"</span><span class="p">)</span>
+
+<span class="c"># create cube axes</span>
+<span class="n">axes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:Lon</span><span class="p">}(</span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">),</span><span class="w"> </span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:Lat</span><span class="p">}(</span><span class="mi">1</span><span class="o">:</span><span class="mi">10</span><span class="p">),</span><span class="w"> </span><span class="kt">Dim</span><span class="p">{</span><span class="ss">:Time</span><span class="p">}(</span><span class="n">t</span><span class="p">))</span>
+
+<span class="c"># assign values to a cube</span>
+<span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span><span class="w"> </span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="mi">3600</span><span class="p">,</span><span class="w"> </span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">36</span><span class="p">)))</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>10×10×36 YAXArray{Int64,3} with dimensions: 
+  Dim{:Lon} Sampled{Int64} 1:10 ForwardOrdered Regular Points,
+  Dim{:Lat} Sampled{Int64} 1:10 ForwardOrdered Regular Points,
+  Dim{:Time} Sampled{Date} Date("2020-01-01"):Dates.Month(1):Date("2022-12-01") ForwardOrdered Regular Points
+Total size: 28.12 KB
+</code></pre></div>
+<p>Now we subset the cube by any dimension</p>
+<div class="highlight"><pre><span></span><code><span class="c"># subset cube by years</span>
+<span class="n">ctime</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c</span><span class="p">[</span><span class="n">Time</span><span class="o">=</span><span class="n">Between</span><span class="p">(</span><span class="n">Date</span><span class="p">(</span><span class="mi">2021</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">),</span><span class="w"> </span><span class="n">Date</span><span class="p">(</span><span class="mi">2021</span><span class="p">,</span><span class="mi">12</span><span class="p">,</span><span class="mi">31</span><span class="p">))]</span>
+
+<span class="c"># subset cube by a specific date and date range</span>
+<span class="n">ctime2</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c</span><span class="p">[</span><span class="n">Time</span><span class="o">=</span><span class="n">At</span><span class="p">(</span><span class="n">Date</span><span class="p">(</span><span class="s">"2021-05-01"</span><span class="p">))]</span>
+<span class="n">ctime3</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c</span><span class="p">[</span><span class="n">Time</span><span class="o">=</span><span class="n">Date</span><span class="p">(</span><span class="s">"2021-05-01"</span><span class="p">)</span><span class="w"> </span><span class="o">..</span><span class="w"> </span><span class="n">Date</span><span class="p">(</span><span class="s">"2021-12-01"</span><span class="p">)]</span>
+
+<span class="c"># subset cube by longitude and latitude</span>
+<span class="n">clonlat</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c</span><span class="p">[</span><span class="n">Lon</span><span class="o">=</span><span class="mi">1</span><span class="w"> </span><span class="o">..</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span><span class="w"> </span><span class="n">Lat</span><span class="o">=</span><span class="mi">5</span><span class="w"> </span><span class="o">..</span><span class="w"> </span><span class="mi">10</span><span class="p">]</span><span class="w"> </span><span class="c"># check even numbers range, it is ommiting them</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>5×6×36 YAXArray{Int64,3} with dimensions: 
+  Dim{:Lon} Sampled{Int64} 1:5 ForwardOrdered Regular Points,
+  Dim{:Lat} Sampled{Int64} 5:10 ForwardOrdered Regular Points,
+  Dim{:Time} Sampled{Date} Date("2020-01-01"):Dates.Month(1):Date("2022-12-01") ForwardOrdered Regular Points
+Total size: 8.44 KB
+</code></pre></div>
+<p><a id="How-do-I-apply-map-algebra?"></a></p>
+<p><a id="How-do-I-apply-map-algebra?-1"></a></p>
+<h2 id="how-do-i-apply-map-algebra">How do I apply map algebra?<a class="headerlink" href="#how-do-i-apply-map-algebra" title="Permanent link">¤</a></h2>
+<p>Our next step is map algebra computations. This can be done effectively using the 'map' function. For example:</p>
+<div class="highlight"><pre><span></span><code><span class="c"># multiplying cubes with only spatio-temporal dimensions</span>
+<span class="n">map</span><span class="p">((</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">ds1</span><span class="p">,</span><span class="w"> </span><span class="n">ds2</span><span class="p">)</span>
+
+<span class="c"># cubes with more than 3 dimensions</span>
+<span class="n">map</span><span class="p">((</span><span class="n">x</span><span class="p">,</span><span class="w"> </span><span class="n">y</span><span class="p">)</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">x</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">y</span><span class="p">,</span><span class="w"> </span><span class="n">dsfinal</span><span class="p">[</span><span class="n">Variables</span><span class="o">=</span><span class="n">At</span><span class="p">(</span><span class="s">"var1"</span><span class="p">)],</span><span class="w"> </span><span class="n">dsfinal</span><span class="p">[</span><span class="n">Variables</span><span class="o">=</span><span class="n">At</span><span class="p">(</span><span class="s">"var2"</span><span class="p">)])</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>20×10×15 YAXArray{Float64,3} with dimensions: 
+  Dim{:time} Sampled{Float64} 1.0:1.0:20.0 ForwardOrdered Regular Points,
+  Dim{:lon} Sampled{Float64} 1.0:1.0:10.0 ForwardOrdered Regular Points,
+  Dim{:lat} Sampled{Float64} 1.0:0.2857142857142857:5.0 ForwardOrdered Regular Points
+Total size: 23.44 KB
+</code></pre></div>
+<p>To add some complexity, we will multiply each value for π and then divided for the sum of each time step. We will use the <code>ds1</code> cube for this purpose.</p>
+<div class="highlight"><pre><span></span><code><span class="n">mapslices</span><span class="p">(</span><span class="n">ds1</span><span class="p">,</span><span class="w"> </span><span class="n">dims</span><span class="o">=</span><span class="p">(</span><span class="s">"Lon"</span><span class="p">,</span><span class="w"> </span><span class="s">"Lat"</span><span class="p">))</span><span class="w"> </span><span class="k">do</span><span class="w"> </span><span class="n">xin</span>
+<span class="w">    </span><span class="p">(</span><span class="n">xin</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nb">π</span><span class="p">)</span><span class="w"> </span><span class="o">./</span><span class="w"> </span><span class="n">maximum</span><span class="p">(</span><span class="n">skipmissing</span><span class="p">(</span><span class="n">xin</span><span class="p">))</span>
+<span class="k">end</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>10×15×20 YAXArray{Union{Missing, Float64},3} with dimensions: 
+  Dim{:lon} Sampled{Float64} 1.0:1.0:10.0 ForwardOrdered Regular Points,
+  Dim{:lat} Sampled{Float64} 1.0:0.2857142857142857:5.0 ForwardOrdered Regular Points,
+  Dim{:time} Sampled{Float64} 1.0:1.0:20.0 ForwardOrdered Regular Points
+Total size: 23.44 KB
+</code></pre></div>
+<p><a id="How-do-I-use-the-CubeTable-function?"></a></p>
+<p><a id="How-do-I-use-the-CubeTable-function?-1"></a></p>
+<h2 id="how-do-i-use-the-cubetable-function">How do I use the CubeTable function?<a class="headerlink" href="#how-do-i-use-the-cubetable-function" title="Permanent link">¤</a></h2>
+<p>The function "CubeTable" creates an iterable table and the result is a DataCube. It is therefore very handy for grouping data and computing statistics by class. It uses <code>OnlineStats.jl</code> to calculate statistics, and weighted statistics can be calculated as well.</p>
+<p>Here we will use the <code>ds1</code> Cube  defined previously and we create a mask for data classification.</p>
+<div class="highlight"><pre><span></span><code><span class="c"># cube containing a mask with classes 1, 2 and 3</span>
+<span class="n">classes</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">((</span><span class="n">getAxis</span><span class="p">(</span><span class="s">"lon"</span><span class="p">,</span><span class="w"> </span><span class="n">dsfinal</span><span class="p">),</span><span class="w"> </span><span class="n">getAxis</span><span class="p">(</span><span class="s">"lat"</span><span class="p">,</span><span class="w"> </span><span class="n">dsfinal</span><span class="p">)),</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">,</span><span class="w"> </span><span class="mi">15</span><span class="p">))</span>
+
+<span class="k">using</span><span class="w"> </span><span class="n">GLMakie</span>
+<span class="n">GLMakie</span><span class="o">.</span><span class="n">activate!</span><span class="p">()</span>
+</code></pre></div>
+<p>This is how our classification map looks like</p>
+<div class="highlight"><pre><span></span><code><span class="n">fig</span><span class="p">,</span><span class="w"> </span><span class="n">ax</span><span class="p">,</span><span class="w"> </span><span class="n">obj</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">heatmap</span><span class="p">(</span><span class="n">classes</span><span class="p">;</span>
+<span class="w">    </span><span class="n">colormap</span><span class="o">=</span><span class="n">Makie</span><span class="o">.</span><span class="n">Categorical</span><span class="p">(</span><span class="n">cgrad</span><span class="p">([</span><span class="ss">:grey15</span><span class="p">,</span><span class="w"> </span><span class="ss">:orangered</span><span class="p">,</span><span class="w"> </span><span class="ss">:snow3</span><span class="p">])))</span>
+<span class="n">cbar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Colorbar</span><span class="p">(</span><span class="n">fig</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">],</span><span class="w"> </span><span class="n">obj</span><span class="p">)</span>
+<span class="n">fig</span>
+</code></pre></div>
+<p><img width="600" height="450" style="object-fit: contain;" src="data:image/png;base64,%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AaJRaLXZnyFchCKP6N846ZvoLGGrANBEZcAaDkqhOe9pXSaY6vgE7kq2J45QY32uHEOgFYqRwC9WwP5lK0MIiAMTYKQNTGXz7n8q9s2TJ45Agk4LpuJJad8DQAJU8FMOIKBAZsA3OgV7cQ6NIcAGnVA9Chuo9+73uapqHh8t3dCGQyGQDJZDIRj1+3bp2maaA5JiA9RVFUVf3xk0+i2T4gflX11ITqQRpC8YXio7EWR+oILMb/2jHRGVF8x1dAJ/J0w412FPpWoeGq+UUIVPOLMEmv1wePHKnX65DD/fY8NFa/GUWgH/8P+3VouMMDAwgcHhjApMtXrLBtW9M00BwTaAWKooCIiGgOCNCMlTwVNI205oGm4cQ6QTRL5XIZ1BACrUBVVRAREc0BgbfgiSeeePrpp2+77TYEbNvevHnz+vXrzznnHLSdEVeAptGlOaBpWKkciGapWCyCGkLgTfnZz3726quvViqVZ5555l/+5V9wnB07dnzgAx8AERFRKxB4U44ePfo3f/M3ACqVyqFDh3Cct73tbb29vZje/v37n3/+ecMwfud3fmfx4sUgIiKa3k9+8pODBw8KIfr6+n77t38bJ3EcZ8+ePYcPH164cOGVV14ZiUQwGwJvysqVK5977rl9+/bdc8893/3ud3EcIYSmaZjGF7/4xXvuuWfZsmX1ev2mm276+7//+4985CP4v2iaBiIiCp/bbrtt+/bty5Ytq9Vqn//85zdu3PjJT34Sx3Fdd8OGDXv27FmyZMkLL7zQ19f34IMPRiIRzJjAm6JNuuKKKy677DIhBAKe5334wx++8cYbL7zwQpxkaGjonnvuueuuu9atW+d53saNG7ds2fKhD30oGo2iFQzYBmgavboFmkY92wOiWRoaHkbovfjii/fee+8//uM/rl271vO8u+++e/Pmze9///u7u7sR2L1792OTli1b1t/ff/XVVz/22GNr167FjAm8Bb7vb968+Yc//KHv+wi88sorf/mXf4mpvPrqq2eccca73/1uAKqqvutd73rggQcsy4pGoyAiIjrRoUOHksnke9/7XgCqql599dV33HHHL3/5y+7ubgR2797d19e3dOlSAIsXL7744ot37dq1du1azJjAW/DjH//4G9/4xqZNm37xi18Ui8ULL7zwiSeeWL169bvf/W5MZfny5U899ZSiKC+++OKvfvWrRx555Morr+zs7MRxypMQsCwLRETUvizLGhkZQSA5CZOWL1++b9++TCaDSU899VQymTz99NNxnJdeeumss85SFAWTzj333Kefftr3fUVRMDMCb8GLL754ySWXfOITn3j++ec3bNiwdevW1atXX3nllddcc815552HqSiKAuCzn/3soUOHLrjggj/6oz/CiR555JF7770XgQULFoCIiJrN933Mjeeff/6qq65C4E8nYVIul8OkY8eOfeMb37jrrrtuu+227u5uHKdSqUSjUQRisVi5XPZ9X1EUzIzAqTB//vzxSfPmzVuwYMFzzz133nnnYXo7d+6sVqsPP/zwH//xH+/du/eMM85A4Prrr1+zZg0Cd9999/79+0FERE2lKArmxpIlS7Zv345AMpnEiXbs2HHnnXfG4/Gvf/3rq1atwomEEDiREAKzIfAWLFmy5O/+7u8eeuihD37wg/F4fO/evcuWLRseHk4kEpjKP/3TPxWLxQ0bNsQmfehDH7rzzjsPHz58xhlnIJCchIBhGCAiovZlGEZXVxem8YUvfOGb3/zm7bffft1118XjcZwkn8+PjIwgMDQ0dPrpp6uqihkTeAsuu+yyT3/603fdddeaNWs+/vGPf/SjHzUM46yzzrrkkkswlXQ6/fnPf37NmjULFiwA8Oqrr3qel06nQUREdJL9+/ffd9993/nOdy677DKcyLIsRVF0Xb/00kvvuuuuUqmUTqcrlcqBAwfWr1+P2RB4CxRF+du//dsbb7wxFot94hOfWLZsWalUeuc73zlv3jxM5ZJLLsnn85/5zGfWrl1br9e3b99+xRVXXHDBBWgRvboFml6vbvWbUUigV7cgk2hhsJpfBKKWlU6n0QxPPfVULBbbOgmBO++8M51OX3HFFevXr7/55ptXr169bdu2W265ZfXq1bt27arVamvXrsVsCMze+Pj44cOHMZVUKvXKK6/U6/XTTz8dJ0mlUg899NA999xz//33G4ZxzTXXfOpTn9I0Df8X13WFECCit2xoeBhELWJ8fPx973sfTqQoCoClS5fqug5g/vz5Dz/88NatWzdv3nz22Wd/61vfWrBgAWZDYPaOHTv2gQ98wPM8TOOf//mfTz/9dEzl7LPP3rJli+/7iqKAiIhoenfccQemcf/99yNw3nnn3Xfffb7vK4qC2ROYvZ6env7+fkwvHo/jN1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"></p>
+<p>Now we define the input cubes that will be considered for the iterable table</p>
+<div class="highlight"><pre><span></span><code><span class="n">t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CubeTable</span><span class="p">(</span><span class="n">values</span><span class="o">=</span><span class="n">ds1</span><span class="p">,</span><span class="w"> </span><span class="n">classes</span><span class="o">=</span><span class="n">classes</span><span class="p">)</span>
+
+<span class="k">using</span><span class="w"> </span><span class="n">DataFrames</span>
+<span class="k">using</span><span class="w"> </span><span class="n">OnlineStats</span>
+<span class="c"># visualization of the CubeTable</span>
+<span class="n">c_tbl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DataFrame</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">first</span><span class="p">(</span><span class="n">c_tbl</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">)</span>
+</code></pre></div>
+<div><div style="float: left;"><span>5×5 DataFrame</span></div><div style="clear: both;"></div></div>
+<div class="data-frame" style="overflow-x: scroll;"><table class="data-frame" style="margin-bottom: 6px;"><thead><tr class="header"><th class="rowNumber" style="font-weight: bold; text-align: right;">Row</th><th style="text-align: left;">values</th><th style="text-align: left;">classes</th><th style="text-align: left;">time</th><th style="text-align: left;">lon</th><th style="text-align: left;">lat</th></tr><tr class="subheader headerLastRow"><th class="rowNumber" style="font-weight: bold; text-align: right;"></th><th title="Float64" style="text-align: left;">Float64</th><th title="Int64" style="text-align: left;">Int64</th><th title="Float64" style="text-align: left;">Float64</th><th title="Float64" style="text-align: left;">Float64</th><th title="Float64" style="text-align: left;">Float64</th></tr></thead><tbody><tr><td class="rowNumber" style="font-weight: bold; text-align: right;">1</td><td style="text-align: right;">0.428285</td><td style="text-align: right;">1</td><td style="text-align: right;">1.0</td><td style="text-align: right;">1.0</td><td style="text-align: right;">1.0</td></tr><tr><td class="rowNumber" style="font-weight: bold; text-align: right;">2</td><td style="text-align: right;">0.381306</td><td style="text-align: right;">1</td><td style="text-align: right;">2.0</td><td style="text-align: right;">1.0</td><td style="text-align: right;">1.0</td></tr><tr><td class="rowNumber" style="font-weight: bold; text-align: right;">3</td><td style="text-align: right;">0.442232</td><td style="text-align: right;">1</td><td style="text-align: right;">3.0</td><td style="text-align: right;">1.0</td><td style="text-align: right;">1.0</td></tr><tr><td class="rowNumber" style="font-weight: bold; text-align: right;">4</td><td style="text-align: right;">0.915768</td><td style="text-align: right;">1</td><td style="text-align: right;">4.0</td><td style="text-align: right;">1.0</td><td style="text-align: right;">1.0</td></tr><tr><td class="rowNumber" style="font-weight: bold; text-align: right;">5</td><td style="text-align: right;">0.0423345</td><td style="text-align: right;">1</td><td style="text-align: right;">5.0</td><td style="text-align: right;">1.0</td><td style="text-align: right;">1.0</td></tr></tbody></table></div>
+
+<p>In this line we calculate the <code>Mean</code> for each class</p>
+<div class="highlight"><pre><span></span><code><span class="n">fitcube</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cubefittable</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="w"> </span><span class="n">Mean</span><span class="p">,</span><span class="w"> </span><span class="ss">:values</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="p">(</span><span class="ss">:classes</span><span class="p">))</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>3-element YAXArray{Union{Missing, Float64},1} with dimensions: 
+  Dim{:classes} Sampled{Int64} Int64[1, 2, 3] ForwardOrdered Irregular Points
+Total size: 24.0 bytes
+</code></pre></div>
+<p>We can also use more than one criteria for grouping the values. In the next example, the mean is calculated for each class and timestep.</p>
+<div class="highlight"><pre><span></span><code><span class="n">fitcube</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cubefittable</span><span class="p">(</span><span class="n">t</span><span class="p">,</span><span class="w"> </span><span class="n">Mean</span><span class="p">,</span><span class="w"> </span><span class="ss">:values</span><span class="p">,</span><span class="w"> </span><span class="n">by</span><span class="o">=</span><span class="p">(</span><span class="ss">:classes</span><span class="p">,</span><span class="w"> </span><span class="ss">:time</span><span class="p">))</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>3×20 YAXArray{Union{Missing, Float64},2} with dimensions: 
+  Dim{:classes} Sampled{Int64} Int64[1, 2, 3] ForwardOrdered Irregular Points,
+  Dim{:time} Sampled{Float64} 1.0:1.0:20.0 ForwardOrdered Regular Points
+Total size: 480.0 bytes
+</code></pre></div>
+<div class="admonition question">
+<p class="admonition-title">Question</p>
+</div>
+<p><a id="convertions-types-DimArray-and-YAXArray"></a></p>
+<p><a id="convertions-types-DimArray-and-YAXArray-1"></a></p>
+<h2 id="convertions-types-dimarray-yaxarray">convertions types  <code>DimArray</code> &amp; <code>YAXArray</code><a class="headerlink" href="#convertions-types-dimarray-yaxarray" title="Permanent link">¤</a></h2>
+<div class="highlight"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">YAXArrays</span><span class="p">,</span><span class="w"> </span><span class="n">YAXArrayBase</span>
+<span class="k">using</span><span class="w"> </span><span class="n">DimensionalData</span>
+</code></pre></div>
+<p><a id="DimArray-to-YAXArray"></a></p>
+<p><a id="DimArray-to-YAXArray-1"></a></p>
+<h3 id="dimarray-to-yaxarray"><code>DimArray</code> to <code>YAXArray</code><a class="headerlink" href="#dimarray-to-yaxarray" title="Permanent link">¤</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">dim_arr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">rand</span><span class="p">(</span><span class="n">X</span><span class="p">(</span><span class="mi">1</span><span class="o">:</span><span class="mi">5</span><span class="p">),</span><span class="w"> </span><span class="n">Y</span><span class="p">(</span><span class="mf">10.0</span><span class="o">:</span><span class="mf">15.0</span><span class="p">),</span><span class="w"> </span><span class="n">metadata</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">Dict</span><span class="p">{</span><span class="kt">String</span><span class="p">,</span><span class="w"> </span><span class="kt">Any</span><span class="p">}())</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>5×6 DimArray{Float64,2} with dimensions: 
+  X Sampled{Int64} 1:5 ForwardOrdered Regular Points,
+  Y Sampled{Float64} 10.0:1.0:15.0 ForwardOrdered Regular Points
+    10.0       11.0       12.0       13.0       14.0       15.0
+ 1   0.323913   0.698658   0.752334   0.648278   0.925409   0.512646
+ 2   0.671682   0.182051   0.208805   0.262676   0.338651   0.560458
+ 3   0.679911   0.620093   0.576252   0.339975   0.148679   0.431028
+ 4   0.326062   0.108745   0.237371   0.836318   0.157609   0.17653
+ 5   0.474007   0.209603   0.456008   0.931209   0.795083   0.261949
+</code></pre></div>
+<div class="admonition warning">
+<p class="admonition-title">metadata</p>
+<p>Note the <code>metadata</code> argument. Needed by <code>yaxconvert</code>.</p>
+</div>
+<div class="highlight"><pre><span></span><code><span class="n">yax_arr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">yaxconvert</span><span class="p">(</span><span class="n">YAXArray</span><span class="p">,</span><span class="w"> </span><span class="n">dim_arr</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>5×6 YAXArray{Float64,2} with dimensions: 
+  Dim{:X} Sampled{Int64} 1:5 ForwardOrdered Regular Points,
+  Dim{:Y} Sampled{Float64} 10.0:1.0:15.0 ForwardOrdered Regular Points
+Total size: 240.0 bytes
+</code></pre></div>
+<p>And saving it:</p>
+<div class="highlight"><pre><span></span><code><span class="k">using</span><span class="w"> </span><span class="n">Zarr</span><span class="p">,</span><span class="w"> </span><span class="n">NetCDF</span>
+<span class="n">savecube</span><span class="p">(</span><span class="n">yax_arr</span><span class="p">,</span><span class="w"> </span><span class="s">"yax_arr.nc"</span><span class="p">,</span><span class="w"> </span><span class="n">driver</span><span class="o">=</span><span class="ss">:netcdf</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>5×6 YAXArray{Float64,2} with dimensions: 
+  Dim{:X} Sampled{Int64} 1:5 ForwardOrdered Regular Points,
+  Dim{:Y} Sampled{Float64} 10.0:1.0:15.0 ForwardOrdered Regular Points
+Total size: 240.0 bytes
+</code></pre></div>
+<p>or as a <code>zarr</code> file</p>
+<div class="highlight"><pre><span></span><code><span class="n">savecube</span><span class="p">(</span><span class="n">yax_arr</span><span class="p">,</span><span class="w"> </span><span class="s">"yax_arr.zarr"</span><span class="p">,</span><span class="w"> </span><span class="n">driver</span><span class="o">=</span><span class="ss">:zarr</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>5×6 YAXArray{Float64,2} with dimensions: 
+  Dim{:X} Sampled{Int64} 1:5 ForwardOrdered Regular Points,
+  Dim{:Y} Sampled{Float64} 10.0:1.0:15.0 ForwardOrdered Regular Points
+Total size: 240.0 bytes
+</code></pre></div>
+<p>And going back to the DimArray type is also possible.</p>
+<p><a id="YAXArray-into-a-DimArray"></a></p>
+<p><a id="YAXArray-into-a-DimArray-1"></a></p>
+<h3 id="yaxarray-into-a-dimarray"><code>YAXArray</code> into a <code>DimArray</code><a class="headerlink" href="#yaxarray-into-a-dimarray" title="Permanent link">¤</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">dim_arr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">yaxconvert</span><span class="p">(</span><span class="n">DimArray</span><span class="p">,</span><span class="w"> </span><span class="n">yax_arr</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>5×6 DimArray{Float64,2} with dimensions: 
+  Dim{:X} Sampled{Int64} 1:5 ForwardOrdered Regular Points,
+  Dim{:Y} Sampled{Float64} 10.0:1.0:15.0 ForwardOrdered Regular Points
+    10.0       11.0       12.0       13.0       14.0       15.0
+ 1   0.323913   0.698658   0.752334   0.648278   0.925409   0.512646
+ 2   0.671682   0.182051   0.208805   0.262676   0.338651   0.560458
+ 3   0.679911   0.620093   0.576252   0.339975   0.148679   0.431028
+ 4   0.326062   0.108745   0.237371   0.836318   0.157609   0.17653
+ 5   0.474007   0.209603   0.456008   0.931209   0.795083   0.261949
+</code></pre></div>
+<p>at the moment there is no support to save a DimArray directly into disk as a <code>NetCDF</code> or a <code>Zarr</code> file.</p>
+<div class="admonition question">
+<p class="admonition-title">Question</p>
+</div>
+<p><a id="Assing-variable-names-to-YAXArrays-in-a-Dataset"></a></p>
+<p><a id="Assing-variable-names-to-YAXArrays-in-a-Dataset-1"></a></p>
+<h2 id="assing-variable-names-to-yaxarrays-in-a-dataset">Assing variable names to <code>YAXArrays</code> in a <code>Dataset</code><a class="headerlink" href="#assing-variable-names-to-yaxarrays-in-a-dataset" title="Permanent link">¤</a></h2>
+<p><a id="One-variable-name"></a></p>
+<p><a id="One-variable-name-1"></a></p>
+<h3 id="one-variable-name">One variable name<a class="headerlink" href="#one-variable-name" title="Permanent link">¤</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">ds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArrays</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(;</span><span class="w"> </span><span class="p">(</span><span class="ss">:a</span><span class="w"> </span><span class="o">=&gt;</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">rand</span><span class="p">(</span><span class="mi">10</span><span class="p">)),)</span><span class="o">...</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>YAXArray Dataset
+Shared Axes: 
+Dim{:Dim_1} Sampled{Int64} Base.OneTo(10) ForwardOrdered Regular Points
+Variables: 
+a, 
+</code></pre></div>
+<p><a id="Multiple-variable-names"></a></p>
+<p><a id="Multiple-variable-names-1"></a></p>
+<h3 id="multiple-variable-names">Multiple variable names<a class="headerlink" href="#multiple-variable-names" title="Permanent link">¤</a></h3>
+<div class="highlight"><pre><span></span><code><span class="n">keylist</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="ss">:a</span><span class="p">,</span><span class="w"> </span><span class="ss">:b</span><span class="p">,</span><span class="w"> </span><span class="ss">:c</span><span class="p">)</span>
+<span class="n">varlist</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">YAXArray</span><span class="p">(</span><span class="n">rand</span><span class="p">(</span><span class="mi">10</span><span class="p">)),</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">rand</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">5</span><span class="p">)),</span><span class="w"> </span><span class="n">YAXArray</span><span class="p">(</span><span class="n">rand</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">5</span><span class="p">)))</span>
+
+<span class="n">ds</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">YAXArrays</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(;</span><span class="w"> </span><span class="p">(</span><span class="n">keylist</span><span class="w"> </span><span class="o">.=&gt;</span><span class="w"> </span><span class="n">varlist</span><span class="p">)</span><span class="o">...</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>YAXArray Dataset
+Shared Axes: 
+()
+Variables: 
+
+a
+ with dimensions: 
+  Dim{:Dim_1} Sampled{Int64} Base.OneTo(10) ForwardOrdered Regular Points
+b
+ with dimensions: 
+  Dim{:Dim_1} Sampled{Int64} Base.OneTo(10) ForwardOrdered Regular Points,
+  Dim{:Dim_2} Sampled{Int64} Base.OneTo(5) ForwardOrdered Regular Points
+c
+ with dimensions: 
+  Dim{:Dim_1} Sampled{Int64} Base.OneTo(2) ForwardOrdered Regular Points,
+  Dim{:Dim_2} Sampled{Int64} Base.OneTo(5) ForwardOrdered Regular Points
+</code></pre></div>
+<hr>
+<p><em>This page was generated using <a href="https://github.com/fredrikekre/Literate.jl">Literate.jl</a>.</em></p></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8v12Z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../../../../tutorials/tutorial/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Tutorial">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Tutorial
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../../contribute/contribute/" class="md-footer__link md-footer__link--next" aria-label="Next: Contribute to docs">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Contribute to docs
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11H4Z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": "../../../..", "features": ["content.code.copy", "content.code.annotate", "navigation.top", "navigation.footer", "search.highlight", "search.share", "search.suggest", "toc.follow", "header.autohide"], "search": "../../../../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}}</script>
+    
+    
+      <script src="../../../../assets/javascripts/bundle.e1c3ead8.min.js"></script>
+      
+        <script src="../../../../javascripts/mathjax.js"></script>
+      
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
