@@ -21,6 +21,8 @@
 [zenodo-url]: https://doi.org/10.5281/zenodo.7505394
 [zenodo-img]: https://zenodo.org/badge/DOI/10.5281/zenodo.7505394.svg
 
+> [!TIP]
+> See documentation at https://juliadatacubes.github.io/YAXArrays.jl/dev/
 
 ## What is YAXArrays.jl?
 *Yet Another XArray-like Julia Package*
