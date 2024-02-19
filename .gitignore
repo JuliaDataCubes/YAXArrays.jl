@@ -24,3 +24,15 @@ bonito
 /benchmark/*.json
 .benchmarkci
 coverage/lcov.info
+node_modules
+docs/node_modules
+
+.DS_Store
+docs/src/.vitepress/cache
+docs/src/.vitepress/dist
+docs/Manifest.toml
+docs/.vscode
+docs/node_modules
+docs/.vitepress/cache
+docs/.vitepress/dist
+docs/.DS_Store

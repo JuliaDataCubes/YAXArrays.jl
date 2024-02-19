@@ -505,13 +505,15 @@ getCubeDes(::DD.Dimension) = "Cube axis"
 getCubeDes(::YAXArray) = "YAXArray"
 getCubeDes(::Type{T}) where {T} = string(T)
 
-function DD.show_after(io::IO,mime, c::YAXArray)
-    foreach(getattributes(c)) do p
-        if p[1] in ("labels", "name", "units")
-            println(io, p[1], ": ", p[2])
-        end
-    end
-    println(io, "Total size: ", formatbytes(cubesize(c)))
+function DD.show_after(io::IO, mime, c::YAXArray)
+    blockwidth = get(io, :blockwidth, 0)
+    DD.print_block_separator(io, "file size", blockwidth, blockwidth)
+    println(io, " ")
+    println(io, "  file size: ", formatbytes(cubesize(c)))
+    DD.print_block_close(io, blockwidth)
+    # And if you want the array data to print:
+    # ndims(c) > 0 && println(io)
+    # DD.print_array(io, mime, c)
 end
 
 
