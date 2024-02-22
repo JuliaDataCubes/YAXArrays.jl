@@ -30,9 +30,9 @@ weights = map(./, g_tempo, sum_days)
 # verify that the sum per season is 1.
 sum.(weights)
 
-# g_dsW = broadcast_dims.(*, weights, g_ds) # broken in YAXArrays
-
-g_dsW = broadcast_dims.(*, DimArray.(weights), DimArray.(g_ds))
+# None of this work, they hang forever. # reading a million times the file, related to the othe issue? about indexing.
+# g_dsW = broadcast_dims.(*, weights, g_ds) #
+# g_dsW = broadcast_dims.(*, DimArray.(weights), DimArray.(g_ds)) # 
 
 
 # plot arguments/attributes
