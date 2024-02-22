@@ -90,6 +90,7 @@ export default defineConfig({
         { text: 'How do I ...', link: '/HowdoI/howdoi' },
         { text: 'Contribute to docs', link: '/HowdoI/contribute' }
     ]},
+    { text: 'Contributors', link: '/contributors' },
     { text: 'API',
     items: [
       { text: 'API Reference', link: 'api' },

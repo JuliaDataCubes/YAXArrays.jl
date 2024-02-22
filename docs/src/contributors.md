@@ -48,17 +48,14 @@ const coreMembers = [
         }
     ]
 
-const partners =[
-    {
-        avatar: 'https://www.github.com/yyx990803.png',
-        name: 'John',
-        title: 'Creator' 
-        },
-    {
-        avatar: 'https://www.github.com/yyx990803.png',
-        name: 'Doe' 
-        },
-    ]
+// const partners =[
+//     {
+//         avatar: 'https://www.github.com/yyx990803.png',
+//         },
+//     {
+//         avatar: 'https://www.github.com/yyx990803.png',
+//         },
+//     ]
 </script>
 
 <VPTeamPage>
@@ -76,11 +73,46 @@ const partners =[
     <template #title>Our valuable contributors</template>
     <template #lead>
     We appreciate all contributions from the Julia community so that this ecosystem can thrive.<br>
-    (Add github list)
     </template>
     <template #members>
       <!-- <VPTeamMembers size="small" :members="partners" /> -->
+      <div class="row">
+        <a href="https://github.com/meggart" target="_blank"><img src="https://avatars.githubusercontent.com/u/2539563?v=4"></a>
+        <a href="https://github.com/felixcremer" target="_blank"><img src="https://avatars.githubusercontent.com/u/17124431?v=4"></a>
+        <a href="https://github.com/lazarusA" target="_blank"><img src="https://avatars.githubusercontent.com/u/19525261?v=4"></a>
+        <a href="https://github.com/gdkrmr" target="_blank"><img src="https://avatars.githubusercontent.com/u/12512930?v=4"></a>
+        <a href="https://github.com/apps/github-actions" target="_blank"><img src="https://avatars.githubusercontent.com/in/15368?v=4"></a>
+        <a href="https://github.com/pdimens" target="_blank"><img src="https://avatars.githubusercontent.com/u/19176506?v=4"></a>
+        <a href="https://github.com/twinGu" target="_blank"><img src="https://avatars.githubusercontent.com/u/29449917?v=4"></a>
+        <a href="https://github.com/dpabon" target="_blank"><img src="https://avatars.githubusercontent.com/u/13040959?v=4"></a>
+        <a href="https://github.com/Qfl3x" target="_blank"><img src="https://avatars.githubusercontent.com/u/20775896?v=4"></a>
+        <a href="https://github.com/kongdd" target="_blank"><img src="https://avatars.githubusercontent.com/u/9815742?v=4"></a>
+        <a href="https://github.com/MartinuzziFrancesco" target="_blank"><img src="https://avatars.githubusercontent.com/u/10376688?v=4"></a>
+        <a href="https://github.com/Sonicious" target="_blank"><img src="https://avatars.githubusercontent.com/u/16307399?v=4"></a>
+        <a href="https://github.com/rafaqz" target="_blank"><img src="https://avatars.githubusercontent.com/u/2534009?v=4"></a>
+        <a href="https://github.com/danlooo" target="_blank"><img src="https://avatars.githubusercontent.com/u/5780565?v=4"></a>
+        <a href="https://github.com/MarkusZehner" target="_blank"><img src="https://avatars.githubusercontent.com/u/56972144?v=4"></a>
+        <a href="https://github.com/Balinus" target="_blank"><img src="https://avatars.githubusercontent.com/u/3630311?v=4"></a>
+        <a href="https://github.com/singularitti" target="_blank"><img src="https://avatars.githubusercontent.com/u/25192197?v=4"></a>
+        <a href="https://github.com/ckrich" target="_blank"><img src="https://avatars.githubusercontent.com/u/28727495?v=4"></a>
+        <a href="https://github.com/apps/femtocleaner" target="_blank"><img src="https://avatars.githubusercontent.com/in/4123?v=4"></a>
+        <a href="https://github.com/ikselven" target="_blank"><img src="https://avatars.githubusercontent.com/u/10441332?v=4"></a>
+        <a href="https://github.com/linamaes" target="_blank"><img src="https://avatars.githubusercontent.com/u/7131773?v=4"></a>
+      </div>
     </template>
   </VPTeamPageSection>
 </VPTeamPage>
+
+<style>
+.row img {
+  border-radius: 50%;
+  width: 60px;
+  heigth: 60px;
+}
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  padding: 0 4px;
+}
+</style>
 ```

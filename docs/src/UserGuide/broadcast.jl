@@ -5,6 +5,7 @@ using Downloads
 using Dates
 using Statistics
 using GLMakie
+
 # url_path = "https://github.com/pydata/xarray-data/blob/master/"
 # filename = Downloads.download(url_path, "rasm.nc")
 #ds = Cube(filename)
@@ -38,15 +39,14 @@ weights = map(./, g_tempo, sum_days)
 # verify that the sum per season is 1.
 sum.(weights)
 
-# None of this work, they hang forever. # reading a million times the file, related to the othe issue? about indexing.
 g_dsW = broadcast_dims.(*, weights, g_ds) #
-weighted_g =  sum.(g_dsW, dims = :Ti)
+weighted_g = sum.(g_dsW, dims = :Ti)
 # and lets drop the Time dimension
 weighted_g = dropdims.(weighted_g, dims=:Ti)
 
 ds_diff = map(.-, weighted_g, mean_g)
 
-# plot arguments/attributes
+# define plot arguments/attributes
 colorrange = (-30,30)
 colormap = Reverse(:Spectral)
 highclip = :red
