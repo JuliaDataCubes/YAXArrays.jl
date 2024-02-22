@@ -91,13 +91,13 @@ It can wrap normal arrays or, more typically DiskArrays.
 
 $(FIELDS)
 """
-struct YAXArray{T,N,A<:AbstractArray{T,N}, D} <: AbstractDimArray{T,N,D,A} 
+struct YAXArray{T,N,A<:AbstractArray{T,N}, D, Me} <: AbstractDimArray{T,N,D,A} 
     "`Tuple` of Dimensions containing the Axes of the Cube"
     axes::D
     "length(axes)-dimensional array which holds the data, this can be a lazy DiskArray"
     data::A
     "Metadata properties describing the content of the data"
-    properties::Dict{String}
+    properties::Me
     "Representation of the chunking of the data"
     chunks::GridChunks{N}
     "Cleaner objects to track which objects to tidy up when the YAXArray goes out of scope"
@@ -120,7 +120,7 @@ struct YAXArray{T,N,A<:AbstractArray{T,N}, D} <: AbstractDimArray{T,N,D,A}
             throw(ArgumentError("Can not construct YAXArray, supplied chunk dimension is $(ndims(chunks)) while the number of dims is $(length(axes))"))
         else
             axes = DD.format(axes, data)
-            return new{eltype(data),ndims(data),typeof(data),typeof(axes)}(
+            return new{eltype(data),ndims(data),typeof(data),typeof(axes), typeof(properties)}(
                 axes,
                 data,
                 properties,
