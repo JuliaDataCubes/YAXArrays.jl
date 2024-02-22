@@ -11,11 +11,29 @@ using GLMakie
 
 ds = Cube("/Users/lalonso/Documents/YAXArrays.jl/docs/rasm.nc")
 
-g = groupby(ds, Ti => season(; start=December))
-mean_g = mean.(g, dims=:Ti)
+g_ds = groupby(ds, Ti => season(; start=December))
+mean_g = mean.(g_ds, dims=:Ti)
 mean_g = dropdims.(mean_g, dims=:Ti)
 #mean_g[Ti=At(:Dec_Jan_Feb)]
 seasons = lookup(mean_g, :Ti)
+
+## weighted seasons
+# # Create a named array for the month length
+tempo = dims(ds, :Ti)
+month_length = YAXArray((tempo,), daysinmonth.(tempo))
+    
+g_tempo = groupby(month_length, Ti => season(; start=December))
+
+sum_days = sum.(g_tempo, dims=:Ti)
+# calculate weights
+weights = map(./, g_tempo, sum_days)
+# verify that the sum per season is 1.
+sum.(weights)
+
+# g_dsW = broadcast_dims.(*, weights, g_ds) # broken in YAXArrays
+
+g_dsW = broadcast_dims.(*, DimArray.(weights), DimArray.(g_ds))
+
 
 # plot arguments/attributes
 _FillValue = ds.properties["_FillValue"]
@@ -41,7 +59,7 @@ with_theme(theme_ggplot2()) do
             colormap=:diverging_bwr_20_95_c54_n256,
             lowclip, highclip)
     end
-    Colorbar(fig[1:2,5], hm, label=cb_label)
+    Colorbar(fig[1:2,5], hm_obj, label=cb_label)
     Colorbar(fig[3,5], hm_diff, label="Tair")
     hidedecorations!.(axs, grid=false, ticks=false, label=false)
     # some labels
@@ -66,26 +84,6 @@ yearhour(x) = year(x), hour(x)
 
 groupby(ds, Ti=>Bins(yearhour, 12)) # this does a daily mean aggregation
 
-# # Create a named array for the month length
-
-tempo = dims(ds, :Ti)
-month_length = YAXArray((tempo,), daysinmonth.(tempo))
-    
-
-g_tempo = groupby(month_length, Ti => season(; start=December))
-
-sum_days = sum.(g_tempo, dims=:Ti)
-
-month_length = YAXArray((tempo,), daysinmonth.(tempo))
-g_tempo = groupby(month_length, Ti => season(; start=December))
-sum_days = sum.(g_tempo, dims=:Ti)
-weights = map(./, g_tempo, sum_days)
-sum.(weights)
-
-g_ds = groupby(ds, Ti => season(; start=December))
-
-# g_ds .* weights
-g_ds_w = broadcast_dims.(*, DimArray.(weights), DimArray.(g_ds))
 
 
 using YAXArrays, DimensionalData, NetCDF, Statistics
