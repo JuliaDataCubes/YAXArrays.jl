@@ -21,13 +21,11 @@ weights = map(./, g_tempo, sum_days)
 
 g_ds = groupby(ds, Dim{:Ti} => season(; start=December))
 
-g_ds_w = broadcast_dims.(*, DimArray.(weights), DimArray.(g_ds))
+g_dsW_dim = broadcast_dims.(*, DimArray.(weights), DimArray.(g_ds))
 
-g_ds_w = broadcast_dims.(*, weights, g_ds)
+g_dsW_yax = broadcast_dims.(*, weights, g_ds)
 
 
 # TODO 
-# broadcast_dims.(*, weights, Ref(g_ds))
-# g_ds_w = weights .* g_ds # the red (first dimension)
-# sum.(g_ds_w, dims = Dim{:Ti})
+# sum.(g_dsW_dim, dims = Dim{:Ti})
 

@@ -9,12 +9,20 @@ using GLMakie
 # filename = Downloads.download(url_path, "rasm.nc")
 #ds = Cube(filename)
 
-ds = Cube("/Users/lalonso/Documents/YAXArrays.jl/docs/rasm.nc")
+ds_o = Cube("/Users/lalonso/Documents/YAXArrays.jl/docs/rasm.nc")
+# The following should not be necessary in the next release, plus is unpractical to use for large data sets.
+# Related to https://github.com/rafaqz/DimensionalData.jl/issues/642
+axs = dims(ds_o) # get the dimensions
+data = ds_o.data[:,:,:] # read the data
+_FillValue = ds_o.properties["_FillValue"]
+data = replace(data, _FillValue => NaN)
+# create new YAXArray
+ds = YAXArray(axs, data)
 
 g_ds = groupby(ds, Ti => season(; start=December))
 mean_g = mean.(g_ds, dims=:Ti)
 mean_g = dropdims.(mean_g, dims=:Ti)
-#mean_g[Ti=At(:Dec_Jan_Feb)]
+
 seasons = lookup(mean_g, :Ti)
 
 ## weighted seasons
@@ -31,43 +39,41 @@ weights = map(./, g_tempo, sum_days)
 sum.(weights)
 
 # None of this work, they hang forever. # reading a million times the file, related to the othe issue? about indexing.
-# g_dsW = broadcast_dims.(*, weights, g_ds) #
-# g_dsW = broadcast_dims.(*, DimArray.(weights), DimArray.(g_ds)) # 
+g_dsW = broadcast_dims.(*, weights, g_ds) #
+weighted_g =  sum.(g_dsW, dims = :Ti)
+# and lets drop the Time dimension
+weighted_g = dropdims.(weighted_g, dims=:Ti)
 
+ds_diff = map(.-, weighted_g, mean_g)
 
 # plot arguments/attributes
-_FillValue = ds.properties["_FillValue"]
 colorrange = (-30,30)
 colormap = Reverse(:Spectral)
 highclip = :red
 lowclip = :grey15
-cb_label =  ds.properties["long_name"]
+cb_label =  ds_o.properties["long_name"]
 
 # the plot
 with_theme(theme_ggplot2()) do
-    hm_obj = nothing
-    hm_diff=nothing
+    hm_o, hm_d, hm_w = nothing, nothing, nothing
+    # the figure
     fig = Figure(; size = (850,500))
     axs = [Axis(fig[i,j], aspect=DataAspect()) for i in 1:3, j in 1:4]
-    for j in 1:4
-        hm_obj = heatmap!(axs[1,j], replace(mean_g[j], _FillValue => NaN);
-            colorrange, colormap, lowclip, highclip)
-        heatmap!(axs[2,j], replace(mean_g[j], _FillValue => NaN);
-            colorrange, colormap, lowclip, highclip)
-        hm_diff = heatmap!(axs[3,j], replace(mean_g[j], _FillValue => NaN);
-            colorrange=(-0.1,0.1),
-            colormap=:diverging_bwr_20_95_c54_n256,
-            lowclip, highclip)
+    for (j, s) in enumerate(seasons)
+        hm_o = heatmap!(axs[1,j], mean_g[Ti=At(s)]; colorrange, lowclip, highclip, colormap)
+        hm_w = heatmap!(axs[2,j], weighted_g[Ti=At(s)]; colorrange, lowclip, highclip, colormap)
+        hm_d = heatmap!(axs[3,j], ds_diff[Ti=At(s)]; colorrange=(-0.1,0.1), lowclip, highclip,
+            colormap=:diverging_bwr_20_95_c54_n256)
     end
-    Colorbar(fig[1:2,5], hm_obj, label=cb_label)
-    Colorbar(fig[3,5], hm_diff, label="Tair")
+    Colorbar(fig[1:2,5], hm_o, label=cb_label)
+    Colorbar(fig[3,5], hm_d, label="Tair")
     hidedecorations!.(axs, grid=false, ticks=false, label=false)
     # some labels
     [axs[1,j].title = string.(s) for (j,s) in enumerate(seasons)]
     Label(fig[0,1:5], "Seasonal Surface Air Temperature", fontsize=18, font=:bold)
-    axs[1,1].ylabel = "unweighted"
-    axs[2,1].ylabel = "weighted"
-    axs[3,1].ylabel = "difference"
+    axs[1,1].ylabel = "Unweighted"
+    axs[2,1].ylabel = "Weighted"
+    axs[3,1].ylabel = "Difference"
     colgap!(fig.layout, 5)
     rowgap!(fig.layout, 5)
     fig
