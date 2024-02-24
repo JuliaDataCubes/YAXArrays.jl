@@ -49,7 +49,7 @@ jobs:
       - name: Install documentation dependencies # for GLMakie plots
         run: sudo apt-get update && sudo apt-get install -y xorg-dev mesa-utils xvfb libgl1 freeglut3-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev
       - name: Install documentation dependencies
-        run: DISPLAY=:0 xvfb-run -s '-screen 0 1024x768x24' julia --project=docs -e 'using Pkg; pkg"add https://github.com/LuxDL/DocumenterVitepress.jl.git"; pkg"dev ."; pkg"add DimensionalData#main"; Pkg.instantiate(); Pkg.precompile(); Pkg.status()'
+        run: DISPLAY=:0 xvfb-run -s '-screen 0 1024x768x24' julia --project=docs -e 'using Pkg; pkg"dev ."; pkg"add DimensionalData#main"; Pkg.instantiate(); Pkg.precompile(); Pkg.status()'
       - name: Instantiate NPM
         run: cd docs/; npm i; cd ..
       #- name: Creating new mds from src

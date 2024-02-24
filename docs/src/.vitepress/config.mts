@@ -4,11 +4,12 @@ import mathjax3 from "markdown-it-mathjax3";
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
-  base: 'REPLACE_ME_WITH_DOCUMENTER_VITEPRESS_BASE_URL_WITH_TRAILING_SLASH',
+  base: 'REPLACE_ME_DOCUMENTER_VITEPRESS',
   title: "YAXArrays.jl",
   description: "Yet another xarray-like Julia package",
   lastUpdated: true,
   cleanUrls: true,
+  outDir: 'REPLACE_ME_DOCUMENTER_VITEPRESS', // This is required for MarkdownVitepress to work correctly...
   ignoreDeadLinks: true,
   
   markdown: {
@@ -93,7 +94,9 @@ export default defineConfig({
       { text: 'API Reference', link: 'api' },
     ]},
     ],
-
+    editLink: {
+      pattern: 'https://github.com/JuliaDataCubes/YAXArrays.jl/edit/master/docs/src/:path'
+    },
     socialLinks: [
       { icon: 'github', link: 'https://github.com/JuliaDataCubes/YAXArrays.jl' }
     ],

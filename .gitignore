@@ -1,5 +1,5 @@
 Manifest.toml
-
+.DS_Store
 *.jl.cov
 *.jl.*.cov
 *.jl.mem
@@ -7,26 +7,18 @@ tmp
 generated
 build
 .vscode
-.DS_Store
 *.zarr
 *.nc
 var
-
-docs/docs
-docs/site
-docs/build
-docs/var
-deps/build.jl
-bonito
 
 *.ipynb_checkpoints
 # Ignore the benchmarking results
 /benchmark/*.json
 .benchmarkci
 coverage/lcov.info
-node_modules
-docs/node_modules
 
+bonito
+docs/build
 .DS_Store
 docs/src/.vitepress/cache
 docs/src/.vitepress/dist
