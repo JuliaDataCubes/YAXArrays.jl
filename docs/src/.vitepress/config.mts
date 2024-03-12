@@ -52,8 +52,14 @@ export default defineConfig({
           { text: 'Overview', link: '/tutorials/tutorial' },
           { text: 'Plotting maps', link: '/tutorials/plottingmaps' },
           { text: 'Mean Seasonal Cycle', link: '/tutorials/mean_seasonal_cycle' },
-          { text: 'ESDL study 3', link: '/tutorials/examples_from_esdl_study_3' },
-          { text: 'ESDL study 4', link: '/tutorials/examples_from_esdl_study_4' },
+          { text: 'ESDL studies',
+            items: [
+              { text: 'ESDL study 1', link: '/tutorials/esdl/examples_from_esdl_study_1' },
+              { text: 'ESDL study 2', link: '/tutorials/esdl/examples_from_esdl_study_2' },
+              { text: 'ESDL study 3', link: '/tutorials/esdl/examples_from_esdl_study_3' },
+              { text: 'ESDL study 4', link: '/tutorials/esdl/examples_from_esdl_study_4' },
+            ]
+          },
       ]},
       { text: 'How do I?',
       items: [
@@ -80,15 +86,14 @@ export default defineConfig({
         items: [
           { text: 'Overview', link: '/tutorials/tutorial' },
           { text: 'Plotting maps', link: '/tutorials/plottingmaps' },
-          { text: 'Mean Seasonal Cycle', link: '/tutorials/mean_seasonal_cycle' },
-          { text: 'ESDL study 3', link: '/tutorials/examples_from_esdl_study_3' },
-          { text: 'ESDL study 4', link: '/tutorials/examples_from_esdl_study_4' },
+          { text: 'Mean Seasonal Cycle', link: '/tutorials/mean_seasonal_cycle' }
       ]},
       { text: 'How do I?',
       items: [
         { text: 'How do I ...', link: '/HowdoI/howdoi' },
         { text: 'Contribute to docs', link: '/HowdoI/contribute' }
     ]},
+    { text: 'Contributors', link: '/contributors' },
     { text: 'API',
     items: [
       { text: 'API Reference', link: 'api' },

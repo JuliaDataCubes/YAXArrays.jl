@@ -1,6 +1,5 @@
 using Documenter
 using DocumenterVitepress
-# add DimensionalData#main
 using YAXArrays
 
 makedocs(; sitename="YAXArrays.jl", 
@@ -17,7 +16,6 @@ makedocs(; sitename="YAXArrays.jl",
     source="src",
     build= "build",
     )
-
 # To edit the sidebar, you must edit `docs/src/.vitepress/config.mts`.
 
 deploydocs(; 
