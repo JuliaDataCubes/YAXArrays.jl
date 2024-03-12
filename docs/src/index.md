@@ -27,7 +27,7 @@ features:
     link: /UserGuide/openZarr
   - title: Interoperability
     details: Well integrated with Julia's ecosystem, i.e., distributed operations are native. And plotting with <font color="#D27D2D">Makie.jl</font> is well supported.
-  - title: Named dimensions and GroupBy(in memory. WIP, out of memory)
+  - title: Named dimensions and GroupBy(in memory)
     details: Apply operations over named dimensions, select values by labels and integers as well as efficient split-apply-combine operations with <font color="#D27D2D">groupby</font> via DimensionalData.jl.
     link: /UserGuide/group_by
   - title: Efficiency

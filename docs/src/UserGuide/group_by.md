@@ -1,6 +1,6 @@
 # GroupBy
 
-The next examples will use the `groupby` function to calculate temporal and spatial averages.
+The following examples will use the `groupby` function to calculate temporal and spatial averages.
 
 ````@example compareXarray
 using YAXArrays, DimensionalData
@@ -27,7 +27,7 @@ nothing # hide
 
 ::: warning
 
-The following rebuild should not be necessary in the future, plus is unpractical to use for large data sets. Support for out of memory data is not available yet.
+The following rebuild should not be necessary in the future, plus is unpractical to use for large data sets. Out of memory groupby currently is work in progress.
 Related to https://github.com/rafaqz/DimensionalData.jl/issues/642
 
 :::
@@ -45,18 +45,18 @@ nothing # hide
 
 ## GroupBy: seasons
 
-::: details function weighted_season(ds) ... end
+::: details function weighted_seasons(ds) ... end
 
 ````julia
-function weighted_season(ds)
+function weighted_seasons(ds)
     # calculate weights 
     tempo = dims(ds, :Ti)
     month_length = YAXArray((tempo,), daysinmonth.(tempo))
-    g_tempo = groupby(month_length, Ti => season(; start=December))
+    g_tempo = groupby(month_length, Ti => seasons(; start=December))
     sum_days = sum.(g_tempo, dims=:Ti)
     weights = map(./, g_tempo, sum_days)
     # unweighted seasons
-    g_ds = groupby(ds, Ti => season(; start=December))
+    g_ds = groupby(ds, Ti => seasons(; start=December))
     mean_g = mean.(g_ds, dims=:Ti)
     mean_g = dropdims.(mean_g, dims=:Ti)
     # weighted seasons
@@ -65,8 +65,8 @@ function weighted_season(ds)
     weighted_g = dropdims.(weighted_g, dims=:Ti)
     # differences
     diff_g = map(.-, weighted_g, mean_g)
-    seasons = lookup(mean_g, :Ti)
-    return mean_g, weighted_g, diff_g, seasons
+    seasons_g = lookup(mean_g, :Ti)
+    return mean_g, weighted_g, diff_g, seasons_g
 end
 ````
 :::
@@ -74,7 +74,7 @@ end
 Now, we continue with the `groupby` operations as usual
 
 ````@ansi compareXarray
-g_ds = groupby(ds, Ti => season(; start=December))
+g_ds = groupby(ds, Ti => seasons(; start=December))
 ````
 
 And the mean per season is calculated as follows
@@ -96,7 +96,7 @@ mean_g = dropdims.(mean_g, dims=:Ti)
 Due to the `groupby` function we will obtain new grouping names, in this case in the time dimension:
 
 ````@example compareXarray
-seasons = lookup(mean_g, :Ti)
+seasons_g = lookup(mean_g, :Ti)
 ````
 
 Next, we will weight this grouping by days/month in each group.
@@ -113,7 +113,7 @@ month_length = YAXArray((tempo,), daysinmonth.(tempo))
 Now group it by season 
 
 ````@ansi compareXarray  
-g_tempo = groupby(month_length, Ti => season(; start=December))
+g_tempo = groupby(month_length, Ti => seasons(; start=December))
 ````
 
 Get the number of days per season
@@ -159,7 +159,7 @@ diff_g = map(.-, weighted_g, mean_g)
 All the previous steps are equivalent to calling the function defined at the top:
 
 ````julia
-mean_g, weighted_g, diff_g, seasons = weighted_season(ds)
+mean_g, weighted_g, diff_g, seasons_g = weighted_seasons(ds)
 ````
 
 Once all calculations are done we can plot the results with `Makie.jl` as follows:
@@ -180,7 +180,7 @@ with_theme(theme_ggplot2()) do
     # the figure
     fig = Figure(; size = (850,500))
     axs = [Axis(fig[i,j], aspect=DataAspect()) for i in 1:3, j in 1:4]
-    for (j, s) in enumerate(seasons)
+    for (j, s) in enumerate(seasons_g)
         hm_o = heatmap!(axs[1,j], mean_g[Ti=At(s)]; colorrange, lowclip, highclip, colormap)
         hm_w = heatmap!(axs[2,j], weighted_g[Ti=At(s)]; colorrange, lowclip, highclip, colormap)
         hm_d = heatmap!(axs[3,j], diff_g[Ti=At(s)]; colorrange=(-0.1,0.1), lowclip, highclip,
@@ -190,7 +190,7 @@ with_theme(theme_ggplot2()) do
     Colorbar(fig[3,5], hm_d, label="Tair")
     hidedecorations!.(axs, grid=false, ticks=false, label=false)
     # some labels
-    [axs[1,j].title = string.(s) for (j,s) in enumerate(seasons)]
+    [axs[1,j].title = string.(s) for (j,s) in enumerate(seasons_g)]
     Label(fig[0,1:5], "Seasonal Surface Air Temperature", fontsize=18, font=:bold)
     axs[1,1].ylabel = "Unweighted"
     axs[2,1].ylabel = "Weighted"

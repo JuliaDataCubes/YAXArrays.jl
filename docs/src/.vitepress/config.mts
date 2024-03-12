@@ -43,6 +43,7 @@ export default defineConfig({
           { text: 'Setting chunks size', link: '/UserGuide/setchuncks' },
           { text: 'Apply functions on YAXArrays', link: '/UserGuide/applyfunctions' },
           { text: 'Create Cube from function', link: '/UserGuide/create_cube_from_function' },
+          { text: 'Group by', link: '/UserGuide/group_by' },
           { text: 'Distributed computing', link: '/UserGuide/distributed' },
           { text: 'Open NetCDF', link: '/UserGuide/openNetCDF' },
           { text: 'Open Zarr (Store)', link: '/UserGuide/openZarr' },
@@ -64,7 +65,8 @@ export default defineConfig({
       { text: 'How do I?',
       items: [
         { text: 'How do I ...', link: '/HowdoI/howdoi' },
-        { text: 'Contribute to docs', link: '/HowdoI/contribute' }
+        { text: 'Contribute to docs', link: '/HowdoI/contribute' },
+        { text: 'Contributors', link: '/contributors' }
     ]},
     ],
 
@@ -78,6 +80,7 @@ export default defineConfig({
           { text: 'Setting chunks size', link: '/UserGuide/setchuncks' },
           { text: 'Apply functions on YAXArrays', link: '/UserGuide/applyfunctions' },
           { text: 'Create Cube from function', link: '/UserGuide/create_cube_from_function' },
+          { text: 'Group by', link: '/UserGuide/group_by' },
           { text: 'Distributed computing', link: '/UserGuide/distributed' },
           { text: 'Open NetCDF', link: '/UserGuide/openNetCDF' },
           { text: 'Open Zarr (Store)', link: '/UserGuide/openZarr' },
@@ -91,7 +94,7 @@ export default defineConfig({
       { text: 'How do I?',
       items: [
         { text: 'How do I ...', link: '/HowdoI/howdoi' },
-        { text: 'Contribute to docs', link: '/HowdoI/contribute' }
+        { text: 'Contribute to docs', link: '/HowdoI/contribute' },
     ]},
     { text: 'Contributors', link: '/contributors' },
     { text: 'API',

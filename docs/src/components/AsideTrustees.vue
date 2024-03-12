@@ -1,6 +1,6 @@
 <template>
   <br>
-  <h1 style="text-align:center;"> <strong> Package Ecosystem </strong> </h1>
+  <h1 style="text-align:center;"> <strong> <font color="orange"> Package Ecosystem</font> </strong> </h1>
   <a
     class="enjoyer"
     href="https://github.com/meggart/DiskArrays.jl"

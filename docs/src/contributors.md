@@ -107,7 +107,7 @@ const coreMembers = [
 .row img {
   border-radius: 50%;
   width: 60px;
-  heigth: 60px;
+  height: 60px;
 }
 .row {
   display: flex;
