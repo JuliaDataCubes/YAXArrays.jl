@@ -55,10 +55,10 @@ export default defineConfig({
           { text: 'Mean Seasonal Cycle', link: '/tutorials/mean_seasonal_cycle' },
           { text: 'ESDL studies',
             items: [
-              { text: 'ESDL study 1', link: '/tutorials/esdl/examples_from_esdl_study_1' },
-              { text: 'ESDL study 2', link: '/tutorials/esdl/examples_from_esdl_study_2' },
-              { text: 'ESDL study 3', link: '/tutorials/esdl/examples_from_esdl_study_3' },
-              { text: 'ESDL study 4', link: '/tutorials/esdl/examples_from_esdl_study_4' },
+              { text: 'ESDL study 1', link: 'https://github.com/JuliaDataCubes/YAXArrays.jl/blob/master/docs/src/tutorials/esdl/examples_from_esdl_study_1.jl' },
+              { text: 'ESDL study 2', link: 'https://github.com/JuliaDataCubes/YAXArrays.jl/blob/master/docs/src/tutorials/esdl/examples_from_esdl_study_2.jl' },
+              { text: 'ESDL study 3', link: 'https://github.com/JuliaDataCubes/YAXArrays.jl/blob/master/docs/src/tutorials/esdl/examples_from_esdl_study_3.jl' },
+              { text: 'ESDL study 4', link: 'https://github.com/JuliaDataCubes/YAXArrays.jl/blob/master/docs/src/tutorials/esdl/examples_from_esdl_study_4.jl' },
             ]
           },
       ]},
