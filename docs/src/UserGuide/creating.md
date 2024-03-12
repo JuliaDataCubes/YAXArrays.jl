@@ -179,5 +179,5 @@ Note also that the global properties for the Dataset are accessed with
 ds.properties
 ````
 
-Saving and different chunking modes are discussed in [here]().
+Saving and different chunking modes are discussed [here](/UserGuide/setchuncks).
 

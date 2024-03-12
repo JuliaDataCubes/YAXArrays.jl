@@ -4,7 +4,7 @@
 [![][docs-dev-img]][docs-dev-url][![DOI][zenodo-img]][zenodo-url][![][ci-img]][ci-url] [![][codecov-img]][codecov-url]
 [![][coveralls-img]][coveralls-url][![Downloads](https://shields.io/endpoint?url=https://pkgs.genieframework.com/api/v1/badge/YAXArrays&label=Downloads)](https://pkgs.genieframework.com?packages=YAXArrays)
 
-<img src="docs/src/public/logo.png" align="right" style="padding-left:10px;" width="150"/>
+<img src="docs/src/assets/logo.png" align="right" style="padding-left:10px;" width="150"/>
 
 [docs-dev-img]: https://img.shields.io/badge/docs-dev-blue.svg
 [docs-dev-url]: https://JuliaDataCubes.github.io/YAXArrays.jl/dev/
