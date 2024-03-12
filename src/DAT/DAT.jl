@@ -1,5 +1,6 @@
 module DAT
 using DocStringExtensions
+import DiskArrayEngine as DAE
 import ..Cubes
 using ..YAXTools
 using Distributed:
@@ -63,47 +64,38 @@ mutable struct InputCube{N}
     cube::Any
     "The input description given by the user/registration"
     desc::InDims
-    "List of axes that were actually selected through the description"
-    axesSmall::Vector
-    icolon::Vector{Int}
-    colonperm::Union{Vector{Int},Nothing}
-    "Indices of loop axes that this cube does not contain, i.e. broadcasts"
-    loopinds::Vector{Int}
-    "Number of elements to keep in cache along each axis"
-    cachesize::Vector{Int}     # TODO: delete
-
-    window::Vector{WindowDescriptor}
-    iwindow::Vector{Int}
-    windowloopinds::Vector{Int}
-    iall::Vector{Int}
+    allAxes::Vector
+    windows::Vector
+    dimsmap::Vector{Int}
 end
 
 function InputCube(c, desc::InDims)
     internalaxes = findAxis.(desc.axisdesc, Ref(c))
     any(isequal(nothing), internalaxes) &&
         error("One of the input axes not found in input cubes")
-    fullaxes = internalaxes[findall(i -> !isa(i, MovingWindow), desc.axisdesc)]
-    axlist = caxes(c)
-    axesSmall = map(i -> axlist[i], fullaxes)
-    colonperm =
-        issorted(internalaxes) ? nothing :
-        collect(Base.invperm(sortperm(collect(internalaxes))))
-    _window = findall(i -> isa(i, MovingWindow), desc.axisdesc)
-    iwindow = collect(internalaxes[_window])
-    window =
-        WindowDescriptor[(desc.axisdesc[i].pre, desc.axisdesc[i].after) for i in _window]
+    loopaxes = []
+    windows = map(1:ndims(c)) do idim
+        idesc = findfirst(==(idim),internalaxes)
+        if idesc === nothing
+            push!(loopaxes,caxes(c)[idim])
+            return 1:size(c.data,idim)
+        else
+            if desc.axisdesc[idesc] isa MovingWindow
+                #Translate to window
+                #And push converted loop axis
+                error("Not implemented")
+            else
+                push!(loopaxes,nothing)
+                [1:size(c.data,idim)]
+            end
+        end
+    end
     InputCube{ndims(c)}(
         c,
         desc,
-        collect(axesSmall),
-        collect(fullaxes),
-        colonperm,
+        loopaxes,
+        windows,
         Int[],
-        Int[],
-        window,
-        iwindow,
-        Int[],
-        collect(internalaxes),
     )
 end
 geticolon(ic::InputCube) = ic.icolon
@@ -135,15 +127,14 @@ mutable struct OutputCube
     cube_unpermuted::Any
     "The description of the output axes as given by users or registration"
     desc::OutDims
-    "The list of output axes determined through the description"
-    axesSmall::Array{DD.Dimension} # Should this be a Vector?
+    axesSmall::Vector{DD.Dimension}
     "List of all the axes of the cube"
     allAxes::Vector{DD.Dimension}
-    "Index of the loop axes that are broadcasted for this output cube"
-    loopinds::Vector{Int}
+    loopwindows::Vector
     innerchunks::Any
     "Elementtype of the outputcube"
     outtype::Any
+    dimsmap::Vector{Int}
 end
 getwindow(::OutputCube) = []
 
@@ -198,6 +189,7 @@ end
 getOutAxis(desc::Tuple, inAxes, incubes, pargs, f) =
     map(i -> getOutAxis(i, inAxes, incubes, pargs, f), desc)
 function OutputCube(desc::OutDims, inAxes, incubes, pargs, f)
+
     axesSmall = getOutAxis(desc.axisdesc, inAxes, incubes, pargs, f)
     outtype = getOuttype(desc.outtype, incubes)
     innerchunks = interpretoutchunksizes(desc, axesSmall, incubes)
@@ -206,10 +198,11 @@ function OutputCube(desc::OutDims, inAxes, incubes, pargs, f)
         nothing,
         desc,
         collect(DD.Dimension, axesSmall),
-        DD.Dimension[],
-        Int[],
+        [],
+        [],
         innerchunks,
         outtype,
+        Int[],
     )
 end
 
@@ -223,28 +216,14 @@ mutable struct DATConfig{NIN,NOUT}
     incubes::NTuple{NIN,InputCube}
     "The output data cubes"
     outcubes::NTuple{NOUT,OutputCube}
-    "List of all axes of the input cubes"
-    allInAxes::Vector
     "List of axes that are looped through"
     LoopAxes::Vector
-    "Flag whether the computation is parallelized"
-    ispar::Bool
-    ""
-    loopcachesize::Vector{Int}
-    ""
-    allow_irregular_chunks::Bool
-    "Maximal size of the in memory cache"
-    max_cache::Any
+    "Size of the axes to loop over"
+    loopwindows::Vector{Int}
     "Inner function which is computed"
     fu::Any
     "Flag whether the computation happens in place"
     inplace::Bool
-    ""
-    include_loopvars::Bool
-    ""
-    ntr::Any
-    "Flag if GC should be called explicitly. Probably necessary for many runs in Julia 1.9"
-    do_gc::Bool
     "Additional arguments for the inner function"
     addargs::Any
     "Additional keyword arguments for the inner function"
@@ -255,13 +234,7 @@ function DATConfig(
     indims,
     outdims,
     inplace,
-    max_cache,
     fu,
-    ispar,
-    include_loopvars,
-    allow_irregular,
-    nthreads,
-    do_gc,
     addargs,
     kwargs,
 )
@@ -272,27 +245,26 @@ function DATConfig(
         "Number of input cubes ($(length(cdata))) differs from registration ($(length(indims)))",
     )
     incubes = ([InputCube(o[1], o[2]) for o in zip(cdata, indims)]...,)
-    allInAxes = vcat([ic.axesSmall for ic in incubes]...)
+    allinaxes = DD.Dimension[]
+    for ic in incubes
+        for desc in ic.desc.axisdesc
+            ax = getAxis(desc,ic.cube)
+            push!(allinaxes,ax)
+        end
+    end
     outcubes = ((
         map(1:length(outdims), outdims) do i, desc
-            OutputCube(desc, allInAxes, cdata, addargs, fu)
+            OutputCube(desc, collect(allinaxes), cdata, addargs, fu)
         end
     )...,)
 
     DATConfig(
         incubes,
         outcubes,
-        allInAxes,
-        DD.Dimension[],                                 # LoopAxes
-        ispar,
-        Int[],
-        allow_irregular,
-        max_cache,                                  # max_cache
-        fu,                                         # fu                                      # loopcachesize
+        DD.Dimension[],                             # LoopAxes
+        Int[],                                      # loop sizes
+        fu,                                         # fu                                      
         inplace,                                    # inplace
-        include_loopvars,
-        nthreads,
-        do_gc,
         addargs,                                    # addargs
         kwargs,
     )
@@ -393,6 +365,14 @@ function mapslices(f, d::Union{YAXArray,Dataset}, addargs...; dims, kwargs...)
 end
 
 
+function DAE.InputArray(ic::InputCube)
+    DAE.InputArray(ic.cube.data,windows=(ic.windows...,),dimsmap=(ic.dimsmap...,))
+end
+
+function DAE.create_outwindows(ic::OutputCube)
+    DAE.create_outwindows(length.(ic.allAxes),dimsmap=ic.dimsmap,windows=(ic.loopwindows...,),chunks=ic.innerchunks)
+end
+
 
 """
     mapCube(fun, cube, addargs...;kwargs...)
@@ -424,25 +404,13 @@ function mapCube(
     indims = InDims(),
     outdims = OutDims(),
     inplace = true,
-    ispar = nprocs() > 1,
-    debug = false,
-    include_loopvars = false,
-    showprog = true,
-    irregular_loopranges = false, 
-    nthreads = ispar ? Dict(i => remotecall_fetch(Threads.nthreads, i) for i in workers()) :
-               [Threads.nthreads()],
-    loopchunksize = Dict(),
-    do_gc = true,
     kwargs...,
 )
     if typeof(max_cache) == String
         if last(max_cache, 2) == "MB"
         max_cache = parse(Float64, max_cache[begin:end-2]) / (10^-6)
-
     elseif last(max_cache, 2) == "GB"
-
         max_cache = parse(Float64, max_cache[begin:end-2]) / (10^-9)
-
     else
         error("only MB or GB values are accepted for max_cache")
     end
@@ -461,12 +429,6 @@ function mapCube(
             indims = inew,
             outdims = outdims,
             inplace = inplace,
-            ispar = ispar,
-            debug = debug,
-            include_loopvars = include_loopvars,
-            irregular_loopranges = irregular_loopranges,
-            showprog = showprog,
-            nthreads = nthreads,
             kwargs...,
         )
     end
@@ -476,33 +438,24 @@ function mapCube(
         indims,
         outdims,
         inplace,
-        max_cache,
         fu,
-        ispar,
-        include_loopvars,
-        irregular_loopranges,
-        nthreads,
-        do_gc,
         addargs,
         kwargs,
     )
     @debug_print "Analysing Axes"
     analyzeAxes(dc)
-    @debug_print "Permuting loop axes"
-    permuteloopaxes(dc)
-    @debug_print "Calculating Cache Sizes"
-    getCacheSizes(dc, loopchunksize)
-    @debug_print "Generating Output Cube"
-    generateOutCubes(dc)
-    @debug_print "Running main Loop"
-    debug && return (dc)
-    runLoop(dc, showprog)
-    @debug_print "Finalizing Output Cube"
-
-    if length(dc.outcubes) == 1
-        return dc.outcubes[1].cube_unpermuted
+    inars = DAE.InputArray.((dc.incubes...,))
+    outars = DAE.create_outwindows.((dc.outcubes...,))
+    f = DAE.create_userfunction(dc.fu, map(i->i.outtype,dc.outcubes), is_mutating=dc.inplace)
+    op = DAE.GMDWop(inars, outars, f)
+    res = DAE.results_as_diskarrays(op)
+    outyax = map(res,dc.outcubes) do res_da, oc
+        YAXArray((oc.allAxes...,), res_da)
+    end
+    if length(outyax) == 1
+        return only(outyax)
     else
-        return (map(i -> i.cube_unpermuted, dc.outcubes)...,)
+        return outyax
     end
 
 end
@@ -539,44 +492,6 @@ function to_chunksize(c::IrregularChunks, cs, allow_irregular=true)
     end
 end
 
-"""
-    getloopchunks(dc::DATConfig)
-# Internal function
-    Returns the chunks that can be looped over toghether for all dimensions.
-    This computation of the size of the chunks is handled by [`DiskArrays.approx_chunksize`](@ref)
-"""
-function getloopchunks(dc::DATConfig)
-    lc = dc.loopcachesize
-    co = map(lc,dc.LoopAxes) do cs, ax
-        allchunks = map(dc.incubes) do ic
-            ii = findAxis(ax, caxes(ic.cube))
-            ii === nothing ? nothing : eachchunk(ic.cube.data).chunks[ii]
-        end
-        allchunks = unique(filter(!isnothing, allchunks))
-
-        if length(allchunks) == 1
-            return to_chunksize(only(allchunks),cs,dc.allow_irregular_chunks)
-        end
-        allchunks_offset = filter(i->mod(cs,approx_chunksize(i))==0, allchunks)
-        allchunks = isempty(allchunks_offset) ? allchunks : allchunks_offset
-        if length(allchunks) == 1
-            return to_chunksize(allchunks[1],cs,dc.allow_irregular_chunks)
-        end
-        if !dc.allow_irregular_chunks
-            allchunks = filter(i->isa(i,RegularChunks),allchunks)
-        end
-        if length(allchunks) == 1
-            return to_chunksize(allchunks[1],cs)
-        end
-        allchunks = to_chunksize.(allchunks,cs)
-        allchunks = unique(allchunks)
-        if length(allchunks)>1
-            @warn "Multiple chunk offset resolutions possible: $allchunks for dim $(axname(ax))"
-        end
-        first(allchunks)
-    end
-    (co...,)
-end
 
 """
     permuteloopaxes(dc)
@@ -752,44 +667,6 @@ getlaxvals(a::AllLoopAxes, cI, offscur) = (
 )
 
 
-function getallargs(dc::DATConfig)
-    incache, outcache = getCubeCache(dc)
-    filters = map(ic -> ic.desc.procfilter, dc.incubes)
-    axvals = if dc.include_loopvars
-        lax = (dc.LoopAxes...,)
-        AllLoopAxes(lax)
-    else
-        NoLoopAxes()
-    end
-    adda = dc.addargs
-    kwa = dc.kwargs
-    fu = if !dc.inplace
-        makeinplace(dc.fu)
-    else
-        dc.fu
-    end
-    inarsbc = map(dc.incubes, incache) do ic, cache
-        allax = getindsall(geticolon(ic), 1:length(dc.LoopAxes), i -> i in ic.loopinds ? true : false)
-        if has_window(ic)
-            for (iw, pa) in zip(ic.iwindow, ic.window)
-                allax = Base.setindex(allax, pa, iw)
-            end
-        end
-        if ic.colonperm === nothing
-            pa = PickAxisArray(cache, allax)
-        else
-            pa = PickAxisArray(cache, allax, ic.colonperm)
-        end
-    end
-    outarsbc = map(dc.outcubes, outcache) do oc, cache
-        allax = getindsall(1:length(oc.axesSmall), oc.loopinds, i -> true)
-        pa = PickAxisArray(cache, allax)
-        pa
-    end
-    incache,
-    outcache,
-    (fu, inarsbc, outarsbc, filters, axvals, adda, kwa)
-end
 
 
 function getbackend(oc, ispar, max_cache)
@@ -908,31 +785,40 @@ end
 
 function analyzeAxes(dc::DATConfig{NIN,NOUT}) where {NIN,NOUT}
 
-    loopaxsyms = Symbol[]
+    loopaxsyms = Dict{Int,Symbol}()
     for cube in dc.incubes
         for (iax,a) in enumerate(caxes(cube.cube))
-            if !in(a, cube.axesSmall)
-                s = DD.name(a)
-                is = findfirst(isequal(s), loopaxsyms) 
-                if is === nothing
-                    push!(dc.LoopAxes, a)
-                    push!(loopaxsyms, s)
-                    is = length(loopaxsyms)
+            s = DD.name(a)
+            is = findfirst(isequal(s), loopaxsyms) 
+            is_singular = length(cube.windows[iax])==1
+            if is_singular || is === nothing
+                push!(dc.LoopAxes, a)
+                push!(dc.loopwindows,length(cube.windows[iax]))
+                #If the window is longer than 1 it needs to be broadcast over
+                is_singular || (loopaxsyms[length(dc.LoopAxes)]=s)
+                is = length(dc.LoopAxes)
+            else
+                if a == dc.LoopAxes[is]
+                    nothing
                 else
-                    a == dc.LoopAxes[is] || error("Axes $a and $(dc.LoopAxes[is]) have the same name but are note identical")
-                end
-                push!(cube.loopinds,is)
-                if iax in cube.iwindow
-                    push!(cube.windowloopinds, is)
+                    error("Axes $a and $(dc.LoopAxes[is]) have the same name but are note identical")
                 end
             end
+            push!(cube.dimsmap,is)
         end
     end
     for outcube in dc.outcubes
         LoopAxesAdd = DD.Dimension[]
-        for (il, loopax) in enumerate(dc.LoopAxes)
-            push!(outcube.loopinds, il)
-            push!(LoopAxesAdd, loopax)
+        for ax in outcube.axesSmall
+            push!(dc.LoopAxes,ax)
+            push!(dc.loopwindows,1)
+            push!(outcube.loopwindows,[1:length(ax)])
+            push!(outcube.dimsmap,length(dc.LoopAxes))
+        end
+        for (il, loopaxs) in loopaxsyms
+            push!(LoopAxesAdd, dc.LoopAxes[il])
+            push!(outcube.dimsmap,il)
+            push!(outcube.loopwindows,1:dc.loopwindows[il])
         end
         outcube.allAxes = DD.Dimension[outcube.axesSmall; LoopAxesAdd]
         dold = outcube.innerchunks
@@ -948,7 +834,6 @@ function analyzeAxes(dc::DATConfig{NIN,NOUT}) where {NIN,NOUT}
         end
         outcube.innerchunks = newchunks
     end
-    #And resolve names in chunk size dicts
     return dc
 end
 
