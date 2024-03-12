@@ -4,11 +4,12 @@ import mathjax3 from "markdown-it-mathjax3";
 
 // https://vitepress.dev/reference/site-config
 export default defineConfig({
-  base: 'REPLACE_ME_WITH_DOCUMENTER_VITEPRESS_BASE_URL_WITH_TRAILING_SLASH',
+  base: 'REPLACE_ME_DOCUMENTER_VITEPRESS',
   title: "YAXArrays.jl",
   description: "Yet another xarray-like Julia package",
   lastUpdated: true,
   cleanUrls: true,
+  outDir: 'REPLACE_ME_DOCUMENTER_VITEPRESS', // This is required for MarkdownVitepress to work correctly...
   ignoreDeadLinks: true,
   
   markdown: {
@@ -42,6 +43,7 @@ export default defineConfig({
           { text: 'Setting chunks size', link: '/UserGuide/setchuncks' },
           { text: 'Apply functions on YAXArrays', link: '/UserGuide/applyfunctions' },
           { text: 'Create Cube from function', link: '/UserGuide/create_cube_from_function' },
+          { text: 'Group by', link: '/UserGuide/group_by' },
           { text: 'Distributed computing', link: '/UserGuide/distributed' },
           { text: 'Open NetCDF', link: '/UserGuide/openNetCDF' },
           { text: 'Open Zarr (Store)', link: '/UserGuide/openZarr' },
@@ -51,13 +53,20 @@ export default defineConfig({
           { text: 'Overview', link: '/tutorials/tutorial' },
           { text: 'Plotting maps', link: '/tutorials/plottingmaps' },
           { text: 'Mean Seasonal Cycle', link: '/tutorials/mean_seasonal_cycle' },
-          { text: 'ESDL study 3', link: '/tutorials/examples_from_esdl_study_3' },
-          { text: 'ESDL study 4', link: '/tutorials/examples_from_esdl_study_4' },
+          { text: 'ESDL studies',
+            items: [
+              { text: 'ESDL study 1', link: '/tutorials/esdl/examples_from_esdl_study_1' },
+              { text: 'ESDL study 2', link: '/tutorials/esdl/examples_from_esdl_study_2' },
+              { text: 'ESDL study 3', link: '/tutorials/esdl/examples_from_esdl_study_3' },
+              { text: 'ESDL study 4', link: '/tutorials/esdl/examples_from_esdl_study_4' },
+            ]
+          },
       ]},
       { text: 'How do I?',
       items: [
         { text: 'How do I ...', link: '/HowdoI/howdoi' },
-        { text: 'Contribute to docs', link: '/HowdoI/contribute' }
+        { text: 'Contribute to docs', link: '/HowdoI/contribute' },
+        { text: 'Contributors', link: '/contributors' }
     ]},
     ],
 
@@ -71,6 +80,7 @@ export default defineConfig({
           { text: 'Setting chunks size', link: '/UserGuide/setchuncks' },
           { text: 'Apply functions on YAXArrays', link: '/UserGuide/applyfunctions' },
           { text: 'Create Cube from function', link: '/UserGuide/create_cube_from_function' },
+          { text: 'Group by', link: '/UserGuide/group_by' },
           { text: 'Distributed computing', link: '/UserGuide/distributed' },
           { text: 'Open NetCDF', link: '/UserGuide/openNetCDF' },
           { text: 'Open Zarr (Store)', link: '/UserGuide/openZarr' },
@@ -79,21 +89,22 @@ export default defineConfig({
         items: [
           { text: 'Overview', link: '/tutorials/tutorial' },
           { text: 'Plotting maps', link: '/tutorials/plottingmaps' },
-          { text: 'Mean Seasonal Cycle', link: '/tutorials/mean_seasonal_cycle' },
-          { text: 'ESDL study 3', link: '/tutorials/examples_from_esdl_study_3' },
-          { text: 'ESDL study 4', link: '/tutorials/examples_from_esdl_study_4' },
+          { text: 'Mean Seasonal Cycle', link: '/tutorials/mean_seasonal_cycle' }
       ]},
       { text: 'How do I?',
       items: [
         { text: 'How do I ...', link: '/HowdoI/howdoi' },
-        { text: 'Contribute to docs', link: '/HowdoI/contribute' }
+        { text: 'Contribute to docs', link: '/HowdoI/contribute' },
     ]},
+    { text: 'Contributors', link: '/contributors' },
     { text: 'API',
     items: [
       { text: 'API Reference', link: 'api' },
     ]},
     ],
-
+    editLink: {
+      pattern: 'https://github.com/JuliaDataCubes/YAXArrays.jl/edit/master/docs/src/:path'
+    },
     socialLinks: [
       { icon: 'github', link: 'https://github.com/JuliaDataCubes/YAXArrays.jl' }
     ],
