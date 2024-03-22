@@ -117,6 +117,13 @@ axlist = (
     Y(range(1, 5, length=15)),
     Dim{:Variable}(["var1", "var2"]))
 ```
+```
+↓ time     1.0:1.0:20.0,
+→ X        1.0:1.0:10.0,
+↗ Y        1.0:0.2857142857142857:5.0,
+⬔ Variable ["var1", "var2"]
+```
+
 and the corresponding data.
 ```julia
 data = rand(20, 10, 15, 2)
@@ -140,12 +147,23 @@ And our first YAXArray is built with:
 ds = YAXArray(axlist, data, props)
 ```
 ```
-20×10×15×2 YAXArray{Float64,4} with dimensions: 
-  Dim{:time} Sampled{Float64} 1.0:1.0:20.0 ForwardOrdered Regular Points,
-  X Sampled{Float64} 1.0:1.0:10.0 ForwardOrdered Regular Points,
-  Y Sampled{Float64} 1.0:0.2857142857142857:5.0 ForwardOrdered Regular Points,
-  Dim{:Variable} Categorical{String} String["var1", "var2"] ForwardOrdered
-Total size: 46.88 KB
+╭────────────────────────────────╮
+│ 20×10×15×2 YAXArray{Float64,4} │
+├────────────────────────────────┴─────────────────────────────────────────────── dims ┐
+  ↓ time     Sampled{Float64} 1.0:1.0:20.0 ForwardOrdered Regular Points,
+  → X        Sampled{Float64} 1.0:1.0:10.0 ForwardOrdered Regular Points,
+  ↗ Y        Sampled{Float64} 1.0:0.2857142857142857:5.0 ForwardOrdered Regular Points,
+  ⬔ Variable Categorical{String} ["var1", "var2"] ForwardOrdered
+├──────────────────────────────────────────────────────────────────────────── metadata ┤
+  Dict{String, String} with 5 entries:
+  "var1" => "one of your variables"
+  "time" => "days"
+  "x"    => "lon"
+  "var2" => "your second variable"
+  "y"    => "lat"
+├────────────────────────────────────────────────────────────────────────── file size ┤ 
+  file size: 46.88 KB
+└─────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Getting data back from a YAXArray
@@ -184,11 +202,22 @@ The data for one variables, i.e. `var1` can be accessed via:
 ds[Variable=At("var1")]
 ```
 ```
-20×10×15 YAXArray{Float64,3} with dimensions: 
-  Dim{:time} Sampled{Float64} 1.0:1.0:20.0 ForwardOrdered Regular Points,
-  X Sampled{Float64} 1.0:1.0:10.0 ForwardOrdered Regular Points,
-  Y Sampled{Float64} 1.0:0.2857142857142857:5.0 ForwardOrdered Regular Points
-Total size: 23.44 KB
+╭──────────────────────────────╮
+│ 20×10×15 YAXArray{Float64,3} │
+├──────────────────────────────┴────────────────────────────────────────────── dims ┐
+  ↓ time Sampled{Float64} 1.0:1.0:20.0 ForwardOrdered Regular Points,
+  → X    Sampled{Float64} 1.0:1.0:10.0 ForwardOrdered Regular Points,
+  ↗ Y    Sampled{Float64} 1.0:0.2857142857142857:5.0 ForwardOrdered Regular Points
+├───────────────────────────────────────────────────────────────────────── metadata ┤
+  Dict{String, String} with 5 entries:
+  "var1" => "one of your variables"
+  "time" => "days"
+  "x"    => "lon"
+  "var2" => "your second variable"
+  "y"    => "lat"
+├──────────────────────────────────────────────────────────────────────── file size ┤ 
+  file size: 23.44 KB
+└───────────────────────────────────────────────────────────────────────────────────┘
 ```
 and again, you can use the `.data` field to actually get the data.
 
