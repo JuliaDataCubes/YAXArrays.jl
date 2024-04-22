@@ -36,12 +36,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup Node
-        uses: actions/setup-node@v3
-        with:
-            node-version: 20
-            cache: npm # or pnpm / yarn
-            cache-dependency-path: 'docs/package-lock.json' # this should be a package-lock.json file
       - name: Setup Julia
         uses: julia-actions/setup-julia@v1
       - name: Pull Julia cache
@@ -50,8 +44,6 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y xorg-dev mesa-utils xvfb libgl1 freeglut3-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxext-dev
       - name: Install documentation dependencies
         run: DISPLAY=:0 xvfb-run -s '-screen 0 1024x768x24' julia --project=docs -e 'using Pkg; pkg"dev ."; Pkg.instantiate(); Pkg.precompile(); Pkg.status()'
-      - name: Instantiate NPM
-        run: cd docs/; npm i; cd ..
       #- name: Creating new mds from src
       - name: Build and deploy docs
         env:

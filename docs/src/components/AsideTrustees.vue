@@ -18,7 +18,7 @@
     href="https://rafaqz.github.io/DimensionalData.jl/dev/"
     target="_blank"
   >
-    <img width="32" height="32" src="https://rafaqz.github.io/DimensionalData.jl/dev/logoDD.png" />
+    <img width="32" height="32" src="https://rafaqz.github.io/DimensionalData.jl/dev/logo.png" />
     <span>
       <p class="extra-info">Named Dimensions</p>
       <p class="heading">DimensionalData.jl</p>
