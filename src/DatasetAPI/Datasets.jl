@@ -43,13 +43,13 @@ function Dataset(; properties = Dict{String,Any}(), cubes...)
 end
 
 """
-to_dataset(c;datasetaxis = "Variable", name = "layer")  
+to_dataset(c;datasetaxis = "Variable", layername = "layer")  
 
 Convert a Data Cube into a Dataset. It is possible to treat one of 
 the Cube's axes as a "DatasetAxis" i.e. the cube will be split into 
 different parts that become variables in the Dataset. If no such 
 axis is specified or found, there will only be a single variable 
-in the dataset with the name `name`
+in the dataset with the name `layername`
 """
 function to_dataset(c;datasetaxis = "Variable", layername = get(c.properties,"name","layer"))
     axlist = DD.dims(c)
