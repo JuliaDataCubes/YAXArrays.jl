@@ -170,7 +170,7 @@ function getworkarray(c::InOutCube, ntr)
                 i1 = findfirst(isequal(i), c.icolon)
                 i1 === nothing || return caxes(c.cube)[c.icolon[i1]]
                 i2 = findfirst(isequal(i), c.iwindow)
-                DD.rebuild(DD.key2dim(DD.dim2key(caxes(c.cube)[c.iwindow[i2]])),UnitRange(-c.window[i2][1], c.window[i2][2]))
+                DD.rebuild(DD.key2dim(DD.name(caxes(c.cube)[c.iwindow[i2]])),UnitRange(-c.window[i2][1], c.window[i2][2]))
             end
             wrapWorkArray(c.desc.artype, w, axes)
         end
@@ -735,7 +735,7 @@ struct AllLoopAxes{S,V} <: AxValCreator
     loopsyms::S
     loopaxvals::V
 end
-AllLoopAxes(a) = AllLoopAxes(map(DD.dim2key, a), map(i -> i.val, a))
+AllLoopAxes(a) = AllLoopAxes(map(DD.name, a), map(i -> i.val, a))
 getlaxvals(::NoLoopAxes, cI, offscur) = ()
 getlaxvals(a::AllLoopAxes, cI, offscur) = (
     NamedTuple{a.loopsyms}(

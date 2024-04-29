@@ -195,7 +195,7 @@ function CubeIterator(
         eltype(ic.cube)
     end
     et = (et..., map(i->eltype(i.val), loopaxes)...)
-    axnames = DD.dim2key.(loopaxes)
+    axnames = DD.name.(loopaxes)
     colnames = (map(Symbol, varnames)..., axnames...)
     CubeIterator(
         dc,

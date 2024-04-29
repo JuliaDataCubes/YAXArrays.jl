@@ -163,9 +163,9 @@ end
 # because getproperty is overloaded, propertynames should be as well
 function Base.propertynames(a::YAXArray, private::Bool=false)
     if private
-        (DD.dim2key.(DD.dims(a))..., :axes, :data, :properties)
+        (DD.name.(DD.dims(a))..., :axes, :data, :properties)
     else
-        (DD.dim2key.(DD.dims(a))..., :axes, :data)
+        (DD.name.(DD.dims(a))..., :axes, :data)
     end
 end
 
@@ -340,9 +340,9 @@ function outaxis_from_column(tab,icol)
     axname = schema(tab).names[icol]
     if eltype(axdata) <: AbstractString ||
         (!issorted(axdata) && !issorted(axdata, rev = true))
-        DD.rebuild(DD.key2dim(Symbol(axname)), axdata)
+        DD.rebuild(DD.name2dim(Symbol(axname)), axdata)
     else
-        DD.rebuild(DD.key2dim(Symbol(axname)), axdata)
+        DD.rebuild(DD.name2dim(Symbol(axname)), axdata)
     end
 end
 
@@ -356,13 +356,13 @@ function outaxis_from_data(cax,axinds,indlist)
             ax.values[i[ai-minai+1]]
         end
     end
-    DD.rebuild(DD.key2dim(Symbol(newname)), mergevals)
+    DD.rebuild(DD.name2dim(Symbol(newname)), mergevals)
 end
 chunkoffset(c) = grid_offset(eachchunk(c))
 
 # Implementation for YAXArrayBase interface
 YAXArrayBase.dimvals(x::YAXArray, i) = caxes(x)[i].val
-YAXArrayBase.dimname(x::YAXArray, i) = DD.dim2key(DD.dims(x)[i])
+YAXArrayBase.dimname(x::YAXArray, i) = DD.name(DD.dims(x)[i])
 YAXArrayBase.getattributes(x::YAXArray) = x.properties
 YAXArrayBase.iscontdim(x::YAXArray, i) = isa(caxes(x)[i], RangeAxis)
 YAXArrayBase.getdata(x::YAXArray) = getfield(x, :data)

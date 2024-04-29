@@ -219,7 +219,7 @@ end
 function toaxis(dimname, g, offs, len)
     axname = Symbol(dimname)
     if !haskey(g, dimname)
-        return DD.rebuild(DD.key2dim(axname), 1:len)
+        return DD.rebuild(DD.name2dim(axname), 1:len)
     end
     ar = get_var_handle(g, dimname)
     aratts = get_var_attrs(g, dimname)
@@ -232,15 +232,15 @@ function toaxis(dimname, g, offs, len)
         DD.Ti(tsteps[offs+1:end])
     elseif haskey(aratts, "_ARRAYVALUES")
         vals = identity.(aratts["_ARRAYVALUES"])
-        DD.rebuild(DD.key2dim(axname),(vals))
+        DD.rebuild(DD.name2dim(axname),(vals))
     else
         axdata = cleanaxiselement.(ar[offs+1:end])
         axdata = testrange(axdata)
         if eltype(axdata) <: AbstractString ||
             (!issorted(axdata) && !issorted(axdata, rev = true))
-            DD.rebuild(DD.key2dim(axname), axdata)
+            DD.rebuild(DD.name2dim(axname), axdata)
         else
-            DD.rebuild(DD.key2dim(axname), axdata)
+            DD.rebuild(DD.name2dim(axname), axdata)
         end
     end
 end
@@ -367,7 +367,7 @@ function Cube(ds::Dataset; joinname = "Variable", target_type = nothing)
     if length(newkeys) == 1
         return ds.cubes[first(newkeys)]
     else
-        varax = DD.rebuild(DD.key2dim(Symbol(joinname)), string.(newkeys))
+        varax = DD.rebuild(DD.name2dim(Symbol(joinname)), string.(newkeys))
         cubestomerge = map(newkeys) do k
             if eltype(ds.cubes[k]) <: prom_type
                 ds.cubes[k]
