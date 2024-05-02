@@ -219,7 +219,7 @@ end
             ar = Cube(ds)
             @test ar isa YAXArray
             @test size(ar) == (10, 5, 2, 2)
-            @test DD.name.(ar.axes) == (:Time, :d2, :d3, :Variable)
+            @test DD.name.(ar.axes) == (:Ti, :d2, :d3, :Variable)
             @test DD.lookup(ar.axes[4]) == ["Var1", "Var3"]
         end
         @testset "Dataset creation" begin
@@ -230,7 +230,7 @@ end
             )
             # Basic
             newds, newds2 = YAXArrays.Datasets.createdataset(MockDataset, al)
-            @test DD.dim2key.(newds2.axes) == (:Time, :Xvals, :Variable)
+            @test DD.name.(newds2.axes) == (:Time, :Xvals, :Variable)
             @test DD.lookup(newds2.axes[1]) == Date(2001):Month(1):Date(2001, 12, 31)
             @test DD.lookup(newds2.axes[3]) == ["A", "B"]
             @test DD.lookup(newds2.axes[2]) == 1:10

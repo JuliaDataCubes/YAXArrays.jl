@@ -139,11 +139,11 @@ function tooutaxis(
         if haskey(bycube.properties, "labels")
             idict = bycube.properties["labels"]
             axname = get(bycube.properties, "name", "Label")
-            outAxis = DD.rebuild(DD.key2dim(Symbol(axname)), collect(String, values(idict)))
+            outAxis = DD.rebuild(DD.name2dim(Symbol(axname)), collect(String, values(idict)))
             convertdict = Dict(k => i for (i, k) in enumerate(keys(idict)))
         else
             sort!(k)
-            outAxis = DD.rebuild(DD.key2dim(Symbol(s)), k)
+            outAxis = DD.rebuild(DD.name2dim(Symbol(s)), k)
             convertdict = Dict(k => i for (i, k) in enumerate(k))
         end
     else
@@ -155,7 +155,7 @@ function tooutaxis(
 end
 function tooutaxis(f, iter::CubeIterator, k, ibc)
     sort!(k)
-    outAxis = DD.rebuild(DD.key2dim(Symbol("Category$(ibc)")), k)
+    outAxis = DD.rebuild(DD.name2dim(Symbol("Category$(ibc)")), k)
     convertdict = Dict(k => i for (i, k) in enumerate(k))
     outAxis, convertdict
 end
@@ -173,7 +173,7 @@ getStatType(t::Type{<:Dict{<:Any,T}}) where {T} = T
 getStatOutAxes(tab, agg) = getStatOutAxes(tab, agg, getStatType(agg))
 getStatOutAxes(tab, agg, ::Type{<:OnlineStat}) = ()
 function getStatOutAxes(tab, agg, ::Type{<:Extrema})
-    (DD.rebuild(DD.key2dim(:Extrema), ["min", "max"]),)
+    (DD.rebuild(DD.name2dim(:Extrema), ["min", "max"]),)
 end
 function getStatOutAxes(tab, agg, ::Type{<:WeightedCovMatrix})
     varn = tab.schema.names
@@ -189,8 +189,8 @@ function getStatOutAxes(tab, agg, ::Type{<:WeightedCovMatrix})
 end
 function getStatOutAxes(tab,agg,::Type{<:Union{Ash,HistogramStat, WeightedAdaptiveHist}})
     nbin = getnbins(agg)
-    a1 = DD.rebuild(DD.key2dim(Symbol("Bin")), 1:nbin)
-    a2 = DD.rebuild(DD.key2dim(Symbol("Hist")), ["MidPoints", "Frequency"])
+    a1 = DD.rebuild(DD.name2dim(Symbol("Bin")), 1:nbin)
+    a2 = DD.rebuild(DD.name2dim(Symbol("Hist")), ["MidPoints", "Frequency"])
     (a1, a2)
 end
 function getByAxes(iter, agg::GroupedOnlineAggregator)

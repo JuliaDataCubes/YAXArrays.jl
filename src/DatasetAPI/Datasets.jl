@@ -43,13 +43,13 @@ function Dataset(; properties = Dict{String,Any}(), cubes...)
 end
 
 """
-to_dataset(c;datasetaxis = "Variable", name = "layer")  
+to_dataset(c;datasetaxis = "Variable", layername = "layer")  
 
 Convert a Data Cube into a Dataset. It is possible to treat one of 
 the Cube's axes as a "DatasetAxis" i.e. the cube will be split into 
 different parts that become variables in the Dataset. If no such 
 axis is specified or found, there will only be a single variable 
-in the dataset with the name `name`
+in the dataset with the name `layername`
 """
 function to_dataset(c;datasetaxis = "Variable", layername = get(c.properties,"name","layer"))
     axlist = DD.dims(c)
@@ -219,7 +219,7 @@ end
 function toaxis(dimname, g, offs, len)
     axname = Symbol(dimname)
     if !haskey(g, dimname)
-        return DD.rebuild(DD.key2dim(axname), 1:len)
+        return DD.rebuild(DD.name2dim(axname), 1:len)
     end
     ar = get_var_handle(g, dimname)
     aratts = get_var_attrs(g, dimname)
@@ -232,15 +232,15 @@ function toaxis(dimname, g, offs, len)
         DD.Ti(tsteps[offs+1:end])
     elseif haskey(aratts, "_ARRAYVALUES")
         vals = identity.(aratts["_ARRAYVALUES"])
-        DD.rebuild(DD.key2dim(axname),(vals))
+        DD.rebuild(DD.name2dim(axname),(vals))
     else
         axdata = cleanaxiselement.(ar[offs+1:end])
         axdata = testrange(axdata)
         if eltype(axdata) <: AbstractString ||
             (!issorted(axdata) && !issorted(axdata, rev = true))
-            DD.rebuild(DD.key2dim(axname), axdata)
+            DD.rebuild(DD.name2dim(axname), axdata)
         else
-            DD.rebuild(DD.key2dim(axname), axdata)
+            DD.rebuild(DD.name2dim(axname), axdata)
         end
     end
 end
@@ -367,7 +367,7 @@ function Cube(ds::Dataset; joinname = "Variable", target_type = nothing)
     if length(newkeys) == 1
         return ds.cubes[first(newkeys)]
     else
-        varax = DD.rebuild(DD.key2dim(Symbol(joinname)), string.(newkeys))
+        varax = DD.rebuild(DD.name2dim(Symbol(joinname)), string.(newkeys))
         cubestomerge = map(newkeys) do k
             if eltype(ds.cubes[k]) <: prom_type
                 ds.cubes[k]

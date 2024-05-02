@@ -1,5 +1,5 @@
 using DimensionalData: DimensionalData as DD
-const VecOrTuple{S} = Union{Vector{<:S},Tuple{Vararg{<:S}}} where {S}
+const VecOrTuple{S} = Union{Vector{<:S},Tuple{Vararg{S}}} where {S}
 
 abstract type AxisDescriptor end
 
