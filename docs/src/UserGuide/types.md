@@ -10,7 +10,7 @@ A one dimensional array is called `Vector` and a two dimensional array is called
 In many Machine Learning libraries, arrays are also called tensors.
 Arrays are designed to store dense spatial-temporal data stored in a grid, whereas a collection of sparse points is usually stored in data frames or relational databases.
 
-A `DimArray` as defined by (DimensionalData.jl)(https://rafaqz.github.io/DimensionalData.jl/dev/) adds names to the dimensions and their axes ticks for a given `Array`.
+A `DimArray` as defined by [DimensionalData.jl](https://rafaqz.github.io/DimensionalData.jl/dev/) adds names to the dimensions and their axes ticks for a given `Array`.
 These names can be used to access the data, e.g., by date instead of just by integer position.
 
 A `YAXArray` is a subtype of a `AbstractDimArray` and adds functions to load and process the named arrays.

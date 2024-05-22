@@ -1,72 +1,45 @@
 # Read YAXArrays and Datasets
 
-Here we learn how to open files into arrays and datasets.
+Here we learn how to open files as arrays and datasets.
 
-## NetCDF
 
-In this example we are going to use a `NetCDF` file. To open a single data file we first need to load the appropriate backend package via `using NetCDF`. 
+## Read Zarr
 
-### File with one variable 
+Open a Zarr store as a `Dataset`:
 
-````@example open_nc
-using YAXArrays, NetCDF
-using DiskArrays
-using Downloads
-url = "https://www.unidata.ucar.edu/software/netcdf/examples/tos_O1_2001-2002.nc"
-filename = Downloads.download(url, "tos_O1_2001-2002.nc") # you pick your own path
-nothing # hide
+````@example read_zarr
+using YAXArrays
+using Zarr
+path="gs://cmip6/CMIP6/ScenarioMIP/DKRZ/MPI-ESM1-2-HR/ssp585/r1i1p1f1/3hr/tas/gn/v20190710/"
+store = zopen(path, consolidated=true)
+ds = open_dataset(store)
 ````
 
-````@ansi open_nc
-c = Cube(filename)
+We can set `path` to a URL, a local directory, or in this case to a cloud object storage path.
+
+A zarr store may contain multiple arrays.
+Individual arrays can be accessed using subsetting:
+
+````@example read_zarr
+ds.tas
 ````
 
-### File with multiple variables, mixed dimensions
+## Read NetCDF
 
-When the dataset contains variables with different dimensions you should use `open_dataset` as in 
+Open a NetCDF file as a `Dataset`:
 
-````@example open_nc
-path2file = "https://www.unidata.ucar.edu/software/netcdf/examples/sresa1b_ncar_ccsm3-example.nc"
-filename = Downloads.download(path2file, "sresa1b_ncar_ccsm3-example.nc")
-c = open_dataset(filename)
-nothing # hide
+````@example read_netcdf
+using YAXArrays
+using NetCDF
+using Downloads: download
+
+path = download("https://www.unidata.ucar.edu/software/netcdf/examples/tos_O1_2001-2002.nc", "example.nc")
+ds = open_dataset(path)
 ````
 
-````@ansi open_nc
-c
+A NetCDF file may contain multiple arrays.
+Individual arrays can be accessed using subsetting:
+
+````@example read_netcdf
+ds.tos
 ````
-
-Afterwards, selecting a variable as usual works, i.e.
-
-````@ansi open_nc
-c["ua"]
-````
-
-or 
-
-````@ansi open_nc
-c["tas"]
-````
-
-Note that their output is a YAXArray.
-
-## Zarr
-
-````@example open_zarr
-using Zarr, YAXArrays
-store ="gs://cmip6/CMIP6/ScenarioMIP/DKRZ/MPI-ESM1-2-HR/ssp585/r1i1p1f1/3hr/tas/gn/v20190710/"
-````
-
-Open and select the `tas` variable,
-
-````@ansi open_zarr
-g = open_dataset(zopen(store, consolidated=true))
-````
-
-get variable
-
-````@ansi open_zarr
-c = g["tas"]
-````
-
-After this operate on it as usual.

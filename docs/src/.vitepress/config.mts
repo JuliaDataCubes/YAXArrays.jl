@@ -35,13 +35,19 @@ export default defineConfig({
     },
     nav: [
       { text: 'Home', link: '/' },
-      { text: 'Getting Started', link: '/getting_started' },
+      { text: 'Get Started', link: '/get_started' },
       {
         text: 'User Guide',
         items: [
-          { text: 'Read and Write', link: '/UserGuide/read_and_write' },
+          { text: 'Read', link: '/UserGuide/read' },
+          { text: 'Create', link: '/UserGuide/create' },
+          { text: 'Write', link: '/UserGuide/write' },
+          { text: 'Subset', link: '/UserGuide/subset' },
           { text: 'Compute', link: '/UserGuide/compute' },
-          { text: 'FAQ', link: '/UserGuide/faq' },
+          { text: 'Group', link: '/UserGuide/group' },
+          { text: 'Combine', link: '/UserGuide/combine' },
+          { text: 'Chunk', link: '/UserGuide/chunk' },
+          { text: 'FAQ', link: '/UserGuide/faq' }
         ]
       },
       {
@@ -78,11 +84,13 @@ export default defineConfig({
         text: 'User Guide',
         items: [
           { text: 'Types', link: '/UserGuide/types' },
+          { text: 'Create', link: '/UserGuide/create' },
           { text: 'Read', link: '/UserGuide/read' },
           { text: 'Write', link: '/UserGuide/write' },
           { text: 'Subset', link: '/UserGuide/subset' },
           { text: 'Compute', link: '/UserGuide/compute' },
           { text: 'Group', link: '/UserGuide/group' },
+          { text: 'Combine', link: '/UserGuide/combine' },
           { text: 'Chunk', link: '/UserGuide/chunk' },
           { text: 'FAQ', link: '/UserGuide/faq' }
         ]
