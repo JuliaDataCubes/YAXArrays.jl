@@ -72,7 +72,8 @@ export default defineConfig({
     ],
 
     sidebar: [
-      { text: 'Getting Started', link: '/getting_started' },
+      { text: 'Get Started', link: '/get_started' },
+      { text: 'API Reference', link: 'api' },
       {
         text: 'User Guide',
         items: [
@@ -99,11 +100,6 @@ export default defineConfig({
         items: [
           { text: 'Contribute', link: 'development/contribute' },
           { text: 'Contributors', link: 'development/contributors' }
-        ]
-      }, {
-        text: 'API',
-        items: [
-          { text: 'API Reference', link: 'api' },
         ]
       },
     ],
