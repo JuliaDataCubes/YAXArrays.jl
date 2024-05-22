@@ -1,4 +1,4 @@
-# GroupBy
+# Group YAXArrays and Datasets
 
 The following examples will use the `groupby` function to calculate temporal and spatial averages.
 

@@ -1,8 +1,12 @@
-# Opening NetCDF files
+# Read YAXArrays and Datasets
+
+Here we learn how to open files into arrays and datasets.
+
+## NetCDF
 
 In this example we are going to use a `NetCDF` file. To open a single data file we first need to load the appropriate backend package via `using NetCDF`. 
 
-## File with one variable 
+### File with one variable 
 
 ````@example open_nc
 using YAXArrays, NetCDF
@@ -17,7 +21,7 @@ nothing # hide
 c = Cube(filename)
 ````
 
-## File with multiple variables, mixed dimensions
+### File with multiple variables, mixed dimensions
 
 When the dataset contains variables with different dimensions you should use `open_dataset` as in 
 
@@ -45,3 +49,24 @@ c["tas"]
 ````
 
 Note that their output is a YAXArray.
+
+## Zarr
+
+````@example open_zarr
+using Zarr, YAXArrays
+store ="gs://cmip6/CMIP6/ScenarioMIP/DKRZ/MPI-ESM1-2-HR/ssp585/r1i1p1f1/3hr/tas/gn/v20190710/"
+````
+
+Open and select the `tas` variable,
+
+````@ansi open_zarr
+g = open_dataset(zopen(store, consolidated=true))
+````
+
+get variable
+
+````@ansi open_zarr
+c = g["tas"]
+````
+
+After this operate on it as usual.

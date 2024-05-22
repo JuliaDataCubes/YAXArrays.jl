@@ -1,4 +1,5 @@
-# How do I do it?
+# Frequently Asked Questions (FAQ)
+
 
 The purpose of this section is to do a collection of small 
 convinient pieces of code on how to do simple things.
