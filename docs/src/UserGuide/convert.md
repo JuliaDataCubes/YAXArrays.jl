@@ -29,3 +29,20 @@ Convert `YAXArray` to `Base.Array`:
 ````@example convert
 m2 = collect(a.data)
 ````
+
+## Convert `Raster`
+
+A `Raster` as defined in [Rasters.jl](https://rafaqz.github.io/Rasters.jl/stable/) has a same supertype of a `YAXArray`, i.e. `AbstractDimArray`, allowing easy conversion between those types:
+
+````@example convert
+using Rasters
+
+lon, lat = X(25:1:30), Y(25:1:30)
+time = Ti(2000:2024)
+ras = Raster(rand(lon, lat, time))
+a = YAXArray(dims(ras), ras.data)
+````
+
+````@example convert
+ras2 = Raster(a)
+````
