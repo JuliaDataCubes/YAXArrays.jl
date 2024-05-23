@@ -14,6 +14,52 @@ Alternatively, you can also do
 import Pkg; Pkg.add("YAXArrays")
 ```
 
+## Quickstart
+
+Create a simple array from random numbers given the size of each dimension or axis:
+
+```@example quickstart
+using YAXArrays
+
+a = YAXArray(rand(2,3))
+```
+
+Assemble a more complex `YAXArray` with 4 dimensions, i.e. time, x, y and a variable type:
+
+```@example quickstart
+using DimensionalData
+
+# axes or dimensions with name and tick values
+axlist = (
+    Dim{:time}(range(1, 20, length=20)),
+    X(range(1, 10, length=10)),
+    Y(range(1, 5, length=15)),
+    Dim{:variable}(["temperature", "precipitation"])
+)
+
+# the actual data matching the dimensions defined in axlist
+data = rand(20, 10, 15, 2)
+
+# metadata about the array
+props = Dict(
+    "origin" => "YAXArrays.jl example",
+    "x" => "longitude",
+    "y" => "latitude",
+);
+
+a2 = YAXArray(axlist, data, props)
+```
+
+Get the temperature map at the first point in time:
+
+```@example quickstart
+a2[variable=At("temperature"), time=1].data
+```
+
+Get more details at the [select page](UserGuide/select)
+
+## Updates
+
 :::tip
 
 The Julia Compiler is always improving. As such, we recommend using the latest stable
@@ -21,31 +67,10 @@ version of Julia.
 
 :::
 
-
-## Quickstart
-
-```@example quickstart
-using YAXArrays
-```
-
 You may check the installed version with:
 
 ```julia
 pkg> st YAXArrays
-```
-
-Let's assemble a `YAXArray` with 4 dimensions i.e. time, x,y and a variable dimension with two variables.
-
-```@example quickstart
-using YAXArrays, DimensionalData
-axlist = (
-    Dim{:time}(range(1, 20, length=20)),
-    X(range(1, 10, length=10)),
-    Y(range(1, 5, length=15)),
-    Dim{:Variable}(["var1", "var2"]))
-# and the corresponding data.
-data = rand(20, 10, 15, 2);
-nothing # hide
 ```
 
 ::: info
@@ -53,50 +78,3 @@ nothing # hide
 With `YAXArrays.jl 0.5` we switched the underlying data type to be a subtype of the DimensionalData.jl types. Therefore the indexing with named dimensions changed to the DimensionalData syntax. See the [`DimensionalData.jl docs`](https://rafaqz.github.io/DimensionalData.jl/stable/).
 
 :::
-
-You can also add additional properties via a Dictionary, namely
-
-```@example quickstart
-props = Dict(
-    "time" => "days",
-    "x" => "lon",
-    "y" => "lat",
-    "var1" => "one of your variables",
-    "var2" => "your second variable",
-);
-nothing # hide
-```
-
-And our first YAXArray is built with:
-
-```@ansi quickstart
-ds = YAXArray(axlist, data, props)
-```
-
-## Getting data from a YAXArray
-
-For axis can be via `.` 
-
-```@example quickstart
-ds.X
-```
-
-or better yet via `lookup`
-
-```@example quickstart
-lookup(ds, :X)
-```
-
-note that also the `.data` field can be use
-
-```@example quickstart
-lookup(ds, :X).data
-```
-
-The data for one variables, i.e. `var1` can be accessed via:
-
-```@ansi quickstart
-ds[Variable=At("var1")]
-```
-
-and again, you can use the `.data` field to actually get the data.

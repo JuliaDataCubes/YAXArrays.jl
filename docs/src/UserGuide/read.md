@@ -1,7 +1,6 @@
 # Read YAXArrays and Datasets
 
-Here we learn how to open files as arrays and datasets.
-
+This section describes how to read files, URLs, and directories into YAXArrays and datasets.
 
 ## Read Zarr
 
