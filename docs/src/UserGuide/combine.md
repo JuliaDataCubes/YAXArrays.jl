@@ -3,7 +3,7 @@
 Data is often scattered across multiple files and corresponding arrays, e.g. one file per time step.
 This section describes methods on how to combine them into a single YAXArray.
 
-## Concatenate YAXArrays along an existing dimension
+## `cat` along an existing dimension
 
 Here we use `cat` to combine two arrays consisting of data from the first and the second half of a year into one single array containing the whole year.
 We glue the arrays along the first dimension using `dims = 1`:
@@ -17,10 +17,11 @@ second_half = YAXArray((Dim{:time}(7:12),), rand(6))
 whole_year = cat(first_half, second_half, dims = 1)
 ````
 
-## Combine YAXArrays along a new dimension
+## `concatenatecubes` to a new dimension
 
-Here we use `concatenatecubes` to combine two arrays of different variables that share the same time dimension.
+Here we use `concatenatecubes` to combine two arrays of different variables that have the same dimensions.
 The resulting array `combined` has an additional dimension `variable` indicating from which array the element values originates.
+Note that using a `Dataset` instead is a more flexible approach in handling different variables.
 
 ````@example concatenatecubes
 using YAXArrays

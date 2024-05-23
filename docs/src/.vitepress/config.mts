@@ -40,13 +40,14 @@ export default defineConfig({
         text: 'User Guide',
         items: [
           { text: 'Read', link: '/UserGuide/read' },
-          { text: 'Create', link: '/UserGuide/create' },
           { text: 'Write', link: '/UserGuide/write' },
-          { text: 'Subset', link: '/UserGuide/subset' },
+          { text: 'Convert', link: '/UserGuide/convert' },
+          { text: 'Create', link: '/UserGuide/create' },
+          { text: 'Select', link: '/UserGuide/select' },
           { text: 'Compute', link: '/UserGuide/compute' },
+          { text: 'Chunk', link: '/UserGuide/chunk' },
           { text: 'Group', link: '/UserGuide/group' },
           { text: 'Combine', link: '/UserGuide/combine' },
-          { text: 'Chunk', link: '/UserGuide/chunk' },
           { text: 'FAQ', link: '/UserGuide/faq' }
         ]
       },
@@ -83,15 +84,15 @@ export default defineConfig({
       {
         text: 'User Guide',
         items: [
-          { text: 'Types', link: '/UserGuide/types' },
-          { text: 'Create', link: '/UserGuide/create' },
           { text: 'Read', link: '/UserGuide/read' },
           { text: 'Write', link: '/UserGuide/write' },
-          { text: 'Subset', link: '/UserGuide/subset' },
+          { text: 'Convert', link: '/UserGuide/convert' },
+          { text: 'Create', link: '/UserGuide/create' },
+          { text: 'Select', link: '/UserGuide/select' },
           { text: 'Compute', link: '/UserGuide/compute' },
+          { text: 'Chunk', link: '/UserGuide/chunk' },
           { text: 'Group', link: '/UserGuide/group' },
           { text: 'Combine', link: '/UserGuide/combine' },
-          { text: 'Chunk', link: '/UserGuide/chunk' },
           { text: 'FAQ', link: '/UserGuide/faq' }
         ]
       },

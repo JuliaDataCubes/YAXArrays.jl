@@ -1,6 +1,6 @@
-# Subset YAXArrays and Datasets
+# Select YAXArrays and Datasets
 
-The dimensions or axes of an `YAXArray` are named making it easier to select or query certain ranges of an array.
+The dimensions or axes of an `YAXArray` are named making it easier to subset or query certain ranges of an array.
 Let's open an example `Dataset` used to select certain elements:
 
 ````@example subset

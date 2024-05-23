@@ -1,5 +1,7 @@
 # Create YAXArrays and Datasets
 
+This section describes how to create arrays and datasets by filling values directly.
+
 ## Create a YAXArray
 
 We can create a new YAXArray by filling the values directly:
@@ -9,6 +11,7 @@ using YAXArrays
 a1 = YAXArray(rand(10, 20, 5))
 ````
 
+The dimensions have only generic names, e.g. `Dim_1` and only integer values.
 We can also specify the dimensions with custom names enabling easier access:
 
 ````@example create
@@ -22,6 +25,14 @@ axlist = (
 data2 = rand(30, 10, 15)
 properties = Dict(:origin => "user guide")
 a2 = YAXArray(axlist, data2, properties)
+````
+
+````@example create
+a2.properties
+````
+
+````@example create
+a2.axes
 ````
 
 ## Create a Dataset
