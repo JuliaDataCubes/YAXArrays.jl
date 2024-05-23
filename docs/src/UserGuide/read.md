@@ -43,3 +43,16 @@ Individual arrays can be accessed using subsetting:
 ````@example read_netcdf
 ds.tos
 ````
+
+## Read GDAL (GeoTIFF, GeoJSON)
+
+All GDAL compatible files can be read as a `YAXArrays.Dataset` after loading [ArchGDAL](https://yeesian.com/ArchGDAL.jl/latest/):
+
+````@example read_gdal
+using YAXArrays
+using ArchGDAL
+using Downloads: download
+
+path = download("https://github.com/yeesian/ArchGDALDatasets/raw/307f8f0e584a39a050c042849004e6a2bd674f99/gdalworkshop/world.tif", "world.tif")
+ds = open_dataset(path)
+````
