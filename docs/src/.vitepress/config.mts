@@ -39,6 +39,7 @@ export default defineConfig({
       {
         text: 'User Guide',
         items: [
+          { text: 'Types', link: '/UserGuide/types' },
           { text: 'Read', link: '/UserGuide/read' },
           { text: 'Write', link: '/UserGuide/write' },
           { text: 'Convert', link: '/UserGuide/convert' },
@@ -84,6 +85,7 @@ export default defineConfig({
       {
         text: 'User Guide',
         items: [
+          { text: 'Types', link: '/UserGuide/types' },
           { text: 'Read', link: '/UserGuide/read' },
           { text: 'Write', link: '/UserGuide/write' },
           { text: 'Convert', link: '/UserGuide/convert' },
