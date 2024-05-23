@@ -46,3 +46,29 @@ a = YAXArray(dims(ras), ras.data)
 ````@example convert
 ras2 = Raster(a)
 ````
+
+## Convert `DimArray`
+
+A `DimArray` as defined in [DimensionalData.jl](https://rafaqz.github.io/DimensionalData.jl/dev/dimarrays) has a same supertype of a `YAXArray`, i.e. `AbstractDimArray`, allowing easy conversion between those types.
+
+Convert `DimArray` to `YAXArray`:
+
+````@example convert
+using DimensionalData
+using YAXArrayBase
+
+dim_arr = rand(X(1:5), Y(10.0:15.0), metadata = Dict{String, Any}())
+a = yaxconvert(YAXArray, dim_arr)
+````
+
+Convert `YAXArray` to `DimArray`:
+
+````@example convert
+dim_arr2 = yaxconvert(DimArray, a)
+````
+
+::: info
+
+At the moment there is no support to save a DimArray directly into disk as a `NetCDF` or a `Zarr` file.
+
+:::

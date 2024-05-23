@@ -191,52 +191,6 @@ We can also use more than one criteria for grouping the values. In the next exam
 fitcube = cubefittable(t, Mean, :values, by=(:classes, :time))
 ````
 
-## convertions types  `DimArray` & `YAXArray`
-
-````@example howdoi
-using YAXArrays, YAXArrayBase
-using DimensionalData
-````
-
-### `DimArray` to `YAXArray`
-
-````@ansi howdoi
-dim_arr = rand(X(1:5), Y(10.0:15.0), metadata = Dict{String, Any}())
-````
-
-!!! warning "metadata"
-     Note the `metadata` argument. Needed by `yaxconvert`.
-
-````@ansi howdoi
-yax_arr = yaxconvert(YAXArray, dim_arr)
-````
-
-And saving it:
-
-````@example howdoi
-using Zarr, NetCDF
-savecube(yax_arr, "yax_arr.nc", driver=:netcdf, overwrite=true);
-nothing # hide
-````
-
-or as a `zarr` file
-
-````@example howdoi
-savecube(yax_arr, "yax_arr.zarr", driver=:zarr);
-nothing # hide
-````
-
-And going back to the DimArray type is also possible.
-
-### `YAXArray` into a `DimArray`
-
-````@ansi howdoi
-dim_arr = yaxconvert(DimArray, yax_arr)
-````
-
-at the moment there is no support to save a DimArray directly into disk as a `NetCDF` or a `Zarr` file.
-
-
 ## How do I assing variable names to `YAXArrays` in a `Dataset`
 
 ### One variable name
