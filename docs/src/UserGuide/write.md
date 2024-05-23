@@ -1,48 +1,55 @@
-# Saving YAXArrays and Datasets
+# Write YAXArrays and Datasets
 
-Is possible to save datasets and `YAXArray` directly to `zarr` files.
+Create an example Dataset:
 
-## Saving a YAXArray to Zarr
+````@example write
+using YAXArrays
+using NetCDF
+using Downloads: download
 
-One can save any `YAXArray` using the `savecube` function. 
-Simply add a path as an argument and the cube will be saved. 
+path = download("https://www.unidata.ucar.edu/software/netcdf/examples/tos_O1_2001-2002.nc", "example.nc")
+ds = open_dataset(path)
+````
 
-````@example saveYAX
-using YAXArrays, Zarr
-a = YAXArray(rand(10,20))
-savecube(a, "our_yax.zarr", driver=:zarr)
+## Write Zarr
+
+Save a single YAXArray to a directory:
+
+````@example write
+using Zarr
+savecube(ds.tos, "tos.zarr", driver=:zarr)
 nothing # hide
 ````
 
+Save an entire Dataset to a directory:
 
-## Saving a YAXArray to NetCDF
-
-Saving to NetCDF works exactly the same way:
-
-````@example saveYAX
-using YAXArrays, Zarr, NetCDF
-a = YAXArray(rand(10,20))
-savecube(a, "our_yax.nc", driver=:netcdf)
+````@example write
+savedataset(ds, path="ds.zarr", driver=:zarr)
 nothing # hide
 ````
 
-## Saving a Dataset
+## Write NetCDF
 
-Saving Datasets can be done using the `savedataset` function.
+Save a single YAXArray to a directory:
 
-````@example saveDataset
-using YAXArrays, Zarr
-ds = Dataset(x = YAXArray(rand(10,20)), y = YAXArray(rand(10)))
-f = "our_dataset.zarr"
-savedataset(ds, path=f, driver=:zarr)
+````@example write
+using NetCDF
+savecube(ds.tos, "tos.nc", driver=:netcdf)
 nothing # hide
 ````
 
-## Overwriting a Dataset    
+Save an entire Dataset to a directory:
+
+````@example write
+savedataset(ds, path="ds.nc", driver=:netcdf)
+nothing # hide
+````
+
+## Overwrite a Dataset    
 If a path already exists, an error will be thrown. Set `overwrite=true` to delete the existing dataset
 
-````@example saveDataset
-savedataset(ds, path=f, driver=:zarr, overwrite=true)
+````@example write
+savedataset(ds, path="ds.zarr", driver=:zarr, overwrite=true)
 nothing # hide
 ````
 
@@ -58,43 +65,43 @@ Look at the doc string for more information
 savedataset
 ````
 
-## Appending to a Dataset
+## Append to a Dataset
 
 New variables can be added to an existing dataset using the `append=true` keyword. 
 
-````@example saveDataset
+````@example write
 ds2 = Dataset(z = YAXArray(rand(10,20,5)))
-savedataset(ds2, path=f, backend=:zarr, append=true)
+savedataset(ds2, path="ds.zarr", backend=:zarr, append=true)
 nothing # hide
 ````
 
-````@ansi saveDataset
-open_dataset(f, driver=:zarr)
+````@ansi write
+open_dataset("ds.zarr", driver=:zarr)
 ````
 
-## Datacube Skeleton without the actual data
+## Save Skeleton
 Sometimes one merely wants to create a datacube  "Skeleton" on disk and gradually fill it with data. Here we make use of `FillArrays` to create a `YAXArray` and write only the axis data and array metadata to disk, while no actual array data is copied:
 
-````@example saveDataset
+````@example write
 using YAXArrays, Zarr, FillArrays
 ````
 
 create the `Zeros` array
 
-````@ansi saveDataset
+````@ansi write
 a = YAXArray(Zeros(Union{Missing, Int32}, 10, 20))
 ````
 
 and save them as
 
-````@example saveDataset
+````@example write
 r = savecube(a, "skeleton.zarr", driver=:zarr, skeleton=true)
 nothing # hide
 ````
 
 and check that all the values are `missing`
 
-````@example saveDataset
+````@example write
 all(ismissing,r[:,:])
 ````
 
@@ -105,3 +112,4 @@ If using `FillArrays` is not possible, using the `zeros` function works as well,
 The `skeleton` argument is also available for `savedataset`. 
 
 :::
+

@@ -1,4 +1,4 @@
-# Set chunks
+# Chunk YAXArrays
 
 > [!IMPORTANT]
 > Thinking about chunking is important when it comes to analyzing your data, because in most situations this will not fit into memory, hence having the fastest read access to it is crucial for your workflows. For example, for geo-spatial data do you want fast access on time or space, or... think about it.

@@ -1,4 +1,4 @@
-# YAXArray tutorial
+# Other tutorials
 
 If you are interested in learning how to work with YAXArrays for different use cases you can follow along one of the following tutorials. 
 - Currently the overview tutorial is located at [ESDLTutorials Repository](https://github.com/JuliaDataCubes/ESDLTutorials)

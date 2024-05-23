@@ -1,5 +1,8 @@
+# Contribute to YAXArrays.jl
 
-# Contribute to Documentation
+Pull requests and bug reports are always welcome at the [YAXArrays.jl GitHub repository](https://github.com/JuliaDataCubes/YAXArrays.jl).
+
+## Contribute to Documentation
 
 Contributing with examples can be done by first creating a new file example [here](https://github.com/JuliaDataCubes/YAXArrays.jl/tree/master/docs/examples/UserGuide)
 
@@ -19,7 +22,7 @@ Your new entry should look like:
 
 :::
 
-## Build docs locally
+### Build docs locally
 
 If you want to take a look at the docs locally before doing a PR follow the next steps:
 
