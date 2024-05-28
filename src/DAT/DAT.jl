@@ -513,7 +513,14 @@ function makeinplace(f)
     end
 end
 
-to_chunksize(c::RegularChunks, cs, _ = true) = RegularChunks(cs, c.offset, c.s)
+function to_chunksize(c::RegularChunks, cs, _ = true) 
+    offset = if c.cs==cs 
+        c.offset
+    else
+        0
+    end
+    RegularChunks(cs, offset, c.s)
+end
 function to_chunksize(c::IrregularChunks, cs, allow_irregular=true)
     fac = cs ÷ approx_chunksize(c)
     ll = length.(c)
@@ -545,8 +552,9 @@ function getloopchunks(dc::DATConfig)
             ii === nothing ? nothing : eachchunk(ic.cube.data).chunks[ii]
         end
         allchunks = unique(filter(!isnothing, allchunks))
+
         if length(allchunks) == 1
-            return to_chunksize(allchunks[1],cs,dc.allow_irregular_chunks)
+            return to_chunksize(only(allchunks),cs,dc.allow_irregular_chunks)
         end
         allchunks_offset = filter(i->mod(cs,approx_chunksize(i))==0, allchunks)
         allchunks = isempty(allchunks_offset) ? allchunks : allchunks_offset
