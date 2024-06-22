@@ -70,6 +70,16 @@ export default defineConfig({
           { text: 'Other Tutorials', link: '/tutorials/other_tutorials' },
         ]
       },
+      { text: 'Ecosystem',
+        items: [
+          { text: 'DimensionalData.jl', link: 'https://rafaqz.github.io/DimensionalData.jl/dev/' },
+          { text: 'NetCDF.jl', link: 'https://juliageo.org/NetCDF.jl/stable/'},
+          { text: 'Zarr.jl', link: 'https://juliaio.github.io/Zarr.jl/latest/'},
+          { text: 'ArchGDAL.jl', link: 'https://yeesian.com/ArchGDAL.jl/stable/' },
+          { text: 'GeoMakie.jl', link: 'https://geo.makie.org/dev/' },
+          { text: 'Makie.jl', link: 'https://docs.makie.org/dev/' },
+         ]
+       },
       {
         text: 'Development',
         items: [
