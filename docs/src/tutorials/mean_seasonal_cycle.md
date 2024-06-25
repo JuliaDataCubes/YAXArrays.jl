@@ -100,7 +100,7 @@ fig, ax, obj = lines(1:365, var[1:365]; label="2021", color=:black,
 lines!(1:365, var[366:730], label="2022", color=:brown,
     linewidth=1.5, linestyle=:dash
     )
-lines!(1:365, msc[:,1]; label="MSC", color=:dodgerblue, lw=2.5)
+lines!(1:365, msc[:,1]; label="MSC", color=:dodgerblue, linewidth=2.5)
 axislegend()
 ax.xticks = (xpos, ticks)
 ax.xticklabelrotation = π / 4

@@ -11,7 +11,6 @@ export default {
   extends: DefaultTheme,
   Layout() {
     return h(DefaultTheme.Layout, null, {
-      // 'home-hero-info-after': () => h(HomeTrustees),
       'aside-ads-before': () => h(AsideTrustees),
     })
   },
