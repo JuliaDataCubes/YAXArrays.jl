@@ -16,9 +16,9 @@ using DimensionalData: DimensionalData as DD
 export Dataset, Cube, open_dataset, to_dataset, savecube, savedataset
 
 """
-    Dataset object which stores an `OrderedDict` of YAXArrays with Symbol keys. 
-    a dictionary of CubeAxes and a Dictionary of general properties. 
-    A dictionary can hold cubes with differing axes. But it will share the common axes between the subcubes. 
+    Dataset object which stores an `OrderedDict` of YAXArrays with Symbol keys.
+    a dictionary of CubeAxes and a Dictionary of general properties.
+    A dictionary can hold cubes with differing axes. But it will share the common axes between the subcubes.
 """
 struct Dataset
     cubes::OrderedDict{Symbol,YAXArray}
@@ -43,12 +43,12 @@ function Dataset(; properties = Dict{String,Any}(), cubes...)
 end
 
 """
-to_dataset(c;datasetaxis = "Variable", layername = "layer")  
+to_dataset(c;datasetaxis = "Variable", layername = "layer")
 
-Convert a Data Cube into a Dataset. It is possible to treat one of 
-the Cube's axes as a "DatasetAxis" i.e. the cube will be split into 
-different parts that become variables in the Dataset. If no such 
-axis is specified or found, there will only be a single variable 
+Convert a Data Cube into a Dataset. It is possible to treat one of
+the Cube's axes as a "DatasetAxis" i.e. the cube will be split into
+different parts that become variables in the Dataset. If no such
+axis is specified or found, there will only be a single variable
 in the dataset with the name `layername`
 """
 function to_dataset(c;datasetaxis = "Variable", layername = get(c.properties,"name","layer"))
@@ -81,7 +81,7 @@ function to_dataset(c;datasetaxis = "Variable", layername = get(c.properties,"na
         else
             Symbol(cn)=>YAXArray(axlist, getdata(c), copy(atts),chunks=GridChunks(chunks),cleaner=c.cleaner)
         end
-        
+
     end
 
     axlist = Dict(Symbol(DD.name(ax))=>ax for ax in axlist)
@@ -100,14 +100,11 @@ function Base.show(io::IO, ds::Dataset)
     println(io, "Variables: ")
     for (k,c) in ds.cubes
         specaxes = setdiff(caxes(c), sharedaxs)
+        println(io, k)
         if !isempty(specaxes)
-            println(io)
-            println(io, k)
             specaxes = setdiff(caxes(c), sharedaxs)
             DD.Dimensions.print_dims(io, MIME("text/plain"), tuple(specaxes...))
-        else
-            print(io,k)
-            print(io, ", ")
+            println(io)
         end
             #for ax in specaxes
         #    println(io," └── ")
@@ -339,7 +336,7 @@ Construct a single YAXArray from the dataset `ds`
  by concatenating the cubes in the datset on the `joinname` dimension.
 """
 function Cube(ds::Dataset; joinname = "Variable", target_type = nothing)
-    
+
     dl = collect(keys(ds.axes))
     dls = string.(dl)
     length(ds.cubes) == 1 && return first(values(ds.cubes))
@@ -384,7 +381,7 @@ function Cube(ds::Dataset; joinname = "Variable", target_type = nothing)
 end
 
 """
-Extract necessary information to create a YAXArrayBase dataset from a name and YAXArray pair 
+Extract necessary information to create a YAXArrayBase dataset from a name and YAXArray pair
 """
 function getarrayinfo(entry,backend)
     k,c = entry
@@ -432,7 +429,7 @@ function append_dataset(backend, path, ds, axdata, arrayinfo)
     dshandle = YAXArrayBase.to_dataset(backend,path,mode="w")
     existing_vars = YAXArrayBase.get_varnames(dshandle)
     for d in axdata
-        if (d.name in existing_vars) && length(d.data) != length(YAXArrayBase.get_var_handle(dshandle,d.name)) 
+        if (d.name in existing_vars) && length(d.data) != length(YAXArrayBase.get_var_handle(dshandle,d.name))
             throw(ArgumentError("Can not write into existing dataset because of size mismatch in $(d.name)"))
         end
     end
@@ -440,7 +437,7 @@ function append_dataset(backend, path, ds, axdata, arrayinfo)
         throw(ArgumentError("Variable already exists in dataset"))
     end
     dimstoadd = filter(ax->!in(ax.name,existing_vars),axdata)
-    
+
     for d in dimstoadd
         add_var(dshandle, d.data, d.name, (d.name,), d.attrs)
     end
@@ -449,7 +446,7 @@ function append_dataset(backend, path, ds, axdata, arrayinfo)
         dn = string.(DD.name.(a.axes))
         add_var(dshandle, a.t, a.name, (s...,), dn, a.attr; chunksize = a.chunks)
     end
-    
+
     dshandle
 end
 
@@ -483,7 +480,7 @@ end
 """
     setchunks(c::Dataset,chunks)
 
-Resets the chunks of all or a subset YAXArrays in the dataset and returns a new Dataset. Note that this will not change the chunking of the underlying data itself, 
+Resets the chunks of all or a subset YAXArrays in the dataset and returns a new Dataset. Note that this will not change the chunking of the underlying data itself,
 it will just make the data "look" like it had a different chunking. If you need a persistent on-disk representation
 of this chunking, use `savedataset` on the resulting array. The `chunks` argument can take one of the following forms:
 
@@ -526,7 +523,7 @@ function savedataset(
     append = false,
     skeleton=false,
     backend = :all,
-    driver = backend, 
+    driver = backend,
     max_cache = 5e8,
     writefac=4.0,
     kwargs...)
@@ -542,12 +539,12 @@ function savedataset(
         end
     end
     backend = YAXArrayBase.backendfrompath(path;driver)
-    
+
     cleaner = CleanMe[]
     persist || push!(cleaner, CleanMe(path, false))
 
     arrayinfo = map(c->getarrayinfo(c,backend),collect(ds.cubes))
-    
+
     alloffsets = foldl(arrayinfo,init=Dict{Symbol,Int}()) do d1,d2
         mergewith!(d1,d2.offs) do x1,x2
             if x1 == x2
@@ -557,38 +554,38 @@ function savedataset(
             end
         end
     end
-    
+
     axesall = values(ds.axes)
     chunkoffset = [alloffsets[k] for k in DD.name.(axesall)] # keys(ds.axes)
     axdata = arrayfromaxis.(axesall, chunkoffset)
 
 
-    
+
     dshandle = if ispath(path)
         # We go into append mode
         append_dataset(backend, path, ds, axdata, arrayinfo)
     else
         YAXArrayBase.create_dataset(
-            backend, 
-            path, 
+            backend,
+            path,
             ds.properties,
-            string.(getproperty.(axdata,:name)), 
+            string.(getproperty.(axdata,:name)),
             getproperty.(axdata,:data),
             getproperty.(axdata,:attrs),
-            getproperty.(arrayinfo, :t), 
+            getproperty.(arrayinfo, :t),
             getproperty.(arrayinfo, :name),
-            map(e -> string.(DD.name.(e.axes)), arrayinfo), 
-            getproperty.(arrayinfo, :attr), 
+            map(e -> string.(DD.name.(e.axes)), arrayinfo),
+            getproperty.(arrayinfo, :attr),
             getproperty.(arrayinfo, :chunks);
             kwargs...
         )
     end
     #Generate back a Dataset from the generated structure on disk
-    
+
     allnames = Symbol.(getproperty.(arrayinfo, :name))
-    
+
     allcubes = map(e->collectfromhandle(e,dshandle,cleaner), arrayinfo)
-    
+
     diskds = Dataset(OrderedDict(zip(allnames,allcubes)), copy(ds.axes),YAXArrayBase.get_global_attrs(dshandle))
     if !skeleton
         copydataset!(diskds, ds; maxbuf = max_cache, writefac)
@@ -599,7 +596,7 @@ end
 
 """
     savecube(cube,name::String)
-Save a [`YAXArray`](@ref) to the `path`. 
+Save a [`YAXArray`](@ref) to the `path`.
 
 # Extended Help
 
@@ -623,7 +620,7 @@ function savecube(
     backend = :all,
     driver = backend,
     chunks = nothing,
-    overwrite = false, 
+    overwrite = false,
     append = false,
     skeleton=false,
     writefac=4.0,
@@ -641,13 +638,13 @@ end
 
 """
 function createdataset(DS::Type,axlist; kwargs...)
-  
+
   Creates a new dataset with axes specified in `axlist`. Each axis must be a subtype
   of `CubeAxis`. A new empty Zarr array will be created and can serve as a sink for
   `mapCube` operations.
-  
+
   ### Keyword arguments
-  
+
   * `path=""` location where the new cube is stored
   * `T=Union{Float32,Missing}` data type of the target cube
   * `chunksize = ntuple(i->length(axlist[i]),length(axlist))` chunk sizes of the array
@@ -713,16 +710,16 @@ function createdataset(
                 attr["missing_value"] = YAXArrayBase.defaultfillval(S)
         end
         dshandle = YAXArrayBase.create_dataset(
-        DS, 
-        path, 
+        DS,
+        path,
         Dict{String,Any}(),
         string.(getproperty.(axdata,:name)),
         getproperty.(axdata,:data),
-        getproperty.(axdata,:attrs), 
-        fill(S, length(cubenames)), 
-        cubenames, 
-        fill(string.(getproperty.(axdata,:name)),length(cubenames)), 
-        fill(attr,length(cubenames)), 
+        getproperty.(axdata,:attrs),
+        fill(S, length(cubenames)),
+        cubenames,
+        fill(string.(getproperty.(axdata,:name)),length(cubenames)),
+        fill(attr,length(cubenames)),
         fill(chunksize, length(cubenames));
         kwargs...
         )
@@ -744,7 +741,7 @@ function createdataset(
             return permutedims(cube, finalperm), cube
         end
     end
-    
+
     function getsavefolder(name, persist)
         if isempty(name)
             name = persist ? [splitpath(tempname())[end]] : splitpath(tempname())[2:end]
@@ -754,7 +751,7 @@ function createdataset(
             joinpath(YAXDefaults.workdir[], name)
         end
     end
-    
+
     function check_overwrite(newfolder, overwrite)
         if isdir(newfolder) || isfile(newfolder)
             if overwrite
@@ -766,13 +763,13 @@ function createdataset(
             end
         end
     end
-    
+
     function arrayfromaxis(ax::DD.Dimension, offs)
         data, attr = dataattfromaxis(ax, offs,eltype(ax))
         attr["_ARRAY_OFFSET"] = offs
         return (name = string(DD.name(ax)), data = data, attrs = attr)
     end
-    
+
     prependrange(r::AbstractRange, n) =
     n == 0 ? r : range(first(r) - n * step(r), last(r), length = n + length(r))
     function prependrange(r::AbstractVector, n)
@@ -786,22 +783,22 @@ function createdataset(
             return [radd; r]
         end
     end
-    
+
     defaultcal(::Type{<:TimeType}) = "standard"
     defaultcal(::Type{<:DateTimeNoLeap}) = "noleap"
     defaultcal(::Type{<:DateTimeAllLeap}) = "allleap"
     defaultcal(::Type{<:DateTime360Day}) = "360_day"
-    
+
     datetodatetime(vals::AbstractArray{<:Date}) = DateTime.(vals)
     datetodatetime(vals) = vals
     toaxistype(x) = x
     toaxistype(x::Array{<:AbstractString}) = string.(x)
     toaxistype(x::Array{String}) = x
-    
+
     function dataattfromaxis(ax::DD.Dimension, n, _)
         prependrange(toaxistype(DD.lookup(ax)), n), Dict{String,Any}()
     end
-    
+
     # function dataattfromaxis(ax::CubeAxis,n)
     #     prependrange(1:length(ax.values),n), Dict{String,Any}("_ARRAYVALUES"=>collect(ax.values))
     # end
@@ -810,7 +807,7 @@ function createdataset(
         prependrange(data, n),
         Dict{String,Any}("units" => "days since 1980-01-01", "calendar" => defaultcal(T))
     end
-    
+
     #The good old Cube function:
     Cube(s::String; kwargs...) = Cube(open_dataset(s); kwargs...)
     function Cube(; kwargs...)
@@ -820,7 +817,7 @@ function createdataset(
             error("A path should be specified")
         end
     end
-    
+
     #Defining joins of Datasets
     abstract type AxisJoin end
     struct AllEqual <: AxisJoin
@@ -869,7 +866,7 @@ function createdataset(
     using YAXArrayBase: YAXArrayBase, getdata, getattributes, yaxcreate
     function create_mergedict(dimvallist)
         allmerges = Dict{Symbol,Any}()
-        
+
         for (axn, dimvals) in dimvallist
             iscont = iscontdimval.(dimvals)
             if all(iscont)
@@ -913,6 +910,6 @@ function createdataset(
         end
         Dataset(; mergedvars...)
     end
-    
-    
+
+
 end
