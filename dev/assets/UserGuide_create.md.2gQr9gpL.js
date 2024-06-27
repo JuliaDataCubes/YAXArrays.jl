@@ -42,5 +42,7 @@ import{_ as s,c as a,o as i,a3 as n}from"./chunks/framework.D-wbpLqx.js";const c
 <span class="line"><span>→ lon  Sampled{Float64} 1.0:1.0:10.0 ForwardOrdered Regular Points,</span></span>
 <span class="line"><span>↗ lat  Sampled{Float64} 1.0:0.2857142857142857:5.0 ForwardOrdered Regular Points</span></span>
 <span class="line"><span>Variables: </span></span>
-<span class="line"><span>a2, a3, </span></span>
+<span class="line"><span>a2</span></span>
+<span class="line"><span>a3</span></span>
+<span class="line"><span></span></span>
 <span class="line"><span>Properties: Dict(:origin =&gt; &quot;user guide&quot;)</span></span></code></pre></div>`,16),p=[e];function l(h,k,r,d,E,g){return i(),a("div",null,p)}const y=s(t,[["render",l]]);export{c as __pageData,y as default};

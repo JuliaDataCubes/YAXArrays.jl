@@ -6,11 +6,12 @@ import{_ as s,c as a,o as n,a3 as t}from"./chunks/framework.D-wbpLqx.js";const g
 <span class="line"><span>Shared Axes: </span></span>
 <span class="line"><span>()</span></span>
 <span class="line"><span>Variables: </span></span>
-<span class="line"><span>height, </span></span>
+<span class="line"><span>height</span></span>
 <span class="line"><span>tas</span></span>
 <span class="line"><span>  ↓ lon Sampled{Float64} 0.0:0.9375:359.0625 ForwardOrdered Regular Points,</span></span>
 <span class="line"><span>  → lat Sampled{Float64} [-89.28422753251364, -88.35700351866494, …, 88.35700351866494, 89.28422753251364] ForwardOrdered Irregular Points,</span></span>
 <span class="line"><span>  ↗ Ti  Sampled{DateTime} [2015-01-01T03:00:00, …, 2101-01-01T00:00:00] ForwardOrdered Irregular Points</span></span>
+<span class="line"><span></span></span>
 <span class="line"><span>Properties: Dict{String, Any}(&quot;initialization_index&quot; =&gt; 1, &quot;realm&quot; =&gt; &quot;atmos&quot;, &quot;variable_id&quot; =&gt; &quot;tas&quot;, &quot;external_variables&quot; =&gt; &quot;areacella&quot;, &quot;branch_time_in_child&quot; =&gt; 60265.0, &quot;data_specs_version&quot; =&gt; &quot;01.00.30&quot;, &quot;history&quot; =&gt; &quot;2019-07-21T06:26:13Z ; CMOR rewrote data to be consistent with CMIP6, CF-1.7 CMIP-6.2 and CF standards.&quot;, &quot;forcing_index&quot; =&gt; 1, &quot;parent_variant_label&quot; =&gt; &quot;r1i1p1f1&quot;, &quot;table_id&quot; =&gt; &quot;3hr&quot;…)</span></span></code></pre></div><p>We can set <code>path</code> to a URL, a local directory, or in this case to a cloud object storage path.</p><p>A zarr store may contain multiple arrays. Individual arrays can be accessed using subsetting:</p><div class="language-julia vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">julia</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">ds</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">.</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">tas</span></span></code></pre></div><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>╭────────────────────────────────────╮</span></span>
 <span class="line"><span>│ 384×192×251288 YAXArray{Float32,3} │</span></span>
 <span class="line"><span>├────────────────────────────────────┴─────────────────────────────────── dims ┐</span></span>
@@ -42,7 +43,8 @@ import{_ as s,c as a,o as n,a3 as t}from"./chunks/framework.D-wbpLqx.js";const g
 <span class="line"><span>→ lat Sampled{Float64} -79.5:1.0:89.5 ForwardOrdered Regular Points,</span></span>
 <span class="line"><span>↗ Ti  Sampled{CFTime.DateTime360Day} [CFTime.DateTime360Day(2001-01-16T00:00:00), …, CFTime.DateTime360Day(2002-12-16T00:00:00)] ForwardOrdered Irregular Points</span></span>
 <span class="line"><span>Variables: </span></span>
-<span class="line"><span>tos, </span></span>
+<span class="line"><span>tos</span></span>
+<span class="line"><span></span></span>
 <span class="line"><span>Properties: Dict{String, Any}(&quot;cmor_version&quot; =&gt; 0.96f0, &quot;references&quot; =&gt; &quot;Dufresne et al, Journal of Climate, 2015, vol XX, p 136&quot;, &quot;realization&quot; =&gt; 1, &quot;Conventions&quot; =&gt; &quot;CF-1.0&quot;, &quot;contact&quot; =&gt; &quot;Sebastien Denvil, sebastien.denvil@ipsl.jussieu.fr&quot;, &quot;history&quot; =&gt; &quot;YYYY/MM/JJ: data generated; YYYY/MM/JJ+1 data transformed  At 16:37:23 on 01/11/2005, CMOR rewrote data to comply with CF standards and IPCC Fourth Assessment requirements&quot;, &quot;table_id&quot; =&gt; &quot;Table O1 (13 November 2004)&quot;, &quot;source&quot; =&gt; &quot;IPSL-CM4_v1 (2003) : atmosphere : LMDZ (IPSL-CM4_IPCC, 96x71x19) ; ocean ORCA2 (ipsl_cm4_v1_8, 2x2L31); sea ice LIM (ipsl_cm4_v&quot;, &quot;title&quot; =&gt; &quot;IPSL  model output prepared for IPCC Fourth Assessment SRES A2 experiment&quot;, &quot;experiment_id&quot; =&gt; &quot;SRES A2 experiment&quot;…)</span></span></code></pre></div><p>A NetCDF file may contain multiple arrays. Individual arrays can be accessed using subsetting:</p><div class="language-julia vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">julia</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">ds</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">.</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">tos</span></span></code></pre></div><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>╭────────────────────────────────────────────────╮</span></span>
 <span class="line"><span>│ 180×170×24 YAXArray{Union{Missing, Float32},3} │</span></span>
 <span class="line"><span>├────────────────────────────────────────────────┴─────────────────────── dims ┐</span></span>
@@ -73,5 +75,8 @@ import{_ as s,c as a,o as n,a3 as t}from"./chunks/framework.D-wbpLqx.js";const g
 <span class="line"><span>↓ X Sampled{Float64} -180.0:0.17578125:179.82421875 ForwardOrdered Regular Points,</span></span>
 <span class="line"><span>→ Y Sampled{Float64} 90.0:-0.17578125:-89.82421875 ReverseOrdered Regular Points</span></span>
 <span class="line"><span>Variables: </span></span>
-<span class="line"><span>Red, Green, Blue, </span></span>
+<span class="line"><span>Red</span></span>
+<span class="line"><span>Green</span></span>
+<span class="line"><span>Blue</span></span>
+<span class="line"><span></span></span>
 <span class="line"><span>Properties: Dict{String, Any}(&quot;projection&quot; =&gt; &quot;GEOGCS[\\&quot;WGS 84\\&quot;,DATUM[\\&quot;WGS_1984\\&quot;,SPHEROID[\\&quot;WGS 84\\&quot;,6378137,298.257223563,AUTHORITY[\\&quot;EPSG\\&quot;,\\&quot;7030\\&quot;]],AUTHORITY[\\&quot;EPSG\\&quot;,\\&quot;6326\\&quot;]],PRIMEM[\\&quot;Greenwich\\&quot;,0,AUTHORITY[\\&quot;EPSG\\&quot;,\\&quot;8901\\&quot;]],UNIT[\\&quot;degree\\&quot;,0.0174532925199433,AUTHORITY[\\&quot;EPSG\\&quot;,\\&quot;9122\\&quot;]],AXIS[\\&quot;Latitude\\&quot;,NORTH],AXIS[\\&quot;Longitude\\&quot;,EAST],AUTHORITY[\\&quot;EPSG\\&quot;,\\&quot;4326\\&quot;]]&quot;)</span></span></code></pre></div>`,21),p=[e];function l(o,r,d,h,u,c){return n(),a("div",null,p)}const q=s(i,[["render",l]]);export{g as __pageData,q as default};
