@@ -113,7 +113,7 @@ struct YAXArray{T,N,A<:AbstractArray{T,N}, D, Me} <: AbstractDimArray{T,N,D,A}
         elseif ntuple(i -> length(axes[i]), ndims(data)) != size(data) # case: mismatched data dimensions: sizes of axes and data
             throw(
                 ArgumentError(
-                    "Can not construct YAXArray, supplied data size is $(size(data)) while axis lenghts are $(ntuple(i->length(axes[i]),ndims(data)))",
+                    "Can not construct YAXArray, supplied data size is $(size(data)) while axis lengths are $(ntuple(i->length(axes[i]),ndims(data)))",
                 ),
             )
         elseif ndims(chunks) != ndims(data)
