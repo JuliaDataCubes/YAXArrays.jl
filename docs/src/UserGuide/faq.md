@@ -86,117 +86,50 @@ These are the three main datatypes provided by the YAXArrays libray. You can fin
 Let's start by creating a dummy YAXArray.
 
 Firstly, load the required libraries
-````@example howdoi
+```@example howdoi
 using YAXArrays
-usinng Dates # To generate the dates of the time axis
+using Dates # To generate the dates of the time axis
 using DimensionalData # To use the "Between" option for selecting data
-````
+```
 
 Define the time span of the YAXArray
 
-````@example howdoi
+```@example howdoi
 t = Date("2020-01-01"):Month(1):Date("2022-12-31")
-````
+```
 
 create YAXArray axes
 
-````@example howdoi
+```@example howdoi
 axes = (Dim{:Lon}(1:10), Dim{:Lat}(1:10), Dim{:Time}(t))
-````
+```
 
 create the YAXArray
-
-````@ansi howdoi
+```@example howdoi
 y = YAXArray(axes, reshape(1:3600, (10, 10, 36)))
-````
-````@ansi howdoi
-╭────────────────────────────╮
-│ 10×10×36 YAXArray{Int64,3} │
-├────────────────────────────┴──────────────────────────────────────────────────────────── dims ┐
-  ↓ Lon  Sampled{Int64} 1:10 ForwardOrdered Regular Points,
-  → Lat  Sampled{Int64} 1:10 ForwardOrdered Regular Points,
-  ↗ Time Sampled{Date} Date("2020-01-01"):Month(1):Date("2022-12-01") ForwardOrdered Regular Points
-├───────────────────────────────────────────────────────────────────────────────────── metadata ┤
-  Dict{String, Any}()
-├──────────────────────────────────────────────────────────────────────────────────── file size ┤ 
-  file size: 28.12 KB
-└───────────────────────────────────────────────────────────────────────────────────────────────┘
-````
-
+```
 Now we subset the YAXArray by any dimension.
 
 Subset YAXArray by years
 
-````@ansi howdoi
+```@example howdoi
 ytime = y[Time=Between(Date(2021,1,1), Date(2021,12,31))]
-````
-````@ansi howdoi
-╭────────────────────────────╮
-│ 10×10×12 YAXArray{Int64,3} │
-├────────────────────────────┴──────────────────────────────────────────────────────────── dims ┐
-  ↓ Lon  Sampled{Int64} 1:10 ForwardOrdered Regular Points,
-  → Lat  Sampled{Int64} 1:10 ForwardOrdered Regular Points,
-  ↗ Time Sampled{Date} Date("2021-01-01"):Month(1):Date("2021-12-01") ForwardOrdered Regular Points
-├───────────────────────────────────────────────────────────────────────────────────── metadata ┤
-  Dict{String, Any}()
-├──────────────────────────────────────────────────────────────────────────────────── file size ┤ 
-  file size: 9.38 KB
-└───────────────────────────────────────────────────────────────────────────────────────────────┘
-````
+```
 
 Subset YAXArray by a specific date
-
-````@ansi howdoi
+```@example howdoi
 ytime2 = y[Time=At(Date("2021-05-01"))]
-````
-````@ansi howdoi
-╭─────────────────────────╮
-│ 10×10 YAXArray{Int64,2} │
-├─────────────────────────┴────────────────────────── dims ┐
-  ↓ Lon Sampled{Int64} 1:10 ForwardOrdered Regular Points,
-  → Lat Sampled{Int64} 1:10 ForwardOrdered Regular Points
-├──────────────────────────────────────────────── metadata ┤
-  Dict{String, Any}()
-├─────────────────────────────────────────────── file size ┤ 
-  file size: 800.0 bytes
-└──────────────────────────────────────────────────────────┘
-````
+```
 Subset YAXArray by a date range
-````@ansi howdoi
+```@example howdoi
 ytime3 = y[Time=Date("2021-05-01") .. Date("2021-12-01")]
-````
-````@ansi howdoi
-╭───────────────────────────╮
-│ 10×10×8 YAXArray{Int64,3} │
-├───────────────────────────┴───────────────────────────────────────────────────────────── dims ┐
-  ↓ Lon  Sampled{Int64} 1:10 ForwardOrdered Regular Points,
-  → Lat  Sampled{Int64} 1:10 ForwardOrdered Regular Points,
-  ↗ Time Sampled{Date} Date("2021-05-01"):Month(1):Date("2021-12-01") ForwardOrdered Regular Points
-├───────────────────────────────────────────────────────────────────────────────────── metadata ┤
-  Dict{String, Any}()
-├──────────────────────────────────────────────────────────────────────────────────── file size ┤ 
-  file size: 6.25 KB
-└───────────────────────────────────────────────────────────────────────────────────────────────┘
-````
+```
 
 Subset YAXArray by longitude and latitude
 
-````@ansi howdoi
+```@example howdoi
 ylonlat = y[Lon=1 .. 5, Lat=5 .. 10] # check even numbers range, it is ommiting them
-````
-````@ansi howdoi
-╭──────────────────────────╮
-│ 5×6×36 YAXArray{Int64,3} │
-├──────────────────────────┴────────────────────────────────────────────────────────────── dims ┐
-  ↓ Lon  Sampled{Int64} 1:5 ForwardOrdered Regular Points,
-  → Lat  Sampled{Int64} 5:10 ForwardOrdered Regular Points,
-  ↗ Time Sampled{Date} Date("2020-01-01"):Month(1):Date("2022-12-01") ForwardOrdered Regular Points
-├───────────────────────────────────────────────────────────────────────────────────── metadata ┤
-  Dict{String, Any}()
-├──────────────────────────────────────────────────────────────────────────────────── file size ┤ 
-  file size: 8.44 KB
-└───────────────────────────────────────────────────────────────────────────────────────────────┘
-````
+```
 
 ### Subsetting a Cube
 
@@ -210,7 +143,7 @@ In a dataset, we can have several variables (YAXArrays) that share some or all o
 
 This works the same as for YAXArrays and Cubes. Let's make an example.
 
-````@ansi howdoi
+```@example howdoi
 using YAXArrays
 using Dates # To generate the dates of the time axis
 using DimensionalData # To use the "Between" option for selecting data
@@ -222,38 +155,21 @@ var1 = YAXArray(axes, reshape(1:3600, (10, 10, 36)))
 var2 = YAXArray(axes, reshape((1:3600)*5, (10, 10, 36)))
 
 ds = Dataset(; var1=var1, var2=var2)
-````
-````@ansi howdoi
-YAXArray Dataset
-Shared Axes: 
-↓ Lon  Sampled{Int64} 1:10 ForwardOrdered Regular Points,
-→ Lat  Sampled{Int64} 1:10 ForwardOrdered Regular Points,
-↗ Time Sampled{Date} Date("2020-01-01"):Month(1):Date("2022-12-01") ForwardOrdered Regular Points
-Variables: 
-var1, var2,
-````
-````@ansi howdoi
+```
+```@example howdoi
 ds_lonlat = ds[Lon=1 .. 5, Lat=5 .. 10]
-````
-````@ansi howdoi
-YAXArray Dataset
-Shared Axes: 
-↓ Lon  Sampled{Int64} 1:5 ForwardOrdered Regular Points,
-→ Lat  Sampled{Int64} 5:10 ForwardOrdered Regular Points,
-↗ Time Sampled{Date} Date("2020-01-01"):Month(1):Date("2022-12-01") ForwardOrdered Regular Points
-Variables: 
-var1, var2,
-````
-
+```
 #### Subsetting a Dataset whose variables share some but not all of their dimensions
 
 In this case, if we subset by the common dimension/s, this works the same as for YAXArrays, Cubes, and datasets that share all their dimensions.
 
-But we can also subset a variable by the values os another variable with wich it shares some dimensions. Let's make an example.
-````@ansi howdoi
+But we can also subset a variable by the values of another variable with wich it shares some dimensions.
+**Important:** If your data is not loaded into memory, the selection will be too slow. So, you have load into memory, at least, the variable with which you make the selection.
+Let's make an example.
+```@example howdoi
 using YAXArrays
 using Dates # To generate the dates of the time axis
-using DimensionalData # To use the "Between" option for selecting data
+using DimensionalData # To use the "Between" selector for selecting data
 
 t = Date("2020-01-01"):Month(1):Date("2022-12-31")
 common_axis = Dim{:points}(1:100)
@@ -265,37 +181,23 @@ latitudes  = YAXArray((common_axis,), rand(0:90, 100))  # 100 random values take
 temperature = YAXArray((common_axis, time_axis), rand(-40:40, (100, 36)))
 
 ds = Dataset(; longitudes=longitudes, latitudes=latitudes, temperature=temperature)
-````
-````@ansi howdoi
-YAXArray Dataset
-Shared Axes: 
-↓ points Sampled{Int64} 1:100 ForwardOrdered Regular Points
-Variables: 
-longitudes, latitudes, 
-temperature
-  ↓ Time Sampled{Date} Date("2020-01-01"):Month(1):Date("2022-12-01") ForwardOrdered Regular Points
-````
+```
 Select all points above between 20ºN to 85ºN, and 0ºE to 180ºE
-````@ansi howdoi
+```@example howdoi
 ds_subset = ds[points = Where(p-> ds["latitudes"][p]  >= 20 && ds["latitudes"][p]  <= 80 &&
                              ds["longitudes"][p] >= 0  && ds["longitudes"][p] <= 180
-                             )
-              ]
-````
-````@ansi howdoi
-YAXArray Dataset
-Shared Axes: 
-()
-Variables: 
-
-longitudes
-  ↓ points Sampled{Int64} [1, 3, …, 95, 98] ForwardOrdered Irregular Points
-latitudes
-  ↓ points Sampled{Int64} [1, 3, …, 95, 98] ForwardOrdered Irregular Points
-temperature
-  ↓ points Sampled{Int64} [1, 3, …, 95, 98] ForwardOrdered Irregular Points,
-  → Time   Sampled{Date} Date("2020-01-01"):Month(1):Date("2022-12-01") ForwardOrdered Regular Points
-````
+                             ) # Where
+              ] # ds
+```
+If your dataset has been read from a file with `Cube` it is not loaded into memory, and you have to load the `latitudes` and `longitudes` YAXArrays into memory:
+```@example howdoi
+latitudes_yasxa  = readcubedata(ds["latitudes"])
+longitudes_yasxa = readcubedata(ds["longitudes"])
+ds_subset = ds[points = Where(p-> latitudes_yasxa[p]  >= 20 && latitudes_yasxa[p]  <= 80 &&
+                             longitudes_yasxa[p] >= 0  && longitudes_yasxa[p] <= 180
+                             ) # Where
+              ] # ds
+```
 
 ##  How do I apply map algebra?
 
