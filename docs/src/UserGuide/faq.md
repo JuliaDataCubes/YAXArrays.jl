@@ -163,7 +163,7 @@ ds_lonlat = ds[Lon=1 .. 5, Lat=5 .. 10]
 
 In this case, if we subset by the common dimension/s, this works the same as for YAXArrays, Cubes, and datasets that share all their dimensions.
 
-But we can also subset a variable by the values of another variable with wich it shares some dimensions.
+But we can also subset a variable by the values of another variable with which it shares some dimensions.
 **Important:** If your data is not loaded into memory, the selection will be too slow. So, you have load into memory, at least, the variable with which you make the selection.
 Let's make an example.
 ```@example howdoi
