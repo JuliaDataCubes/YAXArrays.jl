@@ -128,7 +128,7 @@ ytime3 = y[Time=Date("2021-05-01") .. Date("2021-12-01")]
 Subset YAXArray by longitude and latitude
 
 ```@example howdoi
-ylonlat = y[Lon=1 .. 5, Lat=5 .. 10] # check even numbers range, it is ommiting them
+ylonlat = y[Lon=1 .. 5, Lat=5 .. 10]
 ```
 
 ### Subsetting a Dataset
