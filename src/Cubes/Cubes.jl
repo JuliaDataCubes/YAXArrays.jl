@@ -490,7 +490,7 @@ end
 Base.read(d::YAXArray) = getindex_all(d)
 
 function formatbytes(x)
-    exts = ["bytes", "KB", "MB", "GB", "TB"]
+    exts = ["bytes", "KB", "MB", "GB", "TB","PB"]
     i = 1
     while x >= 1024
         i = i + 1

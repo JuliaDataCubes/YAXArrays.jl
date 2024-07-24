@@ -652,8 +652,10 @@ function createdataset(DS::Type,axlist; kwargs...)
   * `persist::Bool=true` shall the disk data be garbage-collected when the cube goes out of scope?
   * `overwrite::Bool=false` overwrite cube if it already exists
   * `properties=Dict{String,Any}()` additional cube properties
+  * `globalproperties=Dict{String,Any}` global attributes to be added to the dataset
   * `fillvalue= T>:Missing ? defaultfillval(Base.nonmissingtype(T)) : nothing` fill value
   * `datasetaxis="Variable"` special treatment of a categorical axis that gets written into separate zarr arrays
+  * `layername="layer"` Fallback name of the variable stored in the dataset if no `datasetaxis` is found
   """
 function createdataset(
     DS,
@@ -665,7 +667,9 @@ function createdataset(
     chunkoffset = ntuple(i -> 0, length(axlist)),
     overwrite::Bool = false,
     properties = Dict{String,Any}(),
+    globalproperties = Dict{String,Any}(),
     datasetaxis = "Variable",
+    layername = "layer",
     kwargs...,
 )
     if persist === nothing
@@ -698,7 +702,7 @@ function createdataset(
             end
         end
         if groupaxis === nothing
-            cubenames = ["layer"]
+            cubenames = [layername]
         else
             cubenames = DD.lookup(groupaxis)
         end
@@ -712,7 +716,7 @@ function createdataset(
         dshandle = YAXArrayBase.create_dataset(
         DS,
         path,
-        Dict{String,Any}(),
+        globalproperties,
         string.(getproperty.(axdata,:name)),
         getproperty.(axdata,:data),
         getproperty.(axdata,:attrs),
