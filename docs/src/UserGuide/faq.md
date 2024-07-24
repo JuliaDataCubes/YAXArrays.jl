@@ -79,7 +79,7 @@ dsfinal = concatenatecubes([ds1, ds2], Dim{:Variables}(["var1", "var2"]))
 
 ## How do I subset a YAXArray ( Cube ) or Dataset?
 
-These are the three main datatypes provided by the YAXArrays libray. You can find a description of them [here](https://juliadatacubes.github.io/YAXArrays.jl/dev/UserGuide/types).
+These are the three main datatypes provided by the YAXArrays libray. You can find a description of them [here](https://juliadatacubes.github.io/YAXArrays.jl/dev/UserGuide/types). A Cube is no more than a YAXArray, so, we will not explicitly tell about a Cube.
 
 ### Subsetting a YAXArray
 
@@ -130,10 +130,6 @@ Subset YAXArray by longitude and latitude
 ```@example howdoi
 ylonlat = y[Lon=1 .. 5, Lat=5 .. 10] # check even numbers range, it is ommiting them
 ```
-
-### Subsetting a Cube
-
-A cube can be subsetted just in the same manner as a YAXArray.
 
 ### Subsetting a Dataset
 
