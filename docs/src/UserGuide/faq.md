@@ -141,7 +141,7 @@ In a dataset, we can have several variables (YAXArrays) that share some or all o
 
 #### Subsetting a Dataset whose variables share all their dimensions
 
-This works the same as for YAXArrays and Cubes. Let's make an example.
+This works for YAXArrays. Let's make an example.
 
 ```@example howdoi
 using YAXArrays
