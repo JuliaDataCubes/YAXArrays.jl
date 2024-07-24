@@ -77,7 +77,7 @@ Now we can concatenate `ds1` and `ds2`:
 dsfinal = concatenatecubes([ds1, ds2], Dim{:Variables}(["var1", "var2"]))
 ````
 
-## How do I subset a YAXArray, Cube or Dataset?
+## How do I subset a YAXArray ( Cube ) or Dataset?
 
 These are the three main datatypes provided by the YAXArrays libray. You can find a description of them [here](https://juliadatacubes.github.io/YAXArrays.jl/dev/UserGuide/types).
 
