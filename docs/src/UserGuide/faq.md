@@ -89,7 +89,7 @@ Firstly, load the required libraries
 ```@example howdoi
 using YAXArrays
 using Dates # To generate the dates of the time axis
-using DimensionalData # To use the "Between" option for selecting data
+using DimensionalData # To use the "Between" option for selecting data, however the intervals notation should be used instead, i.e. `a .. b`.
 ```
 
 Define the time span of the YAXArray
