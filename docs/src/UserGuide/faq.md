@@ -182,7 +182,7 @@ temperature = YAXArray((common_axis, time_axis), rand(-40:40, (100, 36)))
 
 ds = Dataset(; longitudes=longitudes, latitudes=latitudes, temperature=temperature)
 ```
-Select all points above between 20ºN to 85ºN, and 0ºE to 180ºE
+Select all points between 20ºN and 85ºN, and 0ºE to 180ºE
 ```@example howdoi
 ds_subset = ds[points = Where(p-> ds["latitudes"][p]  >= 20 && ds["latitudes"][p]  <= 80 &&
                              ds["longitudes"][p] >= 0  && ds["longitudes"][p] <= 180
