@@ -17,7 +17,7 @@ using Tables: istable, schema, columns
 using DimensionalData: DimensionalData as DD, AbstractDimArray, NoName
 import DimensionalData: name
 
-export concatenatecubes, caxes, subsetcube, readcubedata, renameaxis!, YAXArray, setchunks
+export concatenatecubes, caxes, subsetcube, readcubedata, renameaxis!, YAXArray, setchunks, cache
 
 """
 This function calculates a subset of a cube's data

@@ -411,6 +411,10 @@ end
 end
 
 @testset "Caching" begin
+    using YAXArrays.Cubes.DiskArrays.TestTypes
+    using YAXArrays.Cubes: DiskArrays
+    using Test
+    import DimensionalData as DD
     a = AccessCountDiskArray(reshape(1:100, 5, 20), chunksize=(2, 10))
     ds = Dataset(; ar=YAXArray((DD.X(1:5), DD.Y(1:20)), a))
     dscached = DiskArrays.cache(ds)
