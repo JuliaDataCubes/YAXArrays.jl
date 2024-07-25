@@ -321,7 +321,7 @@ function open_dataset(g; driver = :all)
     end
     gatts = YAXArrayBase.get_global_attrs(g)
     gatts = Dict{String,Any}(string(k)=>v for (k,v) in gatts)
-    sdimlist = Dict(Symbol(k) => v.ax for (k, v) in dimlist)
+    sdimlist = Dict(DD.name(v.ax) => v.ax for (k, v) in dimlist)
     Dataset(allcubes, sdimlist,gatts)
 end
 #Base.getindex(x::Dataset; kwargs...) = subsetcube(x; kwargs...)
