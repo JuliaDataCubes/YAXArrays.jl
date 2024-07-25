@@ -3,7 +3,7 @@ The functions provided by YAXArrays are supposed to work on different types of c
 Data types that
 """
 module Cubes
-using DiskArrays: DiskArrays, eachchunk, approx_chunksize, max_chunksize, grid_offset, GridChunks
+using DiskArrays: DiskArrays, eachchunk, approx_chunksize, max_chunksize, grid_offset, GridChunks, cache
 using Distributed: myid
 using Dates: TimeType, Date
 using IntervalSets: Interval, (..)
@@ -179,6 +179,7 @@ function Base.permutedims(c::YAXArray, p)
     newchunks = DiskArrays.GridChunks(eachchunk(c).chunks[collect(dimnums)])
     YAXArray(newdims, newdata, c.properties, newchunks, c.cleaner)
 end
+DiskArrays.cache(a::YAXArray;maxsize=1000) = DD.rebuild(a,cache(a.data;maxsize))
 
 # DimensionalData overloads
 
