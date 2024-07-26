@@ -215,7 +215,7 @@ end
             ds = open_dataset("test.mock")
             @test size(ds.Var1) == (10, 5, 2)
             @test size(ds.Var2) == (10, 5)
-            @test all(in(keys(ds.axes)), (:time, :d2, :d3))
+            @test all(in(keys(ds.axes)), (:Ti, :d2, :d3))
             ar = Cube(ds)
             @test ar isa YAXArray
             @test size(ar) == (10, 5, 2, 2)

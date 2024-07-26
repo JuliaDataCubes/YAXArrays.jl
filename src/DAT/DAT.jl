@@ -727,7 +727,6 @@ function runLoop(dc::DATConfig, showprog)
             if dc.ntr[1] > 1
                 innerLoop_threaded(r, args...)
             else
-                @show "Running nonthreaded"
                 innerLoop(r,args...)
             end
             writeoutars(dc, r, outcaches)
