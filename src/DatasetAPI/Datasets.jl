@@ -145,6 +145,15 @@ function Base.getindex(x::Dataset, i::Vector{Symbol})
     cubesnew = [j => x.cubes[j] for j in i]
     Dataset(; cubesnew...)
 end
+function DiskArrays.cache(ds::Dataset;maxsize=1000)
+    #Distribute cache size equally across cubes
+    maxsize = maxsize ÷ length(ds.cubes)
+    cachedcubes = OrderedDict{Symbol,YAXArray}(
+        k => DiskArrays.cache(ds.cubes[k];maxsize) for k in keys(ds.cubes)
+    )
+    Dataset(cachedcubes,ds.axes,ds.properties)
+end
+
 
 function fuzzyfind(s::String, comp::Vector{String})
     sl = lowercase(s)

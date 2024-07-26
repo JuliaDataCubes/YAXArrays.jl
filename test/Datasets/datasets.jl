@@ -5,51 +5,51 @@ using Dates
 
 
 @testset "Datasets axes Ti" begin
-  using Zarr, NetCDF
+    using Zarr, NetCDF
 
-  ## first example
-  data = [rand(4, 5, 12), rand(4, 5, 12), rand(4, 5)]
-  # dim_time = DD.Dim{:Time}(Date(2001, 1, 15):Month(1):Date(2001, 12, 15))
-  dim_time = Ti(Date(2001, 1, 15):Month(1):Date(2001, 12, 15))
-  axlist1 = (
-    DD.Dim{:XVals}(1.0:4.0),
-    DD.Dim{:YVals}([1, 2, 3, 4, 5]),
-    dim_time
-  )
-  axlist2 = (DD.Dim{:XVals}(1.0:4.0), DD.Dim{:YVals}([1, 2, 3, 4, 5]))
-  props = [Dict("att$i" => i) for i = 1:3]
-  c1, c2, c3 = (
-    YAXArray(axlist1, data[1], props[1]),
-    YAXArray(axlist1, data[2], props[2]),
-    YAXArray(axlist2, data[3], props[3]),
-  )
-  ds = Dataset(avar=c1, something=c2, smaller=c3)
-  # previous version will throw this error: `KeyError: key :Ti not found`
-  f = "./temp.zarr"
-  @test_nowarn savedataset(ds; path=f)
-  rm(f, recursive=true, force=true)
+    ## first example
+    data = [rand(4, 5, 12), rand(4, 5, 12), rand(4, 5)]
+    # dim_time = DD.Dim{:Time}(Date(2001, 1, 15):Month(1):Date(2001, 12, 15))
+    dim_time = Ti(Date(2001, 1, 15):Month(1):Date(2001, 12, 15))
+    axlist1 = (
+        DD.Dim{:XVals}(1.0:4.0),
+        DD.Dim{:YVals}([1, 2, 3, 4, 5]),
+        dim_time
+    )
+    axlist2 = (DD.Dim{:XVals}(1.0:4.0), DD.Dim{:YVals}([1, 2, 3, 4, 5]))
+    props = [Dict("att$i" => i) for i = 1:3]
+    c1, c2, c3 = (
+        YAXArray(axlist1, data[1], props[1]),
+        YAXArray(axlist1, data[2], props[2]),
+        YAXArray(axlist2, data[3], props[3]),
+    )
+    ds = Dataset(avar=c1, something=c2, smaller=c3)
+    # previous version will throw this error: `KeyError: key :Ti not found`
+    f = "./temp.zarr"
+    @test_nowarn savedataset(ds; path=f)
+    rm(f, recursive=true, force=true)
 
 
-  ## second example
-  using Downloads
-  path2file = "https://www.unidata.ucar.edu/software/netcdf/examples/sresa1b_ncar_ccsm3-example.nc"
-  filename = Downloads.download(path2file, "sresa1b_ncar_ccsm3-example.nc")
-  ds = open_dataset(filename)
-  f = "./temp.zarr"
-  savedataset(ds, path=f, driver=:zarr, overwrite=true)
-  rm(f, recursive=true, force=true)
-  rm(filename)
+    ## second example
+    using Downloads
+    path2file = "https://www.unidata.ucar.edu/software/netcdf/examples/sresa1b_ncar_ccsm3-example.nc"
+    filename = Downloads.download(path2file, "sresa1b_ncar_ccsm3-example.nc")
+    ds = open_dataset(filename)
+    f = "./temp.zarr"
+    savedataset(ds, path=f, driver=:zarr, overwrite=true)
+    rm(f, recursive=true, force=true)
+    rm(filename)
 
-  ## third example
-  # using EarthDataLab
-  # using DimensionalData
-  # using Zarr, YAXArrays, ra = esdc(res="tiny")
-  # ra_tair = ra[variable=At("air_temperature_2m")]
-  # ra_resp = ra[variable=At("terrestrial_ecosystem_respiration")]
-  # ds = Dataset(tair=ra_tair, resp=ra_resp)
-  # f = "./temp.zarr"
-  # savedataset(ds, path=f, driver=:zarr, overwrite=true)
-  # rm(f, recursive=true, force=true)
+    ## third example
+    # using EarthDataLab
+    # using DimensionalData
+    # using Zarr, YAXArrays, ra = esdc(res="tiny")
+    # ra_tair = ra[variable=At("air_temperature_2m")]
+    # ra_resp = ra[variable=At("terrestrial_ecosystem_respiration")]
+    # ds = Dataset(tair=ra_tair, resp=ra_resp)
+    # f = "./temp.zarr"
+    # savedataset(ds, path=f, driver=:zarr, overwrite=true)
+    # rm(f, recursive=true, force=true)
 end
 
 
@@ -67,7 +67,7 @@ end
         YAXArray(axlist1, data[2], props[2]),
         YAXArray(axlist2, data[3], props[3]),
     )
-    ds = Dataset(avar = c1, something = c2, smaller = c3)
+    ds = Dataset(avar=c1, something=c2, smaller=c3)
     @testset "Basic functions" begin
         b = IOBuffer()
         show(b, ds)
@@ -80,7 +80,7 @@ end
         Variables: 
         """
         s2 = split(s2, "\n")
-             @test s[[1]] == s2[[1]]
+        @test s[[1]] == s2[[1]]
         #     @test all(i->in(i,s2), s[3:5])
         for n in [:avar, :something, :smaller, :XVals, :Time, :YVals]
             @test n in propertynames(ds)
@@ -108,13 +108,13 @@ end
         #@test length(ds3[Time=(Date(2001,2,1),Date(2001,8,1))].Time) == 6 
     end
     @testset "Subsetting datasets" begin
-        dssub = ds[Time=DD.At(Date(2001,2,15))]
+        dssub = ds[Time=DD.At(Date(2001, 2, 15))]
         @test dssub isa Dataset
         @test sort(collect(keys(dssub.axes))) == [:XVals, :YVals]
-        @test ndims(dssub.avar)==2
-        dssub2 = ds[var=[:avar,:something], Time=Date(2001,1,15)..Date(2001,6,15)]
-        @test length(dssub2.cubes)==2
-        @test size(dssub2.avar)==(4,5,6)
+        @test ndims(dssub.avar) == 2
+        dssub2 = ds[var=[:avar, :something], Time=Date(2001, 1, 15) .. Date(2001, 6, 15)]
+        @test length(dssub2.cubes) == 2
+        @test size(dssub2.avar) == (4, 5, 6)
     end
     @testset "Dataset interface" begin
         struct MockDataset
@@ -175,8 +175,8 @@ end
                     "d3" => ["d3"],
                 ),
                 Dict(
-                    "global_att1"=>5,
-                    "global_att2"=>"Hi",
+                    "global_att1" => 5,
+                    "global_att2" => "Hi",
                 ),
                 Dict(
                     "Var1" => att1,
@@ -240,12 +240,12 @@ end
             newds, newds2 = YAXArrays.Datasets.createdataset(
                 MockDataset,
                 al,
-                path = fn,
-                persist = false,
-                chunksize = (4, 2, 4),
-                chunkoffset = (2, 0, 3),
-                properties = Dict("att1" => 5),
-                datasetaxis = "A",
+                path=fn,
+                persist=false,
+                chunksize=(4, 2, 4),
+                chunkoffset=(2, 0, 3),
+                properties=Dict("att1" => 5),
+                datasetaxis="A",
             )
             @test size(newds.data) == (12, 2, 10)
             @test size(newds.data.a.parent) == (14, 2, 13)
@@ -259,8 +259,8 @@ end
             newds = YAXArrays.Datasets.createdataset(
                 MockDataset,
                 al,
-                path = fn,
-                datasetaxis = "A",
+                path=fn,
+                datasetaxis="A",
             )
         end
     end
@@ -271,8 +271,8 @@ end
     x = rand(10, 5)
     ax1 = Dim{:Ax1}(string.(1:10))
     ax2 = Dim{:Ax2}(1:5)
-    p = string(tempname(),".zarr")
-    savecube(YAXArray((ax1, ax2), x), p, backend = :zarr)
+    p = string(tempname(), ".zarr")
+    savecube(YAXArray((ax1, ax2), x), p, backend=:zarr)
     @test ispath(p)
     cube1 = Cube(p)
     @test cube1.Ax1 == ax1
@@ -280,7 +280,7 @@ end
     @test eltype(cube1.Ax2) <: Int64
     @test cube1.data == x
     p2 = string(tempname(), ".nc")
-    savecube(cube1, p2, backend = :netcdf)
+    savecube(cube1, p2, backend=:netcdf)
     @test ispath(p2)
     cube2 = Cube(p2)
     @test cube2.Ax1 == ax1
@@ -291,26 +291,26 @@ end
 
 @testset "Saving, loading and appending" begin
     using YAXArrays, Zarr, NetCDF, DiskArrays
-    x,y,z = rand(10,20),rand(10),rand(10,20,5)
-    a,b,c = YAXArray.((x,y,z))
-    f = tempname()*".zarr"
-    savecube(a,f,backend=:zarr)
+    x, y, z = rand(10, 20), rand(10), rand(10, 20, 5)
+    a, b, c = YAXArray.((x, y, z))
+    f = tempname() * ".zarr"
+    savecube(a, f, backend=:zarr)
     cube = Cube(f)
     @test cube.axes == a.axes
     @test cube.data == x
     @test cube.chunks == a.chunks
 
-    f = tempname()*".nc";
-    savecube(a,f,backend=:netcdf)
+    f = tempname() * ".nc"
+    savecube(a, f, backend=:netcdf)
     cube = Cube(f)
     @test cube.axes == a.axes
     @test cube.data == x
     @test cube.chunks == a.chunks
 
-    ds = Dataset(;a,b);
-    f = tempname();
-    savedataset(ds,path=f,driver=:zarr)
-    ds = open_dataset(f,driver=:zarr)
+    ds = Dataset(; a, b)
+    f = tempname()
+    savedataset(ds, path=f, driver=:zarr)
+    ds = open_dataset(f, driver=:zarr)
     @test ds.a.axes == a.axes
     @test ds.a.data == x
     @test ds.a.chunks == a.chunks
@@ -319,8 +319,8 @@ end
     @test ds.b.data == y
     @test ds.b.chunks == b.chunks
 
-    ds2 = Dataset(c = c);
-    savedataset(ds2,path=f,backend=:zarr,append=true);
+    ds2 = Dataset(c=c)
+    savedataset(ds2, path=f, backend=:zarr, append=true)
     ds = open_dataset(f, driver=:zarr)
 
     @test ds.a.axes == a.axes
@@ -332,109 +332,127 @@ end
     @test ds.b.chunks == b.chunks
 
     @test ds.c.axes == c.axes
-    @test ds.c.data[:,:,:] == z
+    @test ds.c.data[:, :, :] == z
     @test ds.c.chunks == c.chunks
 
 
-    d = YAXArray(zeros(Union{Missing, Int32},10,20))
+    d = YAXArray(zeros(Union{Missing,Int32}, 10, 20))
     f = tempname()
-    r = savecube(d,f,driver=:zarr,skeleton=true)
-    @test all(ismissing,r[:,:])
+    r = savecube(d, f, driver=:zarr, skeleton=true)
+    @test all(ismissing, r[:, :])
 
-    d = YAXArray(zeros(Int32,10,20))
+    d = YAXArray(zeros(Int32, 10, 20))
     f = tempname()
-    r = savecube(d,f,driver=:zarr,skeleton=true)
-    @test all(==(YAXArrayBase.defaultfillval(Int32)),r[:,:])
+    r = savecube(d, f, driver=:zarr, skeleton=true)
+    @test all(==(YAXArrayBase.defaultfillval(Int32)), r[:, :])
 
 
-    f = tempname()*".zarr"
-    a_chunked = setchunks(a,(5,10))
-    savecube(a_chunked,f,backend=:zarr)
-    @test Cube(f).chunks == DiskArrays.GridChunks(size(a),(5,10))
+    f = tempname() * ".zarr"
+    a_chunked = setchunks(a, (5, 10))
+    savecube(a_chunked, f, backend=:zarr)
+    @test Cube(f).chunks == DiskArrays.GridChunks(size(a), (5, 10))
 
 
-    ds = Dataset(;a,b,c);
-    dschunked = setchunks(ds,Dict("Dim_1"=>5, "Dim_2"=>10, "Dim_3"=>2));
-    f = tempname();
-    savedataset(dschunked,path=f,driver=:zarr)
+    ds = Dataset(; a, b, c)
+    dschunked = setchunks(ds, Dict("Dim_1" => 5, "Dim_2" => 10, "Dim_3" => 2))
+    f = tempname()
+    savedataset(dschunked, path=f, driver=:zarr)
     ds = open_dataset(f, driver=:zarr)
     @test ds.a.axes == a.axes
-    @test ds.a.data[:,:] == x
-    @test ds.a.chunks == DiskArrays.GridChunks(size(a),(5,10))
+    @test ds.a.data[:, :] == x
+    @test ds.a.chunks == DiskArrays.GridChunks(size(a), (5, 10))
 
     @test ds.b.axes == b.axes
     @test ds.b.data[:] == y
-    @test ds.b.chunks == DiskArrays.GridChunks(size(b),(5,))
+    @test ds.b.chunks == DiskArrays.GridChunks(size(b), (5,))
 
     @test ds.c.axes == c.axes
-    @test ds.c.data[:,:,:] == z
-    @test ds.c.chunks == DiskArrays.GridChunks(size(c),(5,10,2))
+    @test ds.c.data[:, :, :] == z
+    @test ds.c.chunks == DiskArrays.GridChunks(size(c), (5, 10, 2))
 
 
-    ds = Dataset(;a,b,c);
-    dschunked = setchunks(ds,(a = (5,10), b = Dict("Dim_1"=>5), c = (Dim_1 = 5, Dim_2 = 10, Dim_3 = 2)));
-    f = tempname();
-    savedataset(dschunked,path=f,driver=:zarr)
-    ds = open_dataset(f,driver=:zarr)
+    ds = Dataset(; a, b, c)
+    dschunked = setchunks(ds, (a=(5, 10), b=Dict("Dim_1" => 5), c=(Dim_1=5, Dim_2=10, Dim_3=2)))
+    f = tempname()
+    savedataset(dschunked, path=f, driver=:zarr)
+    ds = open_dataset(f, driver=:zarr)
 
     @test ds.a.axes == a.axes
-    @test ds.a.data[:,:] == x
-    @test ds.a.chunks == DiskArrays.GridChunks(size(a),(5,10))
+    @test ds.a.data[:, :] == x
+    @test ds.a.chunks == DiskArrays.GridChunks(size(a), (5, 10))
 
     @test ds.b.axes == b.axes
     @test ds.b.data[:] == y
-    @test ds.b.chunks == DiskArrays.GridChunks(size(b),(5,))
+    @test ds.b.chunks == DiskArrays.GridChunks(size(b), (5,))
 
     @test ds.c.axes == c.axes
-    @test ds.c.data[:,:,:] == z
-    @test ds.c.chunks == DiskArrays.GridChunks(size(c),(5,10,2))
+    @test ds.c.data[:, :, :] == z
+    @test ds.c.chunks == DiskArrays.GridChunks(size(c), (5, 10, 2))
 
 
-    ds = Dataset(a = YAXArray(rand(10,20)), b = YAXArray(rand(10,20)), c = YAXArray(rand(10,20)));
-    dschunked = setchunks(ds,(5,10));
-    f = tempname();
-    savedataset(dschunked,path=f,driver=:zarr)
-    ds2 = open_dataset(f,driver=:zarr)
+    ds = Dataset(a=YAXArray(rand(10, 20)), b=YAXArray(rand(10, 20)), c=YAXArray(rand(10, 20)))
+    dschunked = setchunks(ds, (5, 10))
+    f = tempname()
+    savedataset(dschunked, path=f, driver=:zarr)
+    ds2 = open_dataset(f, driver=:zarr)
 
     @test ds2.a.axes == ds.a.axes
-    @test ds2.a.data[:,:] == ds.a.data
-    @test ds2.a.chunks == DiskArrays.GridChunks(size(a),(5,10))
+    @test ds2.a.data[:, :] == ds.a.data
+    @test ds2.a.chunks == DiskArrays.GridChunks(size(a), (5, 10))
 
     @test ds2.b.axes == ds.b.axes
-    @test ds2.b.data[:,:] == ds.b.data
-    @test ds2.b.chunks == DiskArrays.GridChunks(size(a),(5,10))
+    @test ds2.b.data[:, :] == ds.b.data
+    @test ds2.b.chunks == DiskArrays.GridChunks(size(a), (5, 10))
 
     @test ds2.c.axes == ds.c.axes
-    @test ds2.c.data[:,:] == ds.c.data
-    @test ds2.c.chunks == DiskArrays.GridChunks(size(a),(5,10))
+    @test ds2.c.data[:, :] == ds.c.data
+    @test ds2.c.chunks == DiskArrays.GridChunks(size(a), (5, 10))
 
 end
 
-@testset "Mapslices" begin 
+@testset "Caching" begin
+    using YAXArrays.Cubes.DiskArrays.TestTypes
+    using YAXArrays.Cubes: DiskArrays
+    using Test
+    import DimensionalData as DD
+    a = AccessCountDiskArray(reshape(1:100, 5, 20), chunksize=(2, 10))
+    ds = Dataset(; ar=YAXArray((DD.X(1:5), DD.Y(1:20)), a))
+    dscached = DiskArrays.cache(ds)
+    @test isa(dscached.ar.data, DiskArrays.CachedDiskArray)
+    @test dscached.ar[1, 1] == 1
+    @test dscached.ar[2, 1:10] == 2:5:47
+    @test getindex_count(a) == 1
+    dssub = dscached[X=DD.Between(3, 5), Y=DD.Between(19, 20)]
+    @test dssub.ar[:, :].data == [93 98; 94 99; 95 100]
+    @test getindex_count(a) == 3
+    @test length(dscached.ar.data.cache) == 3
+end
+
+@testset "Mapslices" begin
     using YAXArrays, StatsBase
 
-    a = ones(10,20,5)
+    a = ones(10, 20, 5)
     cube = YAXArray(a)
     mean_slice = mapslices(mean, cube; dims="Dim_1")
 
-    @test mean_slice[:,:] == ones(20,5)
+    @test mean_slice[:, :] == ones(20, 5)
 end
 
 @testset "Making Cubes from heterogemous data types" begin
-    a1 = YAXArray(rand(Int8,10,10))
-    a2 = YAXArray(rand(Float32,10,10))
-    a3 = YAXArray(rand(Int16,10,10))
-    a4 = YAXArray(rand(Float64,10,10))
-    a5 = YAXArray(fill("hello",10,10))
-    ds = Dataset(a=a1, b=a2,c=a3,d=a4)
+    a1 = YAXArray(rand(Int8, 10, 10))
+    a2 = YAXArray(rand(Float32, 10, 10))
+    a3 = YAXArray(rand(Int16, 10, 10))
+    a4 = YAXArray(rand(Float64, 10, 10))
+    a5 = YAXArray(fill("hello", 10, 10))
+    ds = Dataset(a=a1, b=a2, c=a3, d=a4)
 
     c = Cube(ds)
-    @test size(c) == (10,10,4)
+    @test size(c) == (10, 10, 4)
     @test eltype(c) <: Float64
-    x = c[var=At("c")][:,:]
+    x = c[var=At("c")][:, :]
     @test eltype(x) <: Float64
     @test x == Float64.(a3.data)
 
-    ds = Dataset(a=a1, b=a2,c=a3,d=a4,e=a5)
+    ds = Dataset(a=a1, b=a2, c=a3, d=a4, e=a5)
     @test_throws ArgumentError Cube(ds)
 end
