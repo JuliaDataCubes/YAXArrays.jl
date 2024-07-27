@@ -77,47 +77,125 @@ Now we can concatenate `ds1` and `ds2`:
 dsfinal = concatenatecubes([ds1, ds2], Dim{:Variables}(["var1", "var2"]))
 ````
 
-## How do I subset a Cube?
+## How do I subset a YAXArray ( Cube ) or Dataset?
 
-Let's start by creating a dummy cube. Define the time span of the cube
+These are the three main datatypes provided by the YAXArrays libray. You can find a description of them [here](https://juliadatacubes.github.io/YAXArrays.jl/dev/UserGuide/types). A Cube is no more than a YAXArray, so, we will not explicitly tell about a Cube.
 
-````@example howdoi
-using Dates
+### Subsetting a YAXArray
+
+Let's start by creating a dummy YAXArray.
+
+Firstly, load the required libraries
+```@example howdoi
+using YAXArrays
+using Dates # To generate the dates of the time axis
+using DimensionalData # To use the "Between" option for selecting data, however the intervals notation should be used instead, i.e. `a .. b`.
+```
+
+Define the time span of the YAXArray
+
+```@example howdoi
 t = Date("2020-01-01"):Month(1):Date("2022-12-31")
-````
+```
 
-create cube axes
+create YAXArray axes
 
-````@example howdoi
+```@example howdoi
 axes = (Dim{:Lon}(1:10), Dim{:Lat}(1:10), Dim{:Time}(t))
-````
+```
 
-assign values to a cube
+create the YAXArray
+```@example howdoi
+y = YAXArray(axes, reshape(1:3600, (10, 10, 36)))
+```
+Now we subset the YAXArray by any dimension.
 
-````@ansi howdoi
-c = YAXArray(axes, reshape(1:3600, (10, 10, 36)))
-````
+Subset YAXArray by years
 
-Now we subset the cube by any dimension.
+```@example howdoi
+ytime = y[Time=Between(Date(2021,1,1), Date(2021,12,31))]
+```
 
-Subset cube by years
+Subset YAXArray by a specific date
+```@example howdoi
+ytime2 = y[Time=At(Date("2021-05-01"))]
+```
+Subset YAXArray by a date range
+```@example howdoi
+ytime3 = y[Time=Date("2021-05-01") .. Date("2021-12-01")]
+```
 
-````@ansi howdoi
-ctime = c[Time=Between(Date(2021,1,1), Date(2021,12,31))]
-````
+Subset YAXArray by longitude and latitude
 
-Subset cube by a specific date and date range
+```@example howdoi
+ylonlat = y[Lon=1 .. 5, Lat=5 .. 10]
+```
 
-````@ansi howdoi
-ctime2 = c[Time=At(Date("2021-05-01"))]
-ctime3 = c[Time=Date("2021-05-01") .. Date("2021-12-01")]
-````
+### Subsetting a Dataset
 
-Subset cube by longitude and latitude
+In a dataset, we can have several variables (YAXArrays) that share some or all of their dimensions.
 
-````@ansi howdoi
-clonlat = c[Lon=1 .. 5, Lat=5 .. 10] # check even numbers range, it is ommiting them
-````
+#### Subsetting a Dataset whose variables share all their dimensions
+
+This works for YAXArrays. Let's make an example.
+
+```@example howdoi
+using YAXArrays
+using Dates # To generate the dates of the time axis
+using DimensionalData # To use the "Between" option for selecting data
+
+t = Date("2020-01-01"):Month(1):Date("2022-12-31")
+axes = (Dim{:Lon}(1:10), Dim{:Lat}(1:10), Dim{:Time}(t))
+
+var1 = YAXArray(axes, reshape(1:3600, (10, 10, 36)))
+var2 = YAXArray(axes, reshape((1:3600)*5, (10, 10, 36)))
+
+ds = Dataset(; var1=var1, var2=var2)
+```
+```@example howdoi
+ds_lonlat = ds[Lon=1 .. 5, Lat=5 .. 10]
+```
+#### Subsetting a Dataset whose variables share some but not all of their dimensions
+
+In this case, if we subset by the common dimension/s, this works the same as for YAXArrays, Cubes, and datasets that share all their dimensions.
+
+But we can also subset a variable by the values of another variable with which it shares some dimensions.
+!!! warning
+     If your data is not loaded into memory, the selection will be too slow. So, you have load into memory, at least, the variable with which you make the selection.
+
+Let's make an example.
+```@example howdoi
+using YAXArrays
+using Dates # To generate the dates of the time axis
+using DimensionalData # To use the "Between" selector for selecting data
+
+t = Date("2020-01-01"):Month(1):Date("2022-12-31")
+common_axis = Dim{:points}(1:100)
+time_axis =   Dim{:Time}(t)
+
+# Note that longitudes and latitudes are not dimensions, but YAXArrays
+longitudes = YAXArray((common_axis,), rand(1:369, 100)) # 100 random values taken from 1 to 359
+latitudes  = YAXArray((common_axis,), rand(0:90, 100))  # 100 random values taken from 0 to 90
+temperature = YAXArray((common_axis, time_axis), rand(-40:40, (100, 36)))
+
+ds = Dataset(; longitudes=longitudes, latitudes=latitudes, temperature=temperature)
+```
+Select all points between 20ºN and 85ºN, and 0ºE to 180ºE
+```@example howdoi
+ds_subset = ds[points = Where(p-> ds["latitudes"][p]  >= 20 && ds["latitudes"][p]  <= 80 &&
+                             ds["longitudes"][p] >= 0  && ds["longitudes"][p] <= 180
+                             ) # Where
+              ] # ds
+```
+If your dataset has been read from a file with `Cube` it is not loaded into memory, and you have to load the `latitudes` and `longitudes` YAXArrays into memory:
+```@example howdoi
+latitudes_yasxa  = readcubedata(ds["latitudes"])
+longitudes_yasxa = readcubedata(ds["longitudes"])
+ds_subset = ds[points = Where(p-> latitudes_yasxa[p]  >= 20 && latitudes_yasxa[p]  <= 80 &&
+                             longitudes_yasxa[p] >= 0  && longitudes_yasxa[p] <= 180
+                             ) # Where
+              ] # ds
+```
 
 ##  How do I apply map algebra?
 
