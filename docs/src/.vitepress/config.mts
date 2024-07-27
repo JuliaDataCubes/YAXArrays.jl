@@ -47,6 +47,7 @@ export default defineConfig({
           { text: 'Select', link: '/UserGuide/select' },
           { text: 'Compute', link: '/UserGuide/compute' },
           { text: 'Chunk', link: '/UserGuide/chunk' },
+          { text: 'Cache', link: '/UserGuide/cache' },
           { text: 'Group', link: '/UserGuide/group' },
           { text: 'Combine', link: '/UserGuide/combine' },
           { text: 'FAQ', link: '/UserGuide/faq' }
@@ -103,6 +104,7 @@ export default defineConfig({
           { text: 'Select', link: '/UserGuide/select' },
           { text: 'Compute', link: '/UserGuide/compute' },
           { text: 'Chunk', link: '/UserGuide/chunk' },
+          { text: 'Cache', link: '/UserGuide/cache' },
           { text: 'Group', link: '/UserGuide/group' },
           { text: 'Combine', link: '/UserGuide/combine' },
           { text: 'FAQ', link: '/UserGuide/faq' }
