@@ -96,20 +96,64 @@ end
     copydata(outar, inar, copybuf)
 Internal function which copies the data from the input `inar` into the output `outar` at the `copybuf` positions.
 """
-function copydata(outar,inar,copybuf)
-    @showprogress for ii in copybuf
-        outar[ii...] = inar[ii...]
+function copydata(outar, inar, copybuf, restart)
+    firstind = getfirstind(restart)
+    @showprogress for i in firstind:length(copybuf)
+        arrayinds = copybuf[i]
+        outar[arrayinds...] = inar[arrayinds...]
         GC.gc()
+        update_restart(i, restart)
     end
 end
 
-function copy_diskarray(incube,outcube;writefac=4.0, maxbuf = YAXDefaults.max_cache[], align_output=true)
+getfirstind(::Nothing) = 1
+update_restart(_, ::Nothing) = nothing
+struct Restart
+    filename::String
+end
+getfirstind(r::Restart) =
+    open(r.filename, "r") do f
+        read(f, Int) + 1
+    end
+update_restart(i, r::Restart) =
+    open(r.filename, "w") do f
+        write(f, i)
+    end
+
+using Serialization: serialize
+function serhash(cube, h=UInt(0))
+    buf = IOBuffer()
+    serialize(buf, cube)
+    hash(take!(buf))
+end
+
+
+function copy_diskarray(incube, outcube; writefac=4.0, maxbuf=YAXDefaults.max_cache[], align_output=true, restart_path=nothing)
     size(incube) == size(outcube) || throw(ArgumentError("Input and output cubes must have the same size"))
     bufcorrected = get_copy_buffer_size(incube, outcube;writefac,maxbuf,align_output)
     @debug "Copying with buffer size $bufcorrected"
     #@debug "Input chunk size: $(eachchunk(incube).chunks)"
     #@debug "Output chunk size: $(eachchunk(outcube).chunks)"
     copybuf = DiskArrays.GridChunks(size(outcube),bufcorrected)
-    copydata(outcube,incube,copybuf)
+    restarter = if restart_path !== nothing
+        inhash = serhash(incube)
+        outhash = serhash(outcube, inhash)
+        bufhash = serhash(copybuf, outhash)
+        mkpath(restart_path)
+        restartfile = joinpath(restart_path, string(bufhash))
+        restart = if isfile(restartfile)
+            println("Restart file found!")
+            rest = Restart(restartfile)
+            println("Resuming at position $(getfirstind(rest)) of $(length(copybuf))")
+            rest
+        else
+            res = Restart(restartfile)
+            update_restart(0, res)
+            res
+        end
+    else
+        nothing
+    end
+    copydata(outcube, incube, copybuf, restarter)
 end
 

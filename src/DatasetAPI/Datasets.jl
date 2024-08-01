@@ -434,7 +434,7 @@ function collectfromhandle(e,dshandle, cleaner)
     YAXArray(e.axes, v, propfromattr(e.attr), cleaner = cleaner)
 end
 
-function append_dataset(backend, path, ds, axdata, arrayinfo)
+function append_dataset(backend, path, ds, axdata, arrayinfo, restart_path)
     dshandle = YAXArrayBase.to_dataset(backend,path,mode="w")
     existing_vars = YAXArrayBase.get_varnames(dshandle)
     for d in axdata
@@ -442,7 +442,7 @@ function append_dataset(backend, path, ds, axdata, arrayinfo)
             throw(ArgumentError("Can not write into existing dataset because of size mismatch in $(d.name)"))
         end
     end
-    if any(i->i.name in existing_vars, arrayinfo)
+    if any(i -> i.name in existing_vars, arrayinfo) && restart_path == nothing
         throw(ArgumentError("Variable already exists in dataset"))
     end
     dimstoadd = filter(ax->!in(ax.name,existing_vars),axdata)
@@ -451,18 +451,19 @@ function append_dataset(backend, path, ds, axdata, arrayinfo)
         add_var(dshandle, d.data, d.name, (d.name,), d.attrs)
     end
     for a in arrayinfo
-        s = length.(a.axes)
-        dn = string.(DD.name.(a.axes))
-        add_var(dshandle, a.t, a.name, (s...,), dn, a.attr; chunksize = a.chunks)
+        if a.name ∉ existing_vars
+            s = length.(a.axes)
+            dn = string.(DD.name.(a.axes))
+            add_var(dshandle, a.t, a.name, (s...,), dn, a.attr; chunksize=a.chunks)
+        end
     end
-
     dshandle
 end
 
-function copydataset!(diskds, ds;writefac=4.0, maxbuf=5e8)
+function copydataset!(diskds, ds; writefac=4.0, maxbuf=5e8, restart_path=nothing)
     for (name,outds) in diskds.cubes
         inds = getproperty(ds,name)
-        copy_diskarray(inds.data,outds.data;writefac, maxbuf)
+        copy_diskarray(inds.data, outds.data; writefac, maxbuf, restart_path)
     end
 end
 
@@ -535,6 +536,7 @@ function savedataset(
     driver = backend,
     max_cache = 5e8,
     writefac=4.0,
+    restart_path=nothing,
     kwargs...)
     if persist === nothing
         persist = !isempty(path)
@@ -543,7 +545,7 @@ function savedataset(
     if ispath(path)
         if overwrite
             rm(path, recursive = true)
-        elseif !append
+        elseif !append && restart_path == nothing
             throw(ArgumentError("Path $path already exists. Consider setting `overwrite` or `append` keyword arguments"))
         end
     end
@@ -572,7 +574,7 @@ function savedataset(
 
     dshandle = if ispath(path)
         # We go into append mode
-        append_dataset(backend, path, ds, axdata, arrayinfo)
+        append_dataset(backend, path, ds, axdata, arrayinfo, restart_path)
     else
         YAXArrayBase.create_dataset(
             backend,
@@ -597,7 +599,7 @@ function savedataset(
 
     diskds = Dataset(OrderedDict(zip(allnames,allcubes)), copy(ds.axes),YAXArrayBase.get_global_attrs(dshandle))
     if !skeleton
-        copydataset!(diskds, ds; maxbuf = max_cache, writefac)
+        copydataset!(diskds, ds; maxbuf=max_cache, writefac, restart_path)
     end
     return diskds
 end
