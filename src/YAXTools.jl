@@ -14,7 +14,7 @@ struct Window
 end
 
 
-function PickAxisArray(parent, indmask, perm = nothing)
+function PickAxisArray(parent, indmask, perm=nothing)
     f = findall(isequal(true), indmask)
     f2 = findall(isequal(Colon()), indmask)
     f3 = findall(i -> isa(i, Tuple{Int,Int}), indmask)
@@ -80,3 +80,5 @@ function Base.eltype(p::PickAxisArray{T}) where {T}
 end
 Base.getindex(p::PickAxisArray, i::CartesianIndex) = p[i.I...]
 end
+
+Base.Generator(f, A::YAXArray) = Base.Generator(f, parent(A))
