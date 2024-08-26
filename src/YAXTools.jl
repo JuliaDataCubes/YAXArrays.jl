@@ -80,5 +80,3 @@ function Base.eltype(p::PickAxisArray{T}) where {T}
 end
 Base.getindex(p::PickAxisArray, i::CartesianIndex) = p[i.I...]
 end
-
-Base.Generator(f, A::YAXArray) = Base.Generator(f, parent(A))

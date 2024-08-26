@@ -169,7 +169,7 @@ function Base.propertynames(a::YAXArray, private::Bool=false)
     end
 end
 
-
+Base.Generator(f, A::YAXArray) = Base.Generator(f, parent(A))
 Base.ndims(a::YAXArray{<:Any,N}) where {N} = N
 Base.eltype(a::YAXArray{T}) where {T} = T
 function Base.permutedims(c::YAXArray, p) 
