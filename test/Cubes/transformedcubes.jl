@@ -23,7 +23,24 @@
         @test caxes(newcube) == (X(1.0:4.0), Y([1, 2, 3, 4, 5]), Z(["A", "B", "C"]))
         @test ndims(newcube) == 3
         @test size(newcube) == (4, 5, 3)
-        @test newcube[:, :, :] == cat(data..., dims = 3)
+        @test newcube[:, :, :] == cat(data..., dims=3)
         @test getattributes(newcube) == reduce(merge, props)
+    end
+    @testset "ConcatDiskArray" begin
+        using Zarr
+        lon_range = X(-180:180)
+        lat_range = Y(-90:90)
+        data = [exp(cosd(lon)) + 3 * (lat / 90) for lon in lon_range, lat in lat_range]
+        a = YAXArray((lon_range, lat_range), data)
+        ds_ram = Dataset(; properties=Dict(), a)
+        path = tempname()
+        savedataset(ds_ram; path=path)
+        ds_disk = open_dataset(path)
+        a_ram = cat(ds_ram.a[X=1:100], ds_ram.a[X=101:200], dims=:X)
+        a_disk = cat(ds_disk.a[X=1:100], ds_disk.a[X=101:200], dims=:X)
+
+        @test collect(x for x in a_disk) == collect(x for x in a_ram)
+
+        rm(path, recursive=true)
     end
 end

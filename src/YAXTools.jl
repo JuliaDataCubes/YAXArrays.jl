@@ -14,7 +14,7 @@ struct Window
 end
 
 
-function PickAxisArray(parent, indmask, perm = nothing)
+function PickAxisArray(parent, indmask, perm=nothing)
     f = findall(isequal(true), indmask)
     f2 = findall(isequal(Colon()), indmask)
     f3 = findall(i -> isa(i, Tuple{Int,Int}), indmask)
