@@ -1,4 +1,4 @@
-# Mean Seasonal Cycle for a sigle pixel
+# Mean Seasonal Cycle for a single pixel
 
 ````@example mean_season
 using CairoMakie
@@ -21,34 +21,12 @@ var = @. sin(x) + 0.1 * randn()
 nothing # hide
 ````
 
+
 ````@example mean_season
-lines(1:length(t), var; color = :purple, linewidth=1.25,
+fig, ax, obj = lines(t, var; color = :purple, linewidth=1.25,
     axis=(; xlabel="Time", ylabel="Variable"),
-    figure = (; resolution = (600,400))
+    figure = (; size = (600,400))
     )
-````
-
-Currently makie doesn't support time axis natively, but the following function can do the work for now.
-
-````@example mean_season
-function time_ticks(dates; frac=8)
-    tempo = string.(dates)
-    lentime = length(tempo)
-    slice_dates = range(1, lentime, step=lentime ÷ frac)
-    return slice_dates, tempo[slice_dates]
-end
-xpos, ticks = time_ticks(t; frac=8)
-nothing # hide
-````
-
-In order to apply the previous output, we split the plotting function into his 3 components, `figure`, `axis` and `plotted object`, namely
-
-````@example mean_season
-fig, ax, obj = lines(1:length(t), var; color = :purple, linewidth=1.25,
-    axis=(; xlabel="Time", ylabel="Variable"),
-    figure = (; resolution = (600,400))
-    )
-ax.xticks = (xpos, ticks)
 ax.xticklabelrotation = π / 4
 ax.xticklabelalign = (:right, :center)
 fig
@@ -90,11 +68,10 @@ TODO: Apply the new groupby funtion from DD
 ### Plot results: mean seasonal cycle
 
 ````@example mean_season
-xpos, ticks = time_ticks(t[1:365]; frac=8)
 
 fig, ax, obj = lines(1:365, var[1:365]; label="2021", color=:black,
     linewidth=2.0, linestyle=:dot,
-    axis = (;  xlabel="Time", ylabel="Variable"),
+    axis = (;  xlabel="Day of Year", ylabel="Variable"),
     figure=(; size = (600,400))
     )
 lines!(1:365, var[366:730], label="2022", color=:brown,
@@ -106,5 +83,4 @@ ax.xticks = (xpos, ticks)
 ax.xticklabelrotation = π / 4
 ax.xticklabelalign = (:right, :center)
 fig
-current_figure()
 ````
