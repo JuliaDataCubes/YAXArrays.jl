@@ -68,7 +68,6 @@ TODO: Apply the new groupby funtion from DD
 ### Plot results: mean seasonal cycle
 
 ````@example mean_season
-
 fig, ax, obj = lines(1:365, var[1:365]; label="2021", color=:black,
     linewidth=2.0, linestyle=:dot,
     axis = (;  xlabel="Day of Year", ylabel="Variable"),
