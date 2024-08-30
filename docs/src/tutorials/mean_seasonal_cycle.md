@@ -30,6 +30,7 @@ fig, ax, obj = lines(t, var; color = :purple, linewidth=1.25,
 ax.xticklabelrotation = π / 4
 ax.xticklabelalign = (:right, :center)
 fig
+current_figure()
 ````
 
 ### Define the cube
