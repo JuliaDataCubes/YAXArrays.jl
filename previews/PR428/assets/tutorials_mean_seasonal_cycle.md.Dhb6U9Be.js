@@ -1,4 +1,4 @@
-import{_ as s,c as i,o as a,a4 as n}from"./chunks/framework.CYmL6LZf.js";const l="/YAXArrays.jl/previews/PR428/assets/czebmbg.Dy9fLAfq.png",o=JSON.parse('{"title":"Mean Seasonal Cycle for a single pixel","description":"","frontmatter":{},"headers":[],"relativePath":"tutorials/mean_seasonal_cycle.md","filePath":"tutorials/mean_seasonal_cycle.md","lastUpdated":null}'),p={name:"tutorials/mean_seasonal_cycle.md"},t=n(`<h1 id="Mean-Seasonal-Cycle-for-a-single-pixel" tabindex="-1">Mean Seasonal Cycle for a single pixel <a class="header-anchor" href="#Mean-Seasonal-Cycle-for-a-single-pixel" aria-label="Permalink to &quot;Mean Seasonal Cycle for a single pixel {#Mean-Seasonal-Cycle-for-a-single-pixel}&quot;">​</a></h1><div class="language-julia vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">julia</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">using</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;"> CairoMakie</span></span>
+import{_ as s,c as i,o as a,a4 as n}from"./chunks/framework.CYmL6LZf.js";const l="/YAXArrays.jl/previews/PR428/assets/xyoldma.DaT4QOsm.png",o=JSON.parse('{"title":"Mean Seasonal Cycle for a single pixel","description":"","frontmatter":{},"headers":[],"relativePath":"tutorials/mean_seasonal_cycle.md","filePath":"tutorials/mean_seasonal_cycle.md","lastUpdated":null}'),p={name:"tutorials/mean_seasonal_cycle.md"},t=n(`<h1 id="Mean-Seasonal-Cycle-for-a-single-pixel" tabindex="-1">Mean Seasonal Cycle for a single pixel <a class="header-anchor" href="#Mean-Seasonal-Cycle-for-a-single-pixel" aria-label="Permalink to &quot;Mean Seasonal Cycle for a single pixel {#Mean-Seasonal-Cycle-for-a-single-pixel}&quot;">​</a></h1><div class="language-julia vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">julia</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">using</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;"> CairoMakie</span></span>
 <span class="line"><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">CairoMakie</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">.</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">activate!</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">()</span></span>
 <span class="line"><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">using</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;"> Dates</span></span>
 <span class="line"><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">using</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;"> Statistics</span></span></code></pre></div><p>We define the data span. For simplicity, three non-leap years were selected.</p><div class="language-julia vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">julia</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">t </span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">=</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">  Date</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">(</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;2021-01-01&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">)</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">:</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">Day</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">(</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">1</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">)</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">:</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">Date</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">(</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;2023-12-31&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">)</span></span>
@@ -37,27 +37,26 @@ import{_ as s,c as i,o as a,a4 as n}from"./chunks/framework.CYmL6LZf.js";const l
 <span class="line"><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">end</span></span>
 <span class="line"></span>
 <span class="line"><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">msc </span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">=</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> mean_seasonal_cycle</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">(c);</span></span></code></pre></div><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>365×1 Matrix{Float64}:</span></span>
-<span class="line"><span>  0.018818547914831778</span></span>
-<span class="line"><span> -0.038212631868165856</span></span>
-<span class="line"><span>  0.016811178877176428</span></span>
-<span class="line"><span> -0.08072688510229593</span></span>
-<span class="line"><span>  0.16472270133787964</span></span>
-<span class="line"><span>  0.08560642694729988</span></span>
-<span class="line"><span>  0.14181161583243473</span></span>
-<span class="line"><span>  0.20020099669304173</span></span>
-<span class="line"><span>  0.11946828244728457</span></span>
-<span class="line"><span>  0.15688261984531257</span></span>
+<span class="line"><span>  0.03265902326966486</span></span>
+<span class="line"><span> -0.00383139802778223</span></span>
+<span class="line"><span> -0.09052744944502844</span></span>
+<span class="line"><span>  0.08757539046217128</span></span>
+<span class="line"><span>  0.10462273838423387</span></span>
+<span class="line"><span>  0.20979509342778982</span></span>
+<span class="line"><span>  0.0914816420055304</span></span>
+<span class="line"><span>  0.06407441308194449</span></span>
+<span class="line"><span>  0.10753688189729739</span></span>
+<span class="line"><span>  0.08949468539459084</span></span>
 <span class="line"><span>  ⋮</span></span>
-<span class="line"><span> -0.1448905350606632</span></span>
-<span class="line"><span> -0.12361238004191949</span></span>
-<span class="line"><span> -0.05684810437224843</span></span>
-<span class="line"><span> -0.17907596249419258</span></span>
-<span class="line"><span>  0.04791093790254073</span></span>
-<span class="line"><span> -0.019194065424468807</span></span>
-<span class="line"><span> -0.021009379152819946</span></span>
-<span class="line"><span> -0.08298924827876773</span></span>
-<span class="line"><span>  0.04466344247770154</span></span></code></pre></div><p>TODO: Apply the new groupby funtion from DD</p><h3 id="Plot-results:-mean-seasonal-cycle" tabindex="-1">Plot results: mean seasonal cycle <a class="header-anchor" href="#Plot-results:-mean-seasonal-cycle" aria-label="Permalink to &quot;Plot results: mean seasonal cycle {#Plot-results:-mean-seasonal-cycle}&quot;">​</a></h3><div class="language-@example vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">@example</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span></span></span>
-<span class="line"><span>fig, ax, obj = lines(1:365, var[1:365]; label=&quot;2021&quot;, color=:black,</span></span>
+<span class="line"><span> -0.024716905829272457</span></span>
+<span class="line"><span> -0.03074860151532471</span></span>
+<span class="line"><span> -0.1094964063577172</span></span>
+<span class="line"><span> -0.1673554012582988</span></span>
+<span class="line"><span> -0.0010426715495665724</span></span>
+<span class="line"><span> -0.11584347658268083</span></span>
+<span class="line"><span> -0.07453831119549553</span></span>
+<span class="line"><span> -0.022795808014799718</span></span>
+<span class="line"><span> -0.005403485798347041</span></span></code></pre></div><p>TODO: Apply the new groupby funtion from DD</p><h3 id="Plot-results:-mean-seasonal-cycle" tabindex="-1">Plot results: mean seasonal cycle <a class="header-anchor" href="#Plot-results:-mean-seasonal-cycle" aria-label="Permalink to &quot;Plot results: mean seasonal cycle {#Plot-results:-mean-seasonal-cycle}&quot;">​</a></h3><div class="language-@example vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">@example</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>fig, ax, obj = lines(1:365, var[1:365]; label=&quot;2021&quot;, color=:black,</span></span>
 <span class="line"><span>    linewidth=2.0, linestyle=:dot,</span></span>
 <span class="line"><span>    axis = (;  xlabel=&quot;Day of Year&quot;, ylabel=&quot;Variable&quot;),</span></span>
 <span class="line"><span>    figure=(; size = (600,400))</span></span>
