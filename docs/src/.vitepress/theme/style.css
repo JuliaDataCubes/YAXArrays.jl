@@ -29,24 +29,25 @@ https://github.com/vuejs/vitepress/blob/main/src/client/theme-default/styles/var
 
   /* Code Snippet font */
   --vp-font-family-mono: JuliaMono-Regular, monospace;
-
 }
-
+/* 
+Disable contextual alternates (kind of like ligatures but different) in monospace, 
+which turns `/>` to an up arrow and `|>` (the Julia pipe symbol) to an up arrow as well.  
+This is pretty bad for Julia folks reading even though copy+paste retains the same text.
+*/
+/* Target elements with class 'mono' */
 .mono {
-  /* 
-  Disable contextual alternates (kind of like ligatures but different) in monospace, 
-  which turns `/>` to an up arrow and `|>` (the Julia pipe symbol) to an up arrow as well.  
-  This is pretty bad for Julia folks reading even though copy+paste retains the same text.
-  */
-  font-feature-settings: 'calt' 0;
-  pre {
-    font-family: JuliaMono-Light;
-};
-code {
-    font-family: JuliaMono-Light;
-    };
+  /* Disable contextual alternates */
+  font-feature-settings: "calt" 0;
 }
-
+/* Apply monospace font to pre elements within .mono */
+.mono pre {
+  font-family: "JuliaMono-Light", monospace;
+}
+/* Apply monospace font to code elements within .mono */
+.mono code {
+  font-family: "JuliaMono-Light", monospace;
+}
 
 /**
  * Colors
