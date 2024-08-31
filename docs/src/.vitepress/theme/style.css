@@ -60,14 +60,10 @@ pre, code {
  /* https://github.com/vuejs/pinia/blob/v2/packages/docs/.vitepress/theme/styles/vars.css */
 
 :root {
-  --julia-blue: #4063D8;
-  --julia-purple: #9558B2;
-  --julia-red: #CB3C33;
-  --julia-green: #389826;
   --c-white-dark: #f8f8f8;
   --c-black-darker: #0d121b;
   --c-black: #0f0d0d;
-  --c-black-light: #161f32;
+  --c-black-light: #1b1c1e;
   --c-black-lighter: #262a44;
   --vp-c-brand: #0b0c0f;
   --vp-c-brand-light: #747bff;
@@ -75,7 +71,7 @@ pre, code {
   --vp-c-brand-lightest: #bcc0ff;
   --vp-c-brand-dark: #535bf2;
   --vp-c-brand-darker: #454ce1;
-  --vp-c-brand-dimm: rgba(100, 108, 255, 0.08);
+  --vp-c-brand-dimm: rgba(255, 144, 100, 0.08);
 }
 
 /**
@@ -191,7 +187,7 @@ mjx-container > svg {
   --vp-c-bg-soft-up: var(--c-black-lighter);
   --vp-c-bg-mute: var(--c-black-light);
   --vp-c-bg-soft-mute: var(--c-black-lighter);
-  --vp-c-bg-alt: #020203;
+  --vp-c-bg-alt: #111111;
   --vp-c-bg-elv: var(--vp-c-bg-soft);
   --vp-c-bg-elv-mute: var(--vp-c-bg-soft-mute);
   --vp-c-mute: var(--vp-c-bg-mute);
@@ -240,12 +236,12 @@ mjx-container > svg {
 /* Custom CSS variables for input and output backgrounds */
 :root {
   /* Light theme colors */
-  --vp-c-bg-input-light: #f3f4f6;  /* Light gray for input */
-  --vp-c-bg-output-light: #e8f0fe; /* Light blue for output */
+  --vp-c-bg-input-light: #eef0f3;  /* Light gray for input */
+  --vp-c-bg-output-light: #f8f9fb; /* Light blue for output */
   
   /* Dark theme colors */
   --vp-c-bg-input-dark: #1a1a1a;   /* Dark gray for input */
-  --vp-c-bg-output-dark: #131a20;  /* Dark blue for output */
+  --vp-c-bg-output-dark: #101418;  /* Dark blue for output */
 }
 
 /* Light theme styles */
