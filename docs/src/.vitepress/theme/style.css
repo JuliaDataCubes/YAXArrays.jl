@@ -30,7 +30,11 @@ https://github.com/vuejs/vitepress/blob/main/src/client/theme-default/styles/var
   /* Code Snippet font */
   --vp-font-family-mono: JuliaMono-Regular, monospace;
 }
-
+/* 
+Disable contextual alternates (kind of like ligatures but different) in monospace, 
+which turns `/>` to an up arrow and `|>` (the Julia pipe symbol) to an up arrow as well.  
+This is pretty bad for Julia folks reading even though copy+paste retains the same text.
+*/
 /* Target elements with class 'mono' */
 .mono-no-substitutions {
   font-family: "JuliaMono-Light", monospace;
@@ -56,22 +60,18 @@ pre, code {
  /* https://github.com/vuejs/pinia/blob/v2/packages/docs/.vitepress/theme/styles/vars.css */
 
 :root {
-  --julia-blue: #4063D8;
-  --julia-purple: #9558B2;
-  --julia-red: #CB3C33;
-  --julia-green: #389826;
   --c-white-dark: #f8f8f8;
   --c-black-darker: #0d121b;
-  --c-black: #111827;
-  --c-black-light: #161f32;
+  --c-black: #0f0d0d;
+  --c-black-light: #1b1c1e;
   --c-black-lighter: #262a44;
-  --vp-c-brand: #646cff;
+  --vp-c-brand: #0b0c0f;
   --vp-c-brand-light: #747bff;
   --vp-c-brand-lighter: #3d6692;
   --vp-c-brand-lightest: #bcc0ff;
   --vp-c-brand-dark: #535bf2;
   --vp-c-brand-darker: #454ce1;
-  --vp-c-brand-dimm: rgba(100, 108, 255, 0.08);
+  --vp-c-brand-dimm: rgba(255, 144, 100, 0.08);
 }
 
 /**
@@ -187,7 +187,7 @@ mjx-container > svg {
   --vp-c-bg-soft-up: var(--c-black-lighter);
   --vp-c-bg-mute: var(--c-black-light);
   --vp-c-bg-soft-mute: var(--c-black-lighter);
-  --vp-c-bg-alt: #0d121b;
+  --vp-c-bg-alt: #111111;
   --vp-c-bg-elv: var(--vp-c-bg-soft);
   --vp-c-bg-elv-mute: var(--vp-c-bg-soft-mute);
   --vp-c-mute: var(--vp-c-bg-mute);
@@ -231,4 +231,37 @@ mjx-container > svg {
   .VPDoc {
     padding-left: 25px !important;  
   }
+}
+
+/* Custom CSS variables for input and output backgrounds */
+:root {
+  /* Light theme colors */
+  --vp-c-bg-input-light: #eef0f3;  /* Light gray for input */
+  --vp-c-bg-output-light: #f8f9fb; /* Light blue for output */
+  
+  /* Dark theme colors */
+  --vp-c-bg-input-dark: #1a1a1a;   /* Dark gray for input */
+  --vp-c-bg-output-dark: #101418;  /* Dark blue for output */
+}
+
+/* Light theme styles */
+:root {
+  --vp-c-bg-input: var(--vp-c-bg-input-light);
+  --vp-c-bg-output: var(--vp-c-bg-output-light);
+}
+
+/* Dark theme styles */
+.dark {
+  --vp-c-bg-input: var(--vp-c-bg-input-dark);
+  --vp-c-bg-output: var(--vp-c-bg-output-dark);
+}
+
+/* Style for input code blocks */
+.language-julia {
+  background-color: var(--vp-c-bg-input) !important;
+}
+
+/* Style for output code blocks */
+.language- {
+  background-color: var(--vp-c-bg-output) !important;
 }
