@@ -8,9 +8,9 @@ export default defineConfig({
   title: "YAXArrays.jl",
   description: "Yet another xarray-like Julia package",
   lastUpdated: true,
-  cleanUrls: true,
+  // cleanUrls: true,
   outDir: 'REPLACE_ME_DOCUMENTER_VITEPRESS', // This is required for MarkdownVitepress to work correctly...
-  ignoreDeadLinks: true,
+  // ignoreDeadLinks: true,
 
   markdown: {
     math: true,

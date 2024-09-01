@@ -5,7 +5,7 @@ using YAXArrays
 makedocs(; sitename="YAXArrays.jl", 
     authors="Fabian Gans et al.",
     modules=[YAXArrays],
-    warnonly = true,
+    warnonly = true, # error due to [select page](./UserGuide/select) check
     checkdocs=:all,
     format=DocumenterVitepress.MarkdownVitepress(
         repo = "github.com/JuliaDataCubes/YAXArrays.jl", # this must be the full URL!

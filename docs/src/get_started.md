@@ -56,7 +56,7 @@ Get the temperature map at the first point in time:
 a2[variable=At("temperature"), time=1].data
 ```
 
-Get more details at the [select page](UserGuide/select)
+Get more details at the [select page](./UserGuide/select)
 
 ## Updates
 
