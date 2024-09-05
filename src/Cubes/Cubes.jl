@@ -508,12 +508,10 @@ getCubeDes(::Type{T}) where {T} = string(T)
 
 function DD.show_after(io::IO, mime, c::YAXArray)
     blockwidth = get(io, :blockwidth, 0)
-    DD.print_block_separator(io, "file size", blockwidth, blockwidth)
-    println(io, " ")
-    try
-        println(io, "  file size: ", formatbytes(cubesize(c)))
-    catch e
-        e isa ErrorException ? println(" could not determine DataType size.") : rethrow(e)
+    # This are some types for which sizeof is known to return a meaninful value
+    if isconcretetype(eltype(c)) && <:(eltype(c),Union{AbstractFloat,Signed,Unsigned,Bool})
+        DD.print_block_separator(io, "file size", blockwidth, blockwidth)
+        println(io, "\n  file size: ", formatbytes(cubesize(c)))
     end
     DD.print_block_close(io, blockwidth)
     # And if you want the array data to print:
