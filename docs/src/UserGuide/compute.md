@@ -121,8 +121,11 @@ end
 ````
 
 ::: tip
+
 Note the `.` after `f`, this is because we will slice across time, namely, the function is broadcasted along this dimension.
+
 :::
+
 
 Here, we do create `YAXArrays` only with the desired dimensions as
 
@@ -154,8 +157,11 @@ gen_cube = mapCube(g, (lon, lat, time);
 ````
 
 ::: warning "time axis is first"
+
 Note that currently the `time` axis in the output cube goes first.
+
 :::
+
 
 Check that it is working
 
@@ -174,7 +180,9 @@ gen_cube = mapCube(g, (lon, lat, time);
 ````
 
 ::: info
+
 Note that now the broadcasted dimension is `lon`.
+
 :::
 
 we can see this by slicing on the last dimension now
