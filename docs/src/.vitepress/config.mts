@@ -92,7 +92,7 @@ export default defineConfig({
 
     sidebar: [
       { text: 'Get Started', link: '/get_started' },
-      { text: 'API Reference', link: 'api' },
+      { text: 'API Reference', link: '/api' },
       {
         text: 'User Guide',
         items: [

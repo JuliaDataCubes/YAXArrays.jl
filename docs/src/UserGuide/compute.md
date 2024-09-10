@@ -97,6 +97,96 @@ mapslices(mean, a, dims=("lat", "lon"))
 `mapCube` is the most flexible way to apply a function over subsets of an array.
 Dimensions may be added or removed.
 
+### Operations over several YAXArrays
+
+Here, we will define a simple function, that will take as input several `YAXArrays`. But first, let's load the necessary packages.
+
+````@example mapCube
+using YAXArrays, Zarr
+using Dates
+````
+
+Define function in space and time
+
+````@example mapCube
+f(lo, la, t) = (lo + la + Dates.dayofyear(t))
+````
+
+now, `mapCube` requires this function to be wrapped as follows
+
+````@example mapCube
+function g(xout, lo, la, t)
+    xout .= f.(lo, la, t)
+end
+````
+
+::: tip
+Note the `.` after `f`, this is because we will slice across time, namely, the function is broadcasted along this dimension.
+:::
+
+Here, we do create `YAXArrays` only with the desired dimensions as
+
+````@ansi mapCube
+lon = YAXArray(Dim{:lon}(range(1, 15)))
+````
+
+````@ansi mapCube
+lat = YAXArray(Dim{:lat}(range(1, 10)))
+````
+
+And a time Cube's Axis
+
+````@ansi mapCube
+tspan = Date("2022-01-01"):Day(1):Date("2022-01-30")
+time = YAXArray(Dim{:time}(tspan))
+````
+
+note that the following can be extended to arbitrary `YAXArrays` with additional data and dimensions.
+
+Let's generate a new `cube` using `mapCube` and saving the output directly into disk.
+
+````@ansi mapCube
+gen_cube = mapCube(g, (lon, lat, time);
+    indims = (InDims(), InDims(), InDims("time")),
+    outdims = OutDims("time", overwrite=true, path="my_gen_cube.zarr", backend=:zarr, outtype=Float32)
+    # max_cache=1e9
+)
+````
+
+::: warning "time axis is first"
+Note that currently the `time` axis in the output cube goes first.
+:::
+
+Check that it is working
+
+````@ansi mapCube
+gen_cube.data[1, :, :]
+````
+
+but, we can generate a another cube with a different `output order` as follows
+
+````@ansi mapCube
+gen_cube = mapCube(g, (lon, lat, time);
+    indims = (InDims("lon"), InDims(), InDims()),
+    outdims = OutDims("lon", overwrite=true, path="my_gen_cube.zarr", backend=:zarr, outtype=Float32)
+    # max_cache=1e9
+)
+````
+
+::: info
+Note that now the broadcasted dimension is `lon`.
+:::
+
+we can see this by slicing on the last dimension now
+
+````@example mapCube
+gen_cube.data[:, :, 1]
+````
+
+which outputs the same as the `gen_cube.data[1, :, :]` called above.
+
+### Creating a vector array
+
 Here we transform a raster array with spatial dimension lat and lon into a vector array having just one spatial dimension i.e. region.
 First, create the raster array:
 
