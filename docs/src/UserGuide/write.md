@@ -109,7 +109,7 @@ nothing # hide
 and check that all the values are `missing`
 
 ````@example write
-all(ismissing, r[:,:])
+all(ismissing, r[:,:,:])
 ````
 
 If using `FillArrays` is not possible, using the `zeros` function works as well, though it does allocate the array in memory.
@@ -149,7 +149,7 @@ ds_array[:,:,1] = rand(Float32, 20, 10) # this will update values directly into 
 we can verify is this working by loading again directly from disk
 
 ````@example write
-ds_open = open_dataset("skeleton.zarr", "w")
+ds_open = open_dataset("skeleton.zarr")
 ds_array = ds_open["skeleton"]
 ds_array.data[:,:,1]
 ````
