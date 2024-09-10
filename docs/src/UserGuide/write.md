@@ -89,7 +89,7 @@ using YAXArrays, Zarr, FillArrays
 create the `Zeros` array
 
 ````@ansi write
-a = YAXArray(Zeros(Union{Missing, Float32},  20, 10, 5))
+a = YAXArray(Zeros(Union{Missing, Float32},  5, 4, 5))
 ````
 
 Now, save to disk with
@@ -143,7 +143,7 @@ ds_array = ds_open["skeleton"]
 and then we simply update values by indexing them where necessary
 
 ````@example write
-ds_array[:,:,1] = rand(Float32, 20, 10) # this will update values directly into disk!
+ds_array[:,:,1] = rand(Float32, 5, 4) # this will update values directly into disk!
 ````
 
 we can verify is this working by loading again directly from disk
