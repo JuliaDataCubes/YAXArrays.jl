@@ -120,7 +120,7 @@ function g(xout, lo, la, t)
 end
 ````
 
-::: tip
+::: info
 
 Note the `.` after `f`, this is because we will slice across time, namely, the function is broadcasted along this dimension.
 
@@ -131,15 +131,12 @@ Here, we do create `YAXArrays` only with the desired dimensions as
 
 ````@ansi mapCube
 lon = YAXArray(Dim{:lon}(range(1, 15)))
-````
-
-````@ansi mapCube
 lat = YAXArray(Dim{:lat}(range(1, 10)))
 ````
 
 And a time Cube's Axis
 
-````@ansi mapCube
+````@example mapCube
 tspan = Date("2022-01-01"):Day(1):Date("2022-01-30")
 time = YAXArray(Dim{:time}(tspan))
 ````
@@ -151,12 +148,13 @@ Let's generate a new `cube` using `mapCube` and saving the output directly into 
 ````@ansi mapCube
 gen_cube = mapCube(g, (lon, lat, time);
     indims = (InDims(), InDims(), InDims("time")),
-    outdims = OutDims("time", overwrite=true, path="my_gen_cube.zarr", backend=:zarr, outtype=Float32)
+    outdims = OutDims("time", overwrite=true, path="my_gen_cube.zarr", backend=:zarr,
+    outtype = Float32)
     # max_cache=1e9
 )
 ````
 
-::: warning "time axis is first"
+::: info "time axis goes first"
 
 Note that currently the `time` axis in the output cube goes first.
 
@@ -174,7 +172,8 @@ but, we can generate a another cube with a different `output order` as follows
 ````@ansi mapCube
 gen_cube = mapCube(g, (lon, lat, time);
     indims = (InDims("lon"), InDims(), InDims()),
-    outdims = OutDims("lon", overwrite=true, path="my_gen_cube.zarr", backend=:zarr, outtype=Float32)
+    outdims = OutDims("lon", overwrite=true, path="my_gen_cube.zarr", backend=:zarr,
+    outtype = Float32)
     # max_cache=1e9
 )
 ````
