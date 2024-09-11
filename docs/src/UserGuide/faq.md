@@ -29,9 +29,33 @@ dims(c)
 
 ::: info
 
-Also, use __`DD.rebuild(ax, values)`__ instead of `axcopy(ax, values)` to copy an axes with the same name but different values.
+Also, use __`DD.rebuild(c, values)`__  to copy axes from `c` and build a new cube but with different values.
 
 :::
+
+### rebuild
+As an example let's consider the following
+
+````@example howdoi
+using YAXArrays
+using DimensionalData
+
+c = YAXArray(ones(Int, 10,10))
+````
+
+then creating a new `c` with the same structure (axes) but different values is done by
+
+````@ansi howdoi
+new_c = rebuild(c, rand(10,10))
+````
+
+note that the type is now `Float64`. Or, we could create a new structure but using the dimensions from `yax` explicitly
+
+````@ansi howdoi
+c_c = YAXArray(dims(c), rand(10,10))
+````
+
+which achieves the same goal as `rebuild`.
 
 ## Obtain values from axes and data from the cube
 
