@@ -95,7 +95,7 @@ a = YAXArray(Zeros(Union{Missing, Float32},  5, 4, 5))
 Now, save to disk with
 
 ````@example write
-r = savecube(a, "skeleton.zarr", driver=:zarr, skeleton=true, overwrite=true)
+r = savecube(a, "skeleton.zarr", layername="skeleton", driver=:zarr, skeleton=true, overwrite=true)
 nothing # hide
 ````
 
@@ -105,8 +105,9 @@ nothing # hide
 
 :::
 
+Note also that if `layername="skeleton"` is not provided then the `default name` for the cube variable will be `layer`.
 
-and check that all the values are `missing`
+Now, we check that all the values are `missing`
 
 ````@example write
 all(ismissing, r[:,:,:])
