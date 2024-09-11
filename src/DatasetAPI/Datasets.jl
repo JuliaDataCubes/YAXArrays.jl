@@ -116,12 +116,12 @@ function Base.show(io::IO, ds::Dataset)
     println(io, "Shared Axes: ")
     if !isempty(sharedaxs)
         DD.Dimensions.print_dims(io, MIME("text/plain"), tuple(sharedaxs...))
-        println(io)
+        println(io, "\n")
     else
         printstyled(io, "None", color=:light_black)
         print(io, "\n")
     end
-    # Print variables that share all axes with sharedaxs
+    # Print variables that share all axes with sharedaxs (or variable without axis)
     if !isempty(variables_with_shared_axes_only)
         printstyled(io, "Variables: ", color=:light_blue)
         print(io, "\n")
@@ -131,8 +131,7 @@ function Base.show(io::IO, ds::Dataset)
 
     # If there are additional axes, print variables grouped by those additional axes
     if !isempty(sorted_axis_groups)
-        print(io, "\n")
-        printstyled(io, "Variables grouped by additional axes:", color=:light_yellow)
+        printstyled(io, "Variables with additional axes:", color=:light_yellow)
         for (axes, variables) in sorted_axis_groups
             print(io, "\n")
             if !isempty(axes)
@@ -152,10 +151,10 @@ function Base.show(io::IO, ds::Dataset)
             print(io, "\n")
             println(io, padded_variables)
         end
+        print(io, "\n")
     end
     # Print properties if they exist
     if !isempty(ds.properties)
-        print(io, "\n")
         printstyled(io, "Properties: ", color=:light_yellow)
         println(io, ds.properties)
     end
