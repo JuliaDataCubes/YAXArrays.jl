@@ -301,7 +301,7 @@ stocks = Dict(:Stock1 => random_ohlcv(), :Stock2 => random_ohlcv(), :Stock3 => r
 d_keys = keys(stocks)
 ````
 
-currently there is not direct support to obtain `dims` from a `TimeArray`, but can build a function for it
+currently there is not direct support to obtain `dims` from a `TimeArray`, but we can code a function for it
 
 ````@example howdoi
 getTArrayAxes(ta::TimeArray) = (Dim{:time}(timestamp(ta)), Dim{:variable}(colnames(ta)), );
@@ -320,7 +320,7 @@ and a `Dataset` with all `stocks` names
 ds = Dataset(; (d_keys .=> yax_list)...)
 ````
 
-and it looks like there some small differences in the axes, they are being printed independently although they should be the same. Well, they are at least at the `==` level but not at `===`. We could use the axes from one `YAXArray` as reference and `rebuild` all the others
+and, it looks like there some small differences in the axes, they are being printed independently although they should be the same. Well, they are at least at the `==` level but not at `===`. We could use the axes from one `YAXArray` as reference and `rebuild` all the others
 
 ````@example howdoi
 yax_list = [rebuild(yax_list[1], values(stocks[k])) for k in d_keys];
