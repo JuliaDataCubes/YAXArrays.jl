@@ -323,7 +323,7 @@ ds = Dataset(; (d_keys .=> yax_list)...)
 and it looks like there some small differences in the axes, they are being printed independently although they should be the same. Well, they are at least at the `==` level but not at `===`. We could use the axes from one `YAXArray` as reference and `rebuild` all the others
 
 ````@example howdoi
-yax_list = [rebuild(yax_list[1], values(data[k])) for k in d_keys];
+yax_list = [rebuild(yax_list[1], values(stocks[k])) for k in d_keys];
 nothing # hide
 ````
 
