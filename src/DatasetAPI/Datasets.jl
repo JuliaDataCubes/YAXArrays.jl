@@ -125,7 +125,7 @@ function Base.show(io::IO, ds::Dataset)
     if !isempty(variables_with_shared_axes_only)
         printstyled(io, "Variables: ", color=:light_blue)
         print(io, "\n")
-        println(io, join(variables_with_shared_axes_only, ", "))
+        println(io, join(sort(variables_with_shared_axes_only), ", "))
         println(io)
     end
 
@@ -146,7 +146,7 @@ function Base.show(io::IO, ds::Dataset)
             end
             printstyled(io, "  Variables: ", color=:light_blue)
             padding = " " ^ 2  # Adjust this number to match the length of "  Variables: "
-            variables_str = join(variables, ", ")
+            variables_str = join(sort(variables), ", ")
             padded_variables = padding * variables_str
             print(io, "\n")
             println(io, padded_variables)
