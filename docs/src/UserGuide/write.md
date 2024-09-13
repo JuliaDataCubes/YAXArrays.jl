@@ -32,7 +32,7 @@ Save a dataset to Zarr format with compression:
 
 ````@example write
 using Blosc
-n = 7 # compression level
+n = 7 # compression level, number between 0 (no compression) and 9 (max compression)
 compression = Zarr.BloscCompressor(clevel=n)
 
 savedataset(ds, path="ds.zarr", driver=:zarr, compressor=compression)
@@ -59,7 +59,7 @@ nothing # hide
 Save a dataset to NetCDF format with compression:
 
 ````@example write
-n = 7 # compression level
+n = 7 # compression level, number between 0 (no compression) and 9 (max compression)
 savedataset(ds, path="ds.zarr", driver=:zarr, compress=n)
 nothing # hide
 ````
