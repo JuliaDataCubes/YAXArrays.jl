@@ -28,6 +28,17 @@ savedataset(ds, path="ds.zarr", driver=:zarr)
 nothing # hide
 ````
 
+Save a dataset to Zarr format with compression:
+
+````@example write
+using Blosc
+n = 7 # compression level
+compression = Zarr.BloscCompressor(clevel=n)
+
+savedataset(ds, path="ds.zarr", driver=:zarr, compressor=compression)
+nothing # hide
+````
+
 ## Write NetCDF
 
 Save a single YAXArray to a directory:
@@ -42,6 +53,14 @@ Save an entire Dataset to a directory:
 
 ````@example write
 savedataset(ds, path="ds.nc", driver=:netcdf)
+nothing # hide
+````
+
+Save a dataset to NetCDF format with compression:
+
+````@example write
+n = 7 # compression level
+savedataset(ds, path="ds.zarr", driver=:zarr, compress=n)
 nothing # hide
 ````
 
