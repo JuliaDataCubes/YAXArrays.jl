@@ -60,7 +60,7 @@ Save a dataset to NetCDF format with compression:
 
 ````@example write
 n = 7 # compression level, number between 0 (no compression) and 9 (max compression)
-savedataset(ds, path="ds.zarr", driver=:zarr, compress=n)
+savedataset(ds, path="ds.nc", driver=:netcdf, compress=n)
 nothing # hide
 ````
 
