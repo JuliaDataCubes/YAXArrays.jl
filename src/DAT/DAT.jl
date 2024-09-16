@@ -796,14 +796,18 @@ function getbackend(oc, ispar, max_cache)
     outsize =
         sizeof(elementtype) * (length(oc.allAxes) > 0 ? prod(map(length, oc.allAxes)) : 1)
     rt = oc.desc.backend
-    if rt == :auto
-        if ispar[] || outsize > max_cache
-            rt = :zarr
+    ispath =  get(oc.desc.backendargs, :path, nothing)
+
+    b = if rt == :auto
+        if ispar[] || outsize > max_cache || !isnothing(ispath)
+            YAXArrayBase.backendfrompath(ispath) # if backend is not available, it defaults to last available, usually zarr. We need a warning for such case.
         else
             rt = :array
+            YAXArrayBase.backendlist[Symbol(rt)]
         end
+    else
+        YAXArrayBase.backendlist[Symbol(rt)]  # Handle non-auto rt case
     end
-    b = YAXArrayBase.backendlist[Symbol(rt)]
     if !allow_parallel_write(b)
         ispar[] = false
     end

@@ -410,6 +410,12 @@ end
 
 end
 
+@testset "Saving, OutDims" begin
+    using YAXArrays, Zarr, NetCDF, ArchGDAL
+    using Dates
+    
+end
+
 @testset "Caching" begin
     using YAXArrays.Cubes.DiskArrays.TestTypes
     using YAXArrays.Cubes: DiskArrays
