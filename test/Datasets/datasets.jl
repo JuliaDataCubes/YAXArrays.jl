@@ -413,7 +413,47 @@ end
 @testset "Saving, OutDims" begin
     using YAXArrays, Zarr, NetCDF, ArchGDAL
     using Dates
-    
+    flolat(lo, la, t) = (lo + la + Dates.dayofyear(t))
+
+    function g(xout, lo, la, t)
+        xout .= flolat.(lo, la, t)
+    end
+    lon = YAXArray(Dim{:lon}(range(1, 15)))
+    lat = YAXArray(Dim{:lat}(range(1, 10)))
+    tspan = Date("2022-01-01"):Day(1):Date("2022-01-30")
+    time = YAXArray(Dim{:time}(tspan))
+
+    gen_cube = mapCube(g, (lon, lat, time);
+           indims = (InDims(), InDims(), InDims("time")),
+           outdims = OutDims("time",
+           outtype = Float32)
+           # max_cache=1e9
+       )
+    # test saves, zarr
+    gen_zarr = mapCube(g, (lon, lat, time);
+           indims = (InDims(), InDims(), InDims("time")),
+           outdims = OutDims("time", overwrite=true, path="my_gen_cube.zarr",
+           outtype = Float32)
+           # max_cache=1e9
+       )
+    ds_zarr = open_dataset("my_gen_cube.zarr")
+    # test saves, nc
+    gen_nc = mapCube(g, (lon, lat, time);
+           indims = (InDims(), InDims(), InDims("time")),
+           outdims = OutDims("time", overwrite=true, path="my_gen_cube.nc",
+           outtype = Float32)
+           # max_cache=1e9
+       )
+    ds_nc = open_dataset("my_gen_cube.nc")
+    # test saves, tif, once we update to YAXArrayBase 0.7.3
+    # gen_zarr = mapCube(g, (lon, lat, time);
+    #        indims = (InDims(), InDims(), InDims("time")),
+    #        outdims = OutDims("time", overwrite=true, path="my_gen_cube.tif",
+    #        outtype = Float32)
+    #        # max_cache=1e9
+    #    )
+    @test gen_cube.data[:,:] == ds_zarr["layer"].data[:,:]
+    @test gen_cube.data[:,:] == ds_nc["layer"].data[:,:]
 end
 
 @testset "Caching" begin
