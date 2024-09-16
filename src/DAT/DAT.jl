@@ -853,7 +853,8 @@ function generateOutCube(
     newsize = map(length, oc.allAxes)
     outar = Array{elementtype}(undef, newsize...)
     fill!(outar,_zero(elementtype))
-    oc.cube = YAXArray(tuple(oc.allAxes...), outar)
+    properties =  Dict{String, Any}(string(k) => v for (k, v) in oc.desc.backendargs)
+    oc.cube = YAXArray(tuple(oc.allAxes...), outar, properties) # ? here, including properties!
     oc.cube_unpermuted = oc.cube
 end
 _zero(T) = zero(T)
