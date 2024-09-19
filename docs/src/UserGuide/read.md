@@ -53,6 +53,6 @@ using ArchGDAL
 using Downloads: download
 
 path = download("https://github.com/yeesian/ArchGDALDatasets/raw/307f8f0e584a39a050c042849004e6a2bd674f99/gdalworkshop/world.tif", "world.tif")
-# ds = open_dataset(path) # this is broken
+ds = open_dataset(path)
 nothing
 ````
