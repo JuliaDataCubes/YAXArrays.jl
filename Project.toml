@@ -34,7 +34,7 @@ YAXArrayBase = "90b8fcef-0c2d-428d-9c56-5f86629e9d14"
 [compat]
 CFTime = "0.0, 0.1"
 DataStructures = "0.17, 0.18"
-DimensionalData = "0.27"
+DimensionalData = "0.27, 0.28"
 DiskArrayTools = "0.1"
 DiskArrays = "0.3,0.4"
 DocStringExtensions = "0.8, 0.9"
