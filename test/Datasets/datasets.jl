@@ -430,40 +430,54 @@ end
     tspan = Date("2022-01-01"):Day(1):Date("2022-01-30")
     time = YAXArray(Dim{:time}(tspan))
 
+    properties = Dict{String, Any}("name" => "out_array")
+
     gen_cube = mapCube(g, (lon, lat, time);
             indims = (InDims(), InDims(), InDims("time")),
-            outdims = OutDims("time",
+            outdims = OutDims("time"; properties,
             outtype = Float32)
             # max_cache=1e9
         )
         
     gen_cube2d = mapCube(g2d, (lon, lat);
         indims = (InDims(), InDims()),
-        outdims = OutDims(outtype = Float32)
+        outdims = OutDims(; outtype = Float32)
         # max_cache=1e9
     )
-
+    properties = Dict{String, Any}("name" => "out_zarr")
     # test saves, zarr
-    gen_zarr = mapCube(g, (lon, lat, time);
+    mapCube(g, (lon, lat, time);
             indims = (InDims(), InDims(), InDims("time")),
-            outdims = OutDims("time", overwrite=true, path="my_gen_cube.zarr",
+            outdims = OutDims("time"; overwrite=true, path="my_gen_cube.zarr",
+            properties,
             outtype = Float32)
             # max_cache=1e9
         )
     ds_zarr = open_dataset("my_gen_cube.zarr")
     # test saves, nc
-    gen_nc = mapCube(g, (lon, lat, time);
+    properties = Dict{String, Any}("name" => "out_nc")
+    mapCube(g, (lon, lat, time);
             indims = (InDims(), InDims(), InDims("time")),
-            outdims = OutDims("time", overwrite=true, path="my_gen_cube.nc",
+            outdims = OutDims("time"; overwrite=true, path="my_gen_cube.nc",
+            properties,
             outtype = Float32)
             # max_cache=1e9
         )
+    mapCube(g, (lon, lat, time);
+        indims = (InDims(), InDims(), InDims("time")),
+        outdims = OutDims("time"; overwrite=true, path="my_gen_cube_no_p.nc",
+        outtype = Float32)
+        # max_cache=1e9
+    )
     ds_nc = open_dataset("my_gen_cube.nc")
+    ds_nc_no_p = open_dataset("my_gen_cube_no_p.nc")
 
     # TODO: fix tif for general inputs, so that writing also works.
-
-    @test gen_cube.data[:,:,:] == ds_zarr["layer"].data[:,:,:]
-    @test gen_cube.data[:,:,:] == ds_nc["layer"].data[:,:,:]
+    
+    @test gen_cube.properties["name"] == "out_array"
+    @test gen_cube.data[:,:,:] == ds_zarr["out_zarr"].data[:,:,:]
+    @test gen_cube.data[:,:,:] == ds_nc["out_nc"].data[:,:,:]
+    @test gen_cube.data[:,:,:] == ds_nc_no_p["layer"].data[:,:,:]
 end
 
 @testset "Caching" begin

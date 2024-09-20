@@ -313,6 +313,12 @@ nothing # hide
 ds = YAXArrays.Dataset(; (keylist .=> varlist)...)
 ````
 
+::: warning
+
+You will not be able to save this dataset, first you will need to rename those `dimensions` with the `same name` but different values.
+
+:::
+
 ## Ho do I construct a `Dataset` from a TimeArray
 
 In this section we will use `MarketData.jl` and `TimeSeries.jl` to simulate some stocks.

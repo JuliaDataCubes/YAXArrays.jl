@@ -798,15 +798,16 @@ function getbackend(oc, ispar, max_cache)
     rt = oc.desc.backend
     ispath =  get(oc.desc.backendargs, :path, nothing)
 
-    b = if rt == :auto
-        if ispar[] || outsize > max_cache || !isnothing(ispath)
-            YAXArrayBase.backendfrompath(ispath) # if backend is not available, it defaults to last available, usually zarr. We need a warning for such case.
+    b = if rt == :auto && !isnothing(ispath)
+            YAXArrayBase.backendfrompath(ispath)
+        elseif rt == :auto 
+            if ispar[] || outsize > max_cache
+                YAXArrayBase.backendlist[:zarr]
+            else
+                YAXArrayBase.backendlist[:array]
+            end
         else
-            rt = :array
-            YAXArrayBase.backendlist[Symbol(rt)]
-        end
-    else
-        YAXArrayBase.backendlist[Symbol(rt)]  # Handle non-auto rt case
+            YAXArrayBase.backendlist[Symbol(rt)]  # Handle non-auto rt case
     end
     if !allow_parallel_write(b)
         ispar[] = false
@@ -853,8 +854,10 @@ function generateOutCube(
     newsize = map(length, oc.allAxes)
     outar = Array{elementtype}(undef, newsize...)
     fill!(outar,_zero(elementtype))
-    properties =  Dict{String, Any}(string(k) => v for (k, v) in oc.desc.backendargs)
-    oc.cube = YAXArray(tuple(oc.allAxes...), outar, properties) # ? here, including properties!
+    # @show oc.desc.backendargs[:properties]
+    properties = get(oc.desc.backendargs, :properties, Dict{String, Any}())
+    # @show properties
+    oc.cube = YAXArray(tuple(oc.allAxes...), outar, properties) #  properties ? include properties!
     oc.cube_unpermuted = oc.cube
 end
 _zero(T) = zero(T)
