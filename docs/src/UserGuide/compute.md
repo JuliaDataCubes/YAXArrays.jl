@@ -192,6 +192,163 @@ gen_cube.data[:, :, 1]
 
 which outputs the same as the `gen_cube.data[1, :, :]` called above.
 
+### OutDims and YAXArray Properties
+
+Here, we will consider different scenarios, namely how we deal with different input cubes and how to specify the output ones. We will illustrate this with the following test example and the subsequent function definitions. 
+
+````@example outdims
+using YAXArrays, Dates
+using Zarr
+using Random
+
+axlist = (
+    Dim{:time}(Date("2022-01-01"):Day(1):Date("2022-01-05")),
+    Dim{:lon}(range(1, 4, length=4)),
+    Dim{:lat}(range(1, 3, length=3)),
+    Dim{:variables}(["a", "b"])
+)
+
+Random.seed!(123)
+data = rand(1:5, 5, 4, 3, 2)
+
+properties = Dict("description" => "multi dimensional test cube")
+yax_test = YAXArray(axlist, data, properties)
+````
+
+#### One to many output cubes
+In the following function, note how the outputs are defined first and the inputs later.
+
+````@example outdims
+function one_to_many(xout_one, xout_two, xout_flat, xin_one)
+    xout_one .= f1.(xin_one)
+    xout_two .= f2.(xin_one)
+    xout_flat .= sum(xin_one)
+    return nothing
+end
+
+f1(xin) = xin + 1
+f2(xin) = xin + 2
+````
+now, we define `InDims` and `OutDims`:
+
+````@example outdims
+indims_one   = InDims("Time")
+# outputs dimension
+properties_one = Dict{String, Any}("name" => "plus_one")
+properties_two = Dict{String, Any}("name" => "plus_two")
+
+outdims_one = OutDims("Time"; properties=properties_one)
+outdims_two = OutDims("Time"; properties=properties_two)
+outdims_flat = OutDims(;) # it will get the default `layer` name if open as dataset
+````
+
+````@example outdims
+ds = mapCube(one_to_many, yax_test,
+    indims = indims_one,
+    outdims = (outdims_one, outdims_two, outdims_flat));
+nothing # hide
+````
+
+let's see the second output
+
+````@example outdims
+ds[2]
+````
+
+#### many to many cubes
+
+Let's consider a second test set
+
+````@example outdims
+properties_2d = Dict("description" => "2d dimensional test cube")
+yax_2d = YAXArray(axlist[2:end], rand(-1:1, 4, 3, 2), properties_2d)
+````
+
+The function definitions operating in this case are as follows
+
+````@example outdims
+function many_to_many(xout_one, xout_two, xout_flat, xin_one, xin_two, xin_drei)
+    xout_one .= f1.(xin_one)
+    xout_two .= f2mix.(xin_one, xin_two)
+    xout_flat .= sum(xin_drei) # this will reduce the time dimension if we set outdims = OutDims()
+    return nothing
+end
+f2mix(xin_xyt, xin_xy) = xin_xyt - xin_xy
+````
+
+#### Specify path in OutDims
+
+````@example outdims
+indims_one   = InDims("Time")
+indims_2d   = InDims() # ? it matches only to the other 2 dimensions and uses the same values for each time step
+properties = Dict{String, Any}("name"=> "many_to_many_two")
+outdims_one = OutDims("Time")
+outdims_two = OutDims("Time"; path = "test_mm.zarr", properties)
+outdims_flat = OutDims()
+````
+
+````@example outdims
+ds = mapCube(many_to_many, (yax_test, yax_2d, yax_test),
+    indims = (indims_one, indims_2d, indims_one),
+    outdims = (outdims_one, outdims_two, outdims_flat));
+nothing # hide
+````
+
+And we can open the one that was saved directly to disk.
+
+````@example outdims
+ds_mm = open_dataset("test_mm.zarr")
+````
+
+### Different InDims names
+
+Here, the goal is to operate at the pixel level (longitude, latitude), and then apply the corresponding function to the extracted values. Consider the following toy cubes:
+
+````@example outdims
+Random.seed!(123)
+data = rand(3.0:5.0, 5, 4, 3)
+
+axlist = (Dim{:lon}(1:4), Dim{:lat}(1:3), Dim{:depth}(1:7),)
+yax_2d = YAXArray(axlist, rand(-3.0:0.0, 4, 3, 7))
+````
+
+and 
+
+````@example outdims
+Random.seed!(123)
+data = rand(3.0:5.0, 5, 4, 3)
+
+axlist = (Dim{:time}(Date("2022-01-01"):Day(1):Date("2022-01-05")),
+    Dim{:lon}(1:4), Dim{:lat}(1:3),)
+
+properties = Dict("description" => "multi dimensional test cube")
+yax_test = YAXArray(axlist, data, properties)
+````
+and the corresponding function 
+
+````@example outdims
+function mix_time_depth(xin_xyt, xin_xyz)
+    s = sum(abs.(xin_xyz))
+    return xin_xyt.^2 .+ s
+end
+
+function time_depth(xout, xin_one, xin_two)
+    xout .= mix_time_depth(xin_one, xin_two) 
+    # Note also that there is no dot anymore in the function application!
+    return nothing
+end
+````
+
+with the final mapCube operation as follows
+
+````@example outdims
+ds = mapCube(time_depth, (yax_test, yax_2d),
+    indims = (InDims("Time"), InDims("depth")), # ? anchor dimensions and then map over the others.
+    outdims = OutDims("Time"))
+````
+
+- TODO: Example passing additional arguments to function. 
+
 ### Creating a vector array
 
 Here we transform a raster array with spatial dimension lat and lon into a vector array having just one spatial dimension i.e. region.
