@@ -313,6 +313,12 @@ nothing # hide
 ds = YAXArrays.Dataset(; (keylist .=> varlist)...)
 ````
 
+::: warning
+
+You will not be able to save this dataset, first you will need to rename those `dimensions` with the `same name` but different values.
+
+:::
+
 ## Ho do I construct a `Dataset` from a TimeArray
 
 In this section we will use `MarketData.jl` and `TimeSeries.jl` to simulate some stocks.
@@ -358,3 +364,23 @@ ds = Dataset(; (d_keys .=> yax_list)...)
 ````
 
 now they are printed together, showing that is exactly the same axis structure for all variables.
+
+## Create a  `YAXArray` with unions containing `Strings`
+
+````@example howdoi
+test_x = stack(Vector{Union{Int,String}}[[1, "Test"], [2, "Test2"]])
+yax_string = YAXArray(test_x)
+````
+
+or simply with an `Any` type
+
+````@example howdoi
+test_bool = ["Test1" 1 false; 2 "Test2" true; 1 2f0 1f2]
+yax_bool = YAXArray(test_bool)
+````
+
+::: warning
+
+Note that although their creation is allowed, it is not possible to save these types into Zarr or NetCDF.
+
+:::

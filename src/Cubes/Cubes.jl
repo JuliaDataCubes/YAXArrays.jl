@@ -200,7 +200,7 @@ function DD.rebuild(A::YAXArray, data::AbstractArray, dims::Tuple, refdims::Tupl
     #end
     YAXArray(dims, data, metadata; cleaner=A.cleaner)#, chunks=GridChunks(chunks))
 end
-function DD.rebuild(A::YAXArray; data=parent(A), dims=dims(A), metadata=DD.metadata(A), kw...)
+function DD.rebuild(A::YAXArray; data=parent(A), dims=DD.dims(A), metadata=DD.metadata(A), kw...)
     YAXArray(dims, data, metadata; cleaner=A.cleaner)
 end
 
@@ -508,14 +508,22 @@ getCubeDes(::Type{T}) where {T} = string(T)
 
 function DD.show_after(io::IO, mime, c::YAXArray)
     blockwidth = get(io, :blockwidth, 0)
-    DD.print_block_separator(io, "file size", blockwidth, blockwidth)
-    println(io, " ")
-    println(io, "  file size: ", formatbytes(cubesize(c)))
+    # ? sizeof : Check if the element type is a bitstype or a union of bitstypes
+    if (isconcretetype(eltype(c)) && isbitstype(eltype(c))) ||
+        (eltype(c) isa Union && all(isbitstype, Base.uniontypes(eltype(c))))
+
+        DD.print_block_separator(io, "file size", blockwidth, blockwidth)
+        println(io, "\n  file size: ", formatbytes(cubesize(c)))
+    else # fallback
+        DD.print_block_separator(io, "memory size", blockwidth, blockwidth)
+        println(io, "\n  summarysize: ", formatbytes(Base.summarysize(parent(c))))
+    end
     DD.print_block_close(io, blockwidth)
-    # And if you want the array data to print:
+    # Uncomment to print array data if needed
     # ndims(c) > 0 && println(io)
     # DD.print_array(io, mime, c)
 end
+
 
 
 
