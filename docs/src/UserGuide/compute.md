@@ -215,7 +215,7 @@ properties = Dict("description" => "multi dimensional test cube")
 yax_test = YAXArray(axlist, data, properties)
 ````
 
-#### One to many output cubes
+#### One InDims to many OutDims
 In the following function, note how the outputs are defined first and the inputs later.
 
 ````@example outdims
@@ -255,7 +255,7 @@ let's see the second output
 ds[2]
 ````
 
-#### many to many cubes
+#### Many InDims to many OutDims
 
 Let's consider a second test set
 
@@ -324,7 +324,7 @@ axlist = (Dim{:time}(Date("2022-01-01"):Day(1):Date("2022-01-05")),
 properties = Dict("description" => "multi dimensional test cube")
 yax_test = YAXArray(axlist, data, properties)
 ````
-and the corresponding function 
+and the corresponding functions 
 
 ````@example outdims
 function mix_time_depth(xin_xyt, xin_xyz)
@@ -347,7 +347,10 @@ ds = mapCube(time_depth, (yax_test, yax_2d),
     outdims = OutDims("Time"))
 ````
 
-- TODO: Example passing additional arguments to function. 
+- TODO:
+    - Example passing additional arguments to function. 
+    - MovingWindow
+    - Multiple variables outputs, OutDims, in the same YAXArray
 
 ### Creating a vector array
 
