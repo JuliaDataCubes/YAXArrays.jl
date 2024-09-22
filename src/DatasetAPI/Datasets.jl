@@ -678,7 +678,7 @@ function savecube(
     if chunks !== nothing
         error("Setting chunks in savecube is not supported anymore. Rechunk using `setchunks` before saving. ")
     end
-
+    
     ds = to_dataset(c; layername, datasetaxis)
     ds = savedataset(ds; path, max_cache, driver, overwrite, append,skeleton, writefac, kwargs...)
     Cube(ds, joinname = datasetaxis)
@@ -718,7 +718,7 @@ function createdataset(
     properties = Dict{String,Any}(),
     globalproperties = Dict{String,Any}(),
     datasetaxis = "Variable",
-    layername = "layer",
+    layername = get(properties, "name", "layer"),
     kwargs...,
 )
     if persist === nothing

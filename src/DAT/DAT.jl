@@ -796,14 +796,19 @@ function getbackend(oc, ispar, max_cache)
     outsize =
         sizeof(elementtype) * (length(oc.allAxes) > 0 ? prod(map(length, oc.allAxes)) : 1)
     rt = oc.desc.backend
-    if rt == :auto
-        if ispar[] || outsize > max_cache
-            rt = :zarr
+    ispath =  get(oc.desc.backendargs, :path, nothing)
+
+    b = if rt == :auto && !isnothing(ispath)
+            YAXArrayBase.backendfrompath(ispath)
+        elseif rt == :auto 
+            if ispar[] || outsize > max_cache
+                YAXArrayBase.backendlist[:zarr]
+            else
+                YAXArrayBase.backendlist[:array]
+            end
         else
-            rt = :array
-        end
+            YAXArrayBase.backendlist[Symbol(rt)]  # Handle non-auto rt case
     end
-    b = YAXArrayBase.backendlist[Symbol(rt)]
     if !allow_parallel_write(b)
         ispar[] = false
     end
@@ -849,7 +854,10 @@ function generateOutCube(
     newsize = map(length, oc.allAxes)
     outar = Array{elementtype}(undef, newsize...)
     fill!(outar,_zero(elementtype))
-    oc.cube = YAXArray(tuple(oc.allAxes...), outar)
+    # @show oc.desc.backendargs[:properties]
+    properties = get(oc.desc.backendargs, :properties, Dict{String, Any}())
+    # @show properties
+    oc.cube = YAXArray(tuple(oc.allAxes...), outar, properties) #  properties ? include properties!
     oc.cube_unpermuted = oc.cube
 end
 _zero(T) = zero(T)
