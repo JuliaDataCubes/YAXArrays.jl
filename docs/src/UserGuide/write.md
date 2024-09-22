@@ -27,6 +27,18 @@ Save an entire Dataset to a directory:
 savedataset(ds, path="ds.zarr", driver=:zarr)
 nothing # hide
 ````
+### zarr compression
+Save a dataset to Zarr format with compression:
+
+````@example write
+n = 9 # compression level, number between 0 (no compression) and 9 (max compression)
+compression = Zarr.BloscCompressor(; clevel=n)
+
+savedataset(ds; path="ds_c.zarr", driver=:zarr, compressor=compression)
+nothing # hide
+````
+
+More on [Zarr Compressors](https://juliaio.github.io/Zarr.jl/latest/reference/#Compressors). Also, if you use this option and don't notice a significant improvement, please feel free to open an issue or start a discussion. 
 
 ## Write NetCDF
 
@@ -43,6 +55,23 @@ Save an entire Dataset to a directory:
 ````@example write
 savedataset(ds, path="ds.nc", driver=:netcdf)
 nothing # hide
+````
+
+### netcdf compression
+Save a dataset to NetCDF format with compression:
+
+````@example write
+n = 7 # compression level, number between 0 (no compression) and 9 (max compression)
+savedataset(ds, path="ds_c.nc", driver=:netcdf, compress=n)
+nothing # hide
+````
+
+Comparing it to the default saved file
+
+````@example write
+ds_info = stat("ds.nc")
+ds_c_info = stat("ds_c.nc")
+println("File size: ", "default: ", ds_info.size, " bytes", ", compress: ", ds_c_info.size, " bytes")
 ````
 
 ## Overwrite a Dataset    
