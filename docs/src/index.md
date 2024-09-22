@@ -11,7 +11,7 @@ hero:
     src: /logo.png
     alt: VitePress
   actions:
-    - theme: alt
+    - theme: brand
       text: Get Started
       link: /get_started
     - theme: alt
@@ -24,12 +24,13 @@ hero:
 features:
   - title: Flexible I/O capabilities
     details: Open and operate on <font color="#D27D2D">NetCDF</font> and <font color="#D27D2D">Zarr</font> datasets directly. Or bring in data from other sources with ArchGDAL.jl, GRIBDatasets.jl, GeoJSON.jl, HDF5.jl, Shapefile.jl, GeoParquet.jl, etc.
-    link: /UserGuide/openZarr
+    link: /UserGuide/read
   - title: Interoperability
     details: Well integrated with Julia's ecosystem, i.e., distributed operations are native. And plotting with <font color="#D27D2D">Makie.jl</font> is well supported.
   - title: Named dimensions and GroupBy(in memory)
     details: Apply operations over named dimensions, select values by labels and integers as well as efficient split-apply-combine operations with <font color="#D27D2D">groupby</font> via DimensionalData.jl.
-    link: /UserGuide/group_by
+    link: /UserGuide/group
   - title: Efficiency
     details: Efficient <font color="#D27D2D">mapslices(x) </font> and <font color="#D27D2D">mapCube</font> operations on huge multiple arrays, optimized for high-latency data access (object storage, compressed datasets).
+    link: /UserGuide/compute
 ```

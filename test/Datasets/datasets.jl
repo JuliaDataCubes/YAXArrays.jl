@@ -410,6 +410,76 @@ end
 
 end
 
+@testset "Saving, OutDims" begin
+    using YAXArrays, Zarr, NetCDF, ArchGDAL
+    using Dates
+
+    flolat(lo, la, t) = (lo + la + Dates.dayofyear(t))
+    flola(lo, la) = lo + la + 1
+
+    function g(xout, lo, la, t)
+        xout .= flolat.(lo, la, t)
+    end
+
+    function g2d(xout, lo, la)
+        xout .= flola.(lo, la)
+    end
+
+    lon = YAXArray(Dim{:lon}(range(1, 15)))
+    lat = YAXArray(Dim{:lat}(range(1, 10)))
+    tspan = Date("2022-01-01"):Day(1):Date("2022-01-30")
+    time = YAXArray(Dim{:time}(tspan))
+
+    properties = Dict{String, Any}("name" => "out_array")
+
+    gen_cube = mapCube(g, (lon, lat, time);
+            indims = (InDims(), InDims(), InDims("time")),
+            outdims = OutDims("time"; properties,
+            outtype = Float32)
+            # max_cache=1e9
+        )
+        
+    gen_cube2d = mapCube(g2d, (lon, lat);
+        indims = (InDims(), InDims()),
+        outdims = OutDims(; outtype = Float32)
+        # max_cache=1e9
+    )
+    properties = Dict{String, Any}("name" => "out_zarr")
+    # test saves, zarr
+    mapCube(g, (lon, lat, time);
+            indims = (InDims(), InDims(), InDims("time")),
+            outdims = OutDims("time"; overwrite=true, path="my_gen_cube.zarr",
+            properties,
+            outtype = Float32)
+            # max_cache=1e9
+        )
+    ds_zarr = open_dataset("my_gen_cube.zarr")
+    # test saves, nc
+    properties = Dict{String, Any}("name" => "out_nc")
+    mapCube(g, (lon, lat, time);
+            indims = (InDims(), InDims(), InDims("time")),
+            outdims = OutDims("time"; overwrite=true, path="my_gen_cube.nc",
+            properties,
+            outtype = Float32)
+            # max_cache=1e9
+        )
+    mapCube(g, (lon, lat, time);
+        indims = (InDims(), InDims(), InDims("time")),
+        outdims = OutDims("time"; overwrite=true, path="my_gen_cube_no_p.nc",
+        outtype = Float32)
+        # max_cache=1e9
+    )
+    ds_nc = open_dataset("my_gen_cube.nc")
+    ds_nc_no_p = open_dataset("my_gen_cube_no_p.nc")
+
+    # TODO: fix tif for general inputs, so that writing also works.
+    
+    @test gen_cube.properties["name"] == "out_array"
+    @test gen_cube.data[:,:,:] == ds_zarr["out_zarr"].data[:,:,:]
+    @test gen_cube.data[:,:,:] == ds_nc["out_nc"].data[:,:,:]
+    @test gen_cube.data[:,:,:] == ds_nc_no_p["layer"].data[:,:,:]
+end
+
 @testset "Caching" begin
     using YAXArrays.Cubes.DiskArrays.TestTypes
     using YAXArrays.Cubes: DiskArrays

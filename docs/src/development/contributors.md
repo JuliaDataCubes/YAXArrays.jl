@@ -36,7 +36,7 @@ const coreMembers = [
             ]
         },
     {
-        avatar: 'https://pbs.twimg.com/profile_images/1727075196962574336/zB09YH0s_400x400.jpg',
+        avatar: 'https://avatars.githubusercontent.com/u/19525261?v=4',
         name: 'Lazaro Alonso',
         title: 'Scientist. Data Visualization',
         links: [

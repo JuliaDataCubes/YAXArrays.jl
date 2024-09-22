@@ -29,9 +29,33 @@ dims(c)
 
 ::: info
 
-Also, use __`DD.rebuild(ax, values)`__ instead of `axcopy(ax, values)` to copy an axes with the same name but different values.
+Also, use __`DD.rebuild(c, values)`__  to copy axes from `c` and build a new cube but with different values.
 
 :::
+
+### rebuild
+As an example let's consider the following
+
+````@example howdoi
+using YAXArrays
+using DimensionalData
+
+c = YAXArray(ones(Int, 10,10))
+````
+
+then creating a new `c` with the same structure (axes) but different values is done by
+
+````@ansi howdoi
+new_c = rebuild(c, rand(10,10))
+````
+
+note that the type is now `Float64`. Or, we could create a new structure but using the dimensions from `yax` explicitly
+
+````@ansi howdoi
+c_c = YAXArray(dims(c), rand(10,10))
+````
+
+which achieves the same goal as `rebuild`.
 
 ## Obtain values from axes and data from the cube
 
@@ -269,7 +293,7 @@ We can also use more than one criteria for grouping the values. In the next exam
 fitcube = cubefittable(t, Mean, :values, by=(:classes, :time))
 ````
 
-## How do I assing variable names to `YAXArrays` in a `Dataset`
+## How do I assign variable names to `YAXArrays` in a `Dataset`
 
 ### One variable name
 
@@ -288,3 +312,55 @@ nothing # hide
 ````@ansi howdoi
 ds = YAXArrays.Dataset(; (keylist .=> varlist)...)
 ````
+
+::: warning
+
+You will not be able to save this dataset, first you will need to rename those `dimensions` with the `same name` but different values.
+
+:::
+
+## Ho do I construct a `Dataset` from a TimeArray
+
+In this section we will use `MarketData.jl` and `TimeSeries.jl` to simulate some stocks.
+
+````@example howdoi
+using YAXArrays, DimensionalData
+using MarketData, TimeSeries
+
+stocks = Dict(:Stock1 => random_ohlcv(), :Stock2 => random_ohlcv(), :Stock3 => random_ohlcv())
+d_keys = keys(stocks)
+````
+
+currently there is not direct support to obtain `dims` from a `TimeArray`, but we can code a function for it
+
+````@example howdoi
+getTArrayAxes(ta::TimeArray) = (Dim{:time}(timestamp(ta)), Dim{:variable}(colnames(ta)), );
+nothing # hide
+````
+then, we create the `YAXArrays` as
+
+````@example howdoi
+yax_list = [YAXArray(getTArrayAxes(stocks[k]), values(stocks[k])) for k in d_keys];
+nothing # hide
+````
+
+and a `Dataset` with all `stocks` names
+
+````@ansi howdoi
+ds = Dataset(; (d_keys .=> yax_list)...)
+````
+
+and, it looks like there some small differences in the axes, they are being printed independently although they should be the same. Well, they are at least at the `==` level but not at `===`. We could use the axes from one `YAXArray` as reference and `rebuild` all the others
+
+````@example howdoi
+yax_list = [rebuild(yax_list[1], values(stocks[k])) for k in d_keys];
+nothing # hide
+````
+
+and voilà
+
+````@ansi howdoi
+ds = Dataset(; (d_keys .=> yax_list)...)
+````
+
+now they are printed together, showing that is exactly the same axis structure for all variables.

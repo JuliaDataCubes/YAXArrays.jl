@@ -91,35 +91,75 @@ function to_dataset(c;datasetaxis = "Variable", layername = get(c.properties,"na
 end
 
 function Base.show(io::IO, ds::Dataset)
-    sharedaxs = intersect([caxes(c) for (n,c) in ds.cubes]...)
-    println(io, "YAXArray Dataset")
-
-    println(io, "Shared Axes: ")
-    show(io, MIME("text/plain"), tuple(sharedaxs...))
-    println(io,"")
-    println(io, "Variables: ")
-    for (k,c) in ds.cubes
-        specaxes = setdiff(caxes(c), sharedaxs)
-        println(io, k)
-        if !isempty(specaxes)
-            specaxes = setdiff(caxes(c), sharedaxs)
-            DD.Dimensions.print_dims(io, MIME("text/plain"), tuple(specaxes...))
-            println(io)
+    # Find axes shared by all cubes
+    sharedaxs = length(ds.cubes) > 0 ? intersect([caxes(c) for (n, c) in ds.cubes]...) : ()
+    # Create a dictionary to store groups of variables by their axes
+    axis_groups = Dict()
+    variables_with_shared_axes_only = []  # List to hold variables that share all axes
+    # Group variables by their axes, excluding shared axes
+    for (var_name, cube) in ds.cubes
+        axes = tuple(setdiff(caxes(cube), sharedaxs)...)
+        if isempty(axes)
+            push!(variables_with_shared_axes_only, var_name)  # Track variables that share all axes
+        else
+            if haskey(axis_groups, axes)
+                push!(axis_groups[axes], var_name)
+            else
+                axis_groups[axes] = [var_name]
+            end
         end
-            #for ax in specaxes
-        #    println(io," └── ")
-        #    DD.Dimensions.show_compact(io, MIME("text/plain"),ax)
-        #end
     end
-    #foreach(i -> print(io, i, " "), keys(ds.cubes))
-    #show(io, ds.properties)
-    if !isempty(ds.properties)
+    sorted_axis_groups = sort(collect(axis_groups), by = x -> length(x[2]))
+    # Print header
+    println(io, "YAXArray Dataset")
+    # Print shared axes
+    println(io, "Shared Axes: ")
+    if !isempty(sharedaxs)
+        DD.Dimensions.print_dims(io, MIME("text/plain"), tuple(sharedaxs...))
+        println(io, "\n")
+    else
+        printstyled(io, "None", color=:light_black)
+        print(io, "\n")
+    end
+    # Print variables that share all axes with sharedaxs (or variable without axis)
+    if !isempty(variables_with_shared_axes_only)
+        printstyled(io, "Variables: ", color=:light_blue)
+        print(io, "\n")
+        println(io, join(sort(variables_with_shared_axes_only), ", "))
         println(io)
-        print(io,"Properties: ")
+    end
+
+    # If there are additional axes, print variables grouped by those additional axes
+    if !isempty(sorted_axis_groups)
+        printstyled(io, "Variables with additional axes:", color=:light_yellow)
+        for (axes, variables) in sorted_axis_groups
+            print(io, "\n")
+            if !isempty(axes)
+                printstyled(io, "  Additional Axes: ", color=:light_black)
+                print(io, "\n")
+                DD.Dimensions.print_dims(io, MIME("text/plain"), axes)
+                println(io)
+            else
+                print(io, "\n")
+                printstyled(io, "  No additional axes:", color=:light_black)
+                print(io, "\n")
+            end
+            printstyled(io, "  Variables: ", color=:light_blue)
+            padding = " " ^ 2  # Adjust this number to match the length of "  Variables: "
+            variables_str = join(sort(variables), ", ")
+            padded_variables = padding * variables_str
+            print(io, "\n")
+            println(io, padded_variables)
+        end
+        print(io, "\n")
+    end
+    # Print properties if they exist
+    if !isempty(ds.properties)
+        printstyled(io, "Properties: ", color=:light_yellow)
         println(io, ds.properties)
-    #    foreach(i -> print(io, i[1], " => ", i[2], " "), ds.properties)
     end
 end
+
 function Base.propertynames(x::Dataset, private::Bool = false)
     if private
         Symbol[:cubes; :axes; :properties; collect(keys(x.cubes)); collect(keys(x.axes))]
@@ -638,7 +678,7 @@ function savecube(
     if chunks !== nothing
         error("Setting chunks in savecube is not supported anymore. Rechunk using `setchunks` before saving. ")
     end
-
+    
     ds = to_dataset(c; layername, datasetaxis)
     ds = savedataset(ds; path, max_cache, driver, overwrite, append,skeleton, writefac, kwargs...)
     Cube(ds, joinname = datasetaxis)
@@ -678,7 +718,7 @@ function createdataset(
     properties = Dict{String,Any}(),
     globalproperties = Dict{String,Any}(),
     datasetaxis = "Variable",
-    layername = "layer",
+    layername = get(properties, "name", "layer"),
     kwargs...,
 )
     if persist === nothing

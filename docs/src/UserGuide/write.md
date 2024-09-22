@@ -89,20 +89,28 @@ using YAXArrays, Zarr, FillArrays
 create the `Zeros` array
 
 ````@ansi write
-a = YAXArray(Zeros(Union{Missing, Int32}, 10, 20))
+a = YAXArray(Zeros(Union{Missing, Float32},  5, 4, 5))
 ````
 
-and save them as
+Now, save to disk with
 
 ````@example write
-r = savecube(a, "skeleton.zarr", driver=:zarr, skeleton=true)
+r = savecube(a, "skeleton.zarr", layername="skeleton", driver=:zarr, skeleton=true, overwrite=true)
 nothing # hide
 ````
 
-and check that all the values are `missing`
+::: warning
+
+`overwrite=true` will delete your previous `.zarr` file before creating a new one.
+
+:::
+
+Note also that if `layername="skeleton"` is not provided then the `default name` for the cube variable will be `layer`.
+
+Now, we check that all the values are `missing`
 
 ````@example write
-all(ismissing,r[:,:])
+all(ismissing, r[:,:,:])
 ````
 
 If using `FillArrays` is not possible, using the `zeros` function works as well, though it does allocate the array in memory.
@@ -112,4 +120,40 @@ If using `FillArrays` is not possible, using the `zeros` function works as well,
 The `skeleton` argument is also available for `savedataset`. 
 
 :::
+
+Using the toy array defined above we can do 
+
+````@example write
+ds = Dataset(skeleton=a) # skeleton will the variable name
+````
+
+````@example write
+ds_s = savedataset(ds, path="skeleton.zarr", driver=:zarr, skeleton=true, overwrite=true)
+nothing # hide
+````
+
+## Update values of `dataset`
+
+Now, we show how to start updating the array values. In order to do it we need to open the dataset first with writing `w` rights as follows:
+
+````@example write
+ds_open = zopen("skeleton.zarr", "w")
+ds_array = ds_open["skeleton"]
+````
+
+and then we simply update values by indexing them where necessary
+
+````@example write
+ds_array[:,:,1] = rand(Float32, 5, 4) # this will update values directly into disk!
+````
+
+we can verify is this working by loading again directly from disk
+
+````@example write
+ds_open = open_dataset("skeleton.zarr")
+ds_array = ds_open["skeleton"]
+ds_array.data[:,:,1]
+````
+
+indeed, those entries had been updated.
 

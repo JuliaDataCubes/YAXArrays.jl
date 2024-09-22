@@ -169,7 +169,7 @@ function Base.propertynames(a::YAXArray, private::Bool=false)
     end
 end
 
-
+Base.Generator(f, A::YAXArray) = Base.Generator(f, parent(A))
 Base.ndims(a::YAXArray{<:Any,N}) where {N} = N
 Base.eltype(a::YAXArray{T}) where {T} = T
 function Base.permutedims(c::YAXArray, p) 
@@ -200,7 +200,7 @@ function DD.rebuild(A::YAXArray, data::AbstractArray, dims::Tuple, refdims::Tupl
     #end
     YAXArray(dims, data, metadata; cleaner=A.cleaner)#, chunks=GridChunks(chunks))
 end
-function DD.rebuild(A::YAXArray; data=parent(A), dims=dims(A), metadata=DD.metadata(A), kw...)
+function DD.rebuild(A::YAXArray; data=parent(A), dims=DD.dims(A), metadata=DD.metadata(A), kw...)
     YAXArray(dims, data, metadata; cleaner=A.cleaner)
 end
 
