@@ -508,16 +508,22 @@ getCubeDes(::Type{T}) where {T} = string(T)
 
 function DD.show_after(io::IO, mime, c::YAXArray)
     blockwidth = get(io, :blockwidth, 0)
-    # This are some types for which sizeof is known to return a meaninful value
-    if isconcretetype(eltype(c)) && <:(eltype(c),Union{AbstractFloat,Signed,Unsigned,Bool})
+    # ? sizeof : Check if the element type is a bitstype or a union of bitstypes
+    if (isconcretetype(eltype(c)) && isbitstype(eltype(c))) ||
+        (eltype(c) isa Union && all(isbitstype, Base.uniontypes(eltype(c))))
+
         DD.print_block_separator(io, "file size", blockwidth, blockwidth)
         println(io, "\n  file size: ", formatbytes(cubesize(c)))
+    else # fallback
+        DD.print_block_separator(io, "memory size", blockwidth, blockwidth)
+        println(io, "\n  summarysize size: ", formatbytes(Base.summarysize(parent(c))))
     end
     DD.print_block_close(io, blockwidth)
-    # And if you want the array data to print:
+    # Uncomment to print array data if needed
     # ndims(c) > 0 && println(io)
     # DD.print_array(io, mime, c)
 end
+
 
 
 
