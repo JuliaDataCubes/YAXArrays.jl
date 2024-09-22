@@ -516,7 +516,7 @@ function DD.show_after(io::IO, mime, c::YAXArray)
         println(io, "\n  file size: ", formatbytes(cubesize(c)))
     else # fallback
         DD.print_block_separator(io, "memory size", blockwidth, blockwidth)
-        println(io, "\n  summarysize size: ", formatbytes(Base.summarysize(parent(c))))
+        println(io, "\n  summarysize: ", formatbytes(Base.summarysize(parent(c))))
     end
     DD.print_block_close(io, blockwidth)
     # Uncomment to print array data if needed
