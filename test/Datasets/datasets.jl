@@ -319,6 +319,11 @@ end
     @test ds.b.data == y
     @test ds.b.chunks == b.chunks
 
+    @test ds.b.data isa AbstractDiskArray
+    inmemds = readcubedata(ds)
+    @test !isa(inmemds.b.data, AbstractDiskArray)
+
+
     ds2 = Dataset(c=c)
     savedataset(ds2, path=f, backend=:zarr, append=true)
     ds = open_dataset(f, driver=:zarr)
