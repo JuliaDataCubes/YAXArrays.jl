@@ -60,4 +60,14 @@
         r = mapCube(simple_fun, (a1, a2), indims=(indims, indims), outdims=outdims, max_cache = "0.1GB")
         @test r.data == a1.data .+ permutedims(a2.data,(1,3,2))
     end
+
+    @testset "Error shown in parallel" begin
+        x,y,z = X(1:4), Y(1:5), Z(1:6)
+        a1 = YAXArray((x,y,z), rand(4,5,6))
+        indims = InDims("x")
+        outdims = OutDims("x")
+        @test_throws Exception mapCube((xout, xin) -> xout .= foo(xin), a1; indims, outdims, ispar=false)
+        @test_throws CapturedException mapCube((xout, xin) -> xout .= foo(xin), a1; indims, outdims, ispar=true)
+        
+    end
 end
