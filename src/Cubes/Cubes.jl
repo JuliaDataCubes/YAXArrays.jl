@@ -506,16 +506,19 @@ getCubeDes(::DD.Dimension) = "Cube axis"
 getCubeDes(::YAXArray) = "YAXArray"
 getCubeDes(::Type{T}) where {T} = string(T)
 
+loadingstatus(x) = "loaded in memory"
+loadingstatus(x::DiskArrays.AbstractDiskArray) = "loaded lazily"
+
 function DD.show_after(io::IO, mime, c::YAXArray)
     blockwidth = get(io, :blockwidth, 0)
+    DD.print_block_separator(io, loadingstatus(parent(c)), blockwidth, blockwidth)
+
     # ? sizeof : Check if the element type is a bitstype or a union of bitstypes
     if (isconcretetype(eltype(c)) && isbitstype(eltype(c))) ||
         (eltype(c) isa Union && all(isbitstype, Base.uniontypes(eltype(c))))
 
-        DD.print_block_separator(io, "file size", blockwidth, blockwidth)
-        println(io, "\n  file size: ", formatbytes(cubesize(c)))
+        println(io, "\n  data size: ", formatbytes(cubesize(c)))
     else # fallback
-        DD.print_block_separator(io, "memory size", blockwidth, blockwidth)
         println(io, "\n  summarysize: ", formatbytes(Base.summarysize(parent(c))))
     end
     DD.print_block_close(io, blockwidth)
