@@ -43,6 +43,9 @@ Individual arrays can be accessed using subsetting:
 ds.tos
 ````
 
+Please note that netCDF4 uses HDF5 which is not thread-safe in Julia.
+Use manual [locks](https://docs.julialang.org/en/v1/manual/multi-threading/#man-using-locks) in your own code to avoid any data-race.
+
 ## Read GDAL (GeoTIFF, GeoJSON)
 
 All GDAL compatible files can be read as a `YAXArrays.Dataset` after loading [ArchGDAL](https://yeesian.com/ArchGDAL.jl/latest/):
