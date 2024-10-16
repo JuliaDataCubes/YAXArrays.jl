@@ -228,6 +228,10 @@ Cubes.caxes(x::DD.Dimension) = (x,)
 Given any array implementing the YAXArray interface it returns an in-memory [`YAXArray`](@ref) from it.
 """
 function readcubedata(x)
+    csize = cubesize(x)
+    if csize > YAXDefaults.max_cache[]
+        @warn "Loading a Cube of size $(formatbytes(csize))."
+    end
     YAXArray(caxes(x), getindex_all(x), getattributes(x))
 end
 
