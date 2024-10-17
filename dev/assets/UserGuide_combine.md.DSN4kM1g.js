@@ -8,8 +8,8 @@ import{_ as i,c as a,a2 as n,o as e}from"./chunks/framework.DgSLhxNl.js";const c
 <span class="line"><span>  ↓ time Sampled{Int64} [1, 2, …, 11, 12] ForwardOrdered Regular Points</span></span>
 <span class="line"><span>├───────────────────────────────────────────────────────────── metadata ┤</span></span>
 <span class="line"><span>  Dict{String, Any}()</span></span>
-<span class="line"><span>├──────────────────────────────────────────────────────────── file size ┤</span></span>
-<span class="line"><span>  file size: 96.0 bytes</span></span>
+<span class="line"><span>├───────────────────────────────────────────────────── loaded in memory ┤</span></span>
+<span class="line"><span>  data size: 96.0 bytes</span></span>
 <span class="line"><span>└───────────────────────────────────────────────────────────────────────┘</span></span></code></pre></div><h2 id="concatenatecubes-to-a-new-dimension" tabindex="-1"><code>concatenatecubes</code> to a new dimension <a class="header-anchor" href="#concatenatecubes-to-a-new-dimension" aria-label="Permalink to &quot;\`concatenatecubes\` to a new dimension {#concatenatecubes-to-a-new-dimension}&quot;">​</a></h2><p>Here we use <code>concatenatecubes</code> to combine two arrays of different variables that have the same dimensions. The resulting array <code>combined</code> has an additional dimension <code>variable</code> indicating from which array the element values originates. Note that using a <code>Dataset</code> instead is a more flexible approach in handling different variables.</p><div class="language-julia vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">julia</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">using</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;"> YAXArrays</span></span>
 <span class="line"></span>
 <span class="line"><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">temperature </span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">=</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> YAXArray</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">((</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">Dim{:time}</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">(</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">1</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">:</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">6</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">),), </span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">rand</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">(</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">6</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">))</span></span>
@@ -23,6 +23,6 @@ import{_ as i,c as a,a2 as n,o as e}from"./chunks/framework.DgSLhxNl.js";const c
 <span class="line"><span>  → variable Categorical{String} [&quot;temp&quot;, &quot;prep&quot;] ReverseOrdered</span></span>
 <span class="line"><span>├────────────────────────────────────────────────────── metadata ┤</span></span>
 <span class="line"><span>  Dict{String, Any}()</span></span>
-<span class="line"><span>├───────────────────────────────────────────────────── file size ┤</span></span>
-<span class="line"><span>  file size: 96.0 bytes</span></span>
+<span class="line"><span>├───────────────────────────────────────────────── loaded lazily ┤</span></span>
+<span class="line"><span>  data size: 96.0 bytes</span></span>
 <span class="line"><span>└────────────────────────────────────────────────────────────────┘</span></span></code></pre></div>`,10)]))}const E=i(t,[["render",p]]);export{c as __pageData,E as default};

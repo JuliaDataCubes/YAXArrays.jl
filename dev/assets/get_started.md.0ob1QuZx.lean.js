@@ -7,8 +7,8 @@ import{_ as a,c as i,a2 as n,o as t}from"./chunks/framework.DgSLhxNl.js";const g
 <span class="line"><span>  → Dim_2 Sampled{Int64} Base.OneTo(3) ForwardOrdered Regular Points</span></span>
 <span class="line"><span>├─────────────────────────────────────────────────────────── metadata ┤</span></span>
 <span class="line"><span>  Dict{String, Any}()</span></span>
-<span class="line"><span>├────────────────────────────────────────────────────────── file size ┤</span></span>
-<span class="line"><span>  file size: 48.0 bytes</span></span>
+<span class="line"><span>├─────────────────────────────────────────────────── loaded in memory ┤</span></span>
+<span class="line"><span>  data size: 48.0 bytes</span></span>
 <span class="line"><span>└─────────────────────────────────────────────────────────────────────┘</span></span></code></pre></div><p>Assemble a more complex <code>YAXArray</code> with 4 dimensions, i.e. time, x, y and a variable type:</p><div class="language-julia vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">julia</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">using</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;"> DimensionalData</span></span>
 <span class="line"></span>
 <span class="line"><span style="--shiki-light:#6A737D;--shiki-dark:#6A737D;"># axes or dimensions with name and tick values</span></span>
@@ -41,8 +41,8 @@ import{_ as a,c as i,a2 as n,o as t}from"./chunks/framework.DgSLhxNl.js";const g
 <span class="line"><span>  &quot;y&quot;      =&gt; &quot;latitude&quot;</span></span>
 <span class="line"><span>  &quot;x&quot;      =&gt; &quot;longitude&quot;</span></span>
 <span class="line"><span>  &quot;origin&quot; =&gt; &quot;YAXArrays.jl example&quot;</span></span>
-<span class="line"><span>├─────────────────────────────────────────────────────────────────── file size ┤</span></span>
-<span class="line"><span>  file size: 46.88 KB</span></span>
+<span class="line"><span>├──────────────────────────────────────────────────────────── loaded in memory ┤</span></span>
+<span class="line"><span>  data size: 46.88 KB</span></span>
 <span class="line"><span>└──────────────────────────────────────────────────────────────────────────────┘</span></span></code></pre></div><p>Get the temperature map at the first point in time:</p><div class="language-julia vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">julia</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">a2[variable</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">=</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">At</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">(</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF;">&quot;temperature&quot;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">), time</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">=</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;">1</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">]</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">.</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">data</span></span></code></pre></div><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>10×15 view(::Array{Float64, 4}, 1, :, :, 1) with eltype Float64:</span></span>
 <span class="line"><span> 0.325997   0.624506   0.655204  0.142733  …  0.587477   0.626919  0.606561</span></span>
 <span class="line"><span> 0.0972941  0.0693719  0.828299  0.531092     0.884949   0.060422  0.265107</span></span>

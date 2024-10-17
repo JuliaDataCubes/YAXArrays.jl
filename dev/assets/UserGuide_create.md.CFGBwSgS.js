@@ -7,8 +7,8 @@ import{_ as a,c as i,a2 as n,o as t}from"./chunks/framework.DgSLhxNl.js";const g
 <span class="line"><span>  ↗ Dim_3 Sampled{Int64} Base.OneTo(5) ForwardOrdered Regular Points</span></span>
 <span class="line"><span>├──────────────────────────────────────────────────────────── metadata ┤</span></span>
 <span class="line"><span>  Dict{String, Any}()</span></span>
-<span class="line"><span>├─────────────────────────────────────────────────────────── file size ┤</span></span>
-<span class="line"><span>  file size: 7.81 KB</span></span>
+<span class="line"><span>├──────────────────────────────────────────────────── loaded in memory ┤</span></span>
+<span class="line"><span>  data size: 7.81 KB</span></span>
 <span class="line"><span>└──────────────────────────────────────────────────────────────────────┘</span></span></code></pre></div><p>The dimensions have only generic names, e.g. <code>Dim_1</code> and only integer values. We can also specify the dimensions with custom names enabling easier access:</p><div class="language-julia vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">julia</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">using</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;"> Dates</span></span>
 <span class="line"></span>
 <span class="line"><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">axlist </span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">=</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;"> (</span></span>
@@ -27,8 +27,8 @@ import{_ as a,c as i,a2 as n,o as t}from"./chunks/framework.DgSLhxNl.js";const g
 <span class="line"><span>├──────────────────────────────────────────────────────────────────── metadata ┤</span></span>
 <span class="line"><span>  Dict{Symbol, String} with 1 entry:</span></span>
 <span class="line"><span>  :origin =&gt; &quot;user guide&quot;</span></span>
-<span class="line"><span>├─────────────────────────────────────────────────────────────────── file size ┤</span></span>
-<span class="line"><span>  file size: 35.16 KB</span></span>
+<span class="line"><span>├──────────────────────────────────────────────────────────── loaded in memory ┤</span></span>
+<span class="line"><span>  data size: 35.16 KB</span></span>
 <span class="line"><span>└──────────────────────────────────────────────────────────────────────────────┘</span></span></code></pre></div><div class="language-julia vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">julia</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">a2</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">.</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">properties</span></span></code></pre></div><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>Dict{Symbol, String} with 1 entry:</span></span>
 <span class="line"><span>  :origin =&gt; &quot;user guide&quot;</span></span></code></pre></div><div class="language-julia vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">julia</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">a2</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">.</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">axes</span></span></code></pre></div><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span>(↓ time Sampled{Date} Date(&quot;2022-01-01&quot;):Dates.Day(1):Date(&quot;2022-01-30&quot;) ForwardOrdered Regular Points,</span></span>
 <span class="line"><span>→ lon  Sampled{Float64} 1.0:1.0:10.0 ForwardOrdered Regular Points,</span></span>
