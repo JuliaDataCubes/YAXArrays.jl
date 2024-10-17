@@ -1,0 +1,6 @@
+comment:
+  layout: " diff, flags, files"
+  behavior: default
+  require_changes: false  # learn more in the Requiring Changes section below
+  require_base: false        # [true :: must have a base report to post]
+  require_head: true   
