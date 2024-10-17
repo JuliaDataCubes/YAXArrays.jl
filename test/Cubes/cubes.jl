@@ -94,6 +94,16 @@ using DimensionalData
         @test a2.properties == Dict("att" => 5)
         @test YAXArrayBase.iscompressed(a) == false
     end
+
+    @testset "cubesize" begin
+        @test Cubes.cubesize(a) == 160
+        a32 = map(Float32, a)
+        @test Cubes.cubesize(a32) == 80
+
+        @test endswith(Cubes.formatbytes(160), "bytes")
+        @test endswith(Cubes.formatbytes(1205), "KB")
+        @test endswith(Cubes.formatbytes(1200000), "MB")
+    end
 #=
     @testset "Subsets" begin
         s = YAXArrays.Cubes.subsetcube(a, X = 1.5..3.5)
