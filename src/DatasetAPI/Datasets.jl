@@ -1,6 +1,6 @@
 module Datasets
 #import ..Cubes.Axes: axsym, axname, CubeAxis, findAxis, CategoricalAxis, RangeAxis, caxes
-import ..Cubes: Cubes, YAXArray, concatenatecubes, CleanMe, subsetcube, copy_diskarray, setchunks, caxes
+import ..Cubes: Cubes, YAXArray, concatenatecubes, CleanMe, subsetcube, copy_diskarray, setchunks, caxes, readcubedata, cubesize, formatbytes
 using ...YAXArrays: YAXArrays, YAXDefaults, findAxis
 using DataStructures: OrderedDict, counter
 using Dates: Day, Hour, Minute, Second, Month, Year, Date, DateTime, TimeType, AbstractDateTime
@@ -178,6 +178,16 @@ function Base.getproperty(x::Dataset, k::Symbol)
         x[k]
     end
 end
+
+function readcubedata(ds::Dataset)
+    dssize = sum(cubesize.(values(ds.cubes)))
+    if dssize > YAXDefaults.max_cache[]
+        @warn "Loading data of size $(formatbytes(dssize))"
+    end
+    inmemcubes = OrderedDict(key=> readcubedata(val) for (key, val) in pairs(ds.cubes))
+    Dataset(inmemcubes, ds.axes, ds.properties)
+end
+
 Base.getindex(x::Dataset, i::Symbol) =
 haskey(x.cubes, i) ? x.cubes[i] :
 haskey(x.axes, i) ? x.axes[i] : throw(ArgumentError("$i not found in Dataset"))

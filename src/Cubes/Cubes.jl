@@ -228,6 +228,10 @@ Cubes.caxes(x::DD.Dimension) = (x,)
 Given any array implementing the YAXArray interface it returns an in-memory [`YAXArray`](@ref) from it.
 """
 function readcubedata(x)
+    csize = cubesize(x)
+    if csize > YAXDefaults.max_cache[]
+        @warn "Loading a Cube of size $(formatbytes(csize))."
+    end
     YAXArray(caxes(x), getindex_all(x), getattributes(x))
 end
 
@@ -506,16 +510,19 @@ getCubeDes(::DD.Dimension) = "Cube axis"
 getCubeDes(::YAXArray) = "YAXArray"
 getCubeDes(::Type{T}) where {T} = string(T)
 
+loadingstatus(x) = "loaded in memory"
+loadingstatus(x::DiskArrays.AbstractDiskArray) = "loaded lazily"
+
 function DD.show_after(io::IO, mime, c::YAXArray)
     blockwidth = get(io, :blockwidth, 0)
+    DD.print_block_separator(io, loadingstatus(parent(c)), blockwidth, blockwidth)
+
     # ? sizeof : Check if the element type is a bitstype or a union of bitstypes
     if (isconcretetype(eltype(c)) && isbitstype(eltype(c))) ||
         (eltype(c) isa Union && all(isbitstype, Base.uniontypes(eltype(c))))
 
-        DD.print_block_separator(io, "file size", blockwidth, blockwidth)
-        println(io, "\n  file size: ", formatbytes(cubesize(c)))
+        println(io, "\n  data size: ", formatbytes(cubesize(c)))
     else # fallback
-        DD.print_block_separator(io, "memory size", blockwidth, blockwidth)
         println(io, "\n  summarysize: ", formatbytes(Base.summarysize(parent(c))))
     end
     DD.print_block_close(io, blockwidth)
