@@ -18,9 +18,6 @@
 [ci-img]: https://github.com/JuliaDataCubes/YAXArrays.jl/workflows/CI/badge.svg
 [ci-url]: https://github.com/JuliaDataCubes/YAXArrays.jl/actions?query=workflow%3ACI
 
-[coveralls-img]: https://coveralls.io/repos/github/JuliaDataCubes/YAXArrays.jl/badge.svg?branch=master
-[coveralls-url]: https://coveralls.io/github/JuliaDataCubes/YAXArrays.jl?branch=master
-
 [zenodo-url]: https://doi.org/10.5281/zenodo.7505394
 [zenodo-img]: https://zenodo.org/badge/DOI/10.5281/zenodo.7505394.svg
 
