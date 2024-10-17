@@ -194,15 +194,15 @@ import{_ as i,c as a,a2 as n,o as e}from"./chunks/framework.DgSLhxNl.js";const t
 <span class="line"><span>None</span></span>
 <span class="line"><span>Variables with additional axes:</span></span>
 <span class="line"><span>  Additional Axes: </span></span>
+<span class="line"><span>  (↓ points Sampled{Int64} [9, 13, …, 95, 100] ForwardOrdered Irregular Points)</span></span>
+<span class="line"><span>  Variables: </span></span>
+<span class="line"><span>  latitudes</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>  Additional Axes: </span></span>
 <span class="line"><span>  (↓ points Sampled{Int64} [9, 13, …, 95, 100] ForwardOrdered Irregular Points,</span></span>
 <span class="line"><span>  → Time   Sampled{Date} Date(&quot;2020-01-01&quot;):Dates.Month(1):Date(&quot;2022-12-01&quot;) ForwardOrdered Regular Points)</span></span>
 <span class="line"><span>  Variables: </span></span>
 <span class="line"><span>  temperature</span></span>
-<span class="line"><span></span></span>
-<span class="line"><span>  Additional Axes: </span></span>
-<span class="line"><span>  (↓ points Sampled{Int64} [9, 13, …, 95, 100] ForwardOrdered Irregular Points)</span></span>
-<span class="line"><span>  Variables: </span></span>
-<span class="line"><span>  latitudes</span></span>
 <span class="line"><span></span></span>
 <span class="line"><span>  Additional Axes: </span></span>
 <span class="line"><span>  (↓ points Sampled{Int64} [9, 13, …, 95, 100] ForwardOrdered Irregular Points)</span></span>
@@ -217,12 +217,6 @@ import{_ as i,c as a,a2 as n,o as e}from"./chunks/framework.DgSLhxNl.js";const t
 <span class="line"><span>None</span></span>
 <span class="line"><span>Variables with additional axes:</span></span>
 <span class="line"><span>  Additional Axes: </span></span>
-<span class="line"><span>  (↓ points Sampled{Int64} [9, 13, …, 95, 100] ForwardOrdered Irregular Points,</span></span>
-<span class="line"><span>  → Time   Sampled{Date} Date(&quot;2020-01-01&quot;):Dates.Month(1):Date(&quot;2022-12-01&quot;) ForwardOrdered Regular Points)</span></span>
-<span class="line"><span>  Variables: </span></span>
-<span class="line"><span>  temperature</span></span>
-<span class="line"><span></span></span>
-<span class="line"><span>  Additional Axes: </span></span>
 <span class="line"><span>  (↓ points Sampled{Int64} [9, 13, …, 95, 100] ForwardOrdered Irregular Points)</span></span>
 <span class="line"><span>  Variables: </span></span>
 <span class="line"><span>  longitudes</span></span>
@@ -230,7 +224,13 @@ import{_ as i,c as a,a2 as n,o as e}from"./chunks/framework.DgSLhxNl.js";const t
 <span class="line"><span>  Additional Axes: </span></span>
 <span class="line"><span>  (↓ points Sampled{Int64} [9, 13, …, 95, 100] ForwardOrdered Irregular Points)</span></span>
 <span class="line"><span>  Variables: </span></span>
-<span class="line"><span>  latitudes</span></span></code></pre></div><h2 id="How-do-I-apply-map-algebra?" tabindex="-1">How do I apply map algebra? <a class="header-anchor" href="#How-do-I-apply-map-algebra?" aria-label="Permalink to &quot;How do I apply map algebra? {#How-do-I-apply-map-algebra?}&quot;">​</a></h2><p>Our next step is map algebra computations. This can be done effectively using the &#39;map&#39; function. For example:</p><p>Multiplying cubes with only spatio-temporal dimensions</p><div class="language-julia vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">julia</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">julia</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">&gt;</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> map</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">((x, y) </span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">-&gt;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;"> x </span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">*</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;"> y, ds1, ds2)</span></span></code></pre></div><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span style="--shiki-light:#959da5;--shiki-dark:#959da5;">╭──────────────────────────────╮</span></span>
+<span class="line"><span>  latitudes</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>  Additional Axes: </span></span>
+<span class="line"><span>  (↓ points Sampled{Int64} [9, 13, …, 95, 100] ForwardOrdered Irregular Points,</span></span>
+<span class="line"><span>  → Time   Sampled{Date} Date(&quot;2020-01-01&quot;):Dates.Month(1):Date(&quot;2022-12-01&quot;) ForwardOrdered Regular Points)</span></span>
+<span class="line"><span>  Variables: </span></span>
+<span class="line"><span>  temperature</span></span></code></pre></div><h2 id="How-do-I-apply-map-algebra?" tabindex="-1">How do I apply map algebra? <a class="header-anchor" href="#How-do-I-apply-map-algebra?" aria-label="Permalink to &quot;How do I apply map algebra? {#How-do-I-apply-map-algebra?}&quot;">​</a></h2><p>Our next step is map algebra computations. This can be done effectively using the &#39;map&#39; function. For example:</p><p>Multiplying cubes with only spatio-temporal dimensions</p><div class="language-julia vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang">julia</span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">julia</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">&gt;</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF;"> map</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;">((x, y) </span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">-&gt;</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;"> x </span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583;">*</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8;"> y, ds1, ds2)</span></span></code></pre></div><div class="language- vp-adaptive-theme"><button title="Copy Code" class="copy"></button><span class="lang"></span><pre class="shiki shiki-themes github-light github-dark vp-code" tabindex="0"><code><span class="line"><span style="--shiki-light:#959da5;--shiki-dark:#959da5;">╭──────────────────────────────╮</span></span>
 <span class="line"><span style="--shiki-light:#959da5;--shiki-dark:#959da5;">│ </span><span style="--shiki-light:#ff875f;--shiki-dark:#ff875f;">20</span><span style="--shiki-light:#24292e;--shiki-dark:#e1e4e8;">×</span><span style="--shiki-light:#0087d7;--shiki-dark:#0087d7;">10</span><span style="--shiki-light:#24292e;--shiki-dark:#e1e4e8;">×</span><span style="--shiki-light:#5fd7ff;--shiki-dark:#5fd7ff;">15</span><span style="--shiki-light:#24292e;--shiki-dark:#e1e4e8;"> YAXArray{Float64,3}</span><span style="--shiki-light:#959da5;--shiki-dark:#959da5;"> │</span></span>
 <span class="line"><span style="--shiki-light:#959da5;--shiki-dark:#959da5;">├──────────────────────────────┴───────────────────────────────────────── dims ┐</span></span>
 <span class="line"><span style="--shiki-light:#ff875f;--shiki-dark:#ff875f;">  ↓ </span><span style="--shiki-light:#ff875f;--shiki-dark:#ff875f;">time</span><span style="--shiki-light:#24292e;--shiki-dark:#e1e4e8;"> Sampled{Float64} </span><span style="--shiki-light:#ff875f;--shiki-dark:#ff875f;">1.0:1.0:20.0</span><span style="--shiki-light:#808080;--shiki-dark:#808080;"> ForwardOrdered</span><span style="--shiki-light:#808080;--shiki-dark:#808080;"> Regular</span><span style="--shiki-light:#808080;--shiki-dark:#808080;"> Points</span><span style="--shiki-light:#24292e;--shiki-dark:#e1e4e8;">,</span></span>
