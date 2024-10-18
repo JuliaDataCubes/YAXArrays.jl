@@ -34,19 +34,19 @@ features:
   - title: Efficiency
     details: Efficient <font color="#D27D2D">mapslices(x) </font> and <font color="#D27D2D">mapCube</font> operations on huge multiple arrays, optimized for high-latency data access (object storage, compressed datasets).
     link: /UserGuide/compute
+
+---
 ```
 
 ## How to Install YAXArrays.jl?
 
-Since `YAXArrays.jl` is registered in the Julia General registry, you can simply run the following command in the Julia REPL:
+Since `YAXArrays.jl` is registered in the Julia General registry, you can simply run the following
+command in the Julia REPL:
 
 ```julia
 julia> using Pkg
 julia> Pkg.add("YAXArrays.jl")
-```
-or 
-
-```julia
+# or
 julia> ] # ']' should be pressed
 pkg> add YAXArrays
 ```
@@ -61,28 +61,24 @@ pkg> add YAXArrays#master
 
 Install the following package(s) for:
 
-:::code-group
+::: code-group
 
-```julia [.tif]
+```julia [ .tif ]
 using Pkg
 Pkg.add("ArchGDAL")
 ```
 
-```julia [.netcdf]
+```julia [ .netcdf ]
 using Pkg
 Pkg.add("NetCDF")
 ```
 
-```julia [.zarr]
+```julia [ .zarr ]
 using Pkg
 Pkg.add("Zarr")
 ```
 
-```julia [.grib]
-# TODO
-```
-
-```julia [plotting]
+```julia [ plotting ]
 using Pkg
 Pkg.add(["GLMakie", "GeoMakie", "AlgebraOfGraphics", "DimensionalData"])
 ```
