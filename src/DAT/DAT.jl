@@ -708,7 +708,7 @@ function runLoop(dc::DATConfig, showprog)
             "YAXArrays is not loaded on all workers. Please run `@everywhere using YAXArrays` to fix.",
         )
         mapfun = showprog ? progress_pmap : pmap
-        mapfun(CachingPool(workers()),allRanges, on_error=identity) do r
+        m = mapfun(CachingPool(workers()),allRanges) do r
             incaches, outcaches, args = getallargs(dc)
             updateinars(dc, r, incaches)
             if dc.ntr[myid()] > 1
