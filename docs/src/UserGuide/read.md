@@ -70,7 +70,7 @@ ds = open_dataset(path)
 
 ## Load data into memory
 
-For `Dataset`s, or `variables` that could fit in RAM, you might want to load them completely into memory. As an example, let's use the NetCDF workflow; the same should be true for other cases.
+For `Datasets` or `variables` that could fit in RAM, you might want to load them completely into memory. This can be done via the `readcubedata` function. As an example, let's use the NetCDF workflow; the same should be true for other cases.
 
 ### readcubedata
 
@@ -82,7 +82,7 @@ For `Dataset`s, or `variables` that could fit in RAM, you might want to load the
 readcubedata(ds.tos)
 ```
 
-== single variable: `: Colon` operator
+== with the `:` operator
 
 ```@example read_netcdf
 ds.tos[:, :, :]
@@ -93,7 +93,8 @@ In this case, you should know in advance how many dimensions there are and how l
 == Complete Dataset
 
 ```@example read_netcdf
-readcubedata(ds)
+ds_loaded = readcubedata(ds)
+ds_loaded["tos"] # Load the variable of interest; the loaded status is shown for each variable.
 ```
 
 :::
