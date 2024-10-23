@@ -67,3 +67,36 @@ using Downloads: download
 path = download("https://github.com/yeesian/ArchGDALDatasets/raw/307f8f0e584a39a050c042849004e6a2bd674f99/gdalworkshop/world.tif", "world.tif")
 ds = open_dataset(path)
 ````
+
+## Load data into memory
+
+For datasets or variables that could fit in RAM, you might want to load them completely into memory. This can be done using the `readcubedata` function. As an example, let's use the NetCDF workflow; the same should be true for other cases.
+
+### readcubedata
+
+:::tabs
+
+== single variable
+
+```@example read_netcdf
+readcubedata(ds.tos)
+```
+
+== with the `:` operator
+
+```@example read_netcdf
+ds.tos[:, :, :]
+```
+
+In this case, you should know in advance how many dimensions there are and how long they are, which shouldn't be hard to determine since this information is already displayed when querying such variables.
+
+== Complete Dataset
+
+```@example read_netcdf
+ds_loaded = readcubedata(ds)
+ds_loaded["tos"] # Load the variable of interest; the loaded status is shown for each variable.
+```
+
+:::
+
+Note how the loading status changes from `loaded lazily` to `loaded in memory`.
