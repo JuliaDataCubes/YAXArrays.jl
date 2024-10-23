@@ -70,7 +70,7 @@ ds = open_dataset(path)
 
 ## Load data into memory
 
-For `Datasets` or `variables` that could fit in RAM, you might want to load them completely into memory. This can be done via the `readcubedata` function. As an example, let's use the NetCDF workflow; the same should be true for other cases.
+For datasets or variables that could fit in RAM, you might want to load them completely into memory. This can be done using the `readcubedata` function. As an example, let's use the NetCDF workflow; the same should be true for other cases.
 
 ### readcubedata
 
