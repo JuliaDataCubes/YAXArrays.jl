@@ -311,6 +311,7 @@ cleanaxiselement(x) = x
 
 "Test if data in x can be approximated by a step range"
 function testrange(x)
+    isempty(x) && return x
     r = range(first(x), last(x), length = length(x))
     all(i -> isapprox(i...), zip(x, r)) ? r : x
 end
