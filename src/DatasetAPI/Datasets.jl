@@ -279,7 +279,7 @@ function toaxis(dimname, g, offs, len)
     end
     ar = get_var_handle(g, dimname)
     aratts = get_var_attrs(g, dimname)
-    if match(r"^(days)|(hours)|(seconds)|(months) since",get(aratts,"units","")) !== nothing
+    if match(r"^(days)|(hours)|(seconds)|(months) since",lowercase(get(aratts,"units",""))) !== nothing
         tsteps = try
             timedecode(ar[:], aratts["units"], lowercase(get(aratts, "calendar", "standard")))
         catch
