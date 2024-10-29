@@ -215,7 +215,7 @@ end
 #     (dims... ,)
 # end
 
-caxes(x) = collect(DD.dims(x))
+caxes(x::DD.AbstractDimArray) = collect(DD.dims(x))
 
 caxes(c::YAXArray) = getfield(c, :axes)
 """
