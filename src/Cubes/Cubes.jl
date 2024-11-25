@@ -205,15 +205,18 @@ function DD.rebuild(A::YAXArray; data=parent(A), dims=DD.dims(A), metadata=DD.me
 end
 
 function caxes(x)
-    #@show x
-    #@show typeof(x)
-    dims = map(enumerate(dimnames(x))) do a
-        index, symbol = a
-        values = YAXArrayBase.dimvals(x, index)
-        DD.Dim{symbol}(values)
-    end
-    (dims... ,)
+     #@show x
+     #@show typeof(x)
+     dims = map(enumerate(dimnames(x))) do a
+         index, symbol = a
+         values = YAXArrayBase.dimvals(x, index)
+         DD.Dim{symbol}(values)
+     end
+     (dims... ,)
 end
+
+caxes(x::DD.AbstractDimArray) = collect(DD.dims(x))
+
 caxes(c::YAXArray) = getfield(c, :axes)
 """
     caxes
