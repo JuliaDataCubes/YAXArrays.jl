@@ -376,6 +376,8 @@ dimension provided in the input arg is used:
 ````julia
 files = ["a.nc","b.nc","c.nc"]
 open_mfdataset(DD.DimArray(files,DD.Dim{:NewDim}(["a","b","c"])))
+````
+"""
 function open_mfdataset(vec::DD.DimVector{<:AbstractString};kwargs...)
     alldatasets = open_dataset.(vec;kwargs...);
     fi = first(alldatasets)
