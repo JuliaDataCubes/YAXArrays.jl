@@ -13,7 +13,7 @@ using DiskArrays: DiskArrays, GridChunks
 using Glob: glob
 using DimensionalData: DimensionalData as DD
 
-export Dataset, Cube, open_dataset, to_dataset, savecube, savedataset
+export Dataset, Cube, open_dataset, to_dataset, savecube, savedataset, save
 
 """
     Dataset object which stores an `OrderedDict` of YAXArrays with Symbol keys.
@@ -695,6 +695,98 @@ function savecube(
     Cube(ds, joinname = datasetaxis)
 end
 
+"""
+Generalized save, for cubes and datasets.
+"""
+function save(
+    c::YAXArray,
+    path::AbstractString;
+    layername = get(c.properties,"name","layer"),
+    datasetaxis = "Variable",
+    max_cache = 5e8,
+    backend = :all,
+    driver = backend,
+    chunks = nothing,
+    overwrite = false, 
+    append = false,
+    skeleton=false,
+    writefac=4.0,
+    kwargs...
+)
+    savecube(
+        c,
+        path::AbstractString;
+        layername = layername,
+        datasetaxis = datasetaxis,
+        max_cache = max_cache,
+        backend = backend,
+        driver = driver,
+        chunks = chunks,
+        overwrite = overwrite, 
+        append = append,
+        skeleton = skeleton,
+        writefac = writefac,
+        kwargs...
+    )
+end
+function save(
+    c::Dataset,
+    path::AbstractString;
+    layername = get(c.properties,"name","layer"),
+    datasetaxis = "Variable",
+    max_cache = 5e8,
+    backend = :all,
+    driver = backend,
+    chunks = nothing,
+    overwrite = false, 
+    append = false,
+    skeleton=false,
+    writefac=4.0,
+    kwargs...
+)
+    savecube(
+        c,
+        path::AbstractString;
+        layername = layername,
+        datasetaxis = datasetaxis,
+        max_cache = max_cache,
+        backend = backend,
+        driver = driver,
+        chunks = chunks,
+        overwrite = overwrite, 
+        append = append,
+        skeleton = skeleton,
+        writefac = writefac,
+        kwargs...
+    )
+end
+
+function save(
+    ds::Dataset,
+    path::AbstractString;
+    persist = nothing,
+    overwrite = false,
+    append = false,
+    skeleton=false,
+    backend = :all,
+    driver = backend, 
+    max_cache = 5e8,
+    writefac=4.0,
+    kwargs...)
+
+    savedataset(
+        ds;
+        path = path,
+        persist = persist,
+        overwrite = overwrite,
+        append = append,
+        skeleton = skeleton,
+        backend = backend,
+        driver = driver, 
+        max_cache = max_cache,
+        writefac = writefac,
+        kwargs...)
+end
 
 """
 function createdataset(DS::Type,axlist; kwargs...)
