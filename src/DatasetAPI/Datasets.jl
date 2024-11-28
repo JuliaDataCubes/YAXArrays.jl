@@ -8,8 +8,8 @@ using IntervalSets: Interval, (..)
 using CFTime: timedecode, timeencode, DateTimeNoLeap, DateTime360Day, DateTimeAllLeap
 using YAXArrayBase
 using YAXArrayBase: iscontdimval, add_var
-using DiskArrayTools: CFDiskArray, ConcatDiskArray
-using DiskArrays: DiskArrays, GridChunks
+using DiskArrayTools: CFDiskArray, diskstack
+using DiskArrays: DiskArrays, GridChunks, ConcatDiskArray
 using Glob: glob
 using DimensionalData: DimensionalData as DD
 
@@ -341,7 +341,7 @@ function merge_new_axis(alldatasets, firstcube,var,mergedim)
     newdim = DD.rebuild(mergedim,1:length(alldatasets))
     alldiskarrays = map(ds->ds.cubes[var].data,alldatasets).data
     newda = diskstack(alldiskarrays)
-    newdims = (DD.dim(firstcube)...,newdim)
+    newdims = (DD.dims(firstcube)...,newdim)
     YAXArray(newdims,newda,deepcopy(firstcube.properties))
 end
 function merge_existing_axis(alldatasets,firstcube,var,mergedim)
