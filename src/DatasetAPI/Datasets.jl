@@ -331,7 +331,17 @@ testrange(x::AbstractArray{<:TimeType}) = x
 
 testrange(x::AbstractArray{<:AbstractString}) = x
 
-_glob(x) = startswith(x, "/") ? glob(x[2:end], "/") : glob(x)
+
+# This is a bit unfortunate since it will disallow globbing hierarchies of directories, 
+# but necessary to have it work on both windows and Unix systems
+function _glob(x) 
+    if isabspath(x)
+        p, rest = splitdir(x)
+        glob(rest,p)
+    else
+        glob(x)
+    end
+end
 
 open_mfdataset(g::AbstractString; kwargs...) = open_mfdataset(_glob(g); kwargs...)
 open_mfdataset(g::Vector{<:AbstractString}; kwargs...) =
