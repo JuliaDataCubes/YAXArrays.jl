@@ -285,7 +285,7 @@ function toaxis(dimname, g, offs, len)
         catch
             ar[:]
         end
-        DD.Ti(tsteps[offs+1:end])
+        DD.rebuild(DD.name2dim(axname), tsteps[offs+1:end])
     elseif haskey(aratts, "_ARRAYVALUES")
         vals = identity.(aratts["_ARRAYVALUES"])
         DD.rebuild(DD.name2dim(axname),(vals))
