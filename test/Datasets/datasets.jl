@@ -24,7 +24,7 @@ using Dates
         YAXArray(axlist2, data[3], props[3]),
     )
     ds = Dataset(avar=c1, something=c2, smaller=c3)
-    # previous version will throw this error: `KeyError: key :Ti not found`
+    # previous version will throw this error: `KeyError: key :time not found`
     f = "./temp.zarr"
     @test_nowarn savedataset(ds; path=f)
     rm(f, recursive=true, force=true)
@@ -215,11 +215,11 @@ end
             ds = open_dataset("test.mock")
             @test size(ds.Var1) == (10, 5, 2)
             @test size(ds.Var2) == (10, 5)
-            @test all(in(keys(ds.axes)), (:Ti, :d2, :d3))
+            @test all(in(keys(ds.axes)), (:time, :d2, :d3))
             ar = Cube(ds)
             @test ar isa YAXArray
             @test size(ar) == (10, 5, 2, 2)
-            @test DD.name.(ar.axes) == (:Ti, :d2, :d3, :Variable)
+            @test DD.name.(ar.axes) == (:time, :d2, :d3, :Variable)
             @test DD.lookup(ar.axes[4]) == ["Var1", "Var3"]
         end
         @testset "Dataset creation" begin

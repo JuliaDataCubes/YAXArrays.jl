@@ -50,22 +50,22 @@ nothing # hide
 ````julia
 function weighted_seasons(ds)
     # calculate weights 
-    tempo = dims(ds, :Ti)
+    tempo = dims(ds, :time)
     month_length = YAXArray((tempo,), daysinmonth.(tempo))
     g_tempo = groupby(month_length, Ti => seasons(; start=December))
-    sum_days = sum.(g_tempo, dims=:Ti)
+    sum_days = sum.(g_tempo, dims=:time)
     weights = map(./, g_tempo, sum_days)
     # unweighted seasons
     g_ds = groupby(ds, Ti => seasons(; start=December))
-    mean_g = mean.(g_ds, dims=:Ti)
-    mean_g = dropdims.(mean_g, dims=:Ti)
+    mean_g = mean.(g_ds, dims=:time)
+    mean_g = dropdims.(mean_g, dims=:time)
     # weighted seasons
     g_dsW = broadcast_dims.(*, weights, g_ds)
-    weighted_g = sum.(g_dsW, dims = :Ti);
-    weighted_g = dropdims.(weighted_g, dims=:Ti)
+    weighted_g = sum.(g_dsW, dims = :time);
+    weighted_g = dropdims.(weighted_g, dims=:time)
     # differences
     diff_g = map(.-, weighted_g, mean_g)
-    seasons_g = lookup(mean_g, :Ti)
+    seasons_g = lookup(mean_g, :time)
     return mean_g, weighted_g, diff_g, seasons_g
 end
 ````
@@ -80,7 +80,7 @@ g_ds = groupby(ds, Ti => seasons(; start=December))
 And the mean per season is calculated as follows
 
 ````@ansi compareXarray
-mean_g = mean.(g_ds, dims=:Ti)
+mean_g = mean.(g_ds, dims=:time)
 ````
 
 ### dropdims
@@ -88,7 +88,7 @@ mean_g = mean.(g_ds, dims=:Ti)
 Note that now the time dimension has length one, we can use `dropdims` to remove it
 
 ````@ansi compareXarray
-mean_g = dropdims.(mean_g, dims=:Ti)
+mean_g = dropdims.(mean_g, dims=:time)
 ````
 
 ### seasons
@@ -96,7 +96,7 @@ mean_g = dropdims.(mean_g, dims=:Ti)
 Due to the `groupby` function we will obtain new grouping names, in this case in the time dimension:
 
 ````@example compareXarray
-seasons_g = lookup(mean_g, :Ti)
+seasons_g = lookup(mean_g, :time)
 ````
 
 Next, we will weight this grouping by days/month in each group.
@@ -106,7 +106,7 @@ Next, we will weight this grouping by days/month in each group.
 Create a `YAXArray` for the month length
 
 ````@example compareXarray
-tempo = dims(ds, :Ti)
+tempo = dims(ds, :time)
 month_length = YAXArray((tempo,), daysinmonth.(tempo))
 ````
 
@@ -119,7 +119,7 @@ g_tempo = groupby(month_length, Ti => seasons(; start=December))
 Get the number of days per season
 
 ````@ansi compareXarray  
-sum_days = sum.(g_tempo, dims=:Ti)
+sum_days = sum.(g_tempo, dims=:time)
 ````
 
 ### weights
@@ -146,8 +146,8 @@ g_dsW = broadcast_dims.(*, weights, g_ds)
 apply a `sum` over the time dimension and drop it
 
 ````@ansi compareXarray
-weighted_g = sum.(g_dsW, dims = :Ti);
-weighted_g = dropdims.(weighted_g, dims=:Ti)
+weighted_g = sum.(g_dsW, dims = :time);
+weighted_g = dropdims.(weighted_g, dims=:time)
 ````
 
 Calculate the differences

@@ -484,7 +484,7 @@ function Base.getindex(a::YAXArray, args::DD.Dimension...; kwargs...)
                 if v isa UnitRange{Int}
                     v = Date(first(v))..Date(last(v),12,31)
                 end
-                d2[:Ti] = v
+                d2[:time] = v
             else
                 d2[DD.name(d)] = v
             end
