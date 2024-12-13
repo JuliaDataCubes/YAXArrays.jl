@@ -392,7 +392,8 @@ function open_mfdataset(vec::DD.DimVector{<:AbstractString};kwargs...)
     alldatasets = open_dataset.(vec;kwargs...);
     fi = first(alldatasets)
     mergedim = DD.dims(alldatasets) |> only
-    ars = map(collect(keys(fi.cubes))) do var
+    vars_to_merge = collect(keys(fi.cubes))
+    ars = map(vars_to_merge) do var
         cfi = fi.cubes[var]
         mergedar = if DD.dims(cfi,mergedim) !== nothing
             merge_existing_axis(alldatasets,cfi,var,mergedim) 
@@ -411,7 +412,8 @@ open_dataset(g; driver=:all)
 Open the dataset at `g` with the given `driver`.
 The default driver will search for available drivers and tries to detect the useable driver from the filename extension.
 """
-function open_dataset(g; driver = :all)
+function open_dataset(g; skip_keys=(), driver = :all)
+    str_skipkeys = string.(skip_keys)
     dsopen = YAXArrayBase.to_dataset(g, driver = driver)
     YAXArrayBase.open_dataset_handle(dsopen) do g 
         isempty(get_varnames(g)) && throw(ArgumentError("Group does not contain datasets."))
@@ -419,6 +421,7 @@ function open_dataset(g; driver = :all)
         dnames = string.(keys(dimlist))
         varlist = filter(get_varnames(g)) do vn
             upname = uppercase(vn)
+            !in(vn, str_skipkeys) &&
             !occursin("BNDS", upname) &&
             !occursin("BOUNDS", upname) &&
             !any(i -> isequal(upname, uppercase(i)), dnames)
