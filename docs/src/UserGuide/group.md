@@ -52,11 +52,11 @@ function weighted_seasons(ds)
     # calculate weights 
     tempo = dims(ds, :time)
     month_length = YAXArray((tempo,), daysinmonth.(tempo))
-    g_tempo = groupby(month_length, Ti => seasons(; start=December))
+    g_tempo = groupby(month_length, Dim{:time} => seasons(; start=December))
     sum_days = sum.(g_tempo, dims=:time)
     weights = map(./, g_tempo, sum_days)
     # unweighted seasons
-    g_ds = groupby(ds, Ti => seasons(; start=December))
+    g_ds = groupby(ds, Dim{:time} => seasons(; start=December))
     mean_g = mean.(g_ds, dims=:time)
     mean_g = dropdims.(mean_g, dims=:time)
     # weighted seasons
@@ -74,7 +74,7 @@ end
 Now, we continue with the `groupby` operations as usual
 
 ````@ansi compareXarray
-g_ds = groupby(ds, Ti => seasons(; start=December))
+g_ds = groupby(ds, Dim{:time} => seasons(; start=December))
 ````
 
 And the mean per season is calculated as follows
@@ -113,7 +113,7 @@ month_length = YAXArray((tempo,), daysinmonth.(tempo))
 Now group it by season 
 
 ````@ansi compareXarray  
-g_tempo = groupby(month_length, Ti => seasons(; start=December))
+g_tempo = groupby(month_length, Dim{:time} => seasons(; start=December))
 ````
 
 Get the number of days per season
@@ -181,9 +181,9 @@ with_theme(theme_ggplot2()) do
     fig = Figure(; size = (850,500))
     axs = [Axis(fig[i,j], aspect=DataAspect()) for i in 1:3, j in 1:4]
     for (j, s) in enumerate(seasons_g)
-        hm_o = heatmap!(axs[1,j], mean_g[Ti=At(s)]; colorrange, lowclip, highclip, colormap)
-        hm_w = heatmap!(axs[2,j], weighted_g[Ti=At(s)]; colorrange, lowclip, highclip, colormap)
-        hm_d = heatmap!(axs[3,j], diff_g[Ti=At(s)]; colorrange=(-0.1,0.1), lowclip, highclip,
+        hm_o = heatmap!(axs[1,j], mean_g[time=At(s)]; colorrange, lowclip, highclip, colormap)
+        hm_w = heatmap!(axs[2,j], weighted_g[time=At(s)]; colorrange, lowclip, highclip, colormap)
+        hm_d = heatmap!(axs[3,j], diff_g[time=At(s)]; colorrange=(-0.1,0.1), lowclip, highclip,
             colormap=:diverging_bwr_20_95_c54_n256)
     end
     Colorbar(fig[1:2,5], hm_o, label=cb_label)
