@@ -480,14 +480,7 @@ function Base.getindex(a::YAXArray, args::DD.Dimension...; kwargs...)
     for (k,v) in kwargsdict
         d = getAxis(k,a)
         if d !== nothing
-            if d isa DD.Ti
-                if v isa UnitRange{Int}
-                    v = Date(first(v))..Date(last(v),12,31)
-                end
-                d2[:time] = v
-            else
-                d2[DD.name(d)] = v
-            end
+            d2[DD.name(d)] = v
         else
             d2[k] = v
         end
