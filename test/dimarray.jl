@@ -1,6 +1,7 @@
 @testitem "DimensionalData mapcube" begin
     using DimensionalData
     using YAXArrays
+    using YAXArrays: YAXArrays as YAX
     m = Array{Union{Int, Missing}}(undef, 4,2,10)
     for i in 1:size(m,3)
         m[:,1,i] .= i
@@ -94,6 +95,7 @@ end
 
 @testitem "Moving Window DimArray" begin
     using YAXArrays
+    using YAXArrays: YAXArrays as YAX
     using DimensionalData
     a = Array{Union{Float64,Missing}}(rand(40, 20, 10))
     lon = Lon(1:40)
@@ -159,7 +161,8 @@ end
 end
 
 @testitem "DimArray Chunking" begin
-    using YAXArrays 
+    using YAXArrays
+    using YAXArrays: YAXArrays as YAX
     using DimensionalData
 
     a = Array{Union{Float64,Missing}}(rand(40, 20, 10))
@@ -175,7 +178,7 @@ end
 
 @testitem "DimArray tablestats" begin
     using DimensionalData
-    using YAXArrays 
+    using YAXArrays
     using OnlineStats
     data = collect(reshape(1:20.,4,5))
     axlist = (Dim{:XVals}(1.0:4.0), Dim{:YVals}([1,2,3,4,5]))

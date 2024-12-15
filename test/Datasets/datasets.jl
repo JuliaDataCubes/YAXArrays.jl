@@ -219,7 +219,7 @@ end
             ar = Cube(ds)
             @test ar isa YAXArray
             @test size(ar) == (10, 5, 2, 2)
-            @test DD.name.(ar.axes) == (:time, :d2, :d3, :Variable)
+            @test DD.name.(ar.axes) == (:time, :d2, :d3, :Variables)
             @test DD.lookup(ar.axes[4]) == ["Var1", "Var3"]
         end
         @testset "Dataset creation" begin
@@ -230,7 +230,7 @@ end
             )
             # Basic
             newds, newds2 = YAXArrays.Datasets.createdataset(MockDataset, al)
-            @test DD.name.(newds2.axes) == (:Time, :Xvals, :Variable)
+            @test DD.name.(newds2.axes) == (:Time, :Xvals, :Variables)
             @test DD.lookup(newds2.axes[1]) == Date(2001):Month(1):Date(2001, 12, 31)
             @test DD.lookup(newds2.axes[3]) == ["A", "B"]
             @test DD.lookup(newds2.axes[2]) == 1:10
@@ -432,28 +432,28 @@ end
         xout .= flola.(lo, la)
     end
 
-    lon = YAXArray(lon(range(1, 15)))
-    lat = YAXArray(lat(range(1, 10)))
+    lon_yax = YAXArray(lon(range(1, 15)))
+    lat_yax = YAXArray(lat(range(1, 10)))
     tspan = Date("2022-01-01"):Day(1):Date("2022-01-30")
-    time = YAXArray(YAX.time(tspan))
+    time_yax = YAXArray(YAX.time(tspan))
 
     properties = Dict{String, Any}("name" => "out_array")
 
-    gen_cube = mapCube(g, (lon, lat, time);
+    gen_cube = mapCube(g, (lon_yax, lat_yax, time_yax);
             indims = (InDims(), InDims(), InDims("time")),
             outdims = OutDims("time"; properties,
             outtype = Float32)
             # max_cache=1e9
         )
         
-    gen_cube2d = mapCube(g2d, (lon, lat);
+    gen_cube2d = mapCube(g2d, (lon_yax, lat_yax);
         indims = (InDims(), InDims()),
         outdims = OutDims(; outtype = Float32)
         # max_cache=1e9
     )
     properties = Dict{String, Any}("name" => "out_zarr")
     # test saves, zarr
-    mapCube(g, (lon, lat, time);
+    mapCube(g, (lon_yax, lat_yax, time_yax);
             indims = (InDims(), InDims(), InDims("time")),
             outdims = OutDims("time"; overwrite=true, path="my_gen_cube.zarr",
             properties,
@@ -463,14 +463,14 @@ end
     ds_zarr = open_dataset("my_gen_cube.zarr")
     # test saves, nc
     properties = Dict{String, Any}("name" => "out_nc")
-    mapCube(g, (lon, lat, time);
+    mapCube(g, (lon_yax, lat_yax, time_yax);
             indims = (InDims(), InDims(), InDims("time")),
             outdims = OutDims("time"; overwrite=true, path="my_gen_cube.nc",
             properties,
             outtype = Float32)
             # max_cache=1e9
         )
-    mapCube(g, (lon, lat, time);
+    mapCube(g, (lon_yax, lat_yax, time_yax);
         indims = (InDims(), InDims(), InDims("time")),
         outdims = OutDims("time"; overwrite=true, path="my_gen_cube_no_p.nc",
         outtype = Float32)
