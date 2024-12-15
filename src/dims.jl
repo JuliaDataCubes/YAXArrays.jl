@@ -4,6 +4,7 @@ export rlat, lat_c
 export Lon, lon, longitude, long, Longitude
 export rlon, lon_c
 export height, depth
+export Variables
 
 @dim Lat YDim "Latitude"
 @dim lat YDim "Latitude"
