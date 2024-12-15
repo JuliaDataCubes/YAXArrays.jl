@@ -33,7 +33,7 @@ recalculate() = YAXDefaults.recal[]
 YAXdir() = YAXDefaults.workdir[]
 export YAXdir
 include("helpers.jl")
-
+include("dims.jl")
 include("YAXTools.jl")
 include("Cubes/Cubes.jl")
 include("DatasetAPI/Datasets.jl")

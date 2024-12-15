@@ -4,6 +4,7 @@ The following examples will use the `groupby` function to calculate temporal and
 
 ````@example compareXarray
 using YAXArrays, DimensionalData
+using YAXArrays: YAXArrays as YAX
 using NetCDF
 using Downloads
 using Dates
@@ -52,11 +53,11 @@ function weighted_seasons(ds)
     # calculate weights 
     tempo = dims(ds, :time)
     month_length = YAXArray((tempo,), daysinmonth.(tempo))
-    g_tempo = groupby(month_length, Dim{:time} => seasons(; start=December))
+    g_tempo = groupby(month_length, YAX.time => seasons(; start=December))
     sum_days = sum.(g_tempo, dims=:time)
     weights = map(./, g_tempo, sum_days)
     # unweighted seasons
-    g_ds = groupby(ds, Dim{:time} => seasons(; start=December))
+    g_ds = groupby(ds, YAX.time => seasons(; start=December))
     mean_g = mean.(g_ds, dims=:time)
     mean_g = dropdims.(mean_g, dims=:time)
     # weighted seasons
@@ -74,7 +75,7 @@ end
 Now, we continue with the `groupby` operations as usual
 
 ````@ansi compareXarray
-g_ds = groupby(ds, Dim{:time} => seasons(; start=December))
+g_ds = groupby(ds, YAX.time => seasons(; start=December))
 ````
 
 And the mean per season is calculated as follows
@@ -113,7 +114,7 @@ month_length = YAXArray((tempo,), daysinmonth.(tempo))
 Now group it by season 
 
 ````@ansi compareXarray  
-g_tempo = groupby(month_length, Dim{:time} => seasons(; start=December))
+g_tempo = groupby(month_length, YAX.time => seasons(; start=December))
 ````
 
 Get the number of days per season
