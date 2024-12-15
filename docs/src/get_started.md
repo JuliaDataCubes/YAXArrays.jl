@@ -19,7 +19,7 @@ import Pkg; Pkg.add("YAXArrays")
 Create a simple array from random numbers given the size of each dimension or axis:
 
 ```@example quickstart
-using YAXArrays
+using YAXArrays: YAXArrays as YAX, YAXArrays
 
 a = YAXArray(rand(2,3))
 ```
@@ -31,7 +31,7 @@ using DimensionalData
 
 # axes or dimensions with name and tick values
 axlist = (
-    Dim{:time}(range(1, 20, length=20)),
+    YAX.time(range(1, 20, length=20)),
     X(range(1, 10, length=10)),
     Y(range(1, 5, length=15)),
     Dim{:variable}(["temperature", "precipitation"])

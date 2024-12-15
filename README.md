@@ -107,9 +107,11 @@ using YAXArrays
 Let's assemble a `YAXArray` with 4 dimensions i.e. time, x,y and a variable dimension with two variables.
 
 ```julia
-using YAXArrays, DimensionalData
+using YAXArrays: YAXArrays as YAX, YAXArrays
+using DimensionalData
+
 axlist = (
-    Dim{:time}(range(1, 20, length=20)),
+    YAX.time(range(1, 20, length=20)),
     X(range(1, 10, length=10)),
     Y(range(1, 5, length=15)),
     Dim{:Variable}(["var1", "var2"]))

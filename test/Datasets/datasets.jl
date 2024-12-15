@@ -416,7 +416,8 @@ end
 end
 
 @testset "Saving, OutDims" begin
-    using YAXArrays, Zarr, NetCDF, ArchGDAL
+    using YAXArrays: YAXArrays as YAX, YAXArrays
+    using Zarr, NetCDF, ArchGDAL
     using Dates
 
     flolat(lo, la, t) = (lo + la + Dates.dayofyear(t))
@@ -430,10 +431,10 @@ end
         xout .= flola.(lo, la)
     end
 
-    lon = YAXArray(Dim{:lon}(range(1, 15)))
-    lat = YAXArray(Dim{:lat}(range(1, 10)))
+    lon = YAXArray(lon(range(1, 15)))
+    lat = YAXArray(lat(range(1, 10)))
     tspan = Date("2022-01-01"):Day(1):Date("2022-01-30")
-    time = YAXArray(Dim{:time}(tspan))
+    time = YAXArray(YAX.time(tspan))
 
     properties = Dict{String, Any}("name" => "out_array")
 

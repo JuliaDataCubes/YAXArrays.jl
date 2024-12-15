@@ -80,11 +80,11 @@ It is possible to concatenate several cubes that shared the same dimensions usin
 
 Let's create two dummy cubes
 ````@example howdoi
-using YAXArrays
+using YAXArrays: YAXArrays as YAX, YAXArrays
 axlist = (
-    Dim{:time}(range(1, 20, length=20)),
-    Dim{:lon}(range(1, 10, length=10)),
-    Dim{:lat}(range(1, 5, length=15))
+    YAX.time(range(1, 20, length=20)),
+    lon(range(1, 10, length=10)),
+    lat(range(1, 5, length=15))
     )
 
 data1 = rand(20, 10, 15)
@@ -324,7 +324,7 @@ You will not be able to save this dataset, first you will need to rename those `
 In this section we will use `MarketData.jl` and `TimeSeries.jl` to simulate some stocks.
 
 ````@example howdoi
-using YAXArrays, DimensionalData
+using YAXArrays: YAXArrays as YAX, YAXArrays, DimensionalData
 using MarketData, TimeSeries
 
 stocks = Dict(:Stock1 => random_ohlcv(), :Stock2 => random_ohlcv(), :Stock3 => random_ohlcv())
@@ -334,7 +334,7 @@ d_keys = keys(stocks)
 currently there is not direct support to obtain `dims` from a `TimeArray`, but we can code a function for it
 
 ````@example howdoi
-getTArrayAxes(ta::TimeArray) = (Dim{:time}(timestamp(ta)), Dim{:variable}(colnames(ta)), );
+getTArrayAxes(ta::TimeArray) = (YAX.time(timestamp(ta)), Dim{:variable}(colnames(ta)), );
 nothing # hide
 ````
 then, we create the `YAXArrays` as
