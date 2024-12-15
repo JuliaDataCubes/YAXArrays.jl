@@ -338,7 +338,7 @@ d_keys = keys(stocks)
 currently there is not direct support to obtain `dims` from a `TimeArray`, but we can code a function for it
 
 ````@example howdoi
-getTArrayAxes(ta::TimeArray) = (YAX.time(timestamp(ta)), Dim{:variable}(colnames(ta)), );
+getTArrayAxes(ta::TimeArray) = (YAX.time(timestamp(ta)), Variables(colnames(ta)), );
 nothing # hide
 ````
 then, we create the `YAXArrays` as

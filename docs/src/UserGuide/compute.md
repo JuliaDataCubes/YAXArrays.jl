@@ -132,15 +132,15 @@ Note the `.` after `f`, this is because we will slice across time, namely, the f
 Here, we do create `YAXArrays` only with the desired dimensions as
 
 ````@ansi mapCube
-lon = YAXArray(lon(range(1, 15)))
-lat = YAXArray(lat(range(1, 10)))
+lon_yax = YAXArray(lon(range(1, 15)))
+lat_yax = YAXArray(lat(range(1, 10)))
 ````
 
 And a time Cube's Axis
 
 ````@example mapCube
 tspan = Date("2022-01-01"):Day(1):Date("2022-01-30")
-time = YAXArray(YAX.time(tspan))
+time_yax = YAXArray(YAX.time(tspan))
 ````
 
 note that the following can be extended to arbitrary `YAXArrays` with additional data and dimensions.
@@ -148,7 +148,7 @@ note that the following can be extended to arbitrary `YAXArrays` with additional
 Let's generate a new `cube` using `mapCube` and saving the output directly into disk.
 
 ````@ansi mapCube
-gen_cube = mapCube(g, (lon, lat, time);
+gen_cube = mapCube(g, (lon_yax, lat_yax, time_yax);
     indims = (InDims(), InDims(), InDims("time")),
     outdims = OutDims("time", overwrite=true, path="my_gen_cube.zarr", backend=:zarr,
     outtype = Float32)
@@ -172,7 +172,7 @@ gen_cube.data[1, :, :]
 but, we can generate a another cube with a different `output order` as follows
 
 ````@ansi mapCube
-gen_cube = mapCube(g, (lon, lat, time);
+gen_cube = mapCube(g, (lon_yax, lat_yax, time_yax);
     indims = (InDims("lon"), InDims(), InDims()),
     outdims = OutDims("lon", overwrite=true, path="my_gen_cube.zarr", backend=:zarr,
     outtype = Float32)
@@ -209,7 +209,7 @@ axlist = (
     YAX.time(Date("2022-01-01"):Day(1):Date("2022-01-05")),
     lon(range(1, 4, length=4)),
     lat(range(1, 3, length=3)),
-    Dim{:variables}(["a", "b"])
+    Variables(["a", "b"])
 )
 
 Random.seed!(123)

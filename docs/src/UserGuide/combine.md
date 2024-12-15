@@ -31,6 +31,6 @@ using YAXArrays: YAXArrays as YAX
 temperature = YAXArray((YAX.time(1:6),), rand(6))
 precipitation = YAXArray((YAX.time(1:6),), rand(6))
 cubes = [temperature,precipitation]
-var_axis = Dim{:variable}(["temp", "prep"])
+var_axis = Variables(["temp", "prep"])
 combined = concatenatecubes(cubes, var_axis)
 ````
