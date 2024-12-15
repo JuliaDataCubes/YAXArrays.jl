@@ -26,7 +26,7 @@ struct Dataset
     properties::Dict
 end
 """
-Dataset(; properties = Dict{String,Any}, cubes...)
+    Dataset(; properties = Dict{String,Any}, cubes...)
 
 Construct a YAXArray Dataset with global attributes `properties` a and a list of named YAXArrays cubes...
 """
@@ -43,7 +43,7 @@ function Dataset(; properties = Dict{String,Any}(), cubes...)
 end
 
 """
-to_dataset(c;datasetaxis = "Variables", layername = "layer")
+    to_dataset(c;datasetaxis = "Variables", layername = "layer")
 
 Convert a Data Cube into a Dataset. It is possible to treat one of
 the Cube's axes as a "DatasetAxis" i.e. the cube will be split into
@@ -406,7 +406,7 @@ end
 
 
 """
-open_dataset(g; driver=:all)
+    open_dataset(g; driver=:all)
 
 Open the dataset at `g` with the given `driver`.
 The default driver will search for available drivers and tries to detect the useable driver from the filename extension.
@@ -461,8 +461,8 @@ to_array(ds::Dataset; joinname = "Variables") = Cube(ds;joinname)
 
 """
     Cube(ds::Dataset; joinname="Variables")
-Construct a single YAXArray from the dataset `ds`
- by concatenating the cubes in the datset on the `joinname` dimension.
+
+Construct a single YAXArray from the dataset `ds` by concatenating the cubes in the datset on the `joinname` dimension.
 """
 function Cube(ds::Dataset; joinname = "Variables", target_type = nothing)
 
@@ -635,8 +635,7 @@ function setchunks(ds::Dataset, chunks)
 end
 
 """
-savedataset(ds::Dataset; path = "", persist = nothing, overwrite = false, append = false, skeleton=false, backend = :all,
-    driver = backend, max_cache = 5e8, writefac=4.0)
+    savedataset(ds::Dataset; path = "", persist = nothing, overwrite = false, append = false, skeleton=false, backend = :all, driver = backend, max_cache = 5e8, writefac=4.0)
 
 Saves a Dataset into a file at `path` with the format given by `driver`, i.e., driver=:netcdf or driver=:zarr.
 
@@ -725,6 +724,7 @@ end
 
 """
     savecube(cube,name::String)
+
 Save a [`YAXArray`](@ref) to the `path`.
 
 # Extended Help
@@ -766,26 +766,26 @@ end
 
 
 """
-function createdataset(DS::Type,axlist; kwargs...)
+    function createdataset(DS::Type,axlist; kwargs...)
 
-  Creates a new dataset with axes specified in `axlist`. Each axis must be a subtype
-  of `CubeAxis`. A new empty Zarr array will be created and can serve as a sink for
-  `mapCube` operations.
+Creates a new dataset with axes specified in `axlist`. Each axis must be a subtype
+of `CubeAxis`. A new empty Zarr array will be created and can serve as a sink for
+`mapCube` operations.
 
-  ### Keyword arguments
+### Keyword arguments
 
-  * `path=""` location where the new cube is stored
-  * `T=Union{Float32,Missing}` data type of the target cube
-  * `chunksize = ntuple(i->length(axlist[i]),length(axlist))` chunk sizes of the array
-  * `chunkoffset = ntuple(i->0,length(axlist))` offsets of the chunks
-  * `persist::Bool=true` shall the disk data be garbage-collected when the cube goes out of scope?
-  * `overwrite::Bool=false` overwrite cube if it already exists
-  * `properties=Dict{String,Any}()` additional cube properties
-  * `globalproperties=Dict{String,Any}` global attributes to be added to the dataset
-  * `fillvalue= T>:Missing ? defaultfillval(Base.nonmissingtype(T)) : nothing` fill value
-  * `datasetaxis="Variables"` special treatment of a categorical axis that gets written into separate zarr arrays
-  * `layername="layer"` Fallback name of the variable stored in the dataset if no `datasetaxis` is found
-  """
+* `path=""` location where the new cube is stored
+* `T=Union{Float32,Missing}` data type of the target cube
+* `chunksize = ntuple(i->length(axlist[i]),length(axlist))` chunk sizes of the array
+* `chunkoffset = ntuple(i->0,length(axlist))` offsets of the chunks
+* `persist::Bool=true` shall the disk data be garbage-collected when the cube goes out of scope?
+* `overwrite::Bool=false` overwrite cube if it already exists
+* `properties=Dict{String,Any}()` additional cube properties
+* `globalproperties=Dict{String,Any}` global attributes to be added to the dataset
+* `fillvalue= T>:Missing ? defaultfillval(Base.nonmissingtype(T)) : nothing` fill value
+* `datasetaxis="Variables"` special treatment of a categorical axis that gets written into separate zarr arrays
+* `layername="layer"` Fallback name of the variable stored in the dataset if no `datasetaxis` is found
+"""
 function createdataset(
     DS,
     axlist;

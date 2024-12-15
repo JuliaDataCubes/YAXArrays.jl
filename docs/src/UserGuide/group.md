@@ -23,7 +23,6 @@ Where the goal is to calculate the seasonal average. And in order to do this pro
 url_path = "https://github.com/pydata/xarray-data/raw/master/rasm.nc"
 filename = Downloads.download(url_path, "rasm.nc")
 ds_o = Cube(filename)
-nothing # hide
 ````
 
 ::: warning
@@ -34,14 +33,8 @@ Related to https://github.com/rafaqz/DimensionalData.jl/issues/642
 :::
 
 ````@example compareXarray
-
-axs = dims(ds_o) # get the dimensions
-data = ds_o.data[:,:,:] # read the data
 _FillValue = ds_o.properties["_FillValue"]
-data = replace(data, _FillValue => NaN)
-# create new YAXArray
-ds = YAXArray(axs, data)
-nothing # hide
+ds = replace(ds_o[:,:,:], _FillValue => NaN) # load into memory and replace _FillValue by NaN
 ````
 
 ## GroupBy: seasons
@@ -77,6 +70,9 @@ Now, we continue with the `groupby` operations as usual
 ````@ansi compareXarray
 g_ds = groupby(ds, YAX.time => seasons(; start=December))
 ````
+
+> [!IMPORTANT]
+> Note how we are referencing the `time` dimension via `YAX.time`. This approach is used to avoid name clashes with `time` (`Time`) from `Base` (`Dates`). For convenience, we have defined the `Dimensions` `time` and `Time` in `YAXArrays.jl`, which are only accessible when explicitly called.
 
 And the mean per season is calculated as follows
 
