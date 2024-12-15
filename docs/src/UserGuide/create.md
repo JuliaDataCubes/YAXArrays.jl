@@ -7,7 +7,9 @@ This section describes how to create arrays and datasets by filling values direc
 We can create a new YAXArray by filling the values directly:
 
 ````@example create
-using YAXArrays: YAXArrays as YAX, YAXArrays
+using YAXArrays
+using YAXArrays: YAXArrays as YAX
+
 a1 = YAXArray(rand(10, 20, 5))
 ````
 

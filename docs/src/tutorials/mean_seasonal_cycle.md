@@ -36,7 +36,7 @@ fig
 
 ````@ansi mean_season
 using YAXArrays, DimensionalData
-axes = (Dim{:Time}(t),)
+axes = (YAX.Time(t),)
 c = YAXArray(axes, var)
 ````
 

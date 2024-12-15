@@ -22,7 +22,7 @@ nothing # hide
 Subset, first time step
 
 ````@ansi plots
-ct1_slice = c[Ti = Near(Date("2015-01-01"))];
+ct1_slice = c[time = Near(Date("2015-01-01"))];
 nothing # hide
 ````
 

@@ -19,7 +19,8 @@ import Pkg; Pkg.add("YAXArrays")
 Create a simple array from random numbers given the size of each dimension or axis:
 
 ```@example quickstart
-using YAXArrays: YAXArrays as YAX, YAXArrays
+using YAXArrays
+using YAXArrays: YAXArrays as YAX
 
 a = YAXArray(rand(2,3))
 ```

@@ -78,7 +78,7 @@ world_τ = map(tair -> (tair - Float32(273.15+15))/10, world_tair)
 world_ρ = map(log, world_resp)
 
 # ... and we combine them into a Data Cube again using `concatenatecubes`
-world_new = concatenatecubes([world_τ, world_ρ], Dim{:Variable}(["τ","ρ"]))
+world_new = concatenatecubes([world_τ, world_ρ], Variables(["τ","ρ"]))
 
 
 # First we need a function for time-series filtering. Using a moving average filter is the simplest way
@@ -237,7 +237,7 @@ ds = concatenatecubes([world_tair, rb_scape_reshaped], Dim{:Variables}(["tair", 
 
 
 # And compute the correlation between Air temperature and Base respiration
-cor_tair_rb = mapslices(i->cor(eachcol(i)...),ds, dims=("Time","Variable"))
+cor_tair_rb = mapslices(i->cor(eachcol(i)...),ds, dims=("Time","Variables"))
 q10_diff = map((x,y)->x-y, q10_direct, q10_scape)
 
 crange = (-1,1)

@@ -11,7 +11,8 @@ This section describes how to create new YAXArrays by performing operations on t
 Let's start by creating an example dataset:
 
 ````@example compute
-using YAXArrays: YAXArrays as YAX, YAXArrays
+using YAXArrays
+using YAXArrays: YAXArrays as YAX
 using Dates
 
 axlist = (
@@ -102,7 +103,8 @@ Dimensions may be added or removed.
 Here, we will define a simple function, that will take as input several `YAXArrays`. But first, let's load the necessary packages.
 
 ````@example mapCube
-using YAXArrays: YAXArrays as YAX, YAXArrays, Zarr
+using YAXArrays, Zarr
+using YAXArrays: YAXArrays as YAX
 using Dates
 ````
 
@@ -197,7 +199,9 @@ which outputs the same as the `gen_cube.data[1, :, :]` called above.
 Here, we will consider different scenarios, namely how we deal with different input cubes and how to specify the output ones. We will illustrate this with the following test example and the subsequent function definitions. 
 
 ````@example outdims
-using YAXArrays: YAXArrays as YAX, YAXArrays, Dates
+using YAXArrays
+using YAXArrays: YAXArrays as YAX
+using Dates
 using Zarr
 using Random
 
@@ -358,7 +362,8 @@ Here we transform a raster array with spatial dimension lat and lon into a vecto
 First, create the raster array:
 
 ````@example compute_mapcube
-using YAXArrays: YAXArrays as YAX, YAXArrays
+using YAXArrays
+using YAXArrays: YAXArrays as YAX
 using DimensionalData
 using Dates
 
@@ -431,7 +436,8 @@ For example, we can execute each date of a time series in a different CPU thread
 The following code does a time mean over all grid points using multiple CPUs of a local machine:
 
 ````julia
-using YAXArrays: YAXArrays as YAX, YAXArrays
+using YAXArrays
+using YAXArrays: YAXArrays as YAX
 using Dates
 using Distributed
 

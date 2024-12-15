@@ -10,9 +10,9 @@
     m[3,1,6:10] .=missing
     m[4,1,:] .= 10
 
-    lon = Dim{:Lon}(1:4)
-    lat = Dim{:Lat}(1:2)
-    tim = Dim{:Time}(1:10)
+    lon = Lon(1:4)
+    lat = Lat(1:2)
+    tim = YAX.Time(1:10)
     c = DimArray(m, (lon, lat, tim))
     indims = InDims("Time")
     outdims = OutDims()
@@ -96,9 +96,9 @@ end
     using YAXArrays
     using DimensionalData
     a = Array{Union{Float64,Missing}}(rand(40, 20, 10))
-    lon = Dim{:Lon}(1:40)
-    lat = Dim{:Lat}(1:20)
-    tim = Dim{:Time}(1:10)
+    lon = Lon(1:40)
+    lat = Lat(1:20)
+    tim = YAX.Time(1:10)
     c = DimArray(a,(lon, lat, tim))
 
     indims = InDims("Time",YAXArrays.MovingWindow("Lon",1,1),window_oob_value = -9999.0)
@@ -143,10 +143,10 @@ end
     @test r3 isa AbstractDimArray
 
     a = Array{Union{Float64,Missing}}(rand(10,4,  40, 20));
-    varax = Dim{:Variable}('a':'d')
-    lon = Dim{:Lon}(1:40)
-    lat = Dim{:Lat}(1:20)
-    tim = Dim{:Time}(1:10)
+    varax = Variables('a':'d')
+    lon = Lon(1:40)
+    lat = Lat(1:20)
+    tim = YAX.Time(1:10)
 
     c = DimArray(a, (tim, varax, lon,lat))
     indims = InDims("Time",YAXArrays.MovingWindow("Lon",1,1))
@@ -163,9 +163,9 @@ end
     using DimensionalData
 
     a = Array{Union{Float64,Missing}}(rand(40, 20, 10))
-    lon = Dim{:Lon}(1:40)
-    lat = Dim{:Lat}(1:20)
-    tim = Dim{:Time}(1:10)
+    lon = Lon(1:40)
+    lat = Lat(1:20)
+    tim = YAX.Time(1:10)
     c = DimArray(a,(lon, lat, tim))
     d = tempname()
     @test_broken c_chunked = setchunks(c,Dict("Lon" => 7, "Lat" => 9))

@@ -4,13 +4,13 @@ using DimensionalData: DimensionalData as DD
 using Dates
 
 
-@testset "Datasets axes Ti" begin
+@testset "Datasets axes time" begin
     using Zarr, NetCDF
 
     ## first example
     data = [rand(4, 5, 12), rand(4, 5, 12), rand(4, 5)]
-    # dim_time = DD.Dim{:Time}(Date(2001, 1, 15):Month(1):Date(2001, 12, 15))
-    dim_time = Ti(Date(2001, 1, 15):Month(1):Date(2001, 12, 15))
+    # dim_time = YAX.Time(Date(2001, 1, 15):Month(1):Date(2001, 12, 15))
+    dim_time = YAX.time(Date(2001, 1, 15):Month(1):Date(2001, 12, 15))
     axlist1 = (
         DD.Dim{:XVals}(1.0:4.0),
         DD.Dim{:YVals}([1, 2, 3, 4, 5]),
@@ -58,7 +58,7 @@ end
     axlist1 = (
         DD.Dim{:XVals}(1.0:4.0),
         DD.Dim{:YVals}([1, 2, 3, 4, 5]),
-        DD.Dim{:Time}(Date(2001, 1, 15):Month(1):Date(2001, 12, 15)),
+        YAX.Time(Date(2001, 1, 15):Month(1):Date(2001, 12, 15)),
     )
     axlist2 = (DD.Dim{:XVals}(1.0:4.0), DD.Dim{:YVals}([1, 2, 3, 4, 5]))
     props = [Dict("att$i" => i) for i = 1:3]
@@ -224,8 +224,8 @@ end
         end
         @testset "Dataset creation" begin
             al = (
-                DD.Dim{:Time}(Date(2001):Month(1):Date(2001, 12, 31)),
-                DD.Dim{:Variable}(["A", "B"]),
+                YAX.Time(Date(2001):Month(1):Date(2001, 12, 31)),
+                Variables(["A", "B"]),
                 DD.Dim{:Xvals}(1:10),
             )
             # Basic
@@ -416,7 +416,8 @@ end
 end
 
 @testset "Saving, OutDims" begin
-    using YAXArrays: YAXArrays as YAX, YAXArrays
+    using YAXArrays
+    using YAXArrays: YAXArrays as YAX
     using Zarr, NetCDF, ArchGDAL
     using Dates
 
@@ -548,14 +549,14 @@ end
     savecube(array1,f1)
     savecube(array2,f2)
 
-    ds = open_mfdataset(DD.DimArray([f1,f2],(DD.Ti(1:2),)))
+    ds = open_mfdataset(DD.DimArray([f1,f2],(YAX.time(1:2),)))
 
     @test ds.layer.data[:,:,1] == array1
     @test ds.layer.data[:,:,2] == array2
 
     td = mktempdir()
     f1, f2 = joinpath.(td,("file_1.nc","file_2.nc"))
-    td1, td2 = DD.Ti(1:2), DD.Ti(3:4)
+    td1, td2 = YAX.time(1:2), YAX.time(3:4)
     a1,a2 = rand(20,10,2), rand(20,10,2)
     array1,array2 = YAXArray((d1,d2,td1),a1),  YAXArray((d1,d2,td2),a2)
     savecube(array1,f1)

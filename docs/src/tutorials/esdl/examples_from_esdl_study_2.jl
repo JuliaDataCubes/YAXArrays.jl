@@ -182,7 +182,7 @@ end
 
 
 # We first apply the function `cube_decomp` to the standard data cube with the threshold of 95% of retained variance. As we see from the description of the atomic function above, we need as minimum input dimension `Time` and `Variable`. We call the output cube `cube_int_dim`, which efficiently is a map.
-cube_int_dim = mapslices(sufficient_dimensions, cube_fill_itp, 0.95, dims = ("Time","Variable"))
+cube_int_dim = mapslices(sufficient_dimensions, cube_fill_itp, 0.95, dims = ("Time","Variables"))
 
 # Saving intermediate results can save CPU later, not needed to guarantee reproducibility tough
 # `savecube(cube_int_dim, "../data/IntDim", overwrite=true)`
@@ -199,7 +199,7 @@ cube_int_dim = mapslices(sufficient_dimensions, cube_fill_itp, 0.95, dims = ("Ti
 #          f_{\{time, var\}}^{\{\}} : \mathcal{C}(\{lat, lon, time, var, freq\})\rightarrow \mathcal{C}(\{lat, lon, freq\})
 #   \end{equation}
 
-cube_int_dim_dec = mapslices(sufficient_dimensions, cube_decomp, 0.95, dims = ("Time","Variable"))
+cube_int_dim_dec = mapslices(sufficient_dimensions, cube_decomp, 0.95, dims = ("Time","Variables"))
 
 # for saving the output please use the command line below
 # `savecube(cube_int_dim_dec, "../data/IntDimDec", overwrite=true)`
