@@ -16,9 +16,9 @@ using DimensionalData: DimensionalData as DD
 export Dataset, Cube, open_dataset, to_dataset, savecube, savedataset, open_mfdataset
 
 """
-    Dataset object which stores an `OrderedDict` of YAXArrays with Symbol keys.
-    a dictionary of CubeAxes and a Dictionary of general properties.
-    A dictionary can hold cubes with differing axes. But it will share the common axes between the subcubes.
+Dataset object which stores an `OrderedDict` of YAXArrays with Symbol keys.
+A dictionary of CubeAxes and a Dictionary of general properties.
+A dictionary can hold cubes with differing axes. But it will share the common axes between the subcubes.
 """
 struct Dataset
     cubes::OrderedDict{Symbol,YAXArray}
@@ -26,7 +26,7 @@ struct Dataset
     properties::Dict
 end
 """
-Dataset(; properties = Dict{String,Any}, cubes...)
+    Dataset(; properties = Dict{String,Any}, cubes...)
 
 Construct a YAXArray Dataset with global attributes `properties` a and a list of named YAXArrays cubes...
 """
@@ -43,15 +43,15 @@ function Dataset(; properties = Dict{String,Any}(), cubes...)
 end
 
 """
-to_dataset(c;datasetaxis = "Variable", layername = "layer")
+    to_dataset(c;datasetaxis = "Variables", layername = "layer")
 
 Convert a Data Cube into a Dataset. It is possible to treat one of
-the Cube's axes as a "DatasetAxis" i.e. the cube will be split into
+the Cube's axes as a `datasetaxis` i.e. the cube will be split into
 different parts that become variables in the Dataset. If no such
 axis is specified or found, there will only be a single variable
-in the dataset with the name `layername`
+in the dataset with the name `layername`.
 """
-function to_dataset(c;datasetaxis = "Variable", layername = get(c.properties,"name","layer"))
+function to_dataset(c;datasetaxis = "Variables", layername = get(c.properties,"name","layer"))
     axlist = DD.dims(c)
     splice_generic(x::AbstractArray, i) = [x[1:(i-1)]; x[(i+1:end)]]
     splice_generic(x::Tuple, i) = (x[1:(i-1)]..., x[(i+1:end)]...)
@@ -285,7 +285,7 @@ function toaxis(dimname, g, offs, len)
         catch
             ar[:]
         end
-        DD.Ti(tsteps[offs+1:end])
+        DD.rebuild(DD.name2dim(axname), tsteps[offs+1:end])
     elseif haskey(aratts, "_ARRAYVALUES")
         vals = identity.(aratts["_ARRAYVALUES"])
         DD.rebuild(DD.name2dim(axname),(vals))
@@ -372,20 +372,20 @@ end
 Opens and concatenates a list of dataset paths along the dimension specified in `files`. 
 This method can be used when the generic glob-based version of open_mfdataset fails
 or is too slow. 
-For example, to concatenate a list of annual NetCDF files along the `Ti` dimension, 
+For example, to concatenate a list of annual NetCDF files along the `time` dimension, 
 one can use:
 
 ````julia
 files = ["1990.nc","1991.nc","1992.nc"]
-open_mfdataset(DD.DimArray(files,DD.Ti()))
+open_mfdataset(DD.DimArray(files, YAX.time()))
 ````
 
 alternatively, if the dimension to concatenate along does not exist yet, the 
 dimension provided in the input arg is used:
 
 ````julia
-files = ["a.nc","b.nc","c.nc"]
-open_mfdataset(DD.DimArray(files,DD.Dim{:NewDim}(["a","b","c"])))
+files = ["a.nc", "b.nc", "c.nc"]
+open_mfdataset(DD.DimArray(files, DD.Dim{:NewDim}(["a","b","c"])))
 ````
 """
 function open_mfdataset(vec::DD.DimVector{<:AbstractString};kwargs...)
@@ -406,7 +406,7 @@ end
 
 
 """
-open_dataset(g; driver=:all)
+    open_dataset(g; driver=:all)
 
 Open the dataset at `g` with the given `driver`.
 The default driver will search for available drivers and tries to detect the useable driver from the filename extension.
@@ -457,14 +457,14 @@ end
 YAXDataset(; kwargs...) = Dataset(YAXArrays.YAXDefaults.cubedir[]; kwargs...)
 
 
-to_array(ds::Dataset; joinname = "Variable") = Cube(ds;joinname)
+to_array(ds::Dataset; joinname = "Variables") = Cube(ds;joinname)
 
 """
-    Cube(ds::Dataset; joinname="Variable")
-Construct a single YAXArray from the dataset `ds`
- by concatenating the cubes in the datset on the `joinname` dimension.
+    Cube(ds::Dataset; joinname="Variables")
+
+Construct a single YAXArray from the dataset `ds` by concatenating the cubes in the datset on the `joinname` dimension.
 """
-function Cube(ds::Dataset; joinname = "Variable", target_type = nothing)
+function Cube(ds::Dataset; joinname = "Variables", target_type = nothing)
 
     dl = collect(keys(ds.axes))
     dls = string.(dl)
@@ -635,14 +635,13 @@ function setchunks(ds::Dataset, chunks)
 end
 
 """
-savedataset(ds::Dataset; path = "", persist = nothing, overwrite = false, append = false, skeleton=false, backend = :all,
-    driver = backend, max_cache = 5e8, writefac=4.0)
+    savedataset(ds::Dataset; path= "", persist=nothing, overwrite=false, append=false, skeleton=false, backend=:all, driver=backend, max_cache=5e8, writefac=4.0)
 
-Saves a Dataset into a file at `path` with the format given by `driver`, i.e., driver=:netcdf or driver=:zarr.
+Saves a Dataset into a file at `path` with the format given by `driver`, i.e., `driver=:netcdf` or `driver=:zarr`.
 
 
 !!! warning
-    overwrite = true, deletes ALL your data and it will create a new file.
+    `overwrite=true`, deletes ALL your data and it will create a new file.
 """
 function savedataset(
     ds::Dataset;
@@ -725,6 +724,7 @@ end
 
 """
     savecube(cube,name::String)
+
 Save a [`YAXArray`](@ref) to the `path`.
 
 # Extended Help
@@ -732,7 +732,7 @@ Save a [`YAXArray`](@ref) to the `path`.
 The keyword arguments are:
 
 * `name`:
-* `datasetaxis="Variable"` special treatment of a categorical axis that gets written into separate zarr arrays
+* `datasetaxis="Variables"` special treatment of a categorical axis that gets written into separate zarr arrays
 * `max_cache`: The number of bits that are used as cache for the data handling.
 * `backend`: The backend, that is used to save the data. Falls back to searching the backend according to the extension of the path.
 * `driver`: The same setting as `backend`.
@@ -744,7 +744,7 @@ function savecube(
     c,
     path::AbstractString;
     layername = get(c.properties,"name","layer"),
-    datasetaxis = "Variable",
+    datasetaxis = "Variables",
     max_cache = 5e8,
     backend = :all,
     driver = backend,
@@ -766,26 +766,26 @@ end
 
 
 """
-function createdataset(DS::Type,axlist; kwargs...)
+    function createdataset(DS::Type,axlist; kwargs...)
 
-  Creates a new dataset with axes specified in `axlist`. Each axis must be a subtype
-  of `CubeAxis`. A new empty Zarr array will be created and can serve as a sink for
-  `mapCube` operations.
+Creates a new dataset with axes specified in `axlist`. Each axis must be a subtype
+of `CubeAxis`. A new empty Zarr array will be created and can serve as a sink for
+`mapCube` operations.
 
-  ### Keyword arguments
+### Keyword arguments
 
-  * `path=""` location where the new cube is stored
-  * `T=Union{Float32,Missing}` data type of the target cube
-  * `chunksize = ntuple(i->length(axlist[i]),length(axlist))` chunk sizes of the array
-  * `chunkoffset = ntuple(i->0,length(axlist))` offsets of the chunks
-  * `persist::Bool=true` shall the disk data be garbage-collected when the cube goes out of scope?
-  * `overwrite::Bool=false` overwrite cube if it already exists
-  * `properties=Dict{String,Any}()` additional cube properties
-  * `globalproperties=Dict{String,Any}` global attributes to be added to the dataset
-  * `fillvalue= T>:Missing ? defaultfillval(Base.nonmissingtype(T)) : nothing` fill value
-  * `datasetaxis="Variable"` special treatment of a categorical axis that gets written into separate zarr arrays
-  * `layername="layer"` Fallback name of the variable stored in the dataset if no `datasetaxis` is found
-  """
+* `path=""` location where the new cube is stored
+* `T=Union{Float32,Missing}` data type of the target cube
+* `chunksize = ntuple(i->length(axlist[i]),length(axlist))` chunk sizes of the array
+* `chunkoffset = ntuple(i->0,length(axlist))` offsets of the chunks
+* `persist::Bool=true` shall the disk data be garbage-collected when the cube goes out of scope?
+* `overwrite::Bool=false` overwrite cube if it already exists
+* `properties=Dict{String,Any}()` additional cube properties
+* `globalproperties=Dict{String,Any}` global attributes to be added to the dataset
+* `fillvalue= T>:Missing ? defaultfillval(Base.nonmissingtype(T)) : nothing` fill value
+* `datasetaxis="Variables"` special treatment of a categorical axis that gets written into separate zarr arrays
+* `layername="layer"` Fallback name of the variable stored in the dataset if no `datasetaxis` is found
+"""
 function createdataset(
     DS,
     axlist;
@@ -797,7 +797,7 @@ function createdataset(
     overwrite::Bool = false,
     properties = Dict{String,Any}(),
     globalproperties = Dict{String,Any}(),
-    datasetaxis = "Variable",
+    datasetaxis = "Variables",
     layername = get(properties, "name", "layer"),
     kwargs...,
 )

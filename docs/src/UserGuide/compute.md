@@ -12,12 +12,13 @@ Let's start by creating an example dataset:
 
 ````@example compute
 using YAXArrays
+using YAXArrays: YAXArrays as YAX
 using Dates
 
 axlist = (
-    Dim{:time}(Date("2022-01-01"):Day(1):Date("2022-01-30")),
-    Dim{:lon}(range(1, 10, length=10)),
-    Dim{:lat}(range(1, 5, length=15)),
+    YAX.time(Date("2022-01-01"):Day(1):Date("2022-01-30")),
+    lon(range(1, 10, length=10)),
+    lat(range(1, 5, length=15)),
 )
 data = rand(30, 10, 15)
 properties = Dict(:origin => "user guide")
@@ -103,6 +104,7 @@ Here, we will define a simple function, that will take as input several `YAXArra
 
 ````@example mapCube
 using YAXArrays, Zarr
+using YAXArrays: YAXArrays as YAX
 using Dates
 ````
 
@@ -130,15 +132,15 @@ Note the `.` after `f`, this is because we will slice across time, namely, the f
 Here, we do create `YAXArrays` only with the desired dimensions as
 
 ````@ansi mapCube
-lon = YAXArray(Dim{:lon}(range(1, 15)))
-lat = YAXArray(Dim{:lat}(range(1, 10)))
+lon_yax = YAXArray(lon(range(1, 15)))
+lat_yax = YAXArray(lat(range(1, 10)))
 ````
 
 And a time Cube's Axis
 
 ````@example mapCube
 tspan = Date("2022-01-01"):Day(1):Date("2022-01-30")
-time = YAXArray(Dim{:time}(tspan))
+time_yax = YAXArray(YAX.time(tspan))
 ````
 
 note that the following can be extended to arbitrary `YAXArrays` with additional data and dimensions.
@@ -146,7 +148,7 @@ note that the following can be extended to arbitrary `YAXArrays` with additional
 Let's generate a new `cube` using `mapCube` and saving the output directly into disk.
 
 ````@ansi mapCube
-gen_cube = mapCube(g, (lon, lat, time);
+gen_cube = mapCube(g, (lon_yax, lat_yax, time_yax);
     indims = (InDims(), InDims(), InDims("time")),
     outdims = OutDims("time", overwrite=true, path="my_gen_cube.zarr", backend=:zarr,
     outtype = Float32)
@@ -170,7 +172,7 @@ gen_cube.data[1, :, :]
 but, we can generate a another cube with a different `output order` as follows
 
 ````@ansi mapCube
-gen_cube = mapCube(g, (lon, lat, time);
+gen_cube = mapCube(g, (lon_yax, lat_yax, time_yax);
     indims = (InDims("lon"), InDims(), InDims()),
     outdims = OutDims("lon", overwrite=true, path="my_gen_cube.zarr", backend=:zarr,
     outtype = Float32)
@@ -197,15 +199,17 @@ which outputs the same as the `gen_cube.data[1, :, :]` called above.
 Here, we will consider different scenarios, namely how we deal with different input cubes and how to specify the output ones. We will illustrate this with the following test example and the subsequent function definitions. 
 
 ````@example outdims
-using YAXArrays, Dates
+using YAXArrays
+using YAXArrays: YAXArrays as YAX
+using Dates
 using Zarr
 using Random
 
 axlist = (
-    Dim{:time}(Date("2022-01-01"):Day(1):Date("2022-01-05")),
-    Dim{:lon}(range(1, 4, length=4)),
-    Dim{:lat}(range(1, 3, length=3)),
-    Dim{:variables}(["a", "b"])
+    YAX.time(Date("2022-01-01"):Day(1):Date("2022-01-05")),
+    lon(range(1, 4, length=4)),
+    lat(range(1, 3, length=3)),
+    Variables(["a", "b"])
 )
 
 Random.seed!(123)
@@ -308,7 +312,7 @@ Here, the goal is to operate at the pixel level (longitude, latitude), and then 
 Random.seed!(123)
 data = rand(3.0:5.0, 5, 4, 3)
 
-axlist = (Dim{:lon}(1:4), Dim{:lat}(1:3), Dim{:depth}(1:7),)
+axlist = (lon(1:4), lat(1:3), Dim{:depth}(1:7),)
 yax_2d = YAXArray(axlist, rand(-3.0:0.0, 4, 3, 7))
 ````
 
@@ -318,8 +322,8 @@ and
 Random.seed!(123)
 data = rand(3.0:5.0, 5, 4, 3)
 
-axlist = (Dim{:time}(Date("2022-01-01"):Day(1):Date("2022-01-05")),
-    Dim{:lon}(1:4), Dim{:lat}(1:3),)
+axlist = (YAX.time(Date("2022-01-01"):Day(1):Date("2022-01-05")),
+    lon(1:4), lat(1:3),)
 
 properties = Dict("description" => "multi dimensional test cube")
 yax_test = YAXArray(axlist, data, properties)
@@ -359,13 +363,14 @@ First, create the raster array:
 
 ````@example compute_mapcube
 using YAXArrays
+using YAXArrays: YAXArrays as YAX
 using DimensionalData
 using Dates
 
 axlist = (
-    Dim{:time}(Date("2022-01-01"):Day(1):Date("2022-01-30")),
-    Dim{:lon}(range(1, 10, length=10)),
-    Dim{:lat}(range(1, 5, length=15)),
+    YAX.time(Date("2022-01-01"):Day(1):Date("2022-01-30")),
+    lon(range(1, 10, length=10)),
+    lat(range(1, 5, length=15)),
 )
 data = rand(30, 10, 15)
 raster_arr = YAXArray(axlist, data)
@@ -432,13 +437,14 @@ The following code does a time mean over all grid points using multiple CPUs of 
 
 ````julia
 using YAXArrays
+using YAXArrays: YAXArrays as YAX
 using Dates
 using Distributed
 
 axlist = (
-    Dim{:time}(Date("2022-01-01"):Day(1):Date("2022-01-30")),
-    Dim{:lon}(range(1, 10, length=10)),
-    Dim{:lat}(range(1, 5, length=15)),
+    YAX.time(Date("2022-01-01"):Day(1):Date("2022-01-30")),
+    lon(range(1, 10, length=10)),
+    lat(range(1, 5, length=15)),
 )
 data = rand(30, 10, 15)
 properties = Dict(:origin => "user guide")

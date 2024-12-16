@@ -3,6 +3,7 @@ using Test
 using TestItemRunner
 using Dates
 using YAXArrayBase
+using YAXArrays: YAXArrays as YAX
 
 @run_package_tests
 

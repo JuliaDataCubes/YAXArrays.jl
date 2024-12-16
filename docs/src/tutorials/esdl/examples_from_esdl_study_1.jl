@@ -190,7 +190,7 @@ function zonal_polar_plot(d_msc_lat, sbp, it, vari, lab)
     for j = it
       jj = convert(Int, j)
       try
-      var_idx = findall(vari .== getAxis("Variable", d_msc_lat).values)[1]
+      var_idx = findall(vari .== getAxis("Variables", d_msc_lat).values)[1]
       ts = d_msc_lat[:, jj, var_idx]
       va = [ts; ts[1]]
       ## correction for temperature
@@ -216,7 +216,7 @@ L = collect(getAxis("lat", caxes(cube_msc_lat)).values)
 
 sbps = 321:2:332
 labtoshow = ["a)", "b)", "c)", "d)", "e)", "f)"]
-vari = getAxis("Variable", caxes(cube_msc_lat)).values
+vari = getAxis("Variables", caxes(cube_msc_lat)).values
 
 for (sbp, lab, vari) in zip(sbps, labtoshow, vari)
   it1 = range(72/2, stop = 1, step = -2)

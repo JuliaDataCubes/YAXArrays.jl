@@ -9,7 +9,7 @@
     m[4,1,:] .= 10
     lon = X(1:4)
     lat = Y(1:2)
-    tim = Ti(1:10)
+    tim = YAX.time(1:10)
     c = YAXArray((lon, lat, tim), m)
     indims = InDims("Time")
     outdims = OutDims()

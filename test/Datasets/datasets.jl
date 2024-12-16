@@ -4,13 +4,13 @@ using DimensionalData: DimensionalData as DD
 using Dates
 
 
-@testset "Datasets axes Ti" begin
+@testset "Datasets axes time" begin
     using Zarr, NetCDF
 
     ## first example
     data = [rand(4, 5, 12), rand(4, 5, 12), rand(4, 5)]
-    # dim_time = DD.Dim{:Time}(Date(2001, 1, 15):Month(1):Date(2001, 12, 15))
-    dim_time = Ti(Date(2001, 1, 15):Month(1):Date(2001, 12, 15))
+    # dim_time = YAX.Time(Date(2001, 1, 15):Month(1):Date(2001, 12, 15))
+    dim_time = YAX.time(Date(2001, 1, 15):Month(1):Date(2001, 12, 15))
     axlist1 = (
         DD.Dim{:XVals}(1.0:4.0),
         DD.Dim{:YVals}([1, 2, 3, 4, 5]),
@@ -24,7 +24,7 @@ using Dates
         YAXArray(axlist2, data[3], props[3]),
     )
     ds = Dataset(avar=c1, something=c2, smaller=c3)
-    # previous version will throw this error: `KeyError: key :Ti not found`
+    # previous version will throw this error: `KeyError: key :time not found`
     f = "./temp.zarr"
     @test_nowarn savedataset(ds; path=f)
     rm(f, recursive=true, force=true)
@@ -58,7 +58,7 @@ end
     axlist1 = (
         DD.Dim{:XVals}(1.0:4.0),
         DD.Dim{:YVals}([1, 2, 3, 4, 5]),
-        DD.Dim{:Time}(Date(2001, 1, 15):Month(1):Date(2001, 12, 15)),
+        YAX.Time(Date(2001, 1, 15):Month(1):Date(2001, 12, 15)),
     )
     axlist2 = (DD.Dim{:XVals}(1.0:4.0), DD.Dim{:YVals}([1, 2, 3, 4, 5]))
     props = [Dict("att$i" => i) for i = 1:3]
@@ -215,22 +215,22 @@ end
             ds = open_dataset("test.mock")
             @test size(ds.Var1) == (10, 5, 2)
             @test size(ds.Var2) == (10, 5)
-            @test all(in(keys(ds.axes)), (:Ti, :d2, :d3))
+            @test all(in(keys(ds.axes)), (:time, :d2, :d3))
             ar = Cube(ds)
             @test ar isa YAXArray
             @test size(ar) == (10, 5, 2, 2)
-            @test DD.name.(ar.axes) == (:Ti, :d2, :d3, :Variable)
+            @test DD.name.(ar.axes) == (:time, :d2, :d3, :Variables)
             @test DD.lookup(ar.axes[4]) == ["Var1", "Var3"]
         end
         @testset "Dataset creation" begin
             al = (
-                DD.Dim{:Time}(Date(2001):Month(1):Date(2001, 12, 31)),
-                DD.Dim{:Variable}(["A", "B"]),
+                YAX.Time(Date(2001):Month(1):Date(2001, 12, 31)),
+                Variables(["A", "B"]),
                 DD.Dim{:Xvals}(1:10),
             )
             # Basic
             newds, newds2 = YAXArrays.Datasets.createdataset(MockDataset, al)
-            @test DD.name.(newds2.axes) == (:Time, :Xvals, :Variable)
+            @test DD.name.(newds2.axes) == (:Time, :Xvals, :Variables)
             @test DD.lookup(newds2.axes[1]) == Date(2001):Month(1):Date(2001, 12, 31)
             @test DD.lookup(newds2.axes[3]) == ["A", "B"]
             @test DD.lookup(newds2.axes[2]) == 1:10
@@ -416,7 +416,9 @@ end
 end
 
 @testset "Saving, OutDims" begin
-    using YAXArrays, Zarr, NetCDF, ArchGDAL
+    using YAXArrays
+    using YAXArrays: YAXArrays as YAX
+    using Zarr, NetCDF, ArchGDAL
     using Dates
 
     flolat(lo, la, t) = (lo + la + Dates.dayofyear(t))
@@ -430,28 +432,28 @@ end
         xout .= flola.(lo, la)
     end
 
-    lon = YAXArray(Dim{:lon}(range(1, 15)))
-    lat = YAXArray(Dim{:lat}(range(1, 10)))
+    lon_yax = YAXArray(lon(range(1, 15)))
+    lat_yax = YAXArray(lat(range(1, 10)))
     tspan = Date("2022-01-01"):Day(1):Date("2022-01-30")
-    time = YAXArray(Dim{:time}(tspan))
+    time_yax = YAXArray(YAX.time(tspan))
 
     properties = Dict{String, Any}("name" => "out_array")
 
-    gen_cube = mapCube(g, (lon, lat, time);
+    gen_cube = mapCube(g, (lon_yax, lat_yax, time_yax);
             indims = (InDims(), InDims(), InDims("time")),
             outdims = OutDims("time"; properties,
             outtype = Float32)
             # max_cache=1e9
         )
         
-    gen_cube2d = mapCube(g2d, (lon, lat);
+    gen_cube2d = mapCube(g2d, (lon_yax, lat_yax);
         indims = (InDims(), InDims()),
         outdims = OutDims(; outtype = Float32)
         # max_cache=1e9
     )
     properties = Dict{String, Any}("name" => "out_zarr")
     # test saves, zarr
-    mapCube(g, (lon, lat, time);
+    mapCube(g, (lon_yax, lat_yax, time_yax);
             indims = (InDims(), InDims(), InDims("time")),
             outdims = OutDims("time"; overwrite=true, path="my_gen_cube.zarr",
             properties,
@@ -461,14 +463,14 @@ end
     ds_zarr = open_dataset("my_gen_cube.zarr")
     # test saves, nc
     properties = Dict{String, Any}("name" => "out_nc")
-    mapCube(g, (lon, lat, time);
+    mapCube(g, (lon_yax, lat_yax, time_yax);
             indims = (InDims(), InDims(), InDims("time")),
             outdims = OutDims("time"; overwrite=true, path="my_gen_cube.nc",
             properties,
             outtype = Float32)
             # max_cache=1e9
         )
-    mapCube(g, (lon, lat, time);
+    mapCube(g, (lon_yax, lat_yax, time_yax);
         indims = (InDims(), InDims(), InDims("time")),
         outdims = OutDims("time"; overwrite=true, path="my_gen_cube_no_p.nc",
         outtype = Float32)
@@ -547,14 +549,14 @@ end
     savecube(array1,f1)
     savecube(array2,f2)
 
-    ds = open_mfdataset(DD.DimArray([f1,f2],(DD.Ti(1:2),)))
+    ds = open_mfdataset(DD.DimArray([f1,f2],(YAX.time(1:2),)))
 
     @test ds.layer.data[:,:,1] == array1
     @test ds.layer.data[:,:,2] == array2
 
     td = mktempdir()
     f1, f2 = joinpath.(td,("file_1.nc","file_2.nc"))
-    td1, td2 = DD.Ti(1:2), DD.Ti(3:4)
+    td1, td2 = YAX.time(1:2), YAX.time(3:4)
     a1,a2 = rand(20,10,2), rand(20,10,2)
     array1,array2 = YAXArray((d1,d2,td1),a1),  YAXArray((d1,d2,td2),a2)
     savecube(array1,f1)

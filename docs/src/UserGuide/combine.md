@@ -11,9 +11,10 @@ The resulting array `whole_year` still has one dimension, i.e. time, but with 12
 
 ````@example cat
 using YAXArrays
+using YAXArrays: YAXArrays as YAX
 
-first_half = YAXArray((Dim{:time}(1:6),), rand(6))
-second_half = YAXArray((Dim{:time}(7:12),), rand(6))
+first_half = YAXArray((YAX.time(1:6),), rand(6))
+second_half = YAXArray((YAX.time(7:12),), rand(6))
 whole_year = cat(first_half, second_half, dims = 1)
 ````
 
@@ -25,10 +26,11 @@ Note that using a `Dataset` instead is a more flexible approach in handling diff
 
 ````@example concatenatecubes
 using YAXArrays
+using YAXArrays: YAXArrays as YAX
 
-temperature = YAXArray((Dim{:time}(1:6),), rand(6))
-precipitation = YAXArray((Dim{:time}(1:6),), rand(6))
+temperature = YAXArray((YAX.time(1:6),), rand(6))
+precipitation = YAXArray((YAX.time(1:6),), rand(6))
 cubes = [temperature,precipitation]
-var_axis = Dim{:variable}(["temp", "prep"])
+var_axis = Variables(["temp", "prep"])
 combined = concatenatecubes(cubes, var_axis)
 ````

@@ -63,7 +63,7 @@ function concatenatecubes(; kwargs...)
         push!(cubenames, string(n))
     end
     cubes = map(i -> i[2], collect(kwargs))
-    findAxis("Variable", cubes[1]) === nothing ||
+    findAxis("Variables", cubes[1]) === nothing ||
         error("Input cubes must not contain a variable kwarg concatenation")
-    concatenateCubes(cubes, CategoricalAxis("Variable", cubenames))
+    concatenateCubes(cubes, CategoricalAxis("Variables", cubenames))
 end

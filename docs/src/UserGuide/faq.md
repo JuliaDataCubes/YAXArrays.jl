@@ -81,10 +81,12 @@ It is possible to concatenate several cubes that shared the same dimensions usin
 Let's create two dummy cubes
 ````@example howdoi
 using YAXArrays
+using YAXArrays: YAXArrays as YAX
+
 axlist = (
-    Dim{:time}(range(1, 20, length=20)),
-    Dim{:lon}(range(1, 10, length=10)),
-    Dim{:lat}(range(1, 5, length=15))
+    YAX.time(range(1, 20, length=20)),
+    lon(range(1, 10, length=10)),
+    lat(range(1, 5, length=15))
     )
 
 data1 = rand(20, 10, 15)
@@ -125,7 +127,7 @@ t = Date("2020-01-01"):Month(1):Date("2022-12-31")
 create YAXArray axes
 
 ```@example howdoi
-axes = (Dim{:Lon}(1:10), Dim{:Lat}(1:10), Dim{:Time}(t))
+axes = (Lon(1:10), Lat(1:10), YAX.Time(t))
 ```
 
 create the YAXArray
@@ -169,7 +171,7 @@ using Dates # To generate the dates of the time axis
 using DimensionalData # To use the "Between" option for selecting data
 
 t = Date("2020-01-01"):Month(1):Date("2022-12-31")
-axes = (Dim{:Lon}(1:10), Dim{:Lat}(1:10), Dim{:Time}(t))
+axes = (Lon(1:10), Lat(1:10), YAX.Time(t))
 
 var1 = YAXArray(axes, reshape(1:3600, (10, 10, 36)))
 var2 = YAXArray(axes, reshape((1:3600)*5, (10, 10, 36)))
@@ -195,7 +197,7 @@ using DimensionalData # To use the "Between" selector for selecting data
 
 t = Date("2020-01-01"):Month(1):Date("2022-12-31")
 common_axis = Dim{:points}(1:100)
-time_axis =   Dim{:Time}(t)
+time_axis =   YAX.Time(t)
 
 # Note that longitudes and latitudes are not dimensions, but YAXArrays
 longitudes = YAXArray((common_axis,), rand(1:369, 100)) # 100 random values taken from 1 to 359
@@ -324,7 +326,9 @@ You will not be able to save this dataset, first you will need to rename those `
 In this section we will use `MarketData.jl` and `TimeSeries.jl` to simulate some stocks.
 
 ````@example howdoi
-using YAXArrays, DimensionalData
+using YAXArrays
+using YAXArrays: YAXArrays as YAX
+using DimensionalData
 using MarketData, TimeSeries
 
 stocks = Dict(:Stock1 => random_ohlcv(), :Stock2 => random_ohlcv(), :Stock3 => random_ohlcv())
@@ -334,7 +338,7 @@ d_keys = keys(stocks)
 currently there is not direct support to obtain `dims` from a `TimeArray`, but we can code a function for it
 
 ````@example howdoi
-getTArrayAxes(ta::TimeArray) = (Dim{:time}(timestamp(ta)), Dim{:variable}(colnames(ta)), );
+getTArrayAxes(ta::TimeArray) = (YAX.time(timestamp(ta)), Variables(colnames(ta)), );
 nothing # hide
 ````
 then, we create the `YAXArrays` as

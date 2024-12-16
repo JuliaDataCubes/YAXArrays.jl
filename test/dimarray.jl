@@ -1,6 +1,7 @@
 @testitem "DimensionalData mapcube" begin
     using DimensionalData
     using YAXArrays
+    using YAXArrays: YAXArrays as YAX
     m = Array{Union{Int, Missing}}(undef, 4,2,10)
     for i in 1:size(m,3)
         m[:,1,i] .= i
@@ -10,9 +11,9 @@
     m[3,1,6:10] .=missing
     m[4,1,:] .= 10
 
-    lon = Dim{:Lon}(1:4)
-    lat = Dim{:Lat}(1:2)
-    tim = Dim{:Time}(1:10)
+    lon = Lon(1:4)
+    lat = Lat(1:2)
+    tim = YAX.Time(1:10)
     c = DimArray(m, (lon, lat, tim))
     indims = InDims("Time")
     outdims = OutDims()
@@ -94,11 +95,12 @@ end
 
 @testitem "Moving Window DimArray" begin
     using YAXArrays
+    using YAXArrays: YAXArrays as YAX
     using DimensionalData
     a = Array{Union{Float64,Missing}}(rand(40, 20, 10))
-    lon = Dim{:Lon}(1:40)
-    lat = Dim{:Lat}(1:20)
-    tim = Dim{:Time}(1:10)
+    lon = Lon(1:40)
+    lat = Lat(1:20)
+    tim = YAX.Time(1:10)
     c = DimArray(a,(lon, lat, tim))
 
     indims = InDims("Time",YAXArrays.MovingWindow("Lon",1,1),window_oob_value = -9999.0)
@@ -143,10 +145,10 @@ end
     @test r3 isa AbstractDimArray
 
     a = Array{Union{Float64,Missing}}(rand(10,4,  40, 20));
-    varax = Dim{:Variable}('a':'d')
-    lon = Dim{:Lon}(1:40)
-    lat = Dim{:Lat}(1:20)
-    tim = Dim{:Time}(1:10)
+    varax = Variables('a':'d')
+    lon = Lon(1:40)
+    lat = Lat(1:20)
+    tim = YAX.Time(1:10)
 
     c = DimArray(a, (tim, varax, lon,lat))
     indims = InDims("Time",YAXArrays.MovingWindow("Lon",1,1))
@@ -159,13 +161,14 @@ end
 end
 
 @testitem "DimArray Chunking" begin
-    using YAXArrays 
+    using YAXArrays
+    using YAXArrays: YAXArrays as YAX
     using DimensionalData
 
     a = Array{Union{Float64,Missing}}(rand(40, 20, 10))
-    lon = Dim{:Lon}(1:40)
-    lat = Dim{:Lat}(1:20)
-    tim = Dim{:Time}(1:10)
+    lon = Lon(1:40)
+    lat = Lat(1:20)
+    tim = YAX.Time(1:10)
     c = DimArray(a,(lon, lat, tim))
     d = tempname()
     @test_broken c_chunked = setchunks(c,Dict("Lon" => 7, "Lat" => 9))
@@ -175,7 +178,7 @@ end
 
 @testitem "DimArray tablestats" begin
     using DimensionalData
-    using YAXArrays 
+    using YAXArrays
     using OnlineStats
     data = collect(reshape(1:20.,4,5))
     axlist = (Dim{:XVals}(1.0:4.0), Dim{:YVals}([1,2,3,4,5]))

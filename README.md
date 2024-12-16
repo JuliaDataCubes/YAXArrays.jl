@@ -107,18 +107,20 @@ using YAXArrays
 Let's assemble a `YAXArray` with 4 dimensions i.e. time, x,y and a variable dimension with two variables.
 
 ```julia
-using YAXArrays, DimensionalData
+using YAXArrays
+using YAXArrays: YAXArrays as YAX
+
 axlist = (
-    Dim{:time}(range(1, 20, length=20)),
-    X(range(1, 10, length=10)),
-    Y(range(1, 5, length=15)),
-    Dim{:Variable}(["var1", "var2"]))
+    YAX.time(range(1, 20, length=20)),
+    lon(range(1, 10, length=10)),
+    lat(range(1, 5, length=15)),
+    Variables(["var1", "var2"]))
 ```
 ```
 ↓ time     1.0:1.0:20.0,
-→ X        1.0:1.0:10.0,
-↗ Y        1.0:0.2857142857142857:5.0,
-⬔ Variable ["var1", "var2"]
+→ lon      1.0:1.0:10.0,
+↗ lat      1.0:0.2857142857142857:5.0,
+⬔ Variables ["var1", "var2"]
 ```
 
 and the corresponding data.
@@ -148,8 +150,8 @@ ds = YAXArray(axlist, data, props)
 │ 20×10×15×2 YAXArray{Float64,4} │
 ├────────────────────────────────┴─────────────────────────────────────────────── dims ┐
   ↓ time     Sampled{Float64} 1.0:1.0:20.0 ForwardOrdered Regular Points,
-  → X        Sampled{Float64} 1.0:1.0:10.0 ForwardOrdered Regular Points,
-  ↗ Y        Sampled{Float64} 1.0:0.2857142857142857:5.0 ForwardOrdered Regular Points,
+  → lon      Sampled{Float64} 1.0:1.0:10.0 ForwardOrdered Regular Points,
+  ↗ lat      Sampled{Float64} 1.0:0.2857142857142857:5.0 ForwardOrdered Regular Points,
   ⬔ Variable Categorical{String} ["var1", "var2"] ForwardOrdered
 ├──────────────────────────────────────────────────────────────────────────── metadata ┤
   Dict{String, String} with 5 entries:
@@ -168,17 +170,17 @@ ds = YAXArray(axlist, data, props)
 For axis can be via `.` 
 
 ```julia
-ds.X
+ds.lon
 ```
 ```
-X Sampled{Float64} ForwardOrdered Regular Points
+lon Sampled{Float64} ForwardOrdered Regular Points
 wrapping: 1.0:1.0:10.0
 ```
 
 or better yet via `lookup`
 
 ```julia
-lookup(ds, :X)
+lookup(ds, :lon)
 ```
 ```
 Sampled{Float64} ForwardOrdered Regular Points
@@ -187,7 +189,7 @@ wrapping: 1.0:1.0:10.0
 
 note that also the `.data` field can be use
 ```julia
-lookup(ds, :X).data
+lookup(ds, :lon).data
 ```
 ```
 1.0:1.0:10.0
@@ -196,15 +198,15 @@ lookup(ds, :X).data
 The data for one variables, i.e. `var1` can be accessed via:
 
 ```julia
-ds[Variable=At("var1")]
+ds[Variables=At("var1")]
 ```
 ```
 ╭──────────────────────────────╮
 │ 20×10×15 YAXArray{Float64,3} │
 ├──────────────────────────────┴────────────────────────────────────────────── dims ┐
   ↓ time Sampled{Float64} 1.0:1.0:20.0 ForwardOrdered Regular Points,
-  → X    Sampled{Float64} 1.0:1.0:10.0 ForwardOrdered Regular Points,
-  ↗ Y    Sampled{Float64} 1.0:0.2857142857142857:5.0 ForwardOrdered Regular Points
+  → lon  Sampled{Float64} 1.0:1.0:10.0 ForwardOrdered Regular Points,
+  ↗ lat  Sampled{Float64} 1.0:0.2857142857142857:5.0 ForwardOrdered Regular Points
 ├───────────────────────────────────────────────────────────────────────── metadata ┤
   Dict{String, String} with 5 entries:
   "var1" => "one of your variables"
