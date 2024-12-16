@@ -155,7 +155,7 @@ export default defineConfig({
       pattern: 'https://github.com/JuliaDataCubes/YAXArrays.jl/edit/master/docs/src/:path'
     },
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/JuliaDataCubes/YAXArrays.jl' }
+      // { icon: 'github', link: 'https://github.com/JuliaDataCubes/YAXArrays.jl' }
     ],
     footer: {
       message: 'Made with <a href="https://github.com/LuxDL/DocumenterVitepress.jl" target="_blank"><strong>DocumenterVitepress.jl</strong></a>',
