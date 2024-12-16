@@ -1,9 +1,6 @@
 using DimensionalData: @dim, YDim, XDim, ZDim, TimeDim
 export Lat, lat, latitude, Latitude
-export rlat, lat_c
-export Lon, lon, longitude, long, Longitude
-export rlon, lon_c
-export height, depth
+export Lon, lon, longitude, Longitude
 export Variables
 
 @dim Lat YDim "Latitude"
@@ -15,7 +12,6 @@ export Variables
 
 @dim Lon XDim "Longitude"
 @dim lon XDim "Longitude"
-@dim long XDim "Longitude"
 @dim longitude XDim "Longitude"
 @dim Longitude XDim "Longitude"
 @dim rlon XDim

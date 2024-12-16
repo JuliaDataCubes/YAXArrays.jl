@@ -33,6 +33,51 @@ This data structure is useful when we want to use all variables at once.
 For example, the arrays temperature and precipitation which are measured at the same locations and dates can be combined into a single cube.
 A more formal definition of Data Cubes are given in [Mahecha et al. 2020](https://doi.org/10.5194/esd-11-201-2020)
 
-## Dimension
+## Dimensions
 
 A `Dimension` or axis as defined by [DimensionalData.jl](https://rafaqz.github.io/DimensionalData.jl/dev/dimensions) adds tick labels, e.g., to each row or column of an array. It's name is used to access particular subsets of that array.
+
+### Lon, Lat, time
+
+For convenience, several `Dimensions` have been defined in `YAXArrays.jl`, but only a few have been exported. The remaining dimensions can be used by calling them explicitly. See the next table for an overview
+
+
+| Dimension         | exported | usage: `using YAXArrays: YAXArrays as YAX` |
+| :-----------------| :--------|--------------------------------------------|
+| `lon`             | ✔        | `lon` or `YAX.lon`                         |
+| `Lon`             | ✔        | `Lon` or `YAX.Lon`                         |
+| `longitude`       | ✔        | `longitude` or `YAX.longitude`             |
+| `Longitude`       | ✔        | `Longitude` or `YAX.Longitude`             |
+| `lat`             | ✔        | `lat` or `YAX.lat`                         |
+| `Lat`             | ✔        | `Lat` or `YAX.Lat`                         |
+| `latitude`        | ✔        | `latitude` or `YAX.latitude`               |
+| `Latitude`        | ✔        | `Latitude` or `YAX.Latitude`               |
+| `time`            | ✘        | `YAX.time`                                 |
+| `Time`            | ✘        | `YAX.Time`                                 |
+| `rlat`            | ✘        | `YAX.rlat`                                 |
+| `rlon`            | ✘        | `YAX.rlon`                                 |
+| `lat_c`           | ✘        | `YAX.lat_c`                                |
+| `lon_c`           | ✘        | `YAX.lon_c`                                |
+| `height`          | ✘        | `YAX.height`                               |
+| `depth`           | ✘        | `YAX.depth`                                |
+| `Variables`       | ✔        | `Variables` or `YAX.Variables`             |
+
+
+::: info
+
+If the dimension you are looking for is not in that table, you can define your own by doing
+
+````julia
+using DimensionalData: @dim, XDim # If you want it to be a subtype of XDim
+@dim newDim XDim "Your newDim label"
+````
+
+Sometimes, when you want to operate on a specific dimension in your dataset (for example, a dimension named `date`), then doing
+
+````julia
+groupby(ds, Dim{:date} => seasons())
+````
+
+should do the job.
+
+:::

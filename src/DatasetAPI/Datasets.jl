@@ -16,9 +16,9 @@ using DimensionalData: DimensionalData as DD
 export Dataset, Cube, open_dataset, to_dataset, savecube, savedataset, open_mfdataset
 
 """
-    Dataset object which stores an `OrderedDict` of YAXArrays with Symbol keys.
-    a dictionary of CubeAxes and a Dictionary of general properties.
-    A dictionary can hold cubes with differing axes. But it will share the common axes between the subcubes.
+Dataset object which stores an `OrderedDict` of YAXArrays with Symbol keys.
+A dictionary of CubeAxes and a Dictionary of general properties.
+A dictionary can hold cubes with differing axes. But it will share the common axes between the subcubes.
 """
 struct Dataset
     cubes::OrderedDict{Symbol,YAXArray}
@@ -46,10 +46,10 @@ end
     to_dataset(c;datasetaxis = "Variables", layername = "layer")
 
 Convert a Data Cube into a Dataset. It is possible to treat one of
-the Cube's axes as a "DatasetAxis" i.e. the cube will be split into
+the Cube's axes as a `datasetaxis` i.e. the cube will be split into
 different parts that become variables in the Dataset. If no such
 axis is specified or found, there will only be a single variable
-in the dataset with the name `layername`
+in the dataset with the name `layername`.
 """
 function to_dataset(c;datasetaxis = "Variables", layername = get(c.properties,"name","layer"))
     axlist = DD.dims(c)
@@ -635,13 +635,13 @@ function setchunks(ds::Dataset, chunks)
 end
 
 """
-    savedataset(ds::Dataset; path = "", persist = nothing, overwrite = false, append = false, skeleton=false, backend = :all, driver = backend, max_cache = 5e8, writefac=4.0)
+    savedataset(ds::Dataset; path= "", persist=nothing, overwrite=false, append=false, skeleton=false, backend=:all, driver=backend, max_cache=5e8, writefac=4.0)
 
-Saves a Dataset into a file at `path` with the format given by `driver`, i.e., driver=:netcdf or driver=:zarr.
+Saves a Dataset into a file at `path` with the format given by `driver`, i.e., `driver=:netcdf` or `driver=:zarr`.
 
 
 !!! warning
-    overwrite = true, deletes ALL your data and it will create a new file.
+    `overwrite=true`, deletes ALL your data and it will create a new file.
 """
 function savedataset(
     ds::Dataset;
