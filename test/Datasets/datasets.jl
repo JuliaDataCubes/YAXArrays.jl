@@ -413,6 +413,12 @@ end
     @test ds2.c.data[:, :] == ds.c.data
     @test ds2.c.chunks == DiskArrays.GridChunks(size(a), (5, 10))
 
+    #Test if skip_keys works
+    ds3 = open_dataset(f, driver=:zarr, skip_keys = (:c,))
+    @test :a in keys(ds3.cubes)
+    @test :b in keys(ds3.cubes)
+    @test !in(:c,keys(ds3.cubes))
+
 end
 
 @testset "Saving, OutDims" begin
