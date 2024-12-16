@@ -3,8 +3,7 @@ import { tabsMarkdownPlugin } from 'vitepress-plugin-tabs'
 import mathjax3 from "markdown-it-mathjax3";
 
 function getBaseRepository(base: string): string {
-  if (!base) return '/';
-  // I guess if deploy_url is available. From where do I check this ?
+  if (!base || base === '/') return '/';
   const parts = base.split('/').filter(Boolean);
   return parts.length > 0 ? `/${parts[0]}/` : '/';
 }
@@ -87,7 +86,7 @@ export default defineConfig({
   // cleanUrls: true,
   outDir: 'REPLACE_ME_DOCUMENTER_VITEPRESS', // This is required for MarkdownVitepress to work correctly...
   head: [
-    ['link', { rel: 'icon', href: 'REPLACE_ME_DOCUMENTER_VITEPRESS_FAVICON' }],
+    ['link', { rel: 'icon', href: '/favicon.ico' }],
     ['script', {src: `${getBaseRepository(baseTemp.base)}versions.js`}],
     ['script', {src: `${baseTemp.base}siteinfo.js`}]
   ],
