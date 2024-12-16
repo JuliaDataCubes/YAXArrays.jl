@@ -348,7 +348,11 @@ open_mfdataset(g::Vector{<:AbstractString}; kwargs...) =
 merge_datasets(map(i -> open_dataset(i; kwargs...), g))
 
 function merge_new_axis(alldatasets, firstcube,var,mergedim)
-    newdim = DD.rebuild(mergedim,1:length(alldatasets))
+    newdim = if !(typeof(DD.lookup(mergedim)) <: DD.NoLookup)
+        DD.rebuild(mergedim, DD.val(mergedim))
+    else
+        DD.rebuild(mergedim, 1:length(alldatasets))
+    end
     alldiskarrays = map(ds->ds.cubes[var].data,alldatasets).data
     newda = diskstack(alldiskarrays)
     newdims = (DD.dims(firstcube)...,newdim)
@@ -407,10 +411,21 @@ end
 
 
 """
-    open_dataset(g; driver=:all)
+    open_dataset(g; skip_keys=(), driver=:all)
 
 Open the dataset at `g` with the given `driver`.
 The default driver will search for available drivers and tries to detect the useable driver from the filename extension.
+
+### Keyword arguments
+
+- `skip_keys` are passed as symbols, i.e., `skip_keys = (:a, :b)`
+- `driver=:all`, common options are `:netcdf` or `:zarr`.
+
+Example:
+
+````julia
+ds = open_dataset(f, driver=:zarr, skip_keys = (:c,))
+````
 """
 function open_dataset(g; skip_keys=(), driver = :all)
     str_skipkeys = string.(skip_keys)
