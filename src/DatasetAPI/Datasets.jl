@@ -348,7 +348,11 @@ open_mfdataset(g::Vector{<:AbstractString}; kwargs...) =
 merge_datasets(map(i -> open_dataset(i; kwargs...), g))
 
 function merge_new_axis(alldatasets, firstcube,var,mergedim)
-    newdim = DD.rebuild(mergedim,1:length(alldatasets))
+    newdim = if !(typeof(DD.lookup(mergedim)) <: DD.NoLookup)
+        DD.rebuild(mergedim, DD.val(mergedim))
+    else
+        DD.rebuild(mergedim, 1:length(alldatasets))
+    end
     alldiskarrays = map(ds->ds.cubes[var].data,alldatasets).data
     newda = diskstack(alldiskarrays)
     newdims = (DD.dims(firstcube)...,newdim)
