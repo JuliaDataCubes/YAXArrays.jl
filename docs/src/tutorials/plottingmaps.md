@@ -93,15 +93,19 @@ mesh!(ax, sphere; color = ds'[end:-1:1,:], shading=false,
     colormap = :seaborn_icefire_gradient)
 zoom!(ax.scene, cameracontrols(ax.scene), 0.5)
 rotate!(ax.scene, 2.5)
-fig
+display(fig, update=false)
 ````
 
-# AlgebraOfGraphics.jl
+## AlgebraOfGraphics.jl
 
-> [!NOTE]
-> From [DimensionalData docs](https://rafaqz.github.io/DimensionalData.jl/stable/plots#algebraofgraphics-jl) :
->
-> **AlgebraOfGraphics.jl** is a high-level plotting library built on top of Makie.jl that provides a declarative algebra for creating complex visualizations, similar to **ggplot2**'s "grammar of graphics" in R. It allows you to construct plots using algebraic operations like **(*)** and **(+)**, making it easy to create sophisticated graphics with minimal code.
+::: info
+
+From [DimensionalData docs](https://rafaqz.github.io/DimensionalData.jl/stable/plots#algebraofgraphics-jl) :
+
+**AlgebraOfGraphics.jl** is a high-level plotting library built on top of `Makie.jl` that provides a declarative algebra for creating complex visualizations, similar to **ggplot2**'s "grammar of graphics" in R. It allows you to construct plots using algebraic operations like `*` and `+`, making it easy to create sophisticated graphics with minimal code.
+
+:::
+
 
 ````@example AoG
 using YAXArrays, Zarr, Dates
@@ -116,13 +120,15 @@ let's continue using the cmip6 dataset
 ````@example AoG
 store ="gs://cmip6/CMIP6/ScenarioMIP/DKRZ/MPI-ESM1-2-HR/ssp585/r1i1p1f1/3hr/tas/gn/v20190710/"
 g = open_dataset(zopen(store, consolidated=true))
-c = g["tas"]
+c = g["tas"];
+nothing # hide
 ````
 
 and let's focus on the first time step:
 
 ````@example AoG
-dim_data = readcubedata(c[time=1]) # read into memory first!
+dim_data = readcubedata(c[time=1]); # read into memory first!
+nothing # hide
 ````
 
 and now plot
@@ -130,6 +136,12 @@ and now plot
 ````@example AoG
 data(dim_data) * mapping(:lon, :lat; color=:value) * visual(Scatter) |> draw
 ````
+
+::: warning
+
+Note that we are using a `Scatter` type per point and not the `Heatmap` one. There are workarounds for this, albeit cumbersome, so for now, let's keep this simpler syntax in mind along with the current approach being used.
+
+:::
 
 set other attributes
 
@@ -139,7 +151,7 @@ draw(plt * visual(Scatter, marker=:rect), scales(Color = (; colormap = :plasma))
     axis = (width = 600, height = 400, limits=(0, 360, -90, 90)))
 ````
 
-## Faceting
+### Faceting
 
 For this let's consider more time steps from our dataset:
 
@@ -177,6 +189,19 @@ draw(plt * visual(Lines); figure=(; size=(650,400)))
 or faceting them
 
 ````@example AoG
-plt = data(dim_data[lon=50..59]) * mapping(:lat, :value => "tas"; color=:value => "tas", layout = :lon => nonnumeric)
+plt = data(dim_data[lon=50..59]) * mapping(:lat, :value => "tas"; color=:value => "tas",
+    layout = :lon => nonnumeric)
 draw(plt * visual(Lines); figure=(; size=(650,400)))
 ````
+
+### Analysis
+
+Basic statistical [analysis](https://aog.makie.org/stable/generated/analyses/) can also be done, for example:
+
+````@example AoG
+specs = data(dim_data[lat=50..55]) * mapping(:lon, :value => "tas"; color=:lat => nonnumeric)
+specs *= (smooth() + visual(Scatter))
+draw(specs;  figure=(; size=(700,400)))
+````
+
+For more, visit [AlgebraOfGraphics.jl](https://aog.makie.org/stable/).
