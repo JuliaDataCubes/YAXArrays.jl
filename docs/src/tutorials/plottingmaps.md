@@ -93,7 +93,7 @@ mesh!(ax, sphere; color = ds'[end:-1:1,:], shading=false,
     colormap = :seaborn_icefire_gradient)
 zoom!(ax.scene, cameracontrols(ax.scene), 0.5)
 rotate!(ax.scene, 2.5)
-display(fig, update=false)
+fig
 ````
 
 ## AlgebraOfGraphics.jl
