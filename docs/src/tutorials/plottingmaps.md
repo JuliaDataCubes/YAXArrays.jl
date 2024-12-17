@@ -29,9 +29,9 @@ nothing # hide
 use lookup to get axis values
 
 ````@example plots
-lon = lookup(ct1_slice, :lon)
-lat = lookup(ct1_slice, :lat)
-data = ct1_slice.data[:,:];
+lon_d = lookup(ct1_slice, :lon)
+lat_d = lookup(ct1_slice, :lat)
+data_d = ct1_slice.data[:,:];
 nothing # hide
 ````
 
@@ -50,9 +50,9 @@ fig
 Some transformations
 
 ````@example plots
-δlon = (lon[2]-lon[1])/2
-nlon = lon .- 180 .+ δlon
-ndata = circshift(data, (192,1))
+δlon = (lon_d[2]-_lon_d[1])/2
+nlon = lon_d .- 180 .+ δlon
+ndata = circshift(data_d, (192,1))
 nothing # hide
 ````
 
@@ -61,7 +61,7 @@ and add Coastlines with `GeoMakie.coastlines()`,
 ````@example plots
 fig = Figure(;size=(1200,600))
 ax = GeoAxis(fig[1,1])
-surface!(ax, nlon, lat, ndata; colormap = :seaborn_icefire_gradient, shading=false)
+surface!(ax, nlon, lat_d, ndata; colormap = :seaborn_icefire_gradient, shading=false)
 cl=lines!(ax, GeoMakie.coastlines(), color = :white, linewidth=0.85)
 translate!(cl, 0, 0, 1000)
 fig
@@ -71,7 +71,7 @@ fig
 ````@example plots
 fig = Figure(; size=(1200,600))
 ax = GeoAxis(fig[1,1]; dest = "+proj=moll")
-surface!(ax, nlon, lat, ndata; colormap = :seaborn_icefire_gradient, shading=false)
+surface!(ax, nlon, lat_d, ndata; colormap = :seaborn_icefire_gradient, shading=false)
 cl=lines!(ax, GeoMakie.coastlines(), color = :white, linewidth=0.85)
 translate!(cl, 0, 0, 1000)
 fig
@@ -103,15 +103,19 @@ fig
 >
 > **AlgebraOfGraphics.jl** is a high-level plotting library built on top of Makie.jl that provides a declarative algebra for creating complex visualizations, similar to **ggplot2**'s "grammar of graphics" in R. It allows you to construct plots using algebraic operations like **(*)** and **(+)**, making it easy to create sophisticated graphics with minimal code.
 
-````@example plots
+````@example AoG
+using YAXArrays, Zarr, Dates
 using GLMakie
 using AlgebraOfGraphics
+using GLMakie.GeometryBasics
 GLMakie.activate!()
 ````
 
 let's continue using the cmip6 dataset
 
 ````@example plots
+store ="gs://cmip6/CMIP6/ScenarioMIP/DKRZ/MPI-ESM1-2-HR/ssp585/r1i1p1f1/3hr/tas/gn/v20190710/"
+g = open_dataset(zopen(store, consolidated=true))
 c = g["tas"]
 ````
 
