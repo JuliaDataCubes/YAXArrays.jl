@@ -193,6 +193,21 @@ plt = data(dim_data[lon=50..59]) * mapping(:lat, :value => "tas"; color=:value =
     layout = :lon => nonnumeric)
 draw(plt * visual(Lines); figure=(; size=(650,400)))
 ````
+### Time series
+
+For this, let's load a little bit more of time steps
+
+````@example AoG
+dim_series = c[time=DateTime("2015-01-01") .. DateTime("2015-01-04"), lon = 150 .. 157, lat = 0..1] |> readcubedata
+````
+
+and plot
+
+````@example AoG
+plt = data(dim_series) * mapping(:time, :value => "tas"; color=:lon => nonnumeric)
+draw(plt * visual(ScatterLines), scales(Color = (; palette = :tableau_colorblind));
+    figure=(; size=(800,400)))
+````
 
 ### Analysis
 
