@@ -79,12 +79,10 @@ fig
 
 ## 3D sphere plot
 
-````julia
-using Bonito, WGLMakie
-Page(exportable=true, offline=true)
-
-WGLMakie.activate!()
-Makie.inline!(true) # Make sure to inline plots into Documenter output!
+````@example plots
+using GLMakie
+using GLMakie.GeometryBasics
+GLMakie.activate!()
 
 ds = replace(ndata, missing =>NaN)
 sphere = uv_normal_mesh(Tesselation(Sphere(Point3f(0), 1), 128))
@@ -97,5 +95,13 @@ zoom!(ax.scene, cameracontrols(ax.scene), 0.5)
 rotate!(ax.scene, 2.5)
 fig
 ````
+
+# AlgebraOfGraphics.jl
+
+> [!NOTE]
+> From [DimensionalData docs](https://rafaqz.github.io/DimensionalData.jl/stable/plots#algebraofgraphics-jl) :
+>
+> **AlgebraOfGraphics.jl** is a high-level plotting library built on top of Makie.jl that provides a declarative algebra for creating complex visualizations, similar to **ggplot2**'s "grammar of graphics" in R. It allows you to construct plots using algebraic operations like **(*)** and **(+)**, making it easy to create sophisticated graphics with minimal code.
+
 
 
