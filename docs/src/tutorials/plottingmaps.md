@@ -107,22 +107,18 @@ fig
 using GLMakie
 using AlgebraOfGraphics
 GLMakie.activate!()
-# let's continue using the cmip6 dataset
-c = g["tas"]
 ````
 
+let's continue using the cmip6 dataset
 
 ````@example plots
-# let's continue using the cmip6 dataset
 c = g["tas"]
 ````
 
 and let's focus on the first time step:
 
 ````@example plots
-dim_data = c[time=1][:,:] # read into memory first!
-plt = data(dim_data) * mapping(:lon, :lat; color=:value) * visual(Scatter, marker=:rect)
-draw(plt)
+dim_data = readcubedata(c[time=1]) # read into memory first!
 ````
 
 and now plot
@@ -149,7 +145,7 @@ dim_time = c[time=DateTime("2015-01-01") .. DateTime("2015-01-01T21:00:00")] # s
 ````
 
 ````@example plots
-dim_time = dim_time[:,:,:]; # read into memory first!
+dim_time = readcubedata(dim_time); # read into memory first!
 nothing # hide
 ````
 
