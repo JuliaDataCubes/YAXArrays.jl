@@ -113,7 +113,7 @@ GLMakie.activate!()
 
 let's continue using the cmip6 dataset
 
-````@example plots
+````@example AoG
 store ="gs://cmip6/CMIP6/ScenarioMIP/DKRZ/MPI-ESM1-2-HR/ssp585/r1i1p1f1/3hr/tas/gn/v20190710/"
 g = open_dataset(zopen(store, consolidated=true))
 c = g["tas"]
@@ -121,19 +121,19 @@ c = g["tas"]
 
 and let's focus on the first time step:
 
-````@example plots
+````@example AoG
 dim_data = readcubedata(c[time=1]) # read into memory first!
 ````
 
 and now plot
 
-````@example plots
+````@example AoG
 data(dim_data) * mapping(:lon, :lat; color=:value) * visual(Scatter) |> draw
 ````
 
 set other attributes
 
-````@example plots
+````@example AoG
 plt = data(dim_data) * mapping(:lon, :lat; color=:value)
 draw(plt * visual(Scatter, marker=:rect), scales(Color = (; colormap = :plasma));
     axis = (width = 600, height = 400, limits=(0, 360, -90, 90)))
@@ -143,26 +143,33 @@ draw(plt * visual(Scatter, marker=:rect), scales(Color = (; colormap = :plasma))
 
 For this let's consider more time steps from our dataset:
 
-````@example plots
+````@example AoG
 using Dates
 dim_time = c[time=DateTime("2015-01-01") .. DateTime("2015-01-01T21:00:00")] # subset 7 t steps
 ````
 
-````@example plots
+````@example AoG
 dim_time = readcubedata(dim_time); # read into memory first!
 nothing # hide
 ````
 
-````@example plots
+````@example AoG
 plt = data(dim_time) * mapping(:lon, :lat; color = :value, layout = :time => nonnumeric)
 draw(plt * visual(Scatter, marker=:rect))
 ````
 
 again, let's add some additional attributes
 
-````@example plots
+````@example AoG
 plt = data(dim_time) * mapping(:lon, :lat; color = :value, layout = :time => nonnumeric)
 draw(plt * visual(Scatter, marker=:rect), scales(Color = (; colormap = :magma));
     axis = (; limits=(0, 360, -90, 90)),
     figure=(; size=(900,600)))
+````
+
+most [Makie plot functions](https://docs.makie.org/stable/reference/plots/overview) should work. See `lines` for example
+
+````@example AoG
+plt = data(dim_data[lon=1..10]) * mapping(:lat, :value; layout = :lon => nonnumeric)
+draw(plt * visual(Lines); figure=(; size=(600,400)))
 ````
