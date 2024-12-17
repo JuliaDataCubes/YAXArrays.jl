@@ -103,5 +103,66 @@ fig
 >
 > **AlgebraOfGraphics.jl** is a high-level plotting library built on top of Makie.jl that provides a declarative algebra for creating complex visualizations, similar to **ggplot2**'s "grammar of graphics" in R. It allows you to construct plots using algebraic operations like **(*)** and **(+)**, making it easy to create sophisticated graphics with minimal code.
 
+````@example plots
+using GLMakie
+using AlgebraOfGraphics
+GLMakie.activate!()
+# let's continue using the cmip6 dataset
+c = g["tas"]
+````
 
 
+````@example plots
+# let's continue using the cmip6 dataset
+c = g["tas"]
+````
+
+and let's focus on the first time step:
+
+````@example plots
+dim_data = c[time=1][:,:] # read into memory first!
+plt = data(dim_data) * mapping(:lon, :lat; color=:value) * visual(Scatter, marker=:rect)
+draw(plt)
+````
+
+and now plot
+
+````@example plots
+data(dim_data) * mapping(:lon, :lat; color=:value) * visual(Scatter) |> draw
+````
+
+set other attributes
+
+````@example plots
+plt = data(dim_data) * mapping(:lon, :lat; color=:value)
+draw(plt * visual(Scatter, marker=:rect), scales(Color = (; colormap = :plasma));
+    axis = (width = 600, height = 400, limits=(0, 360, -90, 90)))
+````
+
+## Faceting
+
+For this let's consider more time steps from our dataset:
+
+````@example plots
+using Dates
+dim_time = c[time=DateTime("2015-01-01") .. DateTime("2015-01-01T21:00:00")] # subset 7 t steps
+````
+
+````@example plots
+dim_time = dim_time[:,:,:]; # read into memory first!
+nothing # hide
+````
+
+````@example plots
+plt = data(dim_time) * mapping(:lon, :lat; color = :value, layout = :time => nonnumeric)
+draw(plt * visual(Scatter, marker=:rect))
+````
+
+again, let's add some additional attributes
+
+````@example plots
+plt = data(dim_time) * mapping(:lon, :lat; color = :value, layout = :time => nonnumeric)
+draw(plt * visual(Scatter, marker=:rect), scales(Color = (; colormap = :magma));
+    axis = (; limits=(0, 360, -90, 90)),
+    figure=(; size=(900,600)))
+````
