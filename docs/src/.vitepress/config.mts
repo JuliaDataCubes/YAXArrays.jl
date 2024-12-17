@@ -36,7 +36,6 @@ const navTemp = {
     {
       text: 'Tutorials',
       items: [
-        { text: 'Overview', link: '/tutorials/tutorial' },
         { text: 'Plotting maps', link: '/tutorials/plottingmaps' },
         { text: 'Mean Seasonal Cycle', link: '/tutorials/mean_seasonal_cycle' },
         {
