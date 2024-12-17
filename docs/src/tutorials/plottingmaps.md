@@ -50,7 +50,7 @@ fig
 Some transformations
 
 ````@example plots
-δlon = (lon_d[2]-_lon_d[1])/2
+δlon = (lon_d[2] - lon_d[1])/2
 nlon = lon_d .- 180 .+ δlon
 ndata = circshift(data_d, (192,1))
 nothing # hide
@@ -170,6 +170,13 @@ draw(plt * visual(Scatter, marker=:rect), scales(Color = (; colormap = :magma));
 most [Makie plot functions](https://docs.makie.org/stable/reference/plots/overview) should work. See `lines` for example
 
 ````@example AoG
-plt = data(dim_data[lon=1..10]) * mapping(:lat, :value; layout = :lon => nonnumeric)
-draw(plt * visual(Lines); figure=(; size=(600,400)))
+plt = data(dim_data[lon=50..100]) * mapping(:lat, :value => "tas"; color=:value => "tas")
+draw(plt * visual(Lines); figure=(; size=(650,400)))
+````
+
+or faceting them
+
+````@example AoG
+plt = data(dim_data[lon=50..59]) * mapping(:lat, :value => "tas"; color=:value => "tas", layout = :lon => nonnumeric)
+draw(plt * visual(Lines); figure=(; size=(650,400)))
 ````
