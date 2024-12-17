@@ -29,9 +29,9 @@ nothing # hide
 use lookup to get axis values
 
 ````@example plots
-lon = lookup(ct1_slice, :lon)
-lat = lookup(ct1_slice, :lat)
-data = ct1_slice.data[:,:];
+lon_d = lookup(ct1_slice, :lon)
+lat_d = lookup(ct1_slice, :lat)
+data_d = ct1_slice.data[:,:];
 nothing # hide
 ````
 
@@ -50,9 +50,9 @@ fig
 Some transformations
 
 ````@example plots
-δlon = (lon[2]-lon[1])/2
-nlon = lon .- 180 .+ δlon
-ndata = circshift(data, (192,1))
+δlon = (lon_d[2] - lon_d[1])/2
+nlon = lon_d .- 180 .+ δlon
+ndata = circshift(data_d, (192,1))
 nothing # hide
 ````
 
@@ -61,7 +61,7 @@ and add Coastlines with `GeoMakie.coastlines()`,
 ````@example plots
 fig = Figure(;size=(1200,600))
 ax = GeoAxis(fig[1,1])
-surface!(ax, nlon, lat, ndata; colormap = :seaborn_icefire_gradient, shading=false)
+surface!(ax, nlon, lat_d, ndata; colormap = :seaborn_icefire_gradient, shading=false)
 cl=lines!(ax, GeoMakie.coastlines(), color = :white, linewidth=0.85)
 translate!(cl, 0, 0, 1000)
 fig
@@ -71,7 +71,7 @@ fig
 ````@example plots
 fig = Figure(; size=(1200,600))
 ax = GeoAxis(fig[1,1]; dest = "+proj=moll")
-surface!(ax, nlon, lat, ndata; colormap = :seaborn_icefire_gradient, shading=false)
+surface!(ax, nlon, lat_d, ndata; colormap = :seaborn_icefire_gradient, shading=false)
 cl=lines!(ax, GeoMakie.coastlines(), color = :white, linewidth=0.85)
 translate!(cl, 0, 0, 1000)
 fig
@@ -79,12 +79,10 @@ fig
 
 ## 3D sphere plot
 
-````julia
-using Bonito, WGLMakie
-Page(exportable=true, offline=true)
-
-WGLMakie.activate!()
-Makie.inline!(true) # Make sure to inline plots into Documenter output!
+````@example plots
+using GLMakie
+using GLMakie.GeometryBasics
+GLMakie.activate!()
 
 ds = replace(ndata, missing =>NaN)
 sphere = uv_normal_mesh(Tesselation(Sphere(Point3f(0), 1), 128))
@@ -98,4 +96,127 @@ rotate!(ax.scene, 2.5)
 fig
 ````
 
+## AlgebraOfGraphics.jl
 
+::: info
+
+From [DimensionalData docs](https://rafaqz.github.io/DimensionalData.jl/stable/plots#algebraofgraphics-jl) :
+
+**AlgebraOfGraphics.jl** is a high-level plotting library built on top of `Makie.jl` that provides a declarative algebra for creating complex visualizations, similar to **ggplot2**'s "grammar of graphics" in R. It allows you to construct plots using algebraic operations like `*` and `+`, making it easy to create sophisticated graphics with minimal code.
+
+:::
+
+
+````@example AoG
+using YAXArrays, Zarr, Dates
+using GLMakie
+using AlgebraOfGraphics
+using GLMakie.GeometryBasics
+GLMakie.activate!()
+````
+
+let's continue using the cmip6 dataset
+
+````@example AoG
+store ="gs://cmip6/CMIP6/ScenarioMIP/DKRZ/MPI-ESM1-2-HR/ssp585/r1i1p1f1/3hr/tas/gn/v20190710/"
+g = open_dataset(zopen(store, consolidated=true))
+c = g["tas"];
+nothing # hide
+````
+
+and let's focus on the first time step:
+
+````@example AoG
+dim_data = readcubedata(c[time=1]); # read into memory first!
+nothing # hide
+````
+
+and now plot
+
+````@example AoG
+data(dim_data) * mapping(:lon, :lat; color=:value) * visual(Scatter) |> draw
+````
+
+::: warning
+
+Note that we are using a `Scatter` type per point and not the `Heatmap` one. There are workarounds for this, albeit cumbersome, so for now, let's keep this simpler syntax in mind along with the current approach being used.
+
+:::
+
+set other attributes
+
+````@example AoG
+plt = data(dim_data) * mapping(:lon, :lat; color=:value)
+draw(plt * visual(Scatter, marker=:rect), scales(Color = (; colormap = :plasma));
+    axis = (width = 600, height = 400, limits=(0, 360, -90, 90)))
+````
+
+### Faceting
+
+For this let's consider more time steps from our dataset:
+
+````@example AoG
+using Dates
+dim_time = c[time=DateTime("2015-01-01") .. DateTime("2015-01-01T21:00:00")] # subset 7 t steps
+````
+
+````@example AoG
+dim_time = readcubedata(dim_time); # read into memory first!
+nothing # hide
+````
+
+````@example AoG
+plt = data(dim_time) * mapping(:lon, :lat; color = :value, layout = :time => nonnumeric)
+draw(plt * visual(Scatter, marker=:rect))
+````
+
+again, let's add some additional attributes
+
+````@example AoG
+plt = data(dim_time) * mapping(:lon, :lat; color = :value, layout = :time => nonnumeric)
+draw(plt * visual(Scatter, marker=:rect), scales(Color = (; colormap = :magma));
+    axis = (; limits=(0, 360, -90, 90)),
+    figure=(; size=(900,600)))
+````
+
+most [Makie plot functions](https://docs.makie.org/stable/reference/plots/overview) should work. See `lines` for example
+
+````@example AoG
+plt = data(dim_data[lon=50..100]) * mapping(:lat, :value => "tas"; color=:value => "tas")
+draw(plt * visual(Lines); figure=(; size=(650,400)))
+````
+
+or faceting them
+
+````@example AoG
+plt = data(dim_data[lon=50..59]) * mapping(:lat, :value => "tas"; color=:value => "tas",
+    layout = :lon => nonnumeric)
+draw(plt * visual(Lines); figure=(; size=(650,400)))
+````
+### Time series
+
+For this, let's load a little bit more of time steps
+
+````@example AoG
+dim_series = c[time=DateTime("2015-01-01") .. DateTime("2015-01-04"), lon = 150 .. 157, lat = 0..1] |> readcubedata
+````
+
+and plot
+
+````@example AoG
+plt = data(dim_series) * mapping(:time, :value => "tas"; color=:lon => nonnumeric)
+draw(plt * visual(ScatterLines), scales(Color = (; palette = :tableau_colorblind));
+    figure=(; size=(800,400)))
+````
+
+### Analysis
+
+Basic statistical [analysis](https://aog.makie.org/stable/generated/analyses/) can also be done, for example:
+
+````@example AoG
+specs = data(dim_data[lat=50..55]) * mapping(:lon, :value => "tas"; color=:lat => nonnumeric)
+specs *= (smooth() + visual(Scatter))
+draw(specs;  figure=(; size=(700,400)))
+````
+
+For more, visit [AlgebraOfGraphics.jl](https://aog.makie.org/stable/).
