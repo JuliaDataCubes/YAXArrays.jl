@@ -41,6 +41,7 @@ const coreMembers = [
         title: 'Scientist. Data Visualization',
         links: [
             { icon: 'github', link: 'https://github.com/lazarusA' },
+            { icon: 'bluesky', link: 'https://bsky.app/profile/lazarusa.bsky.social' },
             { icon: 'x', link: 'https://twitter.com/LazarusAlon' },
             { icon: 'linkedin', link: 'https://www.linkedin.com/in/lazaro-alonso/' },
             { icon: 'mastodon', link: 'https://julialang.social/@LazaroAlonso' }
