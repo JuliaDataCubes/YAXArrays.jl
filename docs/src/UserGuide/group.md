@@ -65,8 +65,11 @@ end
 ````
 :::
 
-> [!IMPORTANT]
-> In what follows, note how we are referencing the _time_ dimension via _YAX.time_. This approach is used to avoid name clashes with _time_ (_Time_) from **Base** (**Dates**). For convenience, we have defined the **Dimensions** _time_ and _Time_ in **YAXArrays.jl**, which are only accessible when explicitly called.
+::: info
+
+In what follows, note how we are referencing the time dimension via `YAX.time`. This approach is used to avoid name clashes with `time` (`Time`) from **Base** (**Dates**). For convenience, we have defined the **Dimensions** `time` and `Time` in **YAXArrays.jl**, which are only accessible when explicitly called.
+
+:::
 
 Now, we continue with the `groupby` operations as usual
 
