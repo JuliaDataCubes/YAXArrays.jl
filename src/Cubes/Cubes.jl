@@ -241,7 +241,7 @@ end
 interpret_cubechunks(cs::NTuple{N,Int},cube) where N = DiskArrays.GridChunks(getdata(cube),cs)
 interpret_cubechunks(cs::DiskArrays.GridChunks,_) = cs
 interpret_dimchunk(cs::Integer,s) = DiskArrays.RegularChunks(cs,0,s)
-interpret_dimchunk(cs::DiskArrays.ChunkType, _) = cs
+interpret_dimchunk(cs::DiskArrays.ChunkVector, _) = cs
 
 function interpret_cubechunks(cs,cube)
     oldchunks = DiskArrays.eachchunk(cube).chunks

@@ -27,7 +27,7 @@ import YAXArrayBase
 import ProgressMeter: Progress, next!, progress_pmap, progress_map
 using YAXArrayBase
 using DiskArrays: grid_offset, approx_chunksize, max_chunksize, RegularChunks, 
-  IrregularChunks, GridChunks, eachchunk, ChunkType
+  IrregularChunks, GridChunks, eachchunk, ChunkVector
 using OffsetArrays: OffsetArray
 using Dates
 using DimensionalData: DimensionalData as DD
@@ -515,12 +515,12 @@ function makeinplace(f)
 end
 
 function to_chunksize(c::RegularChunks, cs, _ = true) 
-    offset = if c.cs==cs 
+    offset = if c.chunksize==cs 
         c.offset
     else
         0
     end
-    RegularChunks(cs, offset, c.s)
+    RegularChunks(cs, offset, c.arraysize)
 end
 function to_chunksize(c::IrregularChunks, cs, allow_irregular=true)
     fac = cs ÷ approx_chunksize(c)
@@ -988,13 +988,13 @@ function getCacheSizes(dc::DATConfig, loopchunksizes)
     #Now add cache miss information for each input cube to every loop axis
     cmisses = NamedTuple{
         (:iloopax, :cs, :iscompressed, :innerleap, :preventpar),
-        Tuple{Int64,ChunkType,Bool,Int64,Bool},
+        Tuple{Int64,ChunkVector,Bool,Int64,Bool},
     }[]
     userchunks = Dict{Int,Int}()
     for (k, v) in loopchunksizes
         ii = findAxis(k, dc.LoopAxes)
         if ii !== nothing
-            v isa ChunkType || error("Loop chunks must be provided as ChunkType object")
+            v isa ChunkVector || error("Loop chunks must be provided as ChunkVector object")
             userchunks[ii] = v
         end
     end
