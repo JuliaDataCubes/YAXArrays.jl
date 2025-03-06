@@ -21,13 +21,14 @@ function windows(
     A::DimArrayOrStack, p1::Pair{<:Any,<:Base.Callable}, ps::Pair{<:Any,<:Base.Callable}...;
 )
     dims = map((p1, ps...)) do (d, v)
+        @show d
         rebuild(basedims(d), v)
     end
     return windows(A, dims)
 end
 function windows(A::DimArrayOrStack, dimfuncs::DimTuple)
     length(otherdims(dimfuncs, dims(A))) > 0 &&
-        Dimensions._extradimserror(otherdims(dimfuncs, dims(A)))
+        DD.Dimensions._extradimserror(otherdims(dimfuncs, dims(A)))
 
     # Get groups for each dimension
     dim_groups_indices = map(dimfuncs) do d
@@ -111,26 +112,28 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; output 
     if output isa XOutput
         output = (output,)
     end
-    daefunction = DAE.create_userfunction(f,map(o->o.outtype,output), is_mutating=true)
+    outtypes = []
 
     outspecs = map(output) do o
         outtype = if o.outtype isa Integer
-            eltype(input_arrays[o.outtype].a.data)
+            eltype(ars[o.outtype].data.data)
         else
             o.outtype
         end
+        push!(outtypes, outtype)
         extrawindows = map(o.outaxes) do ax
             [Base.OneTo(length(ax))]
         end
         extrasize = map(length,o.outaxes)
         sout = (extrasize...,map(length,alldims)...)
-        dimsmap = (ntuple(identity,length(extrasize))...,(ntuple(identity,length(alldims)).+1)...)
+        dimsmap = (ntuple(i -> i + length(alldims), length(extrasize))..., ntuple(identity, length(alldims))...)
         DAE.create_outwindows(sout;dimsmap=dimsmap,windows = (extrawindows...,map(Base.OneTo,length.(alldims))...))
     end
+    daefunction = DAE.create_userfunction(f, (outtypes...,), is_mutating=true)
     #Create DiskArrayEngine Input arrays
     input_arrays = map(ars) do ar
         a = to_windowarray(ar)
-        dimsmap = map(d->findfirst(==(d),alldims),DD.dims(a)).+1
+        dimsmap = map(d -> findfirst(==(d), alldims), DD.dims(a))
         DAE.InputArray(a.data;dimsmap, windows=a.indices)
     end
     op = DAE.GMDWop(input_arrays,outspecs,daefunction)
