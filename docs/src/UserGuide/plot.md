@@ -58,5 +58,5 @@ plot(ds.tos[time=1])
 Plot the sea surface temperature over time at a given location (e.g. the null island):
 
 ```@example plot
-plot(ds.tos[lon = Near(0), lat = Near(0)])
+lines(ds.tos[lon = Near(0), lat = Near(0)])
 ```
