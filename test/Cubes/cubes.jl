@@ -115,7 +115,7 @@ using DimensionalData
         @test DimensionalData.name(a) == DimensionalData.NoName()
         @test DimensionalData.label(a) == ""
         @test DimensionalData.name(a_cf) == Symbol("global mean air temperature")
-        @test DimensionalData.label(a_cf) == Symbol("global mean air temperature [K]")
+        @test DimensionalData.label(a_cf) == "global mean air temperature [K]"
     end
     #=
         @testset "Subsets" begin
