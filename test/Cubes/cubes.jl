@@ -104,6 +104,19 @@ using DimensionalData
         @test endswith(Cubes.formatbytes(1205), "KB")
         @test endswith(Cubes.formatbytes(1200000), "MB")
     end
+
+    @testset "YAXArrays with CF conventions" begin
+        attrs = Dict(
+            "standard_name" => "air_temperature",
+            "long_name" => "global mean air temperature",
+            "units" => "K",
+        )
+        a_cf = YAXArray(a.axes, a.data, attrs)
+        @test DimensionalData.name(a) == DimensionalData.NoName()
+        @test DimensionalData.label(a) == ""
+        @test DimensionalData.name(a_cf) == "global mean air temperature"
+        @test DimensionalData.label(a_cf) == "global mean air temperature [K]"
+    end
 #=
     @testset "Subsets" begin
         s = YAXArrays.Cubes.subsetcube(a, X = 1.5..3.5)

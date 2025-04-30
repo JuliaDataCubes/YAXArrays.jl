@@ -15,7 +15,7 @@ using DiskArrayTools: CFDiskArray
 using DocStringExtensions
 using Tables: istable, schema, columns
 using DimensionalData: DimensionalData as DD, AbstractDimArray, NoName
-import DimensionalData: name
+import DimensionalData: name, label
 
 export concatenatecubes, caxes, subsetcube, readcubedata, renameaxis!, YAXArray, setchunks, cache
 
@@ -91,7 +91,7 @@ It can wrap normal arrays or, more typically DiskArrays.
 
 $(FIELDS)
 """
-struct YAXArray{T,N,A<:AbstractArray{T,N}, D, Me} <: AbstractDimArray{T,N,D,A} 
+struct YAXArray{T,N,A<:AbstractArray{T,N},D,Me} <: AbstractDimArray{T,N,D,A}
     "`Tuple` of Dimensions containing the Axes of the Cube"
     axes::D
     "length(axes)-dimensional array which holds the data, this can be a lazy DiskArray"
@@ -120,7 +120,7 @@ struct YAXArray{T,N,A<:AbstractArray{T,N}, D, Me} <: AbstractDimArray{T,N,D,A}
             throw(ArgumentError("Can not construct YAXArray, supplied chunk dimension is $(ndims(chunks)) while the number of dims is $(length(axes))"))
         else
             axes = DD.format(axes, data)
-            return new{eltype(data),ndims(data),typeof(data),typeof(axes), typeof(properties)}(
+            return new{eltype(data),ndims(data),typeof(data),typeof(axes),typeof(properties)}(
                 axes,
                 data,
                 properties,
@@ -131,16 +131,34 @@ struct YAXArray{T,N,A<:AbstractArray{T,N}, D, Me} <: AbstractDimArray{T,N,D,A}
     end
 end
 
-name(::YAXArray) = NoName()
 
-YAXArray(axes, data, properties = Dict{String,Any}(); cleaner = CleanMe[], chunks = eachchunk(data)) =
+"Name of an YAXArray using CF conventions. Searches first for metadata `long_name`, followed by `standard_name` and finally `name`"
+function name(a::YAXArray)
+    # as implemented in python xarray
+    isempty(a.properties) && return NoName()
+    haskey(a.properties, "long_name") && return a.properties["long_name"]
+    haskey(a.properties, "standard_name") && return a.properties["standard_name"]
+    haskey(a.properties, "name") && return a.properties["name"]
+    return NoName()
+end
+
+"Label of an YAXArrray using CF conventions. Includes the name and the unit, if present. Searches first for metadata `units` followed by `unit``"
+function label(a::YAXArray)
+    # as implemented in python xarray
+    isempty(a.properties) && return ""
+    haskey(a.properties, "units") && return "$(name(a)) [$(a.properties["units"])]"
+    haskey(a.properties, "unit") && return "$(name(a)) [$(a.properties["unit"])]"
+    return string(name(a))
+end
+
+YAXArray(axes, data, properties=Dict{String,Any}(); cleaner=CleanMe[], chunks=eachchunk(data)) =
     YAXArray(axes, data, properties, chunks, cleaner)
-YAXArray(axes,data,properties,cleaner) = YAXArray(axes,data,properties,eachchunk(data),cleaner)
+YAXArray(axes, data, properties, cleaner) = YAXArray(axes, data, properties, eachchunk(data), cleaner)
 function YAXArray(x::AbstractArray)
     ax = caxes(x)
     props = getattributes(x)
     chunks = eachchunk(x)
-    YAXArray(ax, x, props,chunks=chunks)
+    YAXArray(ax, x, props, chunks=chunks)
 end
 
 
@@ -172,20 +190,20 @@ end
 Base.Generator(f, A::YAXArray) = Base.Generator(f, parent(A))
 Base.ndims(a::YAXArray{<:Any,N}) where {N} = N
 Base.eltype(a::YAXArray{T}) where {T} = T
-function Base.permutedims(c::YAXArray, p) 
+function Base.permutedims(c::YAXArray, p)
     newdims = DD.sortdims(DD.dims(c), Tuple(p))
     dimnums = map(d -> DD.dimnum(c, d), p)
     newdata = permutedims(getdata(c), dimnums)
     newchunks = DiskArrays.GridChunks(eachchunk(c).chunks[collect(dimnums)])
     YAXArray(newdims, newdata, c.properties, newchunks, c.cleaner)
 end
-DiskArrays.cache(a::YAXArray;maxsize=1000) = DD.rebuild(a,cache(a.data;maxsize))
+DiskArrays.cache(a::YAXArray; maxsize=1000) = DD.rebuild(a, cache(a.data; maxsize))
 
 # DimensionalData overloads
 
-DD.dims(x::YAXArray) = getfield(x,:axes)
+DD.dims(x::YAXArray) = getfield(x, :axes)
 DD.refdims(::YAXArray) = ()
-DD.metadata(x::YAXArray) = getfield(x,:properties)
+DD.metadata(x::YAXArray) = getfield(x, :properties)
 
 function DD.rebuild(A::YAXArray, data::AbstractArray, dims::Tuple, refdims::Tuple, name, metadata)
     #chunks = map(dims, eachchunk(data).chunks) do d, chunk
@@ -205,14 +223,14 @@ function DD.rebuild(A::YAXArray; data=parent(A), dims=DD.dims(A), metadata=DD.me
 end
 
 function caxes(x)
-     #@show x
-     #@show typeof(x)
-     dims = map(enumerate(dimnames(x))) do a
-         index, symbol = a
-         values = YAXArrayBase.dimvals(x, index)
-         DD.Dim{symbol}(values)
-     end
-     (dims... ,)
+    #@show x
+    #@show typeof(x)
+    dims = map(enumerate(dimnames(x))) do a
+        index, symbol = a
+        values = YAXArrayBase.dimvals(x, index)
+        DD.Dim{symbol}(values)
+    end
+    (dims...,)
 end
 
 caxes(x::DD.AbstractDimArray) = collect(DD.dims(x))
@@ -238,18 +256,18 @@ function readcubedata(x)
     YAXArray(caxes(x), getindex_all(x), getattributes(x))
 end
 
-interpret_cubechunks(cs::NTuple{N,Int},cube) where N = DiskArrays.GridChunks(getdata(cube),cs)
-interpret_cubechunks(cs::DiskArrays.GridChunks,_) = cs
-interpret_dimchunk(cs::Integer,s) = DiskArrays.RegularChunks(cs,0,s)
+interpret_cubechunks(cs::NTuple{N,Int}, cube) where {N} = DiskArrays.GridChunks(getdata(cube), cs)
+interpret_cubechunks(cs::DiskArrays.GridChunks, _) = cs
+interpret_dimchunk(cs::Integer, s) = DiskArrays.RegularChunks(cs, 0, s)
 interpret_dimchunk(cs::DiskArrays.ChunkVector, _) = cs
 
-function interpret_cubechunks(cs,cube)
+function interpret_cubechunks(cs, cube)
     oldchunks = DiskArrays.eachchunk(cube).chunks
     for k in keys(cs)
-        i = findAxis(k,cube)
+        i = findAxis(k, cube)
         if i !== nothing
-            dimchunk = interpret_dimchunk(cs[k],size(cube.data,i))
-            oldchunks = Base.setindex(oldchunks,dimchunk,i)
+            dimchunk = interpret_dimchunk(cs[k], size(cube.data, i))
+            oldchunks = Base.setindex(oldchunks, dimchunk, i)
         end
     end
     GridChunks(oldchunks)
@@ -267,7 +285,7 @@ of this chunking, use `savecube` on the resulting array. The `chunks` argument c
 - an AbstractDict or NamedTuple mapping one or more axis names to chunk sizes
 
 """
-setchunks(c::YAXArray,chunks) = YAXArray(c.axes,c.data,c.properties,interpret_cubechunks(chunks,c),c.cleaner)
+setchunks(c::YAXArray, chunks) = YAXArray(c.axes, c.data, c.properties, interpret_cubechunks(chunks, c), c.cleaner)
 cubechunks(c) = approx_chunksize(eachchunk(c))
 DiskArrays.eachchunk(c::YAXArray) = c.chunks
 getindex_all(a) = getindex(a, ntuple(_ -> Colon(), ndims(a))...).data
@@ -283,45 +301,45 @@ end
 =#
 
 
-function batchextract(x,i)
+function batchextract(x, i)
     # This function should be documented and moved to DimensionalData
     sch = schema(i)
     axinds = map(sch.names) do n
-        findAxis(n,x)
+        findAxis(n, x)
     end
     tcols = columns(i)
     #Try to find a column denoting new axis name and values
     newaxcol = nothing
-    
-    if any(isnothing,axinds)
-        allnothings = findall(isnothing,axinds)
+
+    if any(isnothing, axinds)
+        allnothings = findall(isnothing, axinds)
         if length(allnothings) == 1
             newaxcol = allnothings[1]
         end
-        tcols = (;[p[1:2] for p in zip(keys(tcols), values(tcols), axinds) if !isnothing(last(p))]...)
-        axinds = filter(!isnothing,axinds)
-    end
-    
-    allax = 1:ndims(x)
-    axrem = setdiff(allax,axinds)
-    ai1, ai2 = extrema(axinds)
-    
-    if !all(diff(sort(collect(axinds))).==1)
-        #Axes to be extracted from are not consecutive in cube -> permute
-        p = [1:(ai1-1);collect(axinds);filter(!in(axinds),ai1:ai2);(ai2+1:ndims(x))]
-        x_perm = permutedims(x,p)
-        return batchextract(x_perm,i)
+        tcols = (; [p[1:2] for p in zip(keys(tcols), values(tcols), axinds) if !isnothing(last(p))]...)
+        axinds = filter(!isnothing, axinds)
     end
 
-    cartinds = map(axinds,tcols) do iax,col
+    allax = 1:ndims(x)
+    axrem = setdiff(allax, axinds)
+    ai1, ai2 = extrema(axinds)
+
+    if !all(diff(sort(collect(axinds))) .== 1)
+        #Axes to be extracted from are not consecutive in cube -> permute
+        p = [1:(ai1-1); collect(axinds); filter(!in(axinds), ai1:ai2); (ai2+1:ndims(x))]
+        x_perm = permutedims(x, p)
+        return batchextract(x_perm, i)
+    end
+
+    cartinds = map(axinds, tcols) do iax, col
         axcur = caxes(x)[iax]
         map(col) do val
-            axVal2Index(axcur,val)
+            axVal2Index(axcur, val)
         end
     end
-    
-    before = ntuple(_->Colon(),ai1-1)
-    after = ntuple(_->Colon(),ndims(x)-ai2)
+
+    before = ntuple(_ -> Colon(), ai1 - 1)
+    after = ntuple(_ -> Colon(), ndims(x) - ai2)
     sp = issorted(axinds) ? nothing : sortperm(collect(axinds))
     function makeindex(sp, inds...)
         if sp === nothing
@@ -330,37 +348,37 @@ function batchextract(x,i)
             CartesianIndex(inds[sp]...)
         end
     end
-    indlist = makeindex.(Ref(sp),cartinds...)
-    d = getdata(x)[before...,indlist,after...]
+    indlist = makeindex.(Ref(sp), cartinds...)
+    d = getdata(x)[before..., indlist, after...]
     cax = caxes(x)
     newax = if newaxcol == nothing
-        outaxis_from_data(cax,axinds,indlist)
+        outaxis_from_data(cax, axinds, indlist)
     else
-        outaxis_from_column(i,newaxcol)
+        outaxis_from_column(i, newaxcol)
     end
     outax = Tuple([axcopy(a) for a in cax][axrem]...)
-    insert!(outax,minimum(axinds),newax)
-    YAXArray(outax,d,x.properties)
+    insert!(outax, minimum(axinds), newax)
+    YAXArray(outax, d, x.properties)
 end
 
-function outaxis_from_column(tab,icol)
+function outaxis_from_column(tab, icol)
     axdata = columns(tab)[icol]
     axname = schema(tab).names[icol]
     if eltype(axdata) <: AbstractString ||
-        (!issorted(axdata) && !issorted(axdata, rev = true))
+       (!issorted(axdata) && !issorted(axdata, rev=true))
         DD.rebuild(DD.name2dim(Symbol(axname)), axdata)
     else
         DD.rebuild(DD.name2dim(Symbol(axname)), axdata)
     end
 end
 
-function outaxis_from_data(cax,axinds,indlist)
-    mergeaxes = getindex.(Ref(cax),axinds)
+function outaxis_from_data(cax, axinds, indlist)
+    mergeaxes = getindex.(Ref(cax), axinds)
     mergenames = axname.(mergeaxes)
-    newname = join(mergenames,'_')
+    newname = join(mergenames, '_')
     minai = minimum(axinds)
     mergevals = map(indlist) do i
-        broadcast(mergeaxes,axinds) do ax,ai
+        broadcast(mergeaxes, axinds) do ax, ai
             ax.values[i[ai-minai+1]]
         end
     end
@@ -471,14 +489,14 @@ function _subsetcube(z, subs; kwargs...)
 end
 
 
-function Base.getindex(a::YAXArray, args::DD.Dimension...; kwargs...) 
+function Base.getindex(a::YAXArray, args::DD.Dimension...; kwargs...)
     kwargsdict = Dict{Any,Any}(kwargs...)
     for ext in YAXDefaults.subsetextensions
         ext(kwargsdict)
     end
     d2 = Dict()
-    for (k,v) in kwargsdict
-        d = getAxis(k,a)
+    for (k, v) in kwargsdict
+        d = getAxis(k, a)
         if d !== nothing
             d2[DD.name(d)] = v
         else
@@ -491,7 +509,7 @@ end
 Base.read(d::YAXArray) = getindex_all(d)
 
 function formatbytes(x)
-    exts = ["bytes", "KB", "MB", "GB", "TB","PB"]
+    exts = ["bytes", "KB", "MB", "GB", "TB", "PB"]
     i = 1
     while x >= 1024
         i = i + 1
@@ -515,7 +533,7 @@ function DD.show_after(io::IO, mime, c::YAXArray)
 
     # ? sizeof : Check if the element type is a bitstype or a union of bitstypes
     if (isconcretetype(eltype(c)) && isbitstype(eltype(c))) ||
-        (eltype(c) isa Union && all(isbitstype, Base.uniontypes(eltype(c))))
+       (eltype(c) isa Union && all(isbitstype, Base.uniontypes(eltype(c))))
 
         println(io, "\n  data size: ", formatbytes(cubesize(c)))
     else # fallback
