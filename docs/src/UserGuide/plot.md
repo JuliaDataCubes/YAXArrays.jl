@@ -55,8 +55,18 @@ Plot the first time step of the sea surface temperature with CF metadata:
 plot(ds.tos[time=1])
 ```
 
-Plot the sea surface temperature over time at a given location (e.g. the null island):
+Time in [Climate and Forecasting (CF) conventions](https://cfconventions.org/Data/cf-conventions/cf-conventions-1.12/cf-conventions.html#time-coordinate-units) requires conversion before plotting, e.g., to plot the sea surface temperature over time at a given location (e.g. the null island):
 
 ```@example plot
-lines(ds.tos[lon = Near(0), lat = Near(0)])
+a = ds.tos[lon = Near(0), lat = Near(0)]
+times = Ti(map(x -> DateTime(string(x)), a.time.val))
+a = YAXArray((times,), collect(a.data), a.properties)
+
+plot(a)
+```
+
+Or as as an explicit line plot:
+
+```@example plot
+lines(a)
 ```
