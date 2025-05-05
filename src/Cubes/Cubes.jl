@@ -136,9 +136,9 @@ end
 function name(a::YAXArray)
     # as implemented in python xarray
     isempty(a.properties) && return NoName()
-    haskey(a.properties, "long_name") && return a.properties["long_name"]
-    haskey(a.properties, "standard_name") && return a.properties["standard_name"]
-    haskey(a.properties, "name") && return a.properties["name"]
+    haskey(a.properties, "long_name") && return a.properties["long_name"] |> Symbol
+    haskey(a.properties, "standard_name") && return a.properties["standard_name"] |> Symbol
+    haskey(a.properties, "name") && return a.properties["name"] |> Symbol
     return NoName()
 end
 
