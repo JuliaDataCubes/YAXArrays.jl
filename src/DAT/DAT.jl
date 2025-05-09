@@ -16,8 +16,8 @@ using Distributed:
     AbstractWorkerPool, 
     default_worker_pool, 
     CachingPool
-import ..Cubes: cubechunks, iscompressed, chunkoffset, YAXArray, caxes, YAXSlice
-import ..Cubes: cubechunks, iscompressed, chunkoffset, YAXArray, caxes, YAXSlice
+import ..Cubes: cubechunks, iscompressed, chunkoffset, YAXArray, caxes
+import ..Cubes: cubechunks, iscompressed, chunkoffset, YAXArray, caxes
 import ..YAXArrays: findAxis, getOutAxis, getAxis
 #import ..Cubes.Axes:
 #    AxisDescriptor, axname, ByInference, axsym, getOutAxis, getAxis, findAxis, match_axis
@@ -52,6 +52,7 @@ macro debug_print(e)
     debugDAT[1] && return (:(println($e)))
     :()
 end
+
 
 include("registration.jl")
 
@@ -350,20 +351,6 @@ function mapCube(
     )
 end
 
-import Base.mapslices
-function mapslices(f, d::Union{YAXArray,Dataset}, addargs...; dims, kwargs...)
-    isa(dims, String) && (dims = (dims,))
-    mapCube(
-        f,
-        d,
-        addargs...;
-        indims = InDims(dims...),
-        outdims = OutDims(ByInference()),
-        inplace = false,
-        kwargs...,
-    )
-end
-
 
 function DAE.InputArray(ic::InputCube)
     DAE.InputArray(ic.cube.data,windows=(ic.windows...,),dimsmap=(ic.dimsmap...,))
@@ -417,21 +404,6 @@ function mapCube(
     end
 
     #Translate slices
-    if any(i -> isa(i, YAXSlice), cdata)
-        inew = map(cdata) do d
-            isa(d, YAXSlice) ? InDims(axname.(d.sliceaxes[2])...) : InDims()
-        end
-        cnew = map(i -> isa(i, YAXSlice) ? i.c : i, cdata)
-        return mapCube(
-            fu,
-            cnew,
-            addargs...;
-            indims = inew,
-            outdims = outdims,
-            inplace = inplace,
-            kwargs...,
-        )
-    end
     @debug_print "Generating DATConfig"
     dc = DATConfig(
         cdata,
@@ -445,6 +417,7 @@ function mapCube(
     @debug_print "Analysing Axes"
     analyzeAxes(dc)
     inars = DAE.InputArray.((dc.incubes...,))
+    return dc
     outars = DAE.create_outwindows.((dc.outcubes...,))
     f = DAE.create_userfunction(dc.fu, map(i->i.outtype,dc.outcubes), is_mutating=dc.inplace)
     op = DAE.GMDWop(inars, outars, f)
@@ -790,12 +763,11 @@ function analyzeAxes(dc::DATConfig{NIN,NOUT}) where {NIN,NOUT}
         for (iax,a) in enumerate(caxes(cube.cube))
             s = DD.name(a)
             is = findfirst(isequal(s), loopaxsyms) 
-            is_singular = length(cube.windows[iax])==1
-            if is_singular || is === nothing
+            if is === nothing
                 push!(dc.LoopAxes, a)
                 push!(dc.loopwindows,length(cube.windows[iax]))
                 #If the window is longer than 1 it needs to be broadcast over
-                is_singular || (loopaxsyms[length(dc.LoopAxes)]=s)
+                loopaxsyms[length(dc.LoopAxes)]=s
                 is = length(dc.LoopAxes)
             else
                 if a == dc.LoopAxes[is]

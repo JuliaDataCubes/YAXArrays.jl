@@ -348,33 +348,37 @@ open_mfdataset(g::AbstractString; kwargs...) = open_mfdataset(_glob(g); kwargs..
 open_mfdataset(g::Vector{<:AbstractString}; kwargs...) =
 merge_datasets(map(i -> open_dataset(i; kwargs...), g))
 
-function merge_new_axis(alldatasets, firstcube,var,mergedim)
+function merge_new_axis(alldatasets, firstcube,var,mergedim,combinechunks)
     newdim = if !(typeof(DD.lookup(mergedim)) <: DD.NoLookup)
         DD.rebuild(mergedim, DD.val(mergedim))
     else
         DD.rebuild(mergedim, 1:length(alldatasets))
     end
-    alldiskarrays = map(ds->ds.cubes[var].data,alldatasets).data
-    newda = diskstack(alldiskarrays)
+    alldiskarrays = map(alldatasets) do ds
+        ismissing(ds) ? missing : ds.cubes[var].data
+    end
     newdims = (DD.dims(firstcube)...,newdim)
+    s = ntuple(i->i==length(newdims) ? length(alldiskarrays) : 1, length(newdims))
+    newda = DiskArrays.ConcatDiskArray(reshape(alldiskarrays,s...),combinechunks)
     YAXArray(newdims,newda,deepcopy(firstcube.properties))
 end
-function merge_existing_axis(alldatasets,firstcube,var,mergedim)
+function merge_existing_axis(alldatasets,firstcube,var,mergedim,combinechunks)
     allaxvals = map(ds->DD.dims(ds.cubes[var],mergedim).val,alldatasets)
     newaxvals = reduce(vcat,allaxvals)
     newdim = DD.rebuild(mergedim,newaxvals)
     alldiskarrays = map(ds->ds.cubes[var].data,alldatasets)
     istack = DD.dimnum(firstcube,mergedim)
     newshape = ntuple(i->i!=istack ? 1 : length(alldiskarrays),ndims(firstcube))
-    newda = DiskArrays.ConcatDiskArray(reshape(alldiskarrays,newshape))
+    newda = DiskArrays.ConcatDiskArray(reshape(alldiskarrays,newshape),combinechunks)
     newdims = Base.setindex(firstcube.axes,newdim,istack)
     YAXArray(newdims,newda,deepcopy(firstcube.properties))
 end
 
 """
-    open_mfdataset(files::DD.DimVector{<:AbstractString}; kwargs...)
+    open_mfdataset(files::DD.DimVector{<:AbstractString}; combinechunks=:error, kwargs...)
 
 Opens and concatenates a list of dataset paths along the dimension specified in `files`. 
+
 This method can be used when the generic glob-based version of open_mfdataset fails
 or is too slow. 
 For example, to concatenate a list of annual NetCDF files along the `time` dimension, 
@@ -393,17 +397,19 @@ files = ["a.nc", "b.nc", "c.nc"]
 open_mfdataset(DD.DimArray(files, DD.Dim{:NewDim}(["a","b","c"])))
 ````
 """
-function open_mfdataset(vec::DD.DimVector{<:AbstractString};kwargs...)
-    alldatasets = open_dataset.(vec;kwargs...);
-    fi = first(alldatasets)
+function open_mfdataset(vec::DD.DimVector{<:Union{Missing,AbstractString}};combinechunks=:maxsize, kwargs...)
+    alldatasets = map(vec) do filename
+        ismissing(filename) ? missing : open_dataset(filename;kwargs...)
+    end
+    fi = first(skipmissing(alldatasets))
     mergedim = DD.dims(alldatasets) |> only
     vars_to_merge = collect(keys(fi.cubes))
     ars = map(vars_to_merge) do var
         cfi = fi.cubes[var]
         mergedar = if DD.dims(cfi,mergedim) !== nothing
-            merge_existing_axis(alldatasets,cfi,var,mergedim) 
+            merge_existing_axis(alldatasets,cfi,var,mergedim,combinechunks) 
         else
-            merge_new_axis(alldatasets,cfi,var,mergedim)
+            merge_new_axis(alldatasets,cfi,var,mergedim,combinechunks)
         end
         var => mergedar
     end
