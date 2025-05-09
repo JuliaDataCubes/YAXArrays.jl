@@ -518,7 +518,7 @@ end
     cube = YAXArray(a)
     mean_slice = mapslices(mean, cube; dims="Dim_1")
 
-    @test mean_slice[:, :] == ones(20, 5)
+    @test mean_slice[1, :, :] == ones(20, 5)
 end
 
 @testset "Making Cubes from heterogemous data types" begin
