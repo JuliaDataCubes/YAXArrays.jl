@@ -3,7 +3,7 @@ module Datasets
 import ..Cubes: Cubes, YAXArray, concatenatecubes, CleanMe, subsetcube, copy_diskarray, setchunks, caxes, readcubedata, cubesize, formatbytes
 using ...YAXArrays: YAXArrays, YAXDefaults, findAxis
 using DataStructures: OrderedDict, counter
-using Dates: Day, Hour, Minute, Second, Month, Year, Date, DateTime, TimeType, AbstractDateTime
+using Dates: Day, Hour, Minute, Second, Month, Year, Date, DateTime, TimeType, AbstractDateTime, Period
 using Statistics: mean
 using IntervalSets: Interval, (..)
 using CFTime: timedecode, timeencode, DateTimeNoLeap, DateTime360Day, DateTimeAllLeap
@@ -956,7 +956,11 @@ function createdataset(
     function dataattfromaxis(ax::DD.Dimension, n, _)
         prependrange(toaxistype(DD.lookup(ax)), n), Dict{String,Any}()
     end
-    middle(x::DD.IntervalSets.Interval) = x.left + (x.right-x.left)/2
+    middle(x::DD.IntervalSets.Interval) = x.left + half(x.right-x.left)
+    half(x::Period) = int_half(x)
+    half(x::Integer) = int_half(x)
+    half(x) = x/2
+    int_half(x) = x÷2
     function dataattfromaxis(ax::DD.Dimension, n, T::Type{<:DD.IntervalSets.Interval})
         newdim = DD.rebuild(ax,middle.(ax.val))
         dataattfromaxis(newdim,n,eltype(newdim))

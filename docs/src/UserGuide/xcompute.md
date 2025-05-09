@@ -419,7 +419,8 @@ end
      output[:] .= mean(pixel)
 end
 
-mapCube(mymean, a, indims=InDims("time"), outdims=OutDims())
+meantime = xmap(mymean, a⊘"time")
+result_computed = compute_to_zarr(Dataset(time_mean=meantime),tempname())
 ````
 
 In the last example, `mapCube` was used to map the `mymean` function. `mapslices` is a convenient function that can replace `mapCube`, where you can omit defining an extra function with the output argument as an input (e.g. `mymean`). It is possible to simply use `mapslice`

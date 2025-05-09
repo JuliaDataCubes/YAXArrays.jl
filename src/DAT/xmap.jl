@@ -409,7 +409,9 @@ function compute_to_zarr(ods, path; max_cache=5e8,overwrite=false)
         DAE.LocalRunner(op,lr,outars)
     end
     run(runner)
+    emptyds
 end
 
+include("broadcast.jl")
 
 end
