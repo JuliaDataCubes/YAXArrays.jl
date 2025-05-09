@@ -375,6 +375,9 @@ Computes the YAXArrays dataset `ods` and saves it to a Zarr dataset at `path`.
 - `overwrite`: Whether to overwrite the dataset at `path` if it already exists.
 """
 function compute_to_zarr(ods, path; max_cache=5e8,overwrite=false)
+    if !isa(ods,Dataset)
+        throw(ArgumentError("Direct saving of YAXArrays is not supported. Please wrap your array `a` into a Dataset by calling `Dataset(layer=a)`"))
+    end
     g = DAE.MwopGraph()
     outnodes = Dict()
     for k in keys(ods.cubes)
