@@ -86,7 +86,7 @@ Reduce the time dimension by calculating the average value of all points in time
 
 ````@example compute
 import Statistics: mean
-mapslices(mean, a, dims="Time")
+mapslices(mean, a, dims="time")
 ````
 There is no time dimension left, because there is only one value left after averaging all time steps.
 We can also calculate spatial means resulting in one value per time step:
@@ -143,7 +143,7 @@ Since `xmap` is operating in a lazy fashion, it can be directly used for follow-
 want to store the result to disk one can explicitly compute the result:
 
 ````@ansi mapCube
-gen_cube = compute_to_zarr(expanded_cube, "my_gen_cube.zarr", overwrite=true, max_cache=1e9)
+gen_cube = compute_to_zarr(Dataset(layer=r), "my_gen_cube.zarr", overwrite=true, max_cache=1e9)
 ````
 
 ::: info "time axis goes first"
@@ -199,10 +199,8 @@ end
 f1(xin) = xin + 1
 f2(xin) = xin + 2
 ````
-now, we define `InDims` and `OutDims`:
 
 ````@example outdims
-indims_one   = InDims("Time")
 # outputs dimension
 properties_one = Dict{String, Any}("name" => "plus_one")
 properties_two = Dict{String, Any}("name" => "plus_two")
@@ -213,16 +211,14 @@ output_flat = XOutput(;)
 ````
 
 ````@example outdims
-ds = mapCube(one_to_many, yax_test,
-    indims = indims_one,
-    outdims = (outdims_one, outdims_two, outdims_flat));
+ds = xmap(one_to_many, yax_test⊘:time, output = (output_one, output_two, output_flat));
 nothing # hide
 ````
 
 let's see the second output
 
 ````@example outdims
-ds[2]
+ds[2][:,1,1,1].data
 ````
 
 #### Many InDims to many OutDims
@@ -251,12 +247,17 @@ f2mix(xin_xyt, xin_xy) = xin_xyt - xin_xy
 ````@example outdims
 output_time = XOutput(yax_test.time)
 output_flat = XOutput()
-output = (output_time,output_time,output_flat)
 ````
 
 ````@example outdims
-ds = xmap(many_to_many, yax_test⊘:time, yax_2d, yax_test⊘:time,output = output);
-compute_to_zarr(Dataset(many_to_many_two=ds[2]),"test_mm.zarr",overwrite=true)
+r1, r2, r3 = xmap(many_to_many, yax_test⊘:time, yax_2d, yax_test⊘:time,
+    output = (output_time, output_time, output_flat), inplace=true);
+nothing # hide
+````
+
+````@example outdims
+dsout = Dataset(many_to_many_two=r2)
+compute_to_zarr(dsout, "test_mm.zarr", overwrite=true)
 nothing # hide
 ````
 

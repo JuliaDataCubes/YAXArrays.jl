@@ -84,7 +84,7 @@ Reduce the time dimension by calculating the average value of all points in time
 
 ````@example compute
 import Statistics: mean
-mapslices(mean, a, dims="Time")
+mapslices(mean, a, dims="time")
 ````
 There is no time dimension left, because there is only one value left after averaging all time steps.
 We can also calculate spatial means resulting in one value per time step:
