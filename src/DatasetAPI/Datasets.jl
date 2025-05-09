@@ -956,8 +956,10 @@ function createdataset(
     function dataattfromaxis(ax::DD.Dimension, n, _)
         prependrange(toaxistype(DD.lookup(ax)), n), Dict{String,Any}()
     end
+    middle(x::DD.IntervalSets.Interval) = x.left + (x.right-x.left)/2
     function dataattfromaxis(ax::DD.Dimension, n, T::Type{<:DD.IntervalSets.Interval})
-        prependrange(mean.(ax.val), n),Dict{String,Any}()
+        newdim = DD.rebuild(ax,middle.(ax.val))
+        dataattfromaxis(newdim,n,eltype(newdim))
     end
     # function dataattfromaxis(ax::CubeAxis,n)
     #     prependrange(1:length(ax.values),n), Dict{String,Any}("_ARRAYVALUES"=>collect(ax.values))

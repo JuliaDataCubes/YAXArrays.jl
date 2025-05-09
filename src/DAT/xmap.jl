@@ -17,8 +17,8 @@ function DD._group_indices(dim::DD.Dimension, ::Whole; labels=nothing)
     look = DD.lookup(DD.format(DD.rebuild(dim,[first(dim) .. last(dim)])))
     DD.rebuild(dim,look), [1:length(dim)] 
 end
-⊘(a,b) = windows(a,b=>Whole())
-
+⊘(a,b::Tuple) = windows(a,map(Base.Fix2(Pair,Whole()),map(Symbol,b))...)
+⊘(a,b) = ⊘(a,(b,))
 windows(A::DimArrayOrStack) = DimWindowArray(A,DD.dims(A),map(d->1:length(d),DD.dims(A)),DD.dims(A))
 windows(A::DimArrayOrStack, x) = windows(A, dims(x))
 windows(A::DimArrayOrStack, dimfuncs::Dimension...) = windows(A, dimfuncs)
@@ -181,9 +181,10 @@ end
 struct XOutput{D<:Tuple{Vararg{DD.Dimension}},T}
     outaxes::D
     outtype::T
+    properties
 end
-function XOutput(outaxes...; outtype=1)
-    XOutput(outaxes, outtype)
+function XOutput(outaxes...; outtype=1,properties=Dict())
+    XOutput(outaxes, outtype,properties)
 end
 
 _step(x::AbstractArray{<:Number}) = length(x) > 1 ? (last(x)-first(x))/(length(x)-1) : zero(eltype(x))
@@ -223,8 +224,7 @@ end
 dataeltype(y::YAXArray) = eltype(y.data)
 dataeltype(y::DimWindowArray) = eltype(y.data.data)
 
-default_inplace(f::XFunction) = f.inplace
-default_inplace(f) = true
+
 
 function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; output = XOutput(),inplace=default_inplace(f))
     alldims = mapreduce(approxunion!,ars,init=[]) do ar
@@ -274,12 +274,9 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; output 
         push!(outtypes, outtype)
         
         sout = map(length,ax)
-        @show dm
-        @show sout
-        @show map(Base.OneTo,length.(ax))
         DAE.create_outwindows(sout;dimsmap=dm,windows = w)
     end
-    daefunction = DAE.create_userfunction(f, (outtypes...,), is_mutating=inplace)
+    daefunction = DAE.create_userfunction(f, (outtypes...,), is_mutating=inplace,allow_threads=false)
     #Create DiskArrayEngine Input arrays
     input_arrays = map(ars) do ar
         a = to_windowarray(ar)
@@ -290,8 +287,9 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; output 
 
     res = DAE.results_as_diskarrays(op)
 
-    outars = map((res...,),outaxes) do r,ax
-        YAXArray(ax,r)
+    outproperties = map(i->i.properties,output)
+    outars = map((res...,),outaxes,outproperties) do r,ax,prop
+        YAXArray(ax,r,prop)
     end
 
     if length(outars) == 1
@@ -348,6 +346,8 @@ function XFunction(f::Function;outputs = XOutput(), inputs = (),inplace=true)
 end
 XFunction(f::XFunction;kwargs...) = f
 
+default_inplace(f::XFunction) = f.inplace
+default_inplace(f) = true
 
 function Base.broadcasted(f::XFunction,args...) 
     xmap(f,args...,output = f.outputs, inplace = f.inplace)
@@ -398,7 +398,8 @@ function compute_to_zarr(ods, path; max_cache=5e8,overwrite=false)
     newds = Dataset(;newcubes...)
 
     emptyds = savedataset(newds,path=path,skeleton=true, overwrite=true)
-    outars = Array{Any}(undef,length(newcubes))
+    outars = Array{Any}(undef,length(op.outspecs))
+    fill!(outars,nothing)
     for (k,v) in outnodes
         outars[v] = emptyds.cubes[k].data
     end
