@@ -147,15 +147,17 @@ time_yax = YAXArray(YAX.time(tspan))
 
 note that the following can be extended to arbitrary `YAXArrays` with additional data and dimensions.
 
-Let's generate a new `cube` using `mapCube` and saving the output directly into disk.
+Let's generate a new `cube` using `xmap` 
 
 ````@ansi mapCube
-gen_cube = mapCube(g, (lon_yax, lat_yax, time_yax);
-    indims = (InDims(), InDims(), InDims("time")),
-    outdims = OutDims("time", overwrite=true, path="my_gen_cube.zarr", backend=:zarr,
-    outtype = Float32)
-    # max_cache=1e9
-)
+expanded_cube = xmap(g,lon_yax,lat_yax,time_yax⊘:time, output=XOutput(YAX.time(tspan),outtype=Float32))
+````
+
+Since `xmap` is operating in a lazy fashion, it can be directly used for follow-up operations. However, if we
+want to store the result to disk one can explicitly compute the result:
+
+````@ansi mapCube
+gen_cube = compute_to_zarr(expanded_cube, "my_gen_cube.zarr", overwrite=true, max_cache=1e9)
 ````
 
 ::: info "time axis goes first"
