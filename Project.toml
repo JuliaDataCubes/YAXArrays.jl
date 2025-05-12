@@ -32,7 +32,7 @@ WeightedOnlineStats = "bbac0a1f-7c9d-5672-960b-c6ca726e5d5d"
 YAXArrayBase = "90b8fcef-0c2d-428d-9c56-5f86629e9d14"
 
 [compat]
-CFTime = "0.0, 0.1"
+CFTime = "0.0, 0.1, 0.2"
 DataStructures = "0.17, 0.18"
 DimensionalData = "0.27, 0.28, 0.29"
 DiskArrayTools = "0.1.12"
