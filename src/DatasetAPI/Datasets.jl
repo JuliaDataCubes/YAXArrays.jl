@@ -348,7 +348,7 @@ open_mfdataset(g::AbstractString; kwargs...) = open_mfdataset(_glob(g); kwargs..
 open_mfdataset(g::Vector{<:AbstractString}; kwargs...) =
 merge_datasets(map(i -> open_dataset(i; kwargs...), g))
 
-function merge_new_axis(alldatasets, firstcube,var,mergedim,combinechunks)
+function merge_new_axis(alldatasets, firstcube,var,mergedim)
     newdim = if !(typeof(DD.lookup(mergedim)) <: DD.NoLookup)
         DD.rebuild(mergedim, DD.val(mergedim))
     else
@@ -359,23 +359,23 @@ function merge_new_axis(alldatasets, firstcube,var,mergedim,combinechunks)
     end
     newdims = (DD.dims(firstcube)...,newdim)
     s = ntuple(i->i==length(newdims) ? length(alldiskarrays) : 1, length(newdims))
-    newda = DiskArrays.ConcatDiskArray(reshape(alldiskarrays,s...),combinechunks)
+    newda = DiskArrays.ConcatDiskArray(reshape(alldiskarrays,s...))
     YAXArray(newdims,newda,deepcopy(firstcube.properties))
 end
-function merge_existing_axis(alldatasets,firstcube,var,mergedim,combinechunks)
+function merge_existing_axis(alldatasets,firstcube,var,mergedim)
     allaxvals = map(ds->DD.dims(ds.cubes[var],mergedim).val,alldatasets)
     newaxvals = reduce(vcat,allaxvals)
     newdim = DD.rebuild(mergedim,newaxvals)
     alldiskarrays = map(ds->ds.cubes[var].data,alldatasets)
     istack = DD.dimnum(firstcube,mergedim)
     newshape = ntuple(i->i!=istack ? 1 : length(alldiskarrays),ndims(firstcube))
-    newda = DiskArrays.ConcatDiskArray(reshape(alldiskarrays,newshape),combinechunks)
+    newda = DiskArrays.ConcatDiskArray(reshape(alldiskarrays,newshape))
     newdims = Base.setindex(firstcube.axes,newdim,istack)
     YAXArray(newdims,newda,deepcopy(firstcube.properties))
 end
 
 """
-    open_mfdataset(files::DD.DimVector{<:AbstractString}; combinechunks=:error, kwargs...)
+    open_mfdataset(files::DD.DimVector{<:AbstractString}; kwargs...)
 
 Opens and concatenates a list of dataset paths along the dimension specified in `files`. 
 
@@ -397,7 +397,7 @@ files = ["a.nc", "b.nc", "c.nc"]
 open_mfdataset(DD.DimArray(files, DD.Dim{:NewDim}(["a","b","c"])))
 ````
 """
-function open_mfdataset(vec::DD.DimVector{<:Union{Missing,AbstractString}};combinechunks=:maxsize, kwargs...)
+function open_mfdataset(vec::DD.DimVector{<:Union{Missing,AbstractString}}; kwargs...)
     alldatasets = map(vec) do filename
         ismissing(filename) ? missing : open_dataset(filename;kwargs...)
     end
@@ -407,9 +407,9 @@ function open_mfdataset(vec::DD.DimVector{<:Union{Missing,AbstractString}};combi
     ars = map(vars_to_merge) do var
         cfi = fi.cubes[var]
         mergedar = if DD.dims(cfi,mergedim) !== nothing
-            merge_existing_axis(alldatasets,cfi,var,mergedim,combinechunks) 
+            merge_existing_axis(alldatasets,cfi,var,mergedim) 
         else
-            merge_new_axis(alldatasets,cfi,var,mergedim,combinechunks)
+            merge_new_axis(alldatasets,cfi,var,mergedim)
         end
         var => mergedar
     end

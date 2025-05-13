@@ -540,35 +540,35 @@ end
     @test_throws ArgumentError Cube(ds)
 end
 
-# @testset "Open_mfdataset" begin
-#     import NetCDF
-#     d1 = DD.X(1:20)
-#     d2 = DD.Y(1:10)
-#     a1 = rand(20,10)
-#     a2 = rand(20,10)
-#     td = mktempdir()
-#     f1, f2 = joinpath.(td,("file_1.nc","file_2.nc"))
+@testset "Open_mfdataset" begin
+    import NetCDF
+    d1 = DD.X(1:20)
+    d2 = DD.Y(1:10)
+    a1 = rand(20,10)
+    a2 = rand(20,10)
+    td = mktempdir()
+    f1, f2 = joinpath.(td,("file_1.nc","file_2.nc"))
 
-#     array1 = YAXArray((d1,d2),a1)
-#     array2 = YAXArray((d1,d2),a2)
+    array1 = YAXArray((d1,d2),a1)
+    array2 = YAXArray((d1,d2),a2)
 
-#     savecube(array1,f1)
-#     savecube(array2,f2)
+    savecube(array1,f1)
+    savecube(array2,f2)
 
-#     ds = open_mfdataset(DD.DimArray([f1,f2],(YAX.time(1:2),)))
+    ds = open_mfdataset(DD.DimArray([f1,f2],(YAX.time(1:2),)))
 
-#     @test ds.layer.data[:,:,1] == array1
-#     @test ds.layer.data[:,:,2] == array2
+    @test ds.layer.data[:,:,1] == array1
+    @test ds.layer.data[:,:,2] == array2
 
-#     td = mktempdir()
-#     f1, f2 = joinpath.(td,("file_1.nc","file_2.nc"))
-#     td1, td2 = YAX.time(1:2), YAX.time(3:4)
-#     a1,a2 = rand(20,10,2), rand(20,10,2)
-#     array1,array2 = YAXArray((d1,d2,td1),a1),  YAXArray((d1,d2,td2),a2)
-#     savecube(array1,f1)
-#     savecube(array2,f2)
+    td = mktempdir()
+    f1, f2 = joinpath.(td,("file_1.nc","file_2.nc"))
+    td1, td2 = YAX.time(1:2), YAX.time(3:4)
+    a1,a2 = rand(20,10,2), rand(20,10,2)
+    array1,array2 = YAXArray((d1,d2,td1),a1),  YAXArray((d1,d2,td2),a2)
+    savecube(array1,f1)
+    savecube(array2,f2)
 
-#     ds = open_mfdataset(joinpath(td,"*.nc"))
-#     @test ds.layer.data[:,:,1:2] == array1
-#     @test ds.layer.data[:,:,3:4] == array2
-# end
+    ds = open_mfdataset(joinpath(td,"*.nc"))
+    @test ds.layer.data[:,:,1:2] == array1
+    @test ds.layer.data[:,:,3:4] == array2
+end
