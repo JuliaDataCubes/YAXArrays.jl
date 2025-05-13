@@ -139,13 +139,7 @@ savecube(a4, "a4.nc")
 
 ### along a new dimension
 
-::: danger
-
-broken!
-
-:::
-
-````julia open_list_netcdf
+````@example open_list_netcdf
 using YAXArrays, NetCDF, Dates
 using YAXArrays: YAXArrays as YAX
 import DimensionalData as DD
@@ -158,14 +152,14 @@ ds = open_mfdataset(DD.DimArray(files, YAX.time(dates_read)))
 
 and even opening files along a new `Time` dimension that already have a `time` dimension
 
-````julia open_list_netcdf
+````@example open_list_netcdf
 files = ["a3.nc", "a4.nc"]
 ds = open_mfdataset(DD.DimArray(files, YAX.Time(dates_read)))
 ````
 
 Note that opening along a new dimension name without specifying values also works; however, it defaults to `1:length(files)` for the dimension values.
 
-````julia open_list_netcdf
+````@example open_list_netcdf
 files = ["a1.nc", "a2.nc"]
 ds = open_mfdataset(DD.DimArray(files, YAX.time))
 ````
@@ -174,7 +168,7 @@ ds = open_mfdataset(DD.DimArray(files, YAX.time))
 
 Another use case is when we want to open files along an existing dimension. In this case, `open_mfdataset` will concatenate the paths along the specified dimension
 
-````julia open_list_netcdf
+````@example open_list_netcdf
 using YAXArrays, NetCDF, Dates
 using YAXArrays: YAXArrays as YAX
 import DimensionalData as DD
@@ -186,7 +180,7 @@ ds = open_mfdataset(DD.DimArray(files, YAX.time()))
 
 where the contents of the `time` dimension are the merged values from both files
 
-````julia open_list_netcdf
+````@example open_list_netcdf
 ds["time"]
 ````
 
