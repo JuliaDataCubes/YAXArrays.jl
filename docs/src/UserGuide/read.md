@@ -180,7 +180,7 @@ ds = open_mfdataset(DD.DimArray(files, YAX.time()))
 
 where the contents of the `time` dimension are the merged values from both files
 
-````@ansi open_list_netcdf
+````@example open_list_netcdf
 ds["time"]
 ````
 

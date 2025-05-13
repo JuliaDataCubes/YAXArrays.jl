@@ -54,6 +54,8 @@ Add a value to all elements of an array and save it as a new array:
 a2 = a .+ 5
 ````
 
+broadcast is alway a lazy operation on YAXArrays, so need to access some values to actually start the computation:
+
 ````@example compute
 a2[1,2,3] == a[1,2,3] + 5
 ````
@@ -114,20 +116,6 @@ Define function in space and time
 f(lo, la, t) = (lo + la + Dates.dayofyear(t))
 ````
 
-now, `mapCube` requires this function to be wrapped as follows
-
-````@example mapCube
-function g(xout, lo, la, t)
-    xout .= f.(lo, la, t)
-end
-````
-
-::: info
-
-Note the `.` after `f`, this is because we will slice across time, namely, the function is broadcasted along this dimension.
-
-:::
-
 
 Here, we do create `YAXArrays` only with the desired dimensions as
 
@@ -145,15 +133,17 @@ time_yax = YAXArray(YAX.time(tspan))
 
 note that the following can be extended to arbitrary `YAXArrays` with additional data and dimensions.
 
-Let's generate a new `cube` using `mapCube` and saving the output directly into disk.
+Let's generate a new `cube` using `xmap` 
 
 ````@ansi mapCube
-gen_cube = mapCube(g, (lon_yax, lat_yax, time_yax);
-    indims = (InDims(), InDims(), InDims("time")),
-    outdims = OutDims("time", overwrite=true, path="my_gen_cube.zarr", backend=:zarr,
-    outtype = Float32)
-    # max_cache=1e9
-)
+expanded_cube = xmap(f,lon_yax,lat_yax,time_yax, output=XOutput(outtype=Float32),inplace=false)
+````
+
+Since `xmap` is operating in a lazy fashion, it can be directly used for follow-up operations. However, if we
+want to store the result to disk one can explicitly compute the result:
+
+````@ansi mapCube
+gen_cube = compute_to_zarr(Dataset(layer=r), "my_gen_cube.zarr", overwrite=true, max_cache=1e9)
 ````
 
 ::: info "time axis goes first"
@@ -169,30 +159,6 @@ Check that it is working
 gen_cube.data[1, :, :]
 ````
 
-but, we can generate a another cube with a different `output order` as follows
-
-````@ansi mapCube
-gen_cube = mapCube(g, (lon_yax, lat_yax, time_yax);
-    indims = (InDims("lon"), InDims(), InDims()),
-    outdims = OutDims("lon", overwrite=true, path="my_gen_cube.zarr", backend=:zarr,
-    outtype = Float32)
-    # max_cache=1e9
-)
-````
-
-::: info
-
-Note that now the broadcasted dimension is `lon`.
-
-:::
-
-we can see this by slicing on the last dimension now
-
-````@example mapCube
-gen_cube.data[:, :, 1]
-````
-
-which outputs the same as the `gen_cube.data[1, :, :]` called above.
 
 ### OutDims and YAXArray Properties
 
@@ -233,30 +199,26 @@ end
 f1(xin) = xin + 1
 f2(xin) = xin + 2
 ````
-now, we define `InDims` and `OutDims`:
 
 ````@example outdims
-indims_one   = InDims("Time")
 # outputs dimension
 properties_one = Dict{String, Any}("name" => "plus_one")
 properties_two = Dict{String, Any}("name" => "plus_two")
 
-outdims_one = OutDims("Time"; properties=properties_one)
-outdims_two = OutDims("Time"; properties=properties_two)
-outdims_flat = OutDims(;) # it will get the default `layer` name if open as dataset
+output_one = XOutput(yax_test.time; properties=properties_one)
+output_two = XOutput(yax_test.time; properties=properties_two)
+output_flat = XOutput(;) 
 ````
 
 ````@example outdims
-ds = mapCube(one_to_many, yax_test,
-    indims = indims_one,
-    outdims = (outdims_one, outdims_two, outdims_flat));
+ds = xmap(one_to_many, yax_test⊘:time, output = (output_one, output_two, output_flat));
 nothing # hide
 ````
 
 let's see the second output
 
 ````@example outdims
-ds[2]
+ds[2][:,1,1,1].data
 ````
 
 #### Many InDims to many OutDims
@@ -283,18 +245,19 @@ f2mix(xin_xyt, xin_xy) = xin_xyt - xin_xy
 #### Specify path in OutDims
 
 ````@example outdims
-indims_one   = InDims("Time")
-indims_2d   = InDims() # ? it matches only to the other 2 dimensions and uses the same values for each time step
-properties = Dict{String, Any}("name"=> "many_to_many_two")
-outdims_one = OutDims("Time")
-outdims_two = OutDims("Time"; path = "test_mm.zarr", properties)
-outdims_flat = OutDims()
+output_time = XOutput(yax_test.time)
+output_flat = XOutput()
 ````
 
 ````@example outdims
-ds = mapCube(many_to_many, (yax_test, yax_2d, yax_test),
-    indims = (indims_one, indims_2d, indims_one),
-    outdims = (outdims_one, outdims_two, outdims_flat));
+r1, r2, r3 = xmap(many_to_many, yax_test⊘:time, yax_2d, yax_test⊘:time,
+    output = (output_time, output_time, output_flat), inplace=true);
+nothing # hide
+````
+
+````@example outdims
+dsout = Dataset(many_to_many_two=r2)
+compute_to_zarr(dsout, "test_mm.zarr", overwrite=true)
 nothing # hide
 ````
 
@@ -335,20 +298,14 @@ function mix_time_depth(xin_xyt, xin_xyz)
     s = sum(abs.(xin_xyz))
     return xin_xyt.^2 .+ s
 end
-
-function time_depth(xout, xin_one, xin_two)
-    xout .= mix_time_depth(xin_one, xin_two) 
-    # Note also that there is no dot anymore in the function application!
-    return nothing
-end
 ````
 
 with the final mapCube operation as follows
 
 ````@example outdims
-ds = mapCube(time_depth, (yax_test, yax_2d),
-    indims = (InDims("Time"), InDims("depth")), # ? anchor dimensions and then map over the others.
-    outdims = OutDims("Time"))
+ds = xmap(mix_time_depth, yax_test⊘"time", yax_2d⊘"depth",
+    output = XOutput(yax_test.time),inplace=false)
+
 ````
 
 - TODO:
@@ -463,7 +420,8 @@ end
      output[:] .= mean(pixel)
 end
 
-mapCube(mymean, a, indims=InDims("time"), outdims=OutDims())
+meantime = xmap(mymean, a⊘"time")
+result_computed = compute_to_zarr(Dataset(time_mean=meantime),tempname())
 ````
 
 In the last example, `mapCube` was used to map the `mymean` function. `mapslices` is a convenient function that can replace `mapCube`, where you can omit defining an extra function with the output argument as an input (e.g. `mymean`). It is possible to simply use `mapslice`

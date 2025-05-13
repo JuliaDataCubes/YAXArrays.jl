@@ -96,7 +96,11 @@ function getOutAxis(desc::Tuple{ByInference}, axlist, incubes, pargs, f)
         isa(resu, Number) ||
         isa(resu, Missing) ||
         error("Function must return an array or a number")
-    (isa(resu, Number) || isa(resu, Missing)) && return ()
+    if (isa(resu, Number) || isa(resu, Missing)) 
+        return map(reduce(union!,inAxSmall)) do ax
+            DD.rebuild(ax,[DD.val(ax)])
+        end
+    end
     outsizes = size(resu)
     outaxes = map(outsizes, 1:length(outsizes)) do s, il
         if s > 2

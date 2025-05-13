@@ -126,33 +126,39 @@ sum_days = sum.(g_tempo, dims=:time)
 
 Weight the seasonal groups by `sum_days`
 
-````@ansi compareXarray
+::: danger WIP
+
+DiskArrayEngine fails from here on...
+
+:::
+
+````julia compareXarray
 weights = map(./, g_tempo, sum_days)
 ````
 
 Verify that the sum per season is 1
 
-````@ansi compareXarray
+````julia compareXarray
 sum.(weights)
 ````
 ### weighted seasons
 
 Now, let's weight the seasons
 
-````@ansi compareXarray
+````julia compareXarray
 g_dsW = broadcast_dims.(*, weights, g_ds)
 ````
 
 apply a `sum` over the time dimension and drop it
 
-````@ansi compareXarray
+````julia compareXarray
 weighted_g = sum.(g_dsW, dims = :time);
 weighted_g = dropdims.(weighted_g, dims=:time)
 ````
 
 Calculate the differences
 
-````@ansi compareXarray
+````julia compareXarray
 diff_g = map(.-, weighted_g, mean_g)
 ````
 
@@ -164,7 +170,7 @@ mean_g, weighted_g, diff_g, seasons_g = weighted_seasons(ds)
 
 Once all calculations are done we can plot the results with `Makie.jl` as follows:
 
-````@example compareXarray
+````julia compareXarray
 using CairoMakie
 # define plot arguments/attributes
 colorrange = (-30,30)
@@ -174,7 +180,7 @@ lowclip = :grey15
 cb_label =  ds_o.properties["long_name"]
 ````
 
-````@example compareXarray
+````julia compareXarray
 with_theme(theme_ggplot2()) do
     hm_o, hm_d, hm_w = nothing, nothing, nothing
     # the figure

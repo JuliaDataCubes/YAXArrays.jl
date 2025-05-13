@@ -3,7 +3,8 @@ module Datasets
 import ..Cubes: Cubes, YAXArray, concatenatecubes, CleanMe, subsetcube, copy_diskarray, setchunks, caxes, readcubedata, cubesize, formatbytes
 using ...YAXArrays: YAXArrays, YAXDefaults, findAxis
 using DataStructures: OrderedDict, counter
-using Dates: Day, Hour, Minute, Second, Month, Year, Date, DateTime, TimeType, AbstractDateTime
+using Dates: Day, Hour, Minute, Second, Month, Year, Date, DateTime, TimeType, AbstractDateTime, Period
+using Statistics: mean
 using IntervalSets: Interval, (..)
 using CFTime: timedecode, timeencode, DateTimeNoLeap, DateTime360Day, DateTimeAllLeap
 using YAXArrayBase
@@ -353,9 +354,12 @@ function merge_new_axis(alldatasets, firstcube,var,mergedim)
     else
         DD.rebuild(mergedim, 1:length(alldatasets))
     end
-    alldiskarrays = map(ds->ds.cubes[var].data,alldatasets).data
-    newda = diskstack(alldiskarrays)
+    alldiskarrays = map(alldatasets) do ds
+        ismissing(ds) ? missing : ds.cubes[var].data
+    end
     newdims = (DD.dims(firstcube)...,newdim)
+    s = ntuple(i->i==length(newdims) ? length(alldiskarrays) : 1, length(newdims))
+    newda = DiskArrays.ConcatDiskArray(reshape(alldiskarrays,s...))
     YAXArray(newdims,newda,deepcopy(firstcube.properties))
 end
 function merge_existing_axis(alldatasets,firstcube,var,mergedim)
@@ -374,6 +378,7 @@ end
     open_mfdataset(files::DD.DimVector{<:AbstractString}; kwargs...)
 
 Opens and concatenates a list of dataset paths along the dimension specified in `files`. 
+
 This method can be used when the generic glob-based version of open_mfdataset fails
 or is too slow. 
 For example, to concatenate a list of annual NetCDF files along the `time` dimension, 
@@ -392,9 +397,11 @@ files = ["a.nc", "b.nc", "c.nc"]
 open_mfdataset(DD.DimArray(files, DD.Dim{:NewDim}(["a","b","c"])))
 ````
 """
-function open_mfdataset(vec::DD.DimVector{<:AbstractString};kwargs...)
-    alldatasets = open_dataset.(vec;kwargs...);
-    fi = first(alldatasets)
+function open_mfdataset(vec::DD.DimVector{<:Union{Missing,AbstractString}}; kwargs...)
+    alldatasets = map(vec) do filename
+        ismissing(filename) ? missing : open_dataset(filename;kwargs...)
+    end
+    fi = first(skipmissing(alldatasets))
     mergedim = DD.dims(alldatasets) |> only
     vars_to_merge = collect(keys(fi.cubes))
     ars = map(vars_to_merge) do var
@@ -949,7 +956,15 @@ function createdataset(
     function dataattfromaxis(ax::DD.Dimension, n, _)
         prependrange(toaxistype(DD.lookup(ax)), n), Dict{String,Any}()
     end
-
+    middle(x::DD.IntervalSets.Interval) = x.left + half(x.right-x.left)
+    half(x::Period) = int_half(x)
+    half(x::Integer) = int_half(x)
+    half(x) = x/2
+    int_half(x) = x÷2
+    function dataattfromaxis(ax::DD.Dimension, n, T::Type{<:DD.IntervalSets.Interval})
+        newdim = DD.rebuild(ax,middle.(ax.val))
+        dataattfromaxis(newdim,n,eltype(newdim))
+    end
     # function dataattfromaxis(ax::CubeAxis,n)
     #     prependrange(1:length(ax.values),n), Dict{String,Any}("_ARRAYVALUES"=>collect(ax.values))
     # end
