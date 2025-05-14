@@ -1,0 +1,264 @@
+/* Customize default theme styling by overriding CSS variables:
+https://github.com/vuejs/vitepress/blob/main/src/client/theme-default/styles/vars.css
+ */
+
+  /* Layouts */
+
+/* 
+ :root {
+  --vp-layout-max-width: 1440px;
+} */
+
+.VPHero .clip {
+  white-space: pre;
+  max-width: 500px;
+}
+
+/* Fonts */
+
+@font-face {
+    font-family: JuliaMono-Regular;
+    src: url("https://cdn.jsdelivr.net/gh/cormullion/juliamono/webfonts/JuliaMono-Regular.woff2");
+}
+
+ :root {
+  /* Typography */
+  --vp-font-family-base: "Barlow", "Inter var experimental", "Inter var",
+    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu,
+    Cantarell, "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+
+  /* Code Snippet font */
+  --vp-font-family-mono: JuliaMono-Regular, monospace;
+}
+/* 
+Disable contextual alternates (kind of like ligatures but different) in monospace, 
+which turns `/>` to an up arrow and `|>` (the Julia pipe symbol) to an up arrow as well.  
+This is pretty bad for Julia folks reading even though copy+paste retains the same text.
+*/
+/* Target elements with class 'mono' */
+.mono-no-substitutions {
+  font-family: "JuliaMono-Regular", monospace;
+  font-feature-settings: "calt" off;
+}
+
+/* Alternatively, you can use the following if you prefer: */
+.mono-no-substitutions-alt {
+  font-family: "JuliaMono-Regular", monospace;
+  font-variant-ligatures: none;
+}
+
+/* If you want to apply this globally to all monospace text: */
+pre, code {
+  font-family: "JuliaMono-Regular", monospace;
+  font-feature-settings: "calt" off;
+}
+
+/**
+ * Colors
+ For inspiration visit
+ * -------------------------------------------------------------------------- */
+ /* https://github.com/vuejs/pinia/blob/v2/packages/docs/.vitepress/theme/styles/vars.css */
+
+:root {
+  --c-white-dark: #f8f8f8;
+  --c-black-darker: #0d121b;
+  --c-black: #0f0d0d;
+  --c-black-light: #1b1c1e;
+  --c-black-lighter: #262a44;
+  --vp-c-brand: #0b0c0f;
+  --vp-c-brand-light: #747bff;
+  --vp-c-brand-lighter: #3d6692;
+  --vp-c-brand-lightest: #bcc0ff;
+  --vp-c-brand-dark: #535bf2;
+  --vp-c-brand-darker: #454ce1;
+  --vp-c-brand-dimm: rgba(255, 144, 100, 0.08);
+}
+
+/**
+ * Component: Button
+ * -------------------------------------------------------------------------- */
+
+:root {
+  --vp-button-brand-border: var(--vp-c-brand-light);
+  --vp-button-brand-text: var(--vp-c-white);
+  --vp-button-brand-bg: var(--vp-c-brand);
+  --vp-button-brand-hover-border: var(--vp-c-brand-light);
+  --vp-button-brand-hover-text: var(--vp-c-white);
+  --vp-button-brand-hover-bg: var(--vp-c-brand-light);
+  --vp-button-brand-active-border: var(--vp-c-brand-light);
+  --vp-button-brand-active-text: var(--vp-c-white);
+  --vp-button-brand-active-bg: var(--vp-button-brand-bg);
+}
+
+/**
+ * Component: Home
+ * -------------------------------------------------------------------------- */
+
+:root {
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: -webkit-linear-gradient(
+    120deg,
+    #bd34fe 30%,
+    #41d1ff
+  );
+
+  --vp-home-hero-image-background-image: linear-gradient(
+    -45deg,
+    #bd34fe 50%,
+    #47caff 50%
+  );
+  --vp-home-hero-image-filter: blur(40px);
+}
+
+@media (min-width: 640px) {
+  :root {
+    --vp-home-hero-image-filter: blur(56px);
+  }
+}
+
+@media (min-width: 960px) {
+  :root {
+    --vp-home-hero-image-filter: blur(72px);
+  }
+}
+
+/**
+ * Component: Custom Block
+ * -------------------------------------------------------------------------- */
+
+:root {
+  --vp-custom-block-tip-border: var(--vp-c-brand);
+  --vp-custom-block-tip-text: var(--vp-c-brand-darker);
+  --vp-custom-block-tip-bg: var(--vp-c-brand-dimm);
+}
+
+.dark {
+  --vp-custom-block-tip-border: var(--vp-c-brand);
+  --vp-custom-block-tip-text: var(--vp-c-brand-lightest);
+  --vp-custom-block-tip-bg: var(--vp-c-brand-dimm);
+}
+
+/**
+ * Component: Algolia
+ * -------------------------------------------------------------------------- */
+
+.DocSearch {
+  --docsearch-primary-color: var(--vp-c-brand) !important;
+}
+
+
+/**
+ * Component: MathJax
+ * -------------------------------------------------------------------------- */
+mjx-container > svg {
+  display: block;
+  margin: auto;
+}
+
+mjx-container {
+  padding: 0.5rem 0;
+}
+
+mjx-container {
+  display: inline-block;
+  margin: auto 2px -2px;
+}
+
+mjx-container > svg {
+  margin: auto;
+  display: inline-block;
+}
+
+/**
+ * Colors links
+ * -------------------------------------------------------------------------- */
+
+ :root {
+  --vp-c-brand-1: #0087d7;
+  --vp-c-brand-2: #0773b2;
+  --vp-c-brand-3: #347090;
+  --vp-c-sponsor: #ee4e95;
+  --vitest-c-sponsor-hover: #c13071;
+}
+
+.dark {
+  --vp-c-bg: var(--c-black);
+  --vp-c-bg-soft: var(--c-black-light);
+  --vp-c-bg-soft-up: var(--c-black-lighter);
+  --vp-c-bg-mute: var(--c-black-light);
+  --vp-c-bg-soft-mute: var(--c-black-lighter);
+  --vp-c-bg-alt: #111111;
+  --vp-c-bg-elv: var(--vp-c-bg-soft);
+  --vp-c-bg-elv-mute: var(--vp-c-bg-soft-mute);
+  --vp-c-mute: var(--vp-c-bg-mute);
+  --vp-c-mute-dark: var(--c-black-lighter);
+  --vp-c-mute-darker: var(--c-black-darker);
+  --vp-c-brand-1: #ff875f;
+  --vp-c-brand-2: #ff875f;
+  --vp-c-brand-3: #ff875f;
+  --vp-c-sponsor: #ff875f;
+  --vitest-c-sponsor-hover: #e51370;
+}
+
+@media (min-width: 640px) {
+  :root {
+    --vp-home-hero-image-filter: blur(56px);
+  }
+}
+
+@media (min-width: 960px) {
+  :root {
+    --vp-home-hero-image-filter: blur(72px);
+  }
+}
+
+/* Custom CSS variables for input and output backgrounds */
+:root {
+  /* Light theme colors */
+  --vp-c-bg-input-light: #eef0f3;  /* Light gray for input */
+  --vp-c-bg-output-light: #f8f9fb; /* Light blue for output */
+  
+  /* Dark theme colors */
+  --vp-c-bg-input-dark: #1a1a1a;   /* Dark gray for input */
+  --vp-c-bg-output-dark: #101418;  /* Dark blue for output */
+}
+
+/* Light theme styles */
+:root {
+  --vp-c-bg-input: var(--vp-c-bg-input-light);
+  --vp-c-bg-output: var(--vp-c-bg-output-light);
+}
+
+/* Dark theme styles */
+.dark {
+  --vp-c-bg-input: var(--vp-c-bg-input-dark);
+  --vp-c-bg-output: var(--vp-c-bg-output-dark);
+}
+
+/* Style for input code blocks */
+.language-julia {
+  background-color: var(--vp-c-bg-input) !important;
+}
+
+/* Style for output code blocks */
+.language- {
+  background-color: var(--vp-c-bg-output) !important;
+}
+
+/* Component: Docstring Custom Block */
+
+.jldocstring.custom-block {
+  border: 1px solid var(--vp-c-gray-2);
+  color: var(--vp-c-text-1)
+}
+
+.jldocstring.custom-block summary {
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+  margin: 0 0 8px;
+}
+
+.jldocstring.custom-block summary a {
+  pointer-events: none;
+}
