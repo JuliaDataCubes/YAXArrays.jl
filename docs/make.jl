@@ -17,9 +17,9 @@ makedocs(; sitename="YAXArrays.jl",
     )
 # To edit the sidebar, you must edit `docs/src/.vitepress/config.mts`.
 
-deploydocs(; 
+DocumenterVitepress.deploydocs(; 
     repo="github.com/JuliaDataCubes/YAXArrays.jl.git", # this must be the full URL!
-    target="build", # this is where Vitepress stores its output
+    target=joinpath(@__DIR__, "build"),
     branch = "gh-pages",
     devbranch="master",
     push_preview = true
