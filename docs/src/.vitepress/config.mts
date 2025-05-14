@@ -91,6 +91,9 @@ export default defineConfig({
   ],
   // ignoreDeadLinks: true,
   vite: {
+    define: {
+      __DEPLOY_ABSPATH__: JSON.stringify('REPLACE_ME_DOCUMENTER_VITEPRESS_DEPLOY_ABSPATH'),
+    },
     build: {
       assetsInlineLimit: 0, // so we can tell whether we have created inlined images or not, we don't let vite inline them
     },
