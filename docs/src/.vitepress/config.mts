@@ -26,6 +26,7 @@ const navTemp = {
         { text: 'Create', link: '/UserGuide/create' },
         { text: 'Select', link: '/UserGuide/select' },
         { text: 'Compute', link: '/UserGuide/compute' },
+        { text: 'Plot', link: '/UserGuide/plot' },
         { text: 'Chunk', link: '/UserGuide/chunk' },
         { text: 'Cache', link: '/UserGuide/cache' },
         { text: 'Group', link: '/UserGuide/group' },
