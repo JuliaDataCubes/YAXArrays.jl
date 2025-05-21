@@ -419,6 +419,15 @@ end
     @test :b in keys(ds3.cubes)
     @test !in(:c,keys(ds3.cubes))
 
+    # arrays with a dimension of length 1
+    a4 = YAXArray(ones(5, 1))
+    ds4 = Dataset(layer=a4)
+    path = tempname() * ".zarr"
+    savedataset(ds4; path=path)
+    ds5 = open_dataset(path)
+    @test length(ds4.Dim_2) == length(ds5.Dim_2) == 1
+    @test ds4.Dim_2 == ds5.Dim_2
+    rm(path, recursive=true, force=true)
 end
 
 @testset "Saving, OutDims" begin
