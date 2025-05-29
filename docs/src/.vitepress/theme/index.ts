@@ -8,15 +8,16 @@ import {
   NolebaseEnhancedReadabilitiesScreenMenu, 
 } from '@nolebase/vitepress-plugin-enhanced-readabilities/client'
 
-import AsideTrustees from '../../components/AsideTrustees.vue'
-import VersionPicker from "../../components/VersionPicker.vue"
-import StarUs from '../../components/StarUs.vue'
-import AuthorBadge from '../../components/AuthorBadge.vue'
-import Authors from '../../components/Authors.vue'
+import AsideTrustees from '@/AsideTrustees.vue'
+import VersionPicker from "@/VersionPicker.vue"
+import StarUs from '@/StarUs.vue'
+import AuthorBadge from '@/AuthorBadge.vue'
+import Authors from '@/Authors.vue'
 import { enhanceAppWithTabs } from 'vitepress-plugin-tabs/client'
 
 import '@nolebase/vitepress-plugin-enhanced-readabilities/client/style.css'
 import './style.css'
+import './docstrings.css'
 
 export const Theme: ThemeConfig = {
   extends: DefaultTheme,

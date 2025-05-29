@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitepress'
 import { tabsMarkdownPlugin } from 'vitepress-plugin-tabs'
 import mathjax3 from "markdown-it-mathjax3";
+import path from 'path'
 
 function getBaseRepository(base: string): string {
   if (!base || base === '/') return '/';
@@ -93,6 +94,11 @@ export default defineConfig({
   vite: {
     define: {
       __DEPLOY_ABSPATH__: JSON.stringify('REPLACE_ME_DOCUMENTER_VITEPRESS_DEPLOY_ABSPATH'),
+    },
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, '../components')
+      }
     },
     build: {
       assetsInlineLimit: 0, // so we can tell whether we have created inlined images or not, we don't let vite inline them
