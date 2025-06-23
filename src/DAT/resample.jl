@@ -11,6 +11,7 @@ function xresample(yax::YAXArray;to=nothing,method=Linear(),outtype=Float32)
     conv = map(newdims) do d
         dold = DD.dims(yax.axes,d)
         dold === nothing && return nothing
+        approxequal(dold,d) && return nothing
         idim = DD.dimnum(yax.axes,d)
         idim=>(valval(dold),valval(d))
     end
