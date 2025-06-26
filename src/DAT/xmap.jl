@@ -486,7 +486,25 @@ function gmwop_from_conn(conn,nodes)
     DAE.GMDWop(inputs, outspecs, op)
 end
 
-compute(yax::YAXArray,args...;kwargs...) = DD.rebuild(yax,DAE.compute(yax.data,args...;kwargs...))
+function compute(yax::YAXArray,args...;kwargs...) 
+    if isa(yax.data,DAE.GMWOPResult) 
+        r = if any(a->isa(a.a,DAE.GMWOPResult), yax.data.op.inars)
+            g = DAE.MwopGraph()
+            i = DAE.to_graph!(g, yax.data)
+            DAE.remove_aliases!(g)
+            DAE.fuse_graph!(g)
+            newop = DAE.gmwop_from_reducedgraph(g);
+            DAE.results_as_diskarrays(newop)[i]
+        else
+            yax.data
+        end
+        computed = DAE.compute(r,args...;kwargs...)
+        DD.rebuild(yax,computed)
+    else
+        @warn "Yaxarray does not wrap a computation, nothing to do"
+        yax
+    end
+end
 
 """
     compute_to_zarr(ods, path; max_cache=5e8, overwrite=false)
