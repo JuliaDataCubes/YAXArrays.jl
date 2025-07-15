@@ -40,6 +40,25 @@ nothing # hide
 
 More on [Zarr Compressors](https://juliaio.github.io/Zarr.jl/latest/reference/#Compressors). Also, if you use this option and don't notice a significant improvement, please feel free to open an issue or start a discussion. 
 
+## Write to cloud buckets
+
+Writing directly to S3-compatible cloud object storage is supported.
+Valid credentials must be given.
+Providing environmental variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` is highly recommended for username and password, respectively.
+One needs to create any `AbstractAWSConfig` and activate it with `AWS.global_aws_config`, e. g. using [MinIO](https://expandingman.gitlab.io/Minio.jl/) for self-hosted storage:
+
+```julia
+using AWS
+using Minio
+
+# assume env vars AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are available
+minio_config = MinioConfig("https://s3.example.com:9000")
+AWS.global_aws_config(minio_config)
+savedataset(ds; path="s3://my_bucket/my_object", driver=:zarr)
+```
+
+Note that arguments `path` and `driver` can also be used to create `OutDims` in `mapCube`, enabling writing results of a computation directly to cloud object storage.
+
 ## Write NetCDF
 
 Save a single YAXArray to a directory:
