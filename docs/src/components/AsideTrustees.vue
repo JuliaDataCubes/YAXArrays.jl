@@ -52,7 +52,7 @@
   </a>
   <a
     class="enjoyer"
-    href="https://juliageo.org/NetCDF.jl/dev/"
+    href="https://meggart.github.io/NetCDF.jl/dev/"
     target="_blank"
   >
   <img width="32" height="32" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAYAAAAeP4ixAAAACXBIWXMAAAsTAAALEwEAmpwYAAABGUlEQVR4nO2aQQrCQAxFZ+Wd1MNNurF6FRcm3kWwwa16DWVAQdBF28lMQ/0PZht8/NgJaUMATon704JEd1H0TqKPrMN6i6LbVLO+iOg2W+BbqJ1C5G4tkmpWFyHrNF4HImNBIoLWKgPhz67/8dSigRMBsbZZE8HkEp8XKXebaiLN4bIMxkQ+r97JjC7i5cam3PoQMYaQyAu0lrvWYr3N46nF2s5CJKblQ5LpmUwoBNWa0SDyr4lQ6b2ZCxEx2Jt5Eok5ezNPImQxJZv++h/1CSI9QSI9IbTWQN6zWFoUBGOaY7eul8jAKbn0CbWmZLciY4GIIJEyoLUErVWG+bQW2987kbvrFCKtqxdCHiaCyN01SUzy0Q4I/XgCpBBLcMDuJZQAAAAASUVORK5CYII=" />
@@ -100,10 +100,10 @@
   </a>
   <a
     class="enjoyer"
-    href="https://alexander-barth.github.io/NCDatasets.jl/dev/"
+    href="https://juliageo.org/NCDatasets.jl/stable/"
     target="_blank"
   >
-  <img width="32" height="32" src="https://alexander-barth.github.io/NCDatasets.jl/dev/assets/logo.svg" />
+  <img width="32" height="32" src="https://juliageo.org/NCDatasets.jl/stable/assets/logo.svg" />
     <span>
       <p class="extra-info">Array-oriented data</p>
       <p class="heading">NCDatasets.jl</p>
