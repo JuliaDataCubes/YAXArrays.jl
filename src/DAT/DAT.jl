@@ -534,7 +534,7 @@ function getloopchunks(dc::DATConfig)
         allchunks = to_chunksize.(allchunks,cs)
         allchunks = unique(allchunks)
         if length(allchunks)>1
-            @warn "Multiple chunk offset resolutions possible: $allchunks for dim $(axname(ax))"
+            @warn "Multiple chunk offset resolutions possible: $allchunks for dim $(DD.name(ax))"
         end
         first(allchunks)
     end
