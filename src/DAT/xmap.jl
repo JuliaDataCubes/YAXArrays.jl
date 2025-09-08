@@ -226,7 +226,11 @@ dataeltype(y::DimWindowArray) = eltype(y.data.data)
 
 
 
-function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; output = XOutput(),inplace=default_inplace(f))
+function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...;
+    output=XOutput(),
+    inplace=default_inplace(f),
+    function_args=(),
+    function_kwargs=(;))
     alldims = mapreduce(approxunion!,ars,init=[]) do ar
         DD.dims(ar)
     end
@@ -243,10 +247,13 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; output 
         output = (output,)
     end
     outaxinfo = map(output) do o
+        nout_old = length(o.outaxes)
+        n_added = -1
         r = map(o.outaxes) do ax
             ax_indim = DD.dims(alldims,ax)
             if isnothing(ax_indim)
-                ax, length(outaxes)+length(alldims)
+                n_added += 1
+                ax, nout_old + length(alldims) + n_added
             else
                 idim = DD.dimnum(alldims,ax)
                 ax, idim
@@ -276,7 +283,11 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; output 
         sout = map(length,ax)
         DAE.create_outwindows(sout;dimsmap=dm,windows = w)
     end
-    daefunction = DAE.create_userfunction(f, (outtypes...,), is_mutating=inplace,allow_threads=false)
+    daefunction = DAE.create_userfunction(f, (outtypes...,),
+        is_mutating=inplace,
+        allow_threads=false,
+        args=function_args,
+        kwargs=function_kwargs)
     #Create DiskArrayEngine Input arrays
     input_arrays = map(ars) do ar
         a = to_windowarray(ar)
