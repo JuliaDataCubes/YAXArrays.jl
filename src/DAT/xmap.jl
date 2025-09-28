@@ -117,7 +117,7 @@ compute_steps(step,n::Int) = range(0,step=step,length=n)
 Base.getindex(m::MovingIntervals{<:Any,<:Any,L,R},i::Int) where {L,R} = Interval{L,R}(m.i1+m.offsets[i],m.i2+m.offsets[i])
 function MovingIntervals(lb::Symbol=:open,rb::Symbol=:closed;left=nothing,right=nothing,step=nothing,center=nothing,width=nothing,n=nothing)
     if any(i->isa(i,AbstractArray),(left,right,center))
-        width == nothing && error("Width must be specified if left, right or center are arrays")
+        width === nothing && error("Width must be specified if left, right or center are arrays")
         if left !== nothing
             i1 = first(left)
             i2 = i1+width
@@ -133,7 +133,7 @@ function MovingIntervals(lb::Symbol=:open,rb::Symbol=:closed;left=nothing,right=
         end
         return MovingIntervals{typeof(i1),typeof(offsets),lb,rb}(i1,i2,offsets)
     else
-        (step===nothing) || (n===nothing) && error("Step and n must be specified if left, right or center are not arrays")
+        ((step===nothing) || (n===nothing)) && error("Step and n must be specified if left, right or center are not arrays")
         offsets = compute_steps(step,n)
         if left !== nothing && right !== nothing
             i1 = left
@@ -226,6 +226,13 @@ dataeltype(y::DimWindowArray) = eltype(y.data.data)
 
 
 
+"""
+    xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...;)
+
+xmap provides a map like function which works on multidimensional YAXArrays.
+You can define which dimensions should be forwarded to the inner function with the \\oslash operator.
+You can forward arguments and keyword arguments to the inner function with the keyword arguments `function_args` respectively `function_kwargs`.
+"""
 function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...;
     output=XOutput(),
     inplace=default_inplace(f),
