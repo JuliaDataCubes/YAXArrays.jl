@@ -224,6 +224,8 @@ end
 dataeltype(y::YAXArray) = eltype(y.data)
 dataeltype(y::DimWindowArray) = eltype(y.data.data)
 
+tupelize(x) = (x,)
+tupelize(x::Tuple) = x
 
 
 function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...;
@@ -243,9 +245,7 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...;
     end
 
     #Create outspecs
-    if output isa XOutput
-        output = (output,)
-    end
+    output = tupelize(output)
 
     alloutdims = mapreduce(approxunion!, output, init=[]) do o
         o.outaxes
@@ -261,7 +261,7 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...;
         extrawindows = Base.OneTo.(length.(addaxes))
         alloutaxes = (outaxes..., addaxes...)
         dimsmap = DD.dimnum(allinandoutdims, alloutaxes)
-        alloutaxes, dimsmap, (outwindows..., extrawindows...)
+        alloutaxes, tupelize(dimsmap), (outwindows..., extrawindows...)
     end
     outaxes = map(first,outaxinfo)
     dimsmap = map(Base.Fix2(getindex,2),outaxinfo)

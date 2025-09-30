@@ -31,14 +31,14 @@ using Dates
 
 
     ## second example
-    using Downloads
-    path2file = "https://www.unidata.ucar.edu/software/netcdf/examples/sresa1b_ncar_ccsm3-example.nc"
-    filename = Downloads.download(path2file, "sresa1b_ncar_ccsm3-example.nc")
-    ds = open_dataset(filename)
-    f = "./temp.zarr"
-    savedataset(ds, path=f, driver=:zarr, overwrite=true)
-    rm(f, recursive=true, force=true)
-    rm(filename)
+    # using Downloads
+    # path2file = "https://www.unidata.ucar.edu/software/netcdf/examples/sresa1b_ncar_ccsm3-example.nc"
+    # filename = Downloads.download(path2file, "sresa1b_ncar_ccsm3-example.nc")
+    # ds = open_dataset(filename)
+    # f = "./temp.zarr"
+    # savedataset(ds, path=f, driver=:zarr, overwrite=true)
+    # rm(f, recursive=true, force=true)
+    # rm(filename)
 
     ## third example
     # using EarthDataLab
