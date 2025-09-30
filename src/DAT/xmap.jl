@@ -183,7 +183,7 @@ struct XOutput{D<:Tuple{Vararg{DD.Dimension}},T}
     outtype::T
     properties
 end
-function XOutput(outaxes...; outtype=1,properties=Dict())
+function XOutput(outaxes::DD.Dimension...; outtype=1, properties=Dict())
     XOutput(outaxes, outtype,properties)
 end
 
@@ -224,6 +224,8 @@ end
 dataeltype(y::YAXArray) = eltype(y.data)
 dataeltype(y::DimWindowArray) = eltype(y.data.data)
 
+tupelize(x) = (x,)
+tupelize(x::Tuple) = x
 
 
 function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...;
@@ -243,29 +245,23 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...;
     end
 
     #Create outspecs
-    if output isa XOutput
-        output = (output,)
+    output = tupelize(output)
+
+    alloutdims = mapreduce(approxunion!, output, init=[]) do o
+        o.outaxes
     end
+
+    allinandoutdims = (unique(DD.basedims((alldims..., alloutdims...)))...,)
+
+
     outaxinfo = map(output) do o
-        nout_old = length(o.outaxes)
-        n_added = -1
-        r = map(o.outaxes) do ax
-            ax_indim = DD.dims(alldims,ax)
-            if isnothing(ax_indim)
-                n_added += 1
-                ax, nout_old + length(alldims) + n_added
-            else
-                idim = DD.dimnum(alldims,ax)
-                ax, idim
-            end
-        end
-        outaxes = map(first,r)
-        dimsmap = map(last,r)
-        addaxes = DD.otherdims(alldims,DD.basedims(outaxes))
-        dimsmapadd = setdiff(ntuple(identity,length(alldims)),dimsmap)
+        outaxes = o.outaxes
+        addaxes = DD.otherdims(alldims, DD.basedims(outaxes))
         outwindows = map(i->[Base.OneTo(length(i))],outaxes)
         extrawindows = Base.OneTo.(length.(addaxes))
-        (outaxes...,addaxes...), (dimsmap...,dimsmapadd...), (outwindows...,extrawindows...)
+        alloutaxes = (outaxes..., addaxes...)
+        dimsmap = DD.dimnum(allinandoutdims, alloutaxes)
+        alloutaxes, tupelize(dimsmap), (outwindows..., extrawindows...)
     end
     outaxes = map(first,outaxinfo)
     dimsmap = map(Base.Fix2(getindex,2),outaxinfo)
