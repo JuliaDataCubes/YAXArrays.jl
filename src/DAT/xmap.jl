@@ -306,6 +306,74 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...;
     end
 end
 
+"""
+    xmap(f, arrays::Union{YAXArray,DimWindowArray}...; output=XOutput(), inplace=default_inplace(f), 
+         function_args=(), function_kwargs=())
+
+Apply a function `f` across multiple YAXArrays or DimWindowArrays, with support for windowed operations and 
+dimension-aware broadcasting.
+
+# Arguments
+- `f`: Function to apply. Can be a regular function or an `XFunction`
+- `arrays`: One or more YAXArrays or DimWindowArrays to operate on
+
+# Keywords
+- `output`: Single `XOutput` or tuple of `XOutput` specifying output dimensions and properties 
+- `inplace`: Whether the function `f` modifies its first argument (default depends on `f`)
+- `function_args`: Additional positional arguments to pass to `f`
+- `function_kwargs`: Additional keyword arguments to pass to `f`
+
+# Returns
+- A single YAXArray if `output` is a single `XOutput`
+- A tuple of YAXArrays if `output` is a tuple of `XOutput`s
+
+# Examples
+```julia
+using YAXArrays, Dates
+using YAXArrays: YAXArrays as YAX
+
+# Create example arrays
+axlist = (
+    YAX.time(Date("2022-01-01"):Day(1):Date("2022-01-05")),
+    lon(1:3),
+    lat(1:2)
+)
+array1 = YAXArray(axlist, rand(5,3,2))
+array2 = YAXArray(axlist, rand(5,3,2))
+
+# Element-wise arithmetic using broadcasting
+result = array1 .+ array2  # Or: xmap(+, array1, array2)
+
+# Custom function with multiple outputs
+function myfunc(xout1, xout2, x, y)
+    @. xout1 = x .+ y    # Broadcasting with dot operator
+    @. xout2 = x .* y    # Broadcasting with dot operator
+    return nothing
+end
+
+out1 = XOutput(array1.time)
+out2 = XOutput(array1.time)
+sum_arr, prod_arr = xmap(myfunc, array1⊘:time, array2⊘:time, 
+                        output=(out1, out2), inplace=true)
+
+# Access computed values
+computed_sum = sum_arr[:,:,:]    # Now works correctly
+computed_prod = prod_arr[:,:,:]   # Now works correctly
+
+# Time series operation
+using Statistics
+time_mean = xmap(Statistics.mean, array1⊘:time, 
+                output=XOutput(), inplace=false)
+
+# Save result directly to disk
+ds = Dataset(result=time_mean)
+compute_to_zarr(ds, "output.zarr")
+```
+
+See also: [`XOutput`](@ref), [`windows`](@ref), [`⊘`](@ref), [`XFunction`](@ref)
+"""
+function xmap end
+
 import Base.mapslices
 function mapslices(f, d::YAXArray, addargs...; dims, kwargs...)
     !isa(dims, Tuple) && (dims = (dims,))
