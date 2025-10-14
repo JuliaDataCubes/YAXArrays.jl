@@ -7,7 +7,7 @@ using YAXArrays
 using NetCDF
 using Downloads: download
 
-path = download("https://www.unidata.ucar.edu/software/netcdf/examples/tos_O1_2001-2002.nc", "example.nc")
+path = download("https://archive.unidata.ucar.edu/software/netcdf/examples/tos_O1_2001-2002.nc", "example.nc")
 ds = open_dataset(path)
 ````
 
