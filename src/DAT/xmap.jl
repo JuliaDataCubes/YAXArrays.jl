@@ -402,8 +402,6 @@ time_mean = xmap(Statistics.mean, array1⊘:time,
 ds = Dataset(result=time_mean)
 compute_to_zarr(ds, "output.zarr")
 ```
-
-See also: [`XOutput`](@ref), [`windows`](@ref), [`⊘`](@ref), [`XFunction`](@ref)
 """
 function xmap end
 
