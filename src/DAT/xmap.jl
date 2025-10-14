@@ -17,6 +17,39 @@ function DD._group_indices(dim::DD.Dimension, ::Whole; labels=nothing)
     look = DD.lookup(DD.format(DD.rebuild(dim,[first(dim) .. last(dim)])))
     DD.rebuild(dim,look), [1:length(dim)] 
 end
+
+"""
+    ⊘(a, b)
+
+A convenience operator, used as `a ⊘ b`, for creating a windowed view of a `DimArrayOrStack` where one or more dimensions are treated as a single, complete window. This is equivalent to calling `windows(a, b => Whole())`.
+
+This operator is particularly useful with `xmap`, where it specifies that a function should be applied over an entire dimension (or multiple dimensions) at once. For example, `xmap(mean, a ⊘ :time)` will compute the mean over the entire `:time` dimension.
+
+# How to type
+
+The `⊘` symbol can be typed in the Julia REPL or compatible editors by typing `\\oslash` and then pressing the Tab key.
+
+# Arguments
+- `a`: A `YAXArray` or other `DimArrayOrStack`.
+- `b`: A `Symbol` or a `Tuple` of `Symbol`s representing the dimension(s) to be treated as a single window.
+
+# Returns
+A `DimWindowArray` which can be passed to `xmap` for windowed processing.
+
+# Examples
+```julia
+using YAXArrays, Dates, Statistics
+using YAXArrays: YAXArrays as YAX
+
+a = YAXArray((YAX.time(1:5), lon(1:3)), rand(5,3))
+
+# Create a windowed view where the `:time` dimension is a single window
+w = a ⊘ :time
+
+# Use this view with xmap to calculate the mean over the time dimension.
+time_mean = xmap(mean, w, inplace=false)
+```
+"""
 ⊘(a,b::Tuple) = windows(a,map(Base.Fix2(Pair,Whole()),map(Symbol,b))...)
 ⊘(a,b) = ⊘(a,(b,))
 windows(A::DimArrayOrStack) = DimWindowArray(A,DD.dims(A),map(d->1:length(d),DD.dims(A)),DD.dims(A))
@@ -342,12 +375,12 @@ array1 = YAXArray(axlist, rand(5,3,2))
 array2 = YAXArray(axlist, rand(5,3,2))
 
 # Element-wise arithmetic using broadcasting
-result = array1 .+ array2  # Or: xmap(+, array1, array2)
+result = array1 .+ array2
 
 # Custom function with multiple outputs
 function myfunc(xout1, xout2, x, y)
-    @. xout1 = x .+ y    # Broadcasting with dot operator
-    @. xout2 = x .* y    # Broadcasting with dot operator
+    xout1 = x .+ y    # Broadcasting with dot operator
+    xout2 = x .* y    # Broadcasting with dot operator
     return nothing
 end
 
