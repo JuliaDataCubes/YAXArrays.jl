@@ -120,7 +120,6 @@ function getOutAxis(desc::Tuple{ByInference}, axlist, incubes, pargs, f)
         #TODO: fallback with axis renaming in this case
         error("Could not determine unique output axes from output shape")
     end
-    @show outaxes
     return (outaxes...,)
 end
 
