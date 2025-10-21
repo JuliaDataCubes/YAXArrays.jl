@@ -412,7 +412,9 @@ function mapslices(f, d::YAXArray, addargs...; dims, kwargs...)
         Symbol(d)=>Whole()
     end
     w = windows(d,dw...)
-    xmap(f,w,inplace=false)    
+    outaxes = YAXArrays.getOutAxis((YAXArrays.ByInference(),), Symbol.(dims), (d,), addargs, f)
+
+    xmap(f, w, output=XOutput(outaxes...), inplace=false)
 end
 
 struct XFunction{F,O,I} <: Function
