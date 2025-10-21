@@ -6,7 +6,7 @@
         a1 = YAXArray((x,y,z), rand(4,5,6))
         a2 = YAXArray((x,z,y), rand(4,6,5))
         a3 = YAXArray((x,y), rand(4,5))
-        r = xmap(a1 ⊘ :X, a2 ⊘ :X, output = XOutput(dims(a1, X))) do xout, x1, x2
+        r = xmap(a1 ⊘ X, a2 ⊘ X, output = XOutput(dims(a1, X))) do xout, x1, x2
             xout .= x1 .+ x2
         end
         @test r.data == a1.data .+ permutedims(a2.data,(1,3,2))
