@@ -528,6 +528,21 @@ end
     mean_slice = mapslices(mean, cube; dims="Dim_1")
 
     @test mean_slice[1, :, :] == ones(20, 5)
+    import DimensionalData as DD
+    a = YAXArray(reshape(1:1000, 10, 20, 5))
+    b = mapslices(cumsum, a, dims="Dim_1")
+    @test size(b) == size(a)
+    @test DD.dims(b) == DD.dims(a)
+    @test b[3, 1, 1] == 6
+    @test b[2, 2, :].data == 23:400:1623
+
+    c = mapslices(sum, a, dims="Dim_2")
+    @test size(c) == (1, 10, 5)
+    @test c.Dim_2 == DD.rebuild(a.Dim_2, [a.Dim_2.val])
+    @test c.Dim_1 == a.Dim_1
+    @test c.Dim_3 == a.Dim_3
+    @test c[1, 3, 3] == 9960
+
 end
 
 @testset "Making Cubes from heterogemous data types" begin
