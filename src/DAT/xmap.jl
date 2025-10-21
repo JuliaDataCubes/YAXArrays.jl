@@ -406,7 +406,7 @@ compute_to_zarr(ds, "output.zarr")
 function xmap end
 
 import Base.mapslices
-function mapslices(f, d::YAXArray, addargs...; dims, kwargs...)
+function mapslices(f, d::YAXArray, addargs...; dims, dropdims=false, kwargs...)
     !isa(dims, Tuple) && (dims = (dims,))
     dw = map(dims) do d
         Symbol(d)=>Whole()
@@ -414,7 +414,12 @@ function mapslices(f, d::YAXArray, addargs...; dims, kwargs...)
     w = windows(d,dw...)
     outaxes = YAXArrays.getOutAxis((YAXArrays.ByInference(),), Symbol.(dims), (d,), addargs, f)
 
-    xmap(f, w, output=XOutput(outaxes...), inplace=false)
+    returncube = xmap(f, w, output=XOutput(outaxes...), inplace=false)
+    if dropdims
+        return Base.dropdims(returncube; dims=Symbol.(dims))
+    else
+        return returncube
+    end
 end
 
 struct XFunction{F,O,I} <: Function

@@ -546,6 +546,12 @@ end
     #Test dropdims as well
     d = dropdims(c, dims=:Dim_2)
     DD.dims(d) == Base.tail(DD.dims(c))
+
+    d = mapslices(sum, a, dims="Dim_2", dropdims=true)
+    @test size(d) == (10, 5)
+    @test d.Dim_1 == a.Dim_1
+    @test d.Dim_3 == a.Dim_3
+    @test d[3, 3] == 9960
 end
 
 @testset "Making Cubes from heterogemous data types" begin
