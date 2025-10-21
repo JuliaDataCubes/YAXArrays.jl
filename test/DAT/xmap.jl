@@ -20,6 +20,15 @@
         @test r.data == a2.data .+ reshape(a3.data,(4,1,5))
     end
 
+    @testitem "set outtype" begin
+        using YAXArrays
+        using DimensionalData
+        using Statistics
+        x,y,z = X(1:4), Y(1:5), Z(1:6)
+        a1 = YAXArray((x,y,z), rand(UInt8, 4,5,6))
+        r = xmap((xout, xin) -> xout .= mean(xin), a1 ⊘ :X, output=XOutput(outtype=Float16))
+        @test r.data == Float16.(mean(a1, dims=1))
+    end
 
 #=
 These should be reenabled once we decided what keyword arguments xmap gets. 
