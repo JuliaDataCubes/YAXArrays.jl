@@ -543,6 +543,9 @@ end
     @test c.Dim_3 == a.Dim_3
     @test c[1, 3, 3] == 9960
 
+    #Test dropdims as well
+    d = dropdims(c, dims=:Dim_2)
+    DD.dims(d) == Base.tail(DD.dims(c))
 end
 
 @testset "Making Cubes from heterogemous data types" begin
