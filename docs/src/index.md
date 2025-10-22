@@ -54,7 +54,7 @@ pkg> add YAXArrays
 If you want to use the latest unreleased version, you can run the following command:
 
 ```julia
-pkg> add YAXArrays#master
+pkg> add YAXArrays#main
 ```
 
 ## Want interoperability?
