@@ -86,7 +86,9 @@ Reduce the time dimension by calculating the average value of all points in time
 import Statistics: mean
 mapslices(mean, a, dims="time")
 ````
-There is no time dimension left, because there is only one value left after averaging all time steps.
+
+The time dimension has only a single value indicating the time interval that was used for the average. To remove this singleton dimension you can use `dropdims`. 
+ 
 We can also calculate spatial means resulting in one value per time step:
 
 ````@example compute
