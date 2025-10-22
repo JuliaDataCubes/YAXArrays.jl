@@ -78,19 +78,21 @@ match_axis(a, ax) = match_axis(get_descriptor(a), ax)
 getOutAxis(desc, axlist, incubes, pargs, f) = getAxis(desc, unique(axlist))
 
 function getOutAxis(desc::Tuple{ByInference}, axlist, incubes, pargs, f)
-    inAxes = map(DD.dims, incubes)
-    inAxSmall = map(i -> filter(j -> in(j, axlist), i) |> collect, inAxes)
+    axlist = map(axlist) do ax
+        isa(ax, String) ? Symbol(ax) : ax
+    end
+    inAxSmall = map(i -> DD.dims(i, axlist), incubes)
     inSizes = map(i -> (map(length, i)...,), inAxSmall)
     intypes = map(eltype, incubes)
     testars = map((s, it) -> zeros(it, s...), inSizes, intypes)
-    map(testars) do ta
-        ta .= rand(Base.nonmissingtype(eltype(ta)), size(ta)...)
-        if eltype(ta) >: Missing
-            # Add some missings
-            randind = rand(1:length(ta), length(ta) ÷ 10)
-            ta[randind] .= missing
-        end
-    end
+    # map(testars) do ta
+    #     ta .= rand(Base.nonmissingtype(eltype(ta)), size(ta)...)
+    #     if eltype(ta) >: Missing
+    #         # Add some missings
+    #         randind = rand(1:length(ta), length(ta) ÷ 10)
+    #         ta[randind] .= missing
+    #     end
+    # end
     resu = f(testars..., pargs...)
     isa(resu, AbstractArray) ||
         isa(resu, Number) ||
@@ -102,16 +104,17 @@ function getOutAxis(desc::Tuple{ByInference}, axlist, incubes, pargs, f)
         end
     end
     outsizes = size(resu)
+    allAxes = reduce(union, inAxSmall)
     outaxes = map(outsizes, 1:length(outsizes)) do s, il
         if s > 2
-            i = findall(i -> i == s, length.(axlist))
+            i = findall(i -> i == s, length.(allAxes))
             if length(i) == 1
-                return axlist[i[1]]
+                return allAxes[i[1]]
             elseif length(i) > 1
                 @info "Found multiple matching axes for output dimension $il"
             end
         end
-        return Dim{Symbol("OutAxis$(il)")}( 1:s)
+        return Dim{Symbol("OutAxis$(il)")}(1:s)
     end
     if !allunique(outaxes)
         #TODO: fallback with axis renaming in this case
