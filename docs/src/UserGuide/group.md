@@ -20,7 +20,7 @@ Where the goal is to calculate the seasonal average. And in order to do this pro
 ### Download the data
 
 ````@example compareXarray
-url_path = "https://github.com/pydata/xarray-data/raw/main/rasm.nc"
+url_path = "https://github.com/pydata/xarray-data/raw/master/rasm.nc"
 filename = Downloads.download(url_path, "rasm.nc")
 ds_o = Cube(filename)
 ````
