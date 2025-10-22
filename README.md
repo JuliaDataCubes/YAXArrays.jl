@@ -11,7 +11,7 @@
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
 [docs-stable-url]: https://JuliaDataCubes.github.io/YAXArrays.jl/stable/
 
-[codecov-img]: https://codecov.io/gh/JuliaDataCubes/YAXArrays.jl/branch/master/graph/badge.svg
+[codecov-img]: https://codecov.io/gh/JuliaDataCubes/YAXArrays.jl/branch/main/graph/badge.svg
 [codecov-url]: https://codecov.io/gh/JuliaDataCubes/YAXArrays.jl
 
 [ci-img]: https://github.com/JuliaDataCubes/YAXArrays.jl/workflows/CI/badge.svg

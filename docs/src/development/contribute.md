@@ -4,7 +4,7 @@ Pull requests and bug reports are always welcome at the [YAXArrays.jl GitHub rep
 
 ## Contribute to Documentation
 
-Contributing with examples can be done by first creating a new file example [here](https://github.com/JuliaDataCubes/YAXArrays.jl/tree/master/docs/examples/UserGuide)
+Contributing with examples can be done by first creating a new file example [here](https://github.com/JuliaDataCubes/YAXArrays.jl/tree/main/docs/examples/UserGuide)
 
 ::: info new file
 - `your_new_file.md` at `docs/src/UserGuide/`
@@ -12,7 +12,7 @@ Contributing with examples can be done by first creating a new file example [her
 
 :::
 
-Once this is done you need to add a new entry [here](https://github.com/JuliaDataCubes/YAXArrays.jl/blob/master/docs/src/.vitepress/config.mts) at the appropriate level.
+Once this is done you need to add a new entry [here](https://github.com/JuliaDataCubes/YAXArrays.jl/blob/main/docs/src/.vitepress/config.mts) at the appropriate level.
 
 ::: info add entry to docs
 

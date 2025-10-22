@@ -42,10 +42,10 @@ const navTemp = {
         {
           text: 'ESDL studies',
           items: [
-            { text: 'ESDL study 1', link: 'https://github.com/JuliaDataCubes/YAXArrays.jl/blob/master/docs/src/tutorials/esdl/examples_from_esdl_study_1.jl' },
-            { text: 'ESDL study 2', link: 'https://github.com/JuliaDataCubes/YAXArrays.jl/blob/master/docs/src/tutorials/esdl/examples_from_esdl_study_2.jl' },
-            { text: 'ESDL study 3', link: 'https://github.com/JuliaDataCubes/YAXArrays.jl/blob/master/docs/src/tutorials/esdl/examples_from_esdl_study_3.jl' },
-            { text: 'ESDL study 4', link: 'https://github.com/JuliaDataCubes/YAXArrays.jl/blob/master/docs/src/tutorials/esdl/examples_from_esdl_study_4.jl' },
+            { text: 'ESDL study 1', link: 'https://github.com/JuliaDataCubes/YAXArrays.jl/blob/main/docs/src/tutorials/esdl/examples_from_esdl_study_1.jl' },
+            { text: 'ESDL study 2', link: 'https://github.com/JuliaDataCubes/YAXArrays.jl/blob/main/docs/src/tutorials/esdl/examples_from_esdl_study_2.jl' },
+            { text: 'ESDL study 3', link: 'https://github.com/JuliaDataCubes/YAXArrays.jl/blob/main/docs/src/tutorials/esdl/examples_from_esdl_study_3.jl' },
+            { text: 'ESDL study 4', link: 'https://github.com/JuliaDataCubes/YAXArrays.jl/blob/main/docs/src/tutorials/esdl/examples_from_esdl_study_4.jl' },
           ]
         },
         { text: 'Other Tutorials', link: '/tutorials/other_tutorials' },
@@ -177,7 +177,7 @@ export default defineConfig({
       },
     ],
     editLink: {
-      pattern: 'https://github.com/JuliaDataCubes/YAXArrays.jl/edit/master/docs/src/:path'
+      pattern: 'https://github.com/JuliaDataCubes/YAXArrays.jl/edit/main/docs/src/:path'
     },
     socialLinks: [
       // { icon: 'github', link: 'https://github.com/JuliaDataCubes/YAXArrays.jl' }
