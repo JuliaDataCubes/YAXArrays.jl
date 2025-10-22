@@ -193,16 +193,13 @@ end
         @testset "collectdims" begin
             dcollect = YAXArrays.Datasets.collectdims(m)
             @test dcollect["time"].ax isa DD.Dimension
-            #@test YAXArrays.Cubes.Axes.axname(dcollect["time"].ax) == "time"
             @test DD.lookup(dcollect["time"].ax) ==
                   DateTime(2001, 1, 4):Day(1):DateTime(2001, 1, 13)
             @test dcollect["time"].offs == 2
             @test dcollect["d2"].ax isa DD.Dimension
-            #@test YAXArrays.Cubes.Axes.axname(dcollect["d2"].ax) == "d2"
             @test DD.lookup(dcollect["d2"].ax) == 0.1:0.1:0.5
             @test dcollect["d2"].offs == 0
             @test dcollect["d3"].ax isa DD.Dimension
-            #@test YAXArrays.Cubes.Axes.axname(dcollect["d3"].ax) == "d3"
             @test DD.lookup(dcollect["d3"].ax) == ["One", "Two"]
             @test dcollect["d3"].offs == 0
             a1 = [0.1, 0.2, 0.3, 0.4]

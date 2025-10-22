@@ -19,39 +19,10 @@ import DimensionalData: name
 
 export concatenatecubes, caxes, subsetcube, readcubedata, renameaxis!, YAXArray, setchunks, cache
 
-"""
-This function calculates a subset of a cube's data
-"""
-function subsetcube end
 
 "Returns the axes of a Cube"
 function caxes end
 
-# TODO: Give Axes an own module in YAXArrays
-#=
-include("Axes.jl")
-using .Axes:
-    CubeAxis,
-    RangeAxis,
-    CategoricalAxis,
-    findAxis,
-    getAxis,
-    axVal2Index,
-    axname,
-    axsym,
-    axVal2Index_lb,
-    axVal2Index_ub,
-    renameaxis,
-    axcopy
-
-"""
-The `Axes` module handles the Axes of a data cube. 
-It provides the following exports:
-
-$(EXPORTS)
-"""
-Axes
-=#
 """
     mutable struct CleanMe
 
@@ -272,16 +243,6 @@ cubechunks(c) = approx_chunksize(eachchunk(c))
 DiskArrays.eachchunk(c::YAXArray) = c.chunks
 getindex_all(a) = getindex(a, ntuple(_ -> Colon(), ndims(a))...).data
 
-#=
-function Base.getindex(x::YAXArray, i...) 
-    if length(i)==1 && istable(first(i))
-        batchextract(x,first(i))
-    else
-        getdata(x)[i...]
-    end
-end
-=#
-
 
 function batchextract(x,i)
     # This function should be documented and moved to DimensionalData
@@ -388,87 +349,10 @@ _iscompressed(c::DiskArrays.PermutedDiskArray) = _iscompressed(c.a.parent)
 _iscompressed(c::DiskArrays.SubDiskArray) = _iscompressed(c.v.parent)
 _iscompressed(c) = YAXArrayBase.iscompressed(c)
 
-# lift renameaxis functionality from Axes.jl to YAXArrays
+# lift renameaxis functionality from DimensionalData to YAXArrays
 renameaxis!(c::YAXArray, p::Pair) = DD.set(c, Symbol(first(p)) => last(p))
 
-#=
-function renameaxis!(c::YAXArray, p::Pair)
-    #This needs to be deleted, because DimensionalData cannot update the axlist
-    # Because this is a tuple instead of a vector
-    axlist = caxes(c)
-    i = findAxis(p[1], axlist)
-    axlist[i] = renameaxis(axlist[i], p[2])
-    c
-end
-function renameaxis!(c::YAXArray, p::Pair{<:Any,<:CubeAxis})
-    i = findAxis(p[1], caxes(c))
-    i === nothing && throw(ArgumentError("$(p[1]) Axis not found"))
-    length(caxes(c)[i].values) == length(p[2].values) ||
-        throw(ArgumentError("Length of replacement axis must equal length of old axis"))
-    caxes(c)[i] = p[2]
-    c
-end
-=#
-function _subsetcube end
-
-function subsetcube(z::YAXArray{T}; kwargs...) where {T}
-    newaxes, substuple = _subsetcube(z, collect(Any, map(Base.OneTo, size(z))); kwargs...)
-    newdata = view(getdata(z), substuple...)
-    YAXArray(newaxes, newdata, z.properties, cleaner=z.cleaner)
-end
-
 sorted(x, y) = x < y ? (x, y) : (y, x)
-
-#TODO move everything that is subset-related to its own file or to axes.jl
-#=
-interpretsubset(subexpr::Union{CartesianIndices{1},LinearIndices{1}}, ax) =
-    subexpr.indices[1]
-interpretsubset(subexpr::CartesianIndex{1}, ax) = subexpr.I[1]
-interpretsubset(subexpr, ax) = axVal2Index(ax, subexpr, fuzzy=true)
-function interpretsubset(subexpr::NTuple{2,Any}, ax)
-    x, y = sorted(subexpr...)
-    Colon()(sorted(axVal2Index_lb(ax, x), axVal2Index_ub(ax, y))...)
-end
-interpretsubset(subexpr::NTuple{2,Int}, ax::RangeAxis{T}) where {T<:TimeType} =
-    interpretsubset(map(T, subexpr), ax)
-interpretsubset(subexpr::UnitRange{<:Integer}, ax::RangeAxis{T}) where {T<:TimeType} =
-    interpretsubset(T(first(subexpr)) .. T(last(subexpr) + 1), ax)
-interpretsubset(subexpr::Interval, ax) = interpretsubset((subexpr.left, subexpr.right), ax)
-interpretsubset(subexpr::AbstractVector, ax::CategoricalAxis) =
-    axVal2Index.(Ref(ax), subexpr, fuzzy=true)
-=#
-
-function _subsetcube(z, subs; kwargs...)
-    kwargs = Dict{Any,Any}(kwargs)
-    for f in YAXDefaults.subsetextensions
-        f(kwargs)
-    end
-    newaxes = deepcopy(collect(DD.Dimension, caxes(z)))
-    foreach(kwargs) do kw
-        axdes, subexpr = kw
-        axdes = string(axdes)
-        iax = findAxis(axdes, caxes(z))
-        if isa(iax, Nothing)
-            throw(ArgumentError("Axis $axdes not found in cube"))
-        else
-            oldax = newaxes[iax]
-            subinds = interpretsubset(subexpr, oldax)
-            subs2 = subs[iax][subinds]
-            subs[iax] = subs2
-            if !isa(subinds, AbstractVector) && !isa(subinds, AbstractRange)
-                newaxes[iax] = axcopy(oldax, oldax.values[subinds:subinds])
-            else
-                newaxes[iax] = axcopy(oldax, oldax.values[subinds])
-            end
-        end
-    end
-    substuple = ntuple(i -> subs[i], length(subs))
-    inewaxes = findall(i -> isa(i, AbstractVector), substuple)
-    newaxes = newaxes[inewaxes]
-    @assert length.(newaxes) ==
-            map(length, filter(i -> isa(i, AbstractVector), collect(substuple)))
-    newaxes, substuple
-end
 
 
 function Base.getindex(a::YAXArray, args::DD.Dimension...; kwargs...) 
@@ -501,10 +385,6 @@ function formatbytes(x)
 end
 cubesize(c::YAXArray{T}) where {T} = (sizeof(T)) * prod(map(length, caxes(c)))
 cubesize(::YAXArray{T,0}) where {T} = sizeof(T)
-
-getCubeDes(::DD.Dimension) = "Cube axis"
-getCubeDes(::YAXArray) = "YAXArray"
-getCubeDes(::Type{T}) where {T} = string(T)
 
 loadingstatus(x) = "loaded in memory"
 loadingstatus(x::DiskArrays.AbstractDiskArray) = "loaded lazily"

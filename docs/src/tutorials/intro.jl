@@ -3,6 +3,7 @@
 # In this tutorial we will explore the features of the YAXArrays package. 
 
 using YAXArrays, EarthDataLab, Zarr, NetCDF
+using DimensionalData: Where
 
 # ## Use data larger than RAM#
 #
@@ -19,8 +20,10 @@ c = esdc(res="low")
 
 # ## Subsets happen lazily
 
-europe = subsetcube(c, region="Europe", time=2000:2016, 
-	Variable=["air_temperature_2m", "net_ecosystem", "soil_moisture"])
 
-    plot(europe.time.values,europe[Variable="air_temperature_2m", lat=50, lon=11].data)
+europe = c[region="Europe", time=2000:2016, 
+	Variable=Where( x-> any(contains.((x,),["air_temperature_2m", "net_ecosystem", "moisture"])))]
+
+
+plot(lookup(europe, Ti).data,europe[Variable=At("air_temperature_2m"), lat=50, lon=11].data)
 
