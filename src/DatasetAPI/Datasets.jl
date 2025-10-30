@@ -273,7 +273,7 @@ function collectdims(g)
     outd
 end
 
-function round_datetime(dt::CFTime.DateTimeProlepticGregorian)
+function round_datetime(dt)
     origin = CFTime._origin_period(dt)
     ms = Dates.Millisecond(round(Int, (dt.instant + origin + CFTime.DATETIME_OFFSET).duration))
     return DateTime(CFTime.UTInstant{Dates.Millisecond}(ms))
@@ -289,7 +289,6 @@ function toaxis(dimname, g, offs, len)
     if match(r"^(days)|(hours)|(seconds)|(months) since",lowercase(get(aratts,"units",""))) !== nothing
         tsteps = try
             dec = timedecode(ar[:], aratts["units"], lowercase(get(aratts, "calendar", "standard")), prefer_datetime=false)
-
             round_datetime.(dec)
         catch
             ar[:]
