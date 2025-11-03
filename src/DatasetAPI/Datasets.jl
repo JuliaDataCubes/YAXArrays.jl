@@ -289,7 +289,7 @@ function toaxis(dimname, g, offs, len)
     if match(r"^(days)|(hours)|(seconds)|(months) since",lowercase(get(aratts,"units",""))) !== nothing
         tsteps = try
             dec = timedecode(ar[:], aratts["units"], lowercase(get(aratts, "calendar", "standard")), prefer_datetime=false)
-            prefer_datetime && round_datetime.(dec)
+            round_datetime.(dec)
         catch
             ar[:]
         end
