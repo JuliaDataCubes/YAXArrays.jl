@@ -261,13 +261,8 @@ struct XOutput{D<:Tuple{Vararg{DD.Dimension}},R,T}
     outtype::T
     properties
 end
-<<<<<<< HEAD
-function XOutput(outaxes::DD.Dimension...; outtype=1, properties=Dict())
-    XOutput(outaxes, outtype,properties)
-=======
 function XOutput(outaxes...; outtype=1,properties=Dict(),destroyaxes=())
     XOutput(outaxes, destroyaxes, outtype,properties)
->>>>>>> 0c911fba... xmap updates
 end
 
 _step(x::AbstractArray{<:Number}) = length(x) > 1 ? (last(x)-first(x))/(length(x)-1) : zero(eltype(x))
@@ -307,10 +302,8 @@ end
 dataeltype(y::YAXArray) = eltype(y.data)
 dataeltype(y::DimWindowArray) = eltype(y.data.data)
 
-<<<<<<< HEAD
 tupelize(x) = (x,)
 tupelize(x::Tuple) = x
-=======
 """
     _groupby_xmap(f,winars...;output,inplace)
 
@@ -343,17 +336,14 @@ Maps a function `f` over an array of `ar` of type `YAXArray` or `DimWindowArray`
 
 `xmap` requires the specification of a type for the output of `f`, with a default type which is 1 indicating 
 that the data type should be equal to the element type of the first input array. `output` must be a list of `XOutput` objects, where each contains a tuple of axes under which the results are stored and the type of the values stored. If `inplace` is `true`, then the original values are replaced in a place. `xmap` returns one or more objects of type `YAXArray` or `DimWindowArray` containing a view over the data passed to `f` by `overlaying` the outputs over the original data arrays. If reduction functions are specified, then the `xmap` outputs replace the original original data array with the reduced values. During the execution of `xmap`, the everything except `f` itself is compiled just once. Specifying `f` as an object of type `XFunction` waits until the actual function is called before compiling it.
->>>>>>> 0c911fba... xmap updates
 
 xmap will return a lazy representation of the resulting array. 
 
-<<<<<<< HEAD
 function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...;
     output=XOutput(),
     inplace=default_inplace(f),
     function_args=(),
     function_kwargs=(;))
-=======
 * `output::Vector{XOutput}`: specifies the output arrays. Each XOutput object contains a tuple of axes (or symbols) to store the result and the element type of the output arrays.
 * `inplace::Bool`: if `true` the function `f` operates in-place so that pre-allocated output buffers will be passed to the function as 
 
@@ -369,7 +359,6 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...;
 function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; args=(), kwargs=(;), output = nothing,inplace=nothing)
     output === nothing && (output = default_output(f))
     inplace === nothing && (inplace = default_inplace(f))
->>>>>>> 0c911fba... xmap updates
     alldims = mapreduce(approxunion!,ars,init=[]) do ar
         DD.dims(ar)
     end
@@ -399,7 +388,6 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; args=()
 
 
     outaxinfo = map(output) do o
-<<<<<<< HEAD
         outaxes = o.outaxes
         addaxes = DD.otherdims(alldims, DD.basedims(outaxes))
         outwindows = map(i->[Base.OneTo(length(i))],outaxes)
@@ -407,43 +395,6 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; args=()
         alloutaxes = (outaxes..., addaxes...)
         dimsmap = DD.dimnum(allinandoutdims, alloutaxes)
         alloutaxes, tupelize(dimsmap), (outwindows..., extrawindows...)
-=======
-        r = map(o.outaxes) do ax
-            ax_indim = DD.dims(alldims,ax)
-            if isnothing(ax_indim)
-                ax, length(o.outaxes)+length(alldims)
-            else
-                idim = DD.dimnum(alldims,ax)
-                ax, idim
-            end
-        end
-        outaxes = map(first,r)
-        dimsmap = map(last,r)
-        #Add some logic for destroying dimensions, i.e. in reducing operations
-        destroydims = o.destroyaxes
-        addaxes = DD.otherdims(alldims,DD.basedims(outaxes))
-
-        
-        dimsmapadd = setdiff(ntuple(identity,length(alldims)),dimsmap)
-        outwindows = map(outaxes) do outax
-                [Base.OneTo(length(outax))]
-        end
-        extrawindows = map(addaxes) do outax
-            if isnothing(DD.dims(destroydims,outax))
-                Base.OneTo(length(outax))
-            else
-                fill(1, length(outax))
-            end
-        end
-        addaxes = map(addaxes) do outax
-            if isnothing(DD.dims(destroydims,outax))
-                outax
-            else
-                DD.reducedims(outax, DD.Dim)
-            end
-        end
-        (outaxes...,addaxes...), (dimsmap...,dimsmapadd...), (outwindows...,extrawindows...)
->>>>>>> 0c911fba... xmap updates
     end
     outaxes = map(first,outaxinfo)
     dimsmap = map(Base.Fix2(getindex,2),outaxinfo)
@@ -461,19 +412,11 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; args=()
         sout = map(win->maximum(maximum,win),w)
         DAE.create_outwindows(sout;dimsmap=dm,windows = w)
     end
-<<<<<<< HEAD
-    daefunction = DAE.create_userfunction(f, (outtypes...,),
-        is_mutating=inplace,
-        allow_threads=false,
-        args=function_args,
-        kwargs=function_kwargs)
-=======
     daefunction = if f isa DAE.UserOp
        f
     else
         DAE.create_userfunction(f, (outtypes...,); is_mutating=inplace,allow_threads=false,args, kwargs)
     end
->>>>>>> 0c911fba... xmap updates
     #Create DiskArrayEngine Input arrays
     input_arrays = map(ars) do ar
         a = to_windowarray(ar)
