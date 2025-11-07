@@ -3,10 +3,10 @@ module Datasets
 import ..Cubes: Cubes, YAXArray, concatenatecubes, CleanMe, subsetcube, copy_diskarray, setchunks, caxes, readcubedata, cubesize, formatbytes
 using ...YAXArrays: YAXArrays, YAXDefaults, findAxis
 using DataStructures: OrderedDict, counter
-using Dates: Day, Hour, Minute, Second, Month, Year, Date, DateTime, TimeType, AbstractDateTime, Period
+using Dates: Dates, Day, Hour, Minute, Second, Month, Year, Date, DateTime, TimeType, AbstractDateTime, Period
 using Statistics: mean
 using IntervalSets: Interval, (..)
-using CFTime: timedecode, timeencode, DateTimeNoLeap, DateTime360Day, DateTimeAllLeap
+using CFTime: timedecode, timeencode, DateTimeNoLeap, DateTime360Day, DateTimeAllLeap, CFTime
 using YAXArrayBase
 using YAXArrayBase: iscontdimval, add_var
 using DiskArrayTools: CFDiskArray, diskstack
@@ -273,7 +273,13 @@ function collectdims(g)
     outd
 end
 
-function toaxis(dimname, g, offs, len)
+function round_datetime(dt)
+    origin = CFTime._origin_period(dt)
+    ms = Dates.Millisecond(round(Int, (dt.instant + origin + CFTime.DATETIME_OFFSET).duration))
+    return DateTime(CFTime.UTInstant{Dates.Millisecond}(ms))
+end
+
+function toaxis(dimname, g, offs, len;prefer_datetime=true)
     axname = Symbol(dimname)
     if !haskey(g, dimname)
         return DD.rebuild(DD.name2dim(axname), 1:len)
@@ -282,7 +288,12 @@ function toaxis(dimname, g, offs, len)
     aratts = get_var_attrs(g, dimname)
     if match(r"^(days)|(hours)|(seconds)|(months) since",lowercase(get(aratts,"units",""))) !== nothing
         tsteps = try
-            timedecode(ar[:], aratts["units"], lowercase(get(aratts, "calendar", "standard")))
+            dec = timedecode(ar[:], aratts["units"], lowercase(get(aratts, "calendar", "standard")), prefer_datetime=false)
+            if prefer_datetime
+                round_datetime.(dec)
+            else
+                dec
+            end
         catch
             ar[:]
         end

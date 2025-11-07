@@ -324,6 +324,7 @@ function _groupby_xmap(f,ars...;output,inplace)
     newf = DAE.disk_onlinestat(_f,preproc,groupconv)
 
     outputs = XOutput(g.dims[igroup],destroyaxes=DD.otherdims(g.dim_orig,g.dims))
+
     groupar = YAXArray(g.indices[igroup].dims_destroyed, g.indices[igroup].indices)
     xmap(newf, g.data, groupar, output=outputs)
 end
@@ -356,7 +357,7 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...;
 
 
 """
-function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; args=(), kwargs=(;), output = nothing,inplace=nothing)
+function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; args=(), kwargs=(;), output=nothing, inplace=nothing, function_args=(), function_kwargs=(;))
     output === nothing && (output = default_output(f))
     inplace === nothing && (inplace = default_inplace(f))
     alldims = mapreduce(approxunion!,ars,init=[]) do ar
@@ -375,6 +376,7 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; args=()
     is_groupby = any(winars) do a
         any(Base.Fix2(isa,GroupIndices),a.indices)
     end
+
     is_groupby && return _groupby_xmap(f,winars...;output,inplace)
 
     #Create outspecs
@@ -386,12 +388,25 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; args=()
 
     allinandoutdims = (unique(DD.basedims((alldims..., alloutdims...)))...,)
 
-
     outaxinfo = map(output) do o
         outaxes = o.outaxes
+        destroydims = o.destroyaxes
         addaxes = DD.otherdims(alldims, DD.basedims(outaxes))
         outwindows = map(i->[Base.OneTo(length(i))],outaxes)
-        extrawindows = Base.OneTo.(length.(addaxes))
+        extrawindows = map(addaxes) do outax
+            if isnothing(DD.dims(destroydims, outax))
+                Base.OneTo(length(outax))
+            else
+                fill(1, length(outax))
+            end
+        end
+        addaxes = map(addaxes) do outax
+            if isnothing(DD.dims(destroydims, outax))
+                outax
+            else
+                DD.reducedims(outax, DD.Dim)
+            end
+        end
         alloutaxes = (outaxes..., addaxes...)
         dimsmap = DD.dimnum(allinandoutdims, alloutaxes)
         alloutaxes, tupelize(dimsmap), (outwindows..., extrawindows...)
@@ -415,7 +430,8 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; args=()
     daefunction = if f isa DAE.UserOp
        f
     else
-        DAE.create_userfunction(f, (outtypes...,); is_mutating=inplace,allow_threads=false,args, kwargs)
+        DAE.create_userfunction(f, (outtypes...,); is_mutating=inplace, allow_threads=false,
+            args=function_args, kwargs=function_kwargs)
     end
     #Create DiskArrayEngine Input arrays
     input_arrays = map(ars) do ar
