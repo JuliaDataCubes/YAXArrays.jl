@@ -21,17 +21,20 @@ Dataset object which stores an `OrderedDict` of YAXArrays with Symbol keys.
 A dictionary of CubeAxes and a Dictionary of general properties.
 A dictionary can hold cubes with differing axes. But it will share the common axes between the subcubes.
 """
-struct Dataset
+
+struct OldDataset
     cubes::OrderedDict{Symbol,YAXArray}
     axes::Dict{Symbol,DD.Dimension}
     properties::Dict
 end
+
 """
     Dataset(; properties = Dict{String,Any}, cubes...)
 
 Construct a YAXArray Dataset with global attributes `properties` a and a list of named YAXArrays cubes...
 """
-function Dataset(; properties = Dict{String,Any}(), cubes...)
+Dataset(; properties = Dict{String,Any}(), cubes...) = DD.DimStack((;cubes...), metadata=properties)
+#=
     axesall = Set{DD.Dimension}()
     foreach(values(cubes)) do c
         ax = DD.dims(c)
@@ -42,6 +45,7 @@ function Dataset(; properties = Dict{String,Any}(), cubes...)
     axesnew = Dict{Symbol,DD.Dimension}(axnameall[i] => axesall[i] for i = eachindex(axesall))
     Dataset(OrderedDict(cubes), axesnew, properties)
 end
+=#
 
 """
     to_dataset(c;datasetaxis = "Variables", layername = "layer")
@@ -84,14 +88,15 @@ function to_dataset(c;datasetaxis = "Variables", layername = get(c.properties,"n
         end
 
     end
+    @show typeof(allcubes)
 
     axlist = Dict(Symbol(DD.name(ax))=>ax for ax in axlist)
     attrs = Dict{String,Any}()
     !isnothing(finalperm) && (attrs["_CubePerm"] = collect(finalperm))
-    Dataset(OrderedDict(allcubes),axlist,attrs)
+    DimStack(NamedTuple(OrderedDict(allcubes)),axlist,attrs)
 end
 
-function Base.show(io::IO, ds::Dataset)
+function Base.show(io::IO, ds::OldDataset)
     # Find axes shared by all cubes
     sharedaxs = length(ds.cubes) > 0 ? intersect([caxes(c) for (n, c) in ds.cubes]...) : ()
     # Create a dictionary to store groups of variables by their axes
@@ -161,14 +166,14 @@ function Base.show(io::IO, ds::Dataset)
     end
 end
 
-function Base.propertynames(x::Dataset, private::Bool = false)
+function Base.propertynames(x::OldDataset, private::Bool = false)
     if private
         Symbol[:cubes; :axes; :properties; collect(keys(x.cubes)); collect(keys(x.axes))]
     else
         Symbol[collect(keys(x.cubes)); collect(keys(x.axes))]
     end
 end
-function Base.getproperty(x::Dataset, k::Symbol)
+function Base.getproperty(x::OldDataset, k::Symbol)
     if k === :cubes
         return getfield(x, :cubes)
     elseif k === :axes
@@ -180,7 +185,7 @@ function Base.getproperty(x::Dataset, k::Symbol)
     end
 end
 
-function readcubedata(ds::Dataset)
+function readcubedata(ds::OldDataset)
     dssize = sum(cubesize.(values(ds.cubes)))
     if dssize > YAXDefaults.max_cache[]
         @warn "Loading data of size $(formatbytes(dssize))"
@@ -189,14 +194,14 @@ function readcubedata(ds::Dataset)
     Dataset(inmemcubes, ds.axes, ds.properties)
 end
 
-Base.getindex(x::Dataset, i::Symbol) =
+Base.getindex(x::OldDataset, i::Symbol) =
 haskey(x.cubes, i) ? x.cubes[i] :
 haskey(x.axes, i) ? x.axes[i] : throw(ArgumentError("$i not found in Dataset"))
-function Base.getindex(x::Dataset, i::Vector{Symbol})
+function Base.getindex(x::OldDataset, i::Vector{Symbol})
     cubesnew = [j => x.cubes[j] for j in i]
     Dataset(; cubesnew...)
 end
-function DiskArrays.cache(ds::Dataset;maxsize=1000)
+function DiskArrays.cache(ds::OldDataset;maxsize=1000)
     #Distribute cache size equally across cubes
     maxsize = maxsize ÷ length(ds.cubes)
     cachedcubes = OrderedDict{Symbol,YAXArray}(
@@ -215,14 +220,14 @@ function fuzzyfind(s::String, comp::Vector{String})
         f[1]
     end
 end
-function Base.getindex(x::Dataset, i::Vector{String})
+function Base.getindex(x::OldDataset, i::Vector{String})
     istr = string.(keys(x.cubes))
     ids = map(name -> fuzzyfind(name, istr), i)
     syms = map(j -> Symbol(istr[j]), ids)
     cubesnew = [Symbol(i[j]) => x.cubes[syms[j]] for j = 1:length(ids)]
     Dataset(; cubesnew...)
 end
-Base.getindex(x::Dataset, i::String) = getproperty(x, Symbol(i))
+Base.getindex(x::OldDataset, i::String) = getproperty(x, Symbol(i))
 function subsetifdimexists(a;kwargs...)
     axlist = DD.dims(a)
     kwargsshort = filter(kwargs) do kw
@@ -238,7 +243,7 @@ function subsetifdimexists(a;kwargs...)
     end
 end
 
-function Base.getindex(x::Dataset; var = nothing, kwargs...)
+function Base.getindex(x::OldDataset; var = nothing, kwargs...)
     if var === nothing
         cc = x.cubes
         Dataset(; properties=x.properties, map(ds -> ds => subsetifdimexists(cc[ds]; kwargs...), collect(keys(cc)))...)
@@ -476,21 +481,23 @@ function open_dataset(g; skip_keys=(), driver = :all)
         gatts = YAXArrayBase.get_global_attrs(g)
         gatts = Dict{String,Any}(string(k)=>v for (k,v) in gatts)
         sdimlist = Dict(DD.name(v.ax) => v.ax for (k, v) in dimlist)
-        Dataset(allcubes, sdimlist,gatts)
+        #TODO (;allcubes...)
+        Dataset(;NamedTuple(allcubes)..., properties=gatts)
     end
 end
-#Base.getindex(x::Dataset; kwargs...) = subsetcube(x; kwargs...)
+#Base.getindex(x::OldDataset; kwargs...) = subsetcube(x; kwargs...)
+# TODO Check whether this is still used
 YAXDataset(; kwargs...) = Dataset(YAXArrays.YAXDefaults.cubedir[]; kwargs...)
 
 
-to_array(ds::Dataset; joinname = "Variables") = Cube(ds;joinname)
+to_array(ds::OldDataset; joinname = "Variables") = Cube(ds;joinname)
 
 """
-    Cube(ds::Dataset; joinname="Variables")
+    Cube(ds::OldDataset; joinname="Variables")
 
 Construct a single YAXArray from the dataset `ds` by concatenating the cubes in the datset on the `joinname` dimension.
 """
-function Cube(ds::Dataset; joinname = "Variables", target_type = nothing)
+function Cube(ds::OldDataset; joinname = "Variables", target_type = nothing)
 
     dl = collect(keys(ds.axes))
     dls = string.(dl)
@@ -633,7 +640,7 @@ end
 
 
 """
-    setchunks(c::Dataset,chunks)
+    setchunks(c::OldDataset,chunks)
 
 Resets the chunks of all or a subset YAXArrays in the dataset and returns a new Dataset. Note that this will not change the chunking of the underlying data itself,
 it will just make the data "look" like it had a different chunking. If you need a persistent on-disk representation
@@ -649,7 +656,7 @@ where a description of the desired variable chunks can take one of the following
 - a tuple specifying the chunk size along each dimension
 - an AbstractDict or NamedTuple mapping one or more axis names to chunk sizes
 """
-function setchunks(ds::Dataset, chunks)
+function setchunks(ds::OldDataset, chunks)
     newchunks = interpretchunks(chunks, ds)
     newds = deepcopy(ds)
     for k in keys(newds.cubes)
@@ -661,7 +668,7 @@ function setchunks(ds::Dataset, chunks)
 end
 
 """
-    savedataset(ds::Dataset; path= "", persist=nothing, overwrite=false, append=false, skeleton=false, backend=:all, driver=backend, max_cache=5e8, writefac=4.0)
+    savedataset(ds::OldDataset; path= "", persist=nothing, overwrite=false, append=false, skeleton=false, backend=:all, driver=backend, max_cache=5e8, writefac=4.0)
 
 Saves a Dataset into a file at `path` with the format given by `driver`, i.e., `driver=:netcdf` or `driver=:zarr`.
 
@@ -670,7 +677,7 @@ Saves a Dataset into a file at `path` with the format given by `driver`, i.e., `
     `overwrite=true`, deletes ALL your data and it will create a new file.
 """
 function savedataset(
-    ds::Dataset;
+    ds::OldDataset;
     path = "",
     persist = nothing,
     overwrite = false,
@@ -740,7 +747,8 @@ function savedataset(
 
     allcubes = map(e->collectfromhandle(e,dshandle,cleaner), arrayinfo)
 
-    diskds = Dataset(OrderedDict(zip(allnames,allcubes)), copy(ds.axes),YAXArrayBase.get_global_attrs(dshandle))
+    
+    diskds = DD.DimStack(NamedTuple{allnames}(allcubes),metadata=YAXArrayBase.get_global_attrs(dshandle))
     if !skeleton
         copydataset!(diskds, ds; maxbuf = max_cache, writefac)
     end

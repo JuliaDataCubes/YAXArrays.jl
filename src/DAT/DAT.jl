@@ -20,7 +20,7 @@ import ..Cubes: cubechunks, iscompressed, chunkoffset, YAXArray, caxes
 import ..YAXArrays: findAxis, getOutAxis, getAxis
 #import ..Cubes.Axes:
 #    AxisDescriptor, axname, ByInference, axsym, getOutAxis, getAxis, findAxis, match_axis
-import ..Datasets: Dataset, createdataset
+import ..Datasets: OldDataset as Dataset, createdataset
 using ..YAXArrays: ByInference, YAXArrays
 import ...YAXArrays.workdir
 import YAXArrayBase
