@@ -68,4 +68,39 @@ a, b, c = sample_arrays()
         @test isa(a .+ b, YAXArray)
 
     end
+    xabs = abs.(xneg)
+    @test all(xabs[:] .== 1.0)
+
+    # Logical / predicates
+    xisnan = isnan.(c)
+    @test eltype(xisnan) == Bool
+    @test xisnan[1,2] == true
+    @test xisnan[2,3] == true
+    @test xisnan[1,1] == false
+
+    xnotnan = .!isnan.(c)
+    @test xnotnan[1,1] == true
+    @test xnotnan[1,2] == false
+
+    # Mixed operations
+    xmix = (a .+ b) .* 2 .- 1
+    @test all(xmix[:] .== 1.0)
+
+    # Chained broadcasts
+    xchain = .!isnan.(c .+ 1)
+    @test xchain[1,2] == false
+    @test xchain[1,1] == true
+
+    # Mixed operations with numbers
+    xscalar = a .* 3 .+ 1
+    @test all(xscalar[:] .== 4.0)
+    @test isa(a .+ b, YAXArray)
+end
+
+@testset "missing handling" begin
+    am = YAXArray([missing 1 ; 1 2])
+    aeq = am .== am
+    @test eltype(aeq) == Union{Missing, Bool}
+    @test ismissing(aeq[1,1])
+    @test aeq[1,2]
 end
