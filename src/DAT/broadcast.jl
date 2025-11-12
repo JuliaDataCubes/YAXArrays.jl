@@ -27,7 +27,9 @@ end
 function Base.materialize!(bc::Broadcast.Broadcasted{XStyle})
     args2 = map(arg -> arg isa Broadcast.Broadcasted ? Base.materialize(arg) : arg, bc.args)
     args2 = map(to_yax, args2)
-    dummy_args = map(a -> first(a.data), args2)
-    outtype = typeof(bc.f(dummy_args...))
+        intypes = (eltype.(args2)...,)
+    @debug intypes
+    outtypes = Base.return_types(bc.f, intypes)
+    outtype = Union{outtypes...}
     return xmap(XFunction(bc.f; inplace=true), args2..., output=XOutput(; outtype))
 end
