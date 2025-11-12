@@ -39,6 +39,7 @@ include("Cubes/Cubes.jl")
 include("DatasetAPI/Datasets.jl")
 include("DAT/DAT.jl")
 include("DAT/xmap.jl")
+include("DAT/counter.jl")
 
 using Reexport: @reexport
 using YAXArrayBase: getattributes
