@@ -30,6 +30,6 @@ function Base.materialize!(bc::Broadcast.Broadcasted{XStyle})
         intypes = (eltype.(args2)...,)
     @debug intypes
     outtypes = Base.return_types(bc.f, intypes)
-    outtype = Union{outtypes...}
+    outtype = promote_type{outtypes...}
     return xmap(XFunction(bc.f; inplace=true), args2..., output=XOutput(; outtype))
 end
