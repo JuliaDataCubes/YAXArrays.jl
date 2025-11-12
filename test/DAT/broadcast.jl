@@ -61,3 +61,11 @@ a, b, c = sample_arrays()
     @test all(xscalar[:] .== 4.0)
     @test isa(a .+ b, YAXArray)
 end
+
+@testset "missing handling" begin
+    am = YAXArray([missing 1 ; 1 2])
+    aeq = am .== am
+    @test eltype(aeq) == Union{Missing, Bool}
+    @test ismissing(aeq[1,1])
+    @test aeq[1,2]
+end
