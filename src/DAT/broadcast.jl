@@ -24,12 +24,3 @@ function Base.materialize(bc::Broadcast.Broadcasted{XStyle})
     @debug outtype
     return xmap(XFunction(bc.f; inplace=false), args2..., output=XOutput(; outtype))
 end
-function Base.materialize!(bc::Broadcast.Broadcasted{XStyle})
-    args2 = map(arg -> arg isa Broadcast.Broadcasted ? Base.materialize(arg) : arg, bc.args)
-    args2 = map(to_yax, args2)
-        intypes = (eltype.(args2)...,)
-    @debug intypes
-    outtypes = Base.return_types(bc.f, intypes)
-    outtype = promote_type{outtypes...}
-    return xmap(XFunction(bc.f; inplace=true), args2..., output=XOutput(; outtype))
-end
