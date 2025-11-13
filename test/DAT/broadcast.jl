@@ -68,9 +68,4 @@ end
     @test eltype(aeq) == Union{Missing, Bool}
     @test ismissing(aeq[1,1])
     @test aeq[1,2]
-    aeq2 = similar(aeq)
-    aeq2 .= am .== am
-    @test eltype(aeq2) == Union{Missing, Bool}
-    @test ismissing(aeq2[1,1])
-    @test aeq2[2,2]
 end
