@@ -142,7 +142,7 @@ function name(a::YAXArray)
     return NoName()
 end
 
-"Label of an YAXArrray using CF conventions. Includes the name and the unit, if present. Searches first for metadata `units` followed by `unit``"
+"Label of an YAXArrray using CF conventions. Includes the name and the unit, if present. Searches first for metadata `units` followed by `unit`"
 function label(a::YAXArray)
     # as implemented in python xarray
     isempty(a.properties) && return ""
