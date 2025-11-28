@@ -1,8 +1,8 @@
 # Plot YAXArrays
 
 This section describes how to visualize YAXArrays.
-See also the [Plotting maps tutorial](../tutorials/plottingmaps) to plot geospatial data.
-All [plotting capabilities](https://rafaqz.github.io/DimisensionalData.jl/dev/plots) of `AbstractDimArray` apply to a `YAXArrays` as well, because every `YAXArray` is also an `AbstractDimArray`.
+See also the [Plotting maps tutorial](../tutorials/plottingmaps.md) to plot geospatial data.
+All [plotting capabilities](https://rafaqz.github.io/DimensionalData.jl/stable/plots) of `AbstractDimArray` apply to a `YAXArrays` as well, because every `YAXArray` is also an `AbstractDimArray`.
 
 ## Plot a YAXArrray
 
