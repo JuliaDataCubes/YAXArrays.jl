@@ -134,7 +134,7 @@ nothing # hide
 and now plot
 
 ````@example AoG
-data(dim_data) * mapping(:lon, :lat; color=:value) * visual(Scatter) |> draw
+data(dim_data) * mapping(:lon, :lat; color=Symbol("Near-Surface Air Temperature")) * visual(Scatter) |> draw
 ````
 
 ::: warning
@@ -146,7 +146,7 @@ Note that we are using a `Scatter` type per point and not the `Heatmap` one. The
 set other attributes
 
 ````@example AoG
-plt = data(dim_data) * mapping(:lon, :lat; color=:value)
+plt = data(dim_data) * mapping(:lon, :lat; color=Symbol("Near-Surface Air Temperature"))
 draw(plt * visual(Scatter, marker=:rect), scales(Color = (; colormap = :plasma));
     axis = (width = 600, height = 400, limits=(0, 360, -90, 90)))
 ````
@@ -166,14 +166,15 @@ nothing # hide
 ````
 
 ````@example AoG
-plt = data(dim_time) * mapping(:lon, :lat; color = :value, layout = :time => nonnumeric)
+plt = data(dim_time) * mapping(:lon, :lat; color=Symbol("Near-Surface Air Temperature"), layout = :time => nonnumeric)
 draw(plt * visual(Scatter, marker=:rect))
 ````
 
 again, let's add some additional attributes
 
 ````@example AoG
-plt = data(dim_time) * mapping(:lon, :lat; color = :value, layout = :time => nonnumeric)
+plt = data(dim_time) * mapping(:lon, :lat; color=Symbol("Near-Surface Air Temperature"),
+    layout = :time => nonnumeric)
 draw(plt * visual(Scatter, marker=:rect), scales(Color = (; colormap = :magma));
     axis = (; limits=(0, 360, -90, 90)),
     figure=(; size=(900,600)))
@@ -182,14 +183,16 @@ draw(plt * visual(Scatter, marker=:rect), scales(Color = (; colormap = :magma));
 most [Makie plot functions](https://docs.makie.org/stable/reference/plots/overview) should work. See `lines` for example
 
 ````@example AoG
-plt = data(dim_data[lon=50..100]) * mapping(:lat, :value => "tas"; color=:value => "tas")
+plt = data(dim_data[lon=50..100]) * mapping(:lat, Symbol("Near-Surface Air Temperature") => "tas";
+    color=Symbol("Near-Surface Air Temperature") => "tas")
 draw(plt * visual(Lines); figure=(; size=(650,400)))
 ````
 
 or faceting them
 
 ````@example AoG
-plt = data(dim_data[lon=50..59]) * mapping(:lat, :value => "tas"; color=:value => "tas",
+plt = data(dim_data[lon=50..59]) * mapping(:lat, Symbol("Near-Surface Air Temperature") => "tas";
+    color=Symbol("Near-Surface Air Temperature") => "tas",
     layout = :lon => nonnumeric)
 draw(plt * visual(Lines); figure=(; size=(650,400)))
 ````
@@ -204,7 +207,7 @@ dim_series = c[time=DateTime("2015-01-01") .. DateTime("2015-01-04"), lon = 150 
 and plot
 
 ````@example AoG
-plt = data(dim_series) * mapping(:time, :value => "tas"; color=:lon => nonnumeric)
+plt = data(dim_series) * mapping(:time, Symbol("Near-Surface Air Temperature") => "tas"; color=:lon => nonnumeric)
 draw(plt * visual(ScatterLines), scales(Color = (; palette = :tableau_colorblind));
     figure=(; size=(800,400)))
 ````
@@ -214,7 +217,7 @@ draw(plt * visual(ScatterLines), scales(Color = (; palette = :tableau_colorblind
 Basic statistical [analysis](https://aog.makie.org/stable/generated/analyses/) can also be done, for example:
 
 ````@example AoG
-specs = data(dim_data[lat=50..55]) * mapping(:lon, :value => "tas"; color=:lat => nonnumeric)
+specs = data(dim_data[lat=50..55]) * mapping(:lon, Symbol("Near-Surface Air Temperature") => "tas"; color=:lat => nonnumeric)
 specs *= (smooth() + visual(Scatter))
 draw(specs;  figure=(; size=(700,400)))
 ````

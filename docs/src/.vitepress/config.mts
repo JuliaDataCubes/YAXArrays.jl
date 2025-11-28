@@ -27,6 +27,7 @@ const navTemp = {
         { text: 'Create', link: '/UserGuide/create' },
         { text: 'Select', link: '/UserGuide/select' },
         { text: 'Compute', link: '/UserGuide/compute' },
+        { text: 'Plot', link: '/UserGuide/plot' },
         { text: 'Chunk', link: '/UserGuide/chunk' },
         { text: 'Cache', link: '/UserGuide/cache' },
         { text: 'Group', link: '/UserGuide/group' },
@@ -86,7 +87,7 @@ export default defineConfig({
   // cleanUrls: true,
   outDir: 'REPLACE_ME_DOCUMENTER_VITEPRESS', // This is required for MarkdownVitepress to work correctly...
   head: [
-    ['link', { rel: 'icon', href: '/favicon.ico' }],
+    ['link', { rel: 'icon', href: `${baseTemp.base}favicon.ico` }],
     ['script', {src: `${getBaseRepository(baseTemp.base)}versions.js`}],
     ['script', {src: `${baseTemp.base}siteinfo.js`}]
   ],
