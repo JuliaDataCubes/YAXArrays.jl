@@ -61,7 +61,9 @@ Time in [Climate and Forecasting (CF) conventions](https://cfconventions.org/Dat
 a = ds.tos[lon = Near(0), lat = Near(0)]
 times = Ti(map(x -> DateTime(string(x)), a.time.val))
 a = YAXArray((times,), collect(a.data), a.properties)
+```
 
+```@example plot
 plot(a)
 ```
 
