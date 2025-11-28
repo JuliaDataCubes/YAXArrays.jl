@@ -1,7 +1,7 @@
 # Plot YAXArrays
 
 This section describes how to visualize YAXArrays.
-See also the [Plotting maps tutorial](/tutorials/plottingmaps.html) to plot geospatial data.
+See also the [Plotting maps tutorial](../tutorials/plottingmaps) to plot geospatial data.
 All [plotting capabilities](https://rafaqz.github.io/DimisensionalData.jl/dev/plots) of `AbstractDimArray` apply to a `YAXArrays` as well, because every `YAXArray` is also an `AbstractDimArray`.
 
 ## Plot a YAXArrray
@@ -45,7 +45,7 @@ Get a `Dataset` with CF meta data:
 using NetCDF
 using Downloads: download
 
-path = download("https://www.unidata.ucar.edu/software/netcdf/examples/tos_O1_2001-2002.nc", "example.nc")
+path = download("https://archive.unidata.ucar.edu/software/netcdf/examples/tos_O1_2001-2002.nc", "example.nc")
 ds = open_dataset(path)
 ```
 
