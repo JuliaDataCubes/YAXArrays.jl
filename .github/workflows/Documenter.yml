@@ -3,11 +3,11 @@
 name: Documenter
 
 on:
-  # Runs on pushes targeting the `main` branch. Change this to `master` if you're
-  # using the `master` branch as the default branch.
+  # Runs on pushes targeting the `main` branch. Change this to `main` if you're
+  # using the `main` branch as the default branch.
   push:
     branches:
-      - master
+      - main
     tags: ['*']
   pull_request:
 
@@ -35,7 +35,7 @@ jobs:
       DISPLAY: ':0'
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Setup Julia
         uses: julia-actions/setup-julia@v2
       - name: Pull Julia cache

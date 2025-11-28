@@ -3,9 +3,10 @@ module Datasets
 import ..Cubes: Cubes, YAXArray, concatenatecubes, CleanMe, subsetcube, copy_diskarray, setchunks, caxes, readcubedata, cubesize, formatbytes
 using ...YAXArrays: YAXArrays, YAXDefaults, findAxis
 using DataStructures: OrderedDict, counter
-using Dates: Day, Hour, Minute, Second, Month, Year, Date, DateTime, TimeType, AbstractDateTime
+using Dates: Dates, Day, Hour, Minute, Second, Month, Year, Date, DateTime, TimeType, AbstractDateTime, Period
+using Statistics: mean
 using IntervalSets: Interval, (..)
-using CFTime: timedecode, timeencode, DateTimeNoLeap, DateTime360Day, DateTimeAllLeap
+using CFTime: timedecode, timeencode, DateTimeNoLeap, DateTime360Day, DateTimeAllLeap, CFTime
 using YAXArrayBase
 using YAXArrayBase: iscontdimval, add_var
 using DiskArrayTools: CFDiskArray, diskstack
@@ -248,7 +249,7 @@ function Base.getindex(x::Dataset; var = nothing, kwargs...)
         Dataset(; properties=x.properties, map(ds -> ds => subsetifdimexists(cc[ds]; kwargs...), collect(keys(cc)))...)
     end
 end
-function collectdims(g)
+function collectdims(g; force_datetime=true)
     dlist = Set{Tuple{String,Int,Int}}()
     varnames = get_varnames(g)
     foreach(varnames) do k
@@ -266,13 +267,19 @@ function collectdims(g)
             end
         end
     end
-    outd = Dict(d[1] => (ax = toaxis(d[1], g, d[2], d[3]), offs = d[2]) for d in dlist)
+    outd = Dict(d[1] => (ax=toaxis(d[1], g, d[2], d[3]; force_datetime), offs=d[2]) for d in dlist)
     length(outd) == length(dlist) ||
     throw(ArgumentError("All Arrays must have the same offset"))
     outd
 end
 
-function toaxis(dimname, g, offs, len)
+function round_datetime(dt)
+    origin = CFTime._origin_period(dt)
+    ms = Dates.Millisecond(round(Int, (dt.instant + origin + CFTime.DATETIME_OFFSET).duration))
+    return DateTime(CFTime.UTInstant{Dates.Millisecond}(ms))
+end
+
+function toaxis(dimname, g, offs, len; force_datetime=true)
     axname = Symbol(dimname)
     if !haskey(g, dimname)
         return DD.rebuild(DD.name2dim(axname), 1:len)
@@ -282,8 +289,17 @@ function toaxis(dimname, g, offs, len)
     if match(r"^(days)|(hours)|(seconds)|(months) since",lowercase(get(aratts,"units",""))) !== nothing
         tsteps = try
             timedecode(ar[:], aratts["units"], lowercase(get(aratts, "calendar", "standard")))
-        catch
-            ar[:]
+        catch e
+            if e isa InexactError
+                dec = timedecode(ar[:], aratts["units"], lowercase(get(aratts, "calendar", "standard")), prefer_datetime=false)
+                if force_datetime
+                    round_datetime.(dec)
+                else
+                    dec
+                end
+            else
+                ar[:]
+            end
         end
         DD.rebuild(DD.name2dim(axname), tsteps[offs+1:end])
     elseif haskey(aratts, "_ARRAYVALUES")
@@ -317,6 +333,7 @@ function testrange(x)
 end
 
 function testrange(x::AbstractArray{<:Integer})
+    length(x) <= 1 && return x
     steps = diff(x)
     if all(isequal(steps[1]), steps) && !iszero(steps[1])
         return range(first(x), step = steps[1], length = length(x))
@@ -353,9 +370,12 @@ function merge_new_axis(alldatasets, firstcube,var,mergedim)
     else
         DD.rebuild(mergedim, 1:length(alldatasets))
     end
-    alldiskarrays = map(ds->ds.cubes[var].data,alldatasets).data
-    newda = diskstack(alldiskarrays)
+    alldiskarrays = map(alldatasets) do ds
+        ismissing(ds) ? missing : ds.cubes[var].data
+    end
     newdims = (DD.dims(firstcube)...,newdim)
+    s = ntuple(i->i==length(newdims) ? length(alldiskarrays) : 1, length(newdims))
+    newda = DiskArrays.ConcatDiskArray(reshape(alldiskarrays,s...))
     YAXArray(newdims,newda,deepcopy(firstcube.properties))
 end
 function merge_existing_axis(alldatasets,firstcube,var,mergedim)
@@ -374,6 +394,7 @@ end
     open_mfdataset(files::DD.DimVector{<:AbstractString}; kwargs...)
 
 Opens and concatenates a list of dataset paths along the dimension specified in `files`. 
+
 This method can be used when the generic glob-based version of open_mfdataset fails
 or is too slow. 
 For example, to concatenate a list of annual NetCDF files along the `time` dimension, 
@@ -392,9 +413,11 @@ files = ["a.nc", "b.nc", "c.nc"]
 open_mfdataset(DD.DimArray(files, DD.Dim{:NewDim}(["a","b","c"])))
 ````
 """
-function open_mfdataset(vec::DD.DimVector{<:AbstractString};kwargs...)
-    alldatasets = open_dataset.(vec;kwargs...);
-    fi = first(alldatasets)
+function open_mfdataset(vec::DD.DimVector{<:Union{Missing,AbstractString}}; kwargs...)
+    alldatasets = map(vec) do filename
+        ismissing(filename) ? missing : open_dataset(filename;kwargs...)
+    end
+    fi = first(skipmissing(alldatasets))
     mergedim = DD.dims(alldatasets) |> only
     vars_to_merge = collect(keys(fi.cubes))
     ars = map(vars_to_merge) do var
@@ -420,6 +443,7 @@ The default driver will search for available drivers and tries to detect the use
 
 - `skip_keys` are passed as symbols, i.e., `skip_keys = (:a, :b)`
 - `driver=:all`, common options are `:netcdf` or `:zarr`.
+- `force_datetime=false` force conversion when CFTime fails with an InexactError even if milliseconds must be rounded
 
 Example:
 
@@ -427,12 +451,12 @@ Example:
 ds = open_dataset(f, driver=:zarr, skip_keys = (:c,))
 ````
 """
-function open_dataset(g; skip_keys=(), driver = :all)
+function open_dataset(g; skip_keys=(), driver=:all, force_datetime=false)
     str_skipkeys = string.(skip_keys)
     dsopen = YAXArrayBase.to_dataset(g, driver = driver)
     YAXArrayBase.open_dataset_handle(dsopen) do g 
         isempty(get_varnames(g)) && throw(ArgumentError("Group does not contain datasets."))
-        dimlist = collectdims(g)
+        dimlist = collectdims(g; force_datetime)
         dnames = string.(keys(dimlist))
         varlist = filter(get_varnames(g)) do vn
             upname = uppercase(vn)
@@ -949,7 +973,15 @@ function createdataset(
     function dataattfromaxis(ax::DD.Dimension, n, _)
         prependrange(toaxistype(DD.lookup(ax)), n), Dict{String,Any}()
     end
-
+    middle(x::DD.IntervalSets.Interval) = x.left + half(x.right-x.left)
+    half(x::Period) = int_half(x)
+    half(x::Integer) = int_half(x)
+    half(x) = x/2
+    int_half(x) = x÷2
+    function dataattfromaxis(ax::DD.Dimension, n, T::Type{<:DD.IntervalSets.Interval})
+        newdim = DD.rebuild(ax,middle.(ax.val))
+        dataattfromaxis(newdim,n,eltype(newdim))
+    end
     # function dataattfromaxis(ax::CubeAxis,n)
     #     prependrange(1:length(ax.values),n), Dict{String,Any}("_ARRAYVALUES"=>collect(ax.values))
     # end

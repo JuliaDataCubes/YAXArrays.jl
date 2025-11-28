@@ -84,9 +84,11 @@ Reduce the time dimension by calculating the average value of all points in time
 
 ````@example compute
 import Statistics: mean
-mapslices(mean, a, dims="Time")
+mapslices(mean, a, dims="time")
 ````
-There is no time dimension left, because there is only one value left after averaging all time steps.
+
+The time dimension has only a single value indicating the time interval that was used for the average. To remove this singleton dimension you can use `dropdims`. 
+ 
 We can also calculate spatial means resulting in one value per time step:
 
 ````@example compute
@@ -147,6 +149,30 @@ note that the following can be extended to arbitrary `YAXArrays` with additional
 
 Let's generate a new `cube` using `mapCube` and saving the output directly into disk.
 
+:::tabs
+
+== xmap (DAE)
+
+````@ansi mapCube
+r = f.(lon_yax, lat_yax, time_yax)
+````
+
+or as 
+
+````@ansi mapCube
+r = xmap(f, lon_yax, lat_yax, time_yax, output=XOutput(outtype=Float32), inplace=false)
+````
+
+and triggering the computation and saving to `zarr` is done with `compute_to_zarr`:
+
+````@ansi mapCube
+gen_cube = compute_to_zarr(Dataset(layer=r), "my_gen_cube.zarr", overwrite=true, max_cache=1e9)
+````
+
+note that it takes as input a `Dataset`.
+
+== mapCube
+
 ````@ansi mapCube
 gen_cube = mapCube(g, (lon_yax, lat_yax, time_yax);
     indims = (InDims(), InDims(), InDims("time")),
@@ -161,6 +187,7 @@ gen_cube = mapCube(g, (lon_yax, lat_yax, time_yax);
 Note that currently the `time` axis in the output cube goes first.
 
 :::
+
 
 
 Check that it is working
@@ -233,25 +260,48 @@ end
 f1(xin) = xin + 1
 f2(xin) = xin + 2
 ````
+
+````@example outdims
+properties_one = Dict{String, Any}("name" => "plus_one")
+properties_two = Dict{String, Any}("name" => "plus_two");
+nothing # hide
+````
+
+:::tabs
+
+== xmap (DAE)
+
+````@example outdims
+output_one = XOutput(yax_test.time; properties=properties_one)
+output_two = XOutput(yax_test.time; properties=properties_two)
+output_flat = XOutput(;) 
+
+ds = xmap(one_to_many, yax_test⊘:time,
+    output=(output_one, output_two, output_flat)
+    );
+nothing # hide
+````
+
+== mapCube
+
 now, we define `InDims` and `OutDims`:
 
 ````@example outdims
 indims_one   = InDims("Time")
 # outputs dimension
-properties_one = Dict{String, Any}("name" => "plus_one")
-properties_two = Dict{String, Any}("name" => "plus_two")
-
 outdims_one = OutDims("Time"; properties=properties_one)
 outdims_two = OutDims("Time"; properties=properties_two)
 outdims_flat = OutDims(;) # it will get the default `layer` name if open as dataset
+nothing # hide
 ````
-
 ````@example outdims
 ds = mapCube(one_to_many, yax_test,
     indims = indims_one,
     outdims = (outdims_one, outdims_two, outdims_flat));
 nothing # hide
 ````
+
+:::
 
 let's see the second output
 
@@ -278,7 +328,25 @@ function many_to_many(xout_one, xout_two, xout_flat, xin_one, xin_two, xin_drei)
     return nothing
 end
 f2mix(xin_xyt, xin_xy) = xin_xyt - xin_xy
+nothing # hide
 ````
+
+:::tabs
+
+== xmap (DAE)
+
+````@example outdims
+output_time = XOutput(yax_test.time)
+output_flat = XOutput()
+
+r1, r2, r3 = xmap(many_to_many, yax_test⊘:time, yax_2d, yax_test⊘"time",
+    output =(output_time, output_time, output_flat), inplace=true);
+dsout = Dataset(many_to_many_two=r2)
+
+compute_to_zarr(dsout, "test_mm.zarr", overwrite=true)
+````
+
+== mapCube
 
 #### Specify path in OutDims
 
@@ -287,8 +355,9 @@ indims_one   = InDims("Time")
 indims_2d   = InDims() # ? it matches only to the other 2 dimensions and uses the same values for each time step
 properties = Dict{String, Any}("name"=> "many_to_many_two")
 outdims_one = OutDims("Time")
-outdims_two = OutDims("Time"; path = "test_mm.zarr", properties)
-outdims_flat = OutDims()
+outdims_two = OutDims("Time"; path = "test_mm.zarr", properties, overwrite=true)
+outdims_flat = OutDims();
+nothing # hide
 ````
 
 ````@example outdims
@@ -303,6 +372,9 @@ And we can open the one that was saved directly to disk.
 ````@example outdims
 ds_mm = open_dataset("test_mm.zarr")
 ````
+
+:::
+
 
 ### Different InDims names
 
@@ -322,8 +394,11 @@ and
 Random.seed!(123)
 data = rand(3.0:5.0, 5, 4, 3)
 
-axlist = (YAX.time(Date("2022-01-01"):Day(1):Date("2022-01-05")),
-    lon(1:4), lat(1:3),)
+axlist = (
+    YAX.time(Date("2022-01-01"):Day(1):Date("2022-01-05")),
+    lon(1:4),
+    lat(1:3),
+    )
 
 properties = Dict("description" => "multi dimensional test cube")
 yax_test = YAXArray(axlist, data, properties)
@@ -345,11 +420,25 @@ end
 
 with the final mapCube operation as follows
 
+:::tabs
+
+== xmap (DAE)
+
+````@example outdims
+ds = xmap(mix_time_depth, yax_test ⊘ :time, yax_2d ⊘ :depth,
+    output = XOutput(yax_test.time), inplace=false)
+````
+
+== mapCube
+
 ````@example outdims
 ds = mapCube(time_depth, (yax_test, yax_2d),
     indims = (InDims("Time"), InDims("depth")), # ? anchor dimensions and then map over the others.
     outdims = OutDims("Time"))
 ````
+
+:::
+
 
 - TODO:
     - Example passing additional arguments to function. 
@@ -463,8 +552,26 @@ end
      output[:] .= mean(pixel)
 end
 
+````
+
+:::tabs
+
+== xmap (DAE)
+
+````julia
+meantime = xmap(mymean, a⊘:time)
+# and save!
+compute_to_zarr(Dataset(time_mean=meantime), tempname())
+````
+
+== mapCube
+
+````julia
 mapCube(mymean, a, indims=InDims("time"), outdims=OutDims())
 ````
+
+:::
+
 
 In the last example, `mapCube` was used to map the `mymean` function. `mapslices` is a convenient function that can replace `mapCube`, where you can omit defining an extra function with the output argument as an input (e.g. `mymean`). It is possible to simply use `mapslice`
 

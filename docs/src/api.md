@@ -10,12 +10,12 @@ end
 ```
 
 ```@autodocs
-Modules = [YAXArrays, YAXArrays.Cubes, YAXArrays.DAT, YAXArrays.Datasets,YAXArrays.YAXTools]
+Modules = [YAXArrays, YAXArrays.Cubes, YAXArrays.DAT, YAXArrays.Datasets, YAXArrays.YAXTools, YAXArrays.Xmap]
 Private = false
 ```
 
 ## Internal API
 ```@autodocs
-Modules = [YAXArrays, YAXArrays.Cubes, YAXArrays.DAT,YAXArrays.Datasets,YAXArrays.YAXTools]
+Modules = [YAXArrays, YAXArrays.Cubes, YAXArrays.DAT, YAXArrays.Datasets, YAXArrays.YAXTools, YAXArrays.Xmap]
 Public = false
 ```

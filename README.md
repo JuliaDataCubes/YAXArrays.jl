@@ -2,7 +2,6 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://github.com/JuliaDataCubes/YAXArrays.jl/blob/main/LICENSE)
 [![][docs-stable-img]][docs-stable-url][![][docs-dev-img]][docs-dev-url][![DOI][zenodo-img]][zenodo-url][![][ci-img]][ci-url] [![][codecov-img]][codecov-url]
-[![Downloads](https://shields.io/endpoint?url=https://pkgs.genieframework.com/api/v1/badge/YAXArrays&label=Downloads)](https://pkgs.genieframework.com?packages=YAXArrays)
 
 <img src="docs/src/assets/logo.png" align="right" style="padding-left:10px;" width="150"/>
 
@@ -12,7 +11,7 @@
 [docs-stable-img]: https://img.shields.io/badge/docs-stable-blue.svg
 [docs-stable-url]: https://JuliaDataCubes.github.io/YAXArrays.jl/stable/
 
-[codecov-img]: https://codecov.io/gh/JuliaDataCubes/YAXArrays.jl/branch/master/graph/badge.svg
+[codecov-img]: https://codecov.io/gh/JuliaDataCubes/YAXArrays.jl/branch/main/graph/badge.svg
 [codecov-url]: https://codecov.io/gh/JuliaDataCubes/YAXArrays.jl
 
 [ci-img]: https://github.com/JuliaDataCubes/YAXArrays.jl/workflows/CI/badge.svg

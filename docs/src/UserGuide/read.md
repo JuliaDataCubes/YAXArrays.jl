@@ -42,7 +42,7 @@ using YAXArrays
 using NetCDF
 using Downloads: download
 
-path = download("https://www.unidata.ucar.edu/software/netcdf/examples/tos_O1_2001-2002.nc", "example.nc")
+path = download("https://archive.unidata.ucar.edu/software/netcdf/examples/tos_O1_2001-2002.nc", "example.nc")
 ds = open_dataset(path)
 ````
 
@@ -180,7 +180,7 @@ ds = open_mfdataset(DD.DimArray(files, YAX.time()))
 
 where the contents of the `time` dimension are the merged values from both files
 
-````@ansi open_list_netcdf
+````@example open_list_netcdf
 ds["time"]
 ````
 

@@ -15,8 +15,8 @@ using Distributed:
     AbstractWorkerPool, 
     default_worker_pool, 
     CachingPool
-import ..Cubes: cubechunks, iscompressed, chunkoffset, YAXArray, caxes, YAXSlice
-import ..Cubes: cubechunks, iscompressed, chunkoffset, YAXArray, caxes, YAXSlice
+import ..Cubes: cubechunks, iscompressed, chunkoffset, YAXArray, caxes
+import ..Cubes: cubechunks, iscompressed, chunkoffset, YAXArray, caxes
 import ..YAXArrays: findAxis, getOutAxis, getAxis
 #import ..Cubes.Axes:
 #    AxisDescriptor, axname, ByInference, axsym, getOutAxis, getAxis, findAxis, match_axis
@@ -378,21 +378,6 @@ function mapCube(
     )
 end
 
-import Base.mapslices
-function mapslices(f, d::Union{YAXArray,Dataset}, addargs...; dims, kwargs...)
-    isa(dims, String) && (dims = (dims,))
-    mapCube(
-        f,
-        d,
-        addargs...;
-        indims = InDims(dims...),
-        outdims = OutDims(ByInference()),
-        inplace = false,
-        kwargs...,
-    )
-end
-
-
 
 """
     mapCube(fun, cube, addargs...;kwargs...)
@@ -448,28 +433,6 @@ function mapCube(
     end
     end
 
-    #Translate slices
-    if any(i -> isa(i, YAXSlice), cdata)
-        inew = map(cdata) do d
-            isa(d, YAXSlice) ? InDims(axname.(d.sliceaxes[2])...) : InDims()
-        end
-        cnew = map(i -> isa(i, YAXSlice) ? i.c : i, cdata)
-        return mapCube(
-            fu,
-            cnew,
-            addargs...;
-            indims = inew,
-            outdims = outdims,
-            inplace = inplace,
-            ispar = ispar,
-            debug = debug,
-            include_loopvars = include_loopvars,
-            irregular_loopranges = irregular_loopranges,
-            showprog = showprog,
-            nthreads = nthreads,
-            kwargs...,
-        )
-    end
     @debug_print "Generating DATConfig"
     dc = DATConfig(
         cdata,
@@ -571,7 +534,7 @@ function getloopchunks(dc::DATConfig)
         allchunks = to_chunksize.(allchunks,cs)
         allchunks = unique(allchunks)
         if length(allchunks)>1
-            @warn "Multiple chunk offset resolutions possible: $allchunks for dim $(axname(ax))"
+            @warn "Multiple chunk offset resolutions possible: $allchunks for dim $(DD.name(ax))"
         end
         first(allchunks)
     end

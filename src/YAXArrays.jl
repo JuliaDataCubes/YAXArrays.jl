@@ -38,6 +38,8 @@ include("YAXTools.jl")
 include("Cubes/Cubes.jl")
 include("DatasetAPI/Datasets.jl")
 include("DAT/DAT.jl")
+include("DAT/xmap.jl")
+include("DAT/counter.jl")
 
 using Reexport: @reexport
 using YAXArrayBase: getattributes
@@ -50,6 +52,7 @@ using YAXArrayBase: getattributes
 #@reexport using .Cubes.Axes
 
 @reexport using .DAT
+@reexport using .Xmap
 @reexport using .Datasets
 # from YAXTools
 
