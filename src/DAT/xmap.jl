@@ -2,7 +2,7 @@ module Xmap
 import DimensionalData: rebuild, dims, DimArrayOrStack, Dimension, basedims, 
 DimTuple, _group_indices, OpaqueArray, otherdims
 import DimensionalData as DD
-using DiskArrays: find_subranges_sorted, chunktype_from_chunksizes, GridChunks,isdisk
+using DiskArrays: find_subranges_sorted, chunktype_from_chunksizes, GridChunks, isdisk, eachchunk
 using ..YAXArrays
 import ..Cubes: YAXArray
 import DiskArrayEngine as DAE
@@ -584,14 +584,6 @@ default_output(f::XFunction) = f.outputs
 function Base.broadcasted(f::XFunction,args...) 
     xmap(f,args...,output = f.outputs, inplace = f.inplace)
 end
-function gmwop_from_conn(conn,nodes)
-    op = conn.f
-    inputs = DAE.InputArray.(nodes[conn.inputids], conn.inwindows)
-    outspecs = map(nodes[conn.outputids], conn.outwindows) do outnode, outwindow
-      (; lw=outwindow, chunks=outnode.chunks, ismem=outnode.ismem)
-    end
-    DAE.GMDWop(inputs, outspecs, op)
-end
 
 function compute(yax::YAXArray,args...;kwargs...) 
     if isa(yax.data,DAE.GMWOPResult) 
@@ -635,8 +627,9 @@ function compute_to_zarr(ods, path; max_cache=5e8,overwrite=false)
     for k in keys(ods.cubes)
         outnodes[k] = DAE.to_graph!(g, ods.cubes[k].data);
     end
+    rpd = DAE.remove_aliases!(g)
     DAE.fuse_graph!(g)
-    op = YAXArrays.Xmap.gmwop_from_conn(only(g.connections),g.nodes);
+    op = DAE.gmwop_from_conn(only(g.connections), g.nodes)
     lr = DAE.optimize_loopranges(op,max_cache)
 
     newcubes = map(collect(keys(outnodes))) do k
@@ -656,6 +649,7 @@ function compute_to_zarr(ods, path; max_cache=5e8,overwrite=false)
     outars = Array{Any}(undef,length(op.outspecs))
     fill!(outars,nothing)
     for (k,v) in outnodes
+        v = get(rpd, v, v)
         outars[v] = emptyds.cubes[k].data
     end
     runner = if DAE.Distributed.nworkers() > 1
