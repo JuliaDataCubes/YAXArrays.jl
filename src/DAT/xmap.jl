@@ -629,35 +629,46 @@ function compute_to_zarr(ods, path; max_cache=5e8,overwrite=false)
     end
     rpd = DAE.remove_aliases!(g)
     DAE.fuse_graph!(g)
-    op = DAE.gmwop_from_conn(only(g.connections), g.nodes)
-    lr = DAE.optimize_loopranges(op,max_cache)
+    opinfo = map(g.connections) do conn
+        op = DAE.gmwop_from_conn(conn, g.nodes)
+        lr = DAE.optimize_loopranges(op, max_cache)
+        op, lr
 
-    newcubes = map(collect(keys(outnodes))) do k
-        looprange = lr.lr.members
-        lw = op.outspecs[1].lw
-        mylr = DAE.mysub(lw,looprange)
-        newcs = map(mylr,lw.windows.members) do mlr, w
-            map(mlr) do lr
-                DAE.windowmin(w[first(lr)]):DAE.windowmax(w[last(lr)]) |> length
-            end |> chunktype_from_chunksizes
-        end |> GridChunks
-        k=>YAXArrays.Datasets.setchunks(ods.cubes[k],newcs)
+        newcubes = map(conn.outputids, op.outspecs) do oid, ospec
+            looprange = lr.lr.members
+            lw = ospec.lw
+            mylr = DAE.mysub(lw, looprange)
+            newcs = map(mylr, lw.windows.members) do mlr, w
+                map(mlr) do lr
+                    DAE.windowmin(w[first(lr)]):DAE.windowmax(w[last(lr)]) |> length
+                end |> chunktype_from_chunksizes
+            end |> GridChunks
+            k = findfirst(==(oid), outnodes)
+            if k === nothing
+                l = findall(==(oid), rpd)
+                k = findfirst(in(l), outnodes)
+            end
+            k => YAXArrays.Datasets.setchunks(ods.cubes[k], newcs)
+        end
+        op, lr, newcubes
     end
-    newds = Dataset(;newcubes...)
 
-    emptyds = savedataset(newds,path=path,skeleton=true, overwrite=true)
-    outars = Array{Any}(undef,length(op.outspecs))
-    fill!(outars,nothing)
-    for (k,v) in outnodes
-        v = get(rpd, v, v)
-        outars[v] = emptyds.cubes[k].data
+    newds = Dataset(; reduce(vcat, last.(opinfo))...)
+
+    emptyds = savedataset(newds, path=path, skeleton=true, overwrite=overwrite)
+
+    for (op, lr, newcubes) in opinfo
+
+        outars = map(newcubes) do (k, _)
+            emptyds.cubes[k].data
+        end
+        runner = if DAE.Distributed.nworkers() > 1
+            DAE.DaggerRunner(op, lr, outars)
+        else
+            DAE.LocalRunner(op, lr, outars)
+        end
+        run(runner)
     end
-    runner = if DAE.Distributed.nworkers() > 1
-        DAE.DaggerRunner(op,lr,outars)
-    else
-        DAE.LocalRunner(op,lr,outars)
-    end
-    run(runner)
     emptyds
 end
 

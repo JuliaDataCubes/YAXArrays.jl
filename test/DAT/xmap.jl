@@ -19,6 +19,20 @@
         #end
         @test r.data == a2.data .+ reshape(a3.data,(4,1,5))
     end
+    @testset "Disconnected Graphs" begin
+        using Test
+        using YAXArrays
+        a1 = YAXArray((Dim{:d1}(1:10),), 1:10)
+        a2 = YAXArray((Dim{:d2}(1:20),), 1:20)
+        outds = Dataset(a=a1 .* 2, b=a2 .+ 5)
+        @test outds.a.data isa YAXArrays.Xmap.DAE.GMWOPResult
+        @test outds.b.data isa YAXArrays.Xmap.DAE.GMWOPResult
+        outpath = tempname()
+        isfile(outpath)
+        dsdisk = compute_to_zarr(outds, outpath)
+        @test dsdisk.a[:] == 2:2:20
+        @test dsdisk.b[:] == 6:25
+    end
 end
 @testitem "set outtype" begin
     using YAXArrays
