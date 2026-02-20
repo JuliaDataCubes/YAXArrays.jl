@@ -181,6 +181,7 @@ intervals = MovingIntervals(:open, :closed; left=left_bounds, width=width)
 
 # Access the first interval
 first_interval = intervals[1]  # Interval(1, 3)
+```
 """
 struct MovingIntervals{T,O,L,R} <: DD.AbstractBins
     i1::T
@@ -618,7 +619,7 @@ Computes the YAXArrays dataset `ods` and saves it to a Zarr dataset at `path`.
 - `max_cache`: The maximum amount of data to cache in memory while computing the dataset.
 - `overwrite`: Whether to overwrite the dataset at `path` if it already exists.
 """
-function compute_to_zarr(ods, path; max_cache=5e8,overwrite=false)
+function compute_to_zarr(ods, path; max_cache=5e8, custom_loopranges=nothing, overwrite=false)
     if !isa(ods,Dataset)
         throw(ArgumentError("Direct saving of YAXArrays is not supported. Please wrap your array `a` into a Dataset by calling `Dataset(layer=a)`"))
     end
@@ -631,8 +632,11 @@ function compute_to_zarr(ods, path; max_cache=5e8,overwrite=false)
     DAE.fuse_graph!(g)
     opinfo = map(g.connections) do conn
         op = DAE.gmwop_from_conn(conn, g.nodes)
-        lr = DAE.optimize_loopranges(op, max_cache)
-        op, lr
+        lr = if custom_loopranges === nothing
+            DAE.optimize_loopranges(op, max_cache)
+        else
+            DAE.custom_loopranges(op, custom_loopranges)
+        end
 
         newcubes = map(conn.outputids, op.outspecs) do oid, ospec
             looprange = lr.lr.members
