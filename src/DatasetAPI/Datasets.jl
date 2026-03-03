@@ -1,6 +1,7 @@
 module Datasets
 #import ..Cubes.Axes: axsym, axname, CubeAxis, findAxis, CategoricalAxis, RangeAxis, caxes
-import ..Cubes: Cubes, YAXArray, concatenatecubes, CleanMe, subsetcube, copy_diskarray, setchunks, caxes, readcubedata, cubesize, formatbytes
+import ..Cubes: Cubes, YAXArray, concatenatecubes, CleanMe, subsetcube, copy_diskarray, setchunks,
+    caxes, readcubedata, cubesize, formatbytes, renameaxis
 using ...YAXArrays: YAXArrays, YAXDefaults, findAxis
 using DataStructures: OrderedDict, counter
 using Dates: Dates, Day, Hour, Minute, Second, Month, Year, Date, DateTime, TimeType, AbstractDateTime, Period
@@ -238,6 +239,11 @@ function subsetifdimexists(a;kwargs...)
     end
 end
 
+function renameaxis(ds::Dataset, p::Pair...)
+    Dataset(; properties=ds.properties, (k => renameaxis(v, p...) for (k, v) in ds.cubes)...)
+end
+
+
 function Base.getindex(x::Dataset; var = nothing, kwargs...)
     if var === nothing
         cc = x.cubes
@@ -451,10 +457,10 @@ Example:
 ds = open_dataset(f, driver=:zarr, skip_keys = (:c,))
 ````
 """
-function open_dataset(g; skip_keys=(), driver=:all, force_datetime=false)
+function open_dataset(g; skip_keys=(), driver=:all, force_datetime=false, rename_dims=())
     str_skipkeys = string.(skip_keys)
     dsopen = YAXArrayBase.to_dataset(g, driver = driver)
-    YAXArrayBase.open_dataset_handle(dsopen) do g 
+    outds = YAXArrayBase.open_dataset_handle(dsopen) do g
         isempty(get_varnames(g)) && throw(ArgumentError("Group does not contain datasets."))
         dimlist = collectdims(g; force_datetime)
         dnames = string.(keys(dimlist))
@@ -493,6 +499,13 @@ function open_dataset(g; skip_keys=(), driver=:all, force_datetime=false)
         gatts = Dict{String,Any}(string(k)=>v for (k,v) in gatts)
         sdimlist = Dict(DD.name(v.ax) => v.ax for (k, v) in dimlist)
         Dataset(allcubes, sdimlist,gatts)
+    end
+    if isempty(rename_dims)
+        return outds
+    elseif isa(rename_dims, Pair)
+        return renameaxis(outds, rename_dims)
+    else
+        return renameaxis(outds, rename_dims...)
     end
 end
 #Base.getindex(x::Dataset; kwargs...) = subsetcube(x; kwargs...)

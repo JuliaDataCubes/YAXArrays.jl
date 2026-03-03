@@ -17,7 +17,7 @@ using Tables: istable, schema, columns
 using DimensionalData: DimensionalData as DD, AbstractDimArray, NoName
 import DimensionalData: name, label
 
-export concatenatecubes, caxes, subsetcube, readcubedata, renameaxis!, YAXArray, setchunks, cache
+export concatenatecubes, caxes, subsetcube, readcubedata, renameaxis, YAXArray, setchunks, cache
 
 """
 This function calculates a subset of a cube's data
@@ -406,8 +406,16 @@ _iscompressed(c::DiskArrays.PermutedDiskArray) = _iscompressed(c.a.parent)
 _iscompressed(c::DiskArrays.SubDiskArray) = _iscompressed(c.v.parent)
 _iscompressed(c) = YAXArrayBase.iscompressed(c)
 
-# lift renameaxis functionality from Axes.jl to YAXArrays
-renameaxis!(c::YAXArray, p::Pair) = DD.set(c, Symbol(first(p)) => last(p))
+# exclamation mark should be removed because this is not mutated
+function renameaxis(c::YAXArray, p::Pair)
+    name = Symbol(first(p))
+    if (DD.dims(c, name) !== nothing)
+        DD.set(c, name => last(p))
+    else
+        c
+    end
+end
+renameaxis(c::YAXArray, p1::Pair, p::Pair...) = renameaxis(renameaxis(c, p1), p...)
 
 #=
 function renameaxis!(c::YAXArray, p::Pair)
