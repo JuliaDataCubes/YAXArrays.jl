@@ -240,8 +240,15 @@ end
 
 function Base.getindex(x::Dataset; var = nothing, kwargs...)
     if var === nothing
-        cc = x.cubes
-        Dataset(; properties=x.properties, map(ds -> ds => subsetifdimexists(cc[ds]; kwargs...), collect(keys(cc)))...)
+        if length(x.cubes) == 1
+            # reduce overhead for datasets with just one array
+            var = first(keys(x.cubes))
+            a = getindex(x[var]; kwargs...)
+            Dataset(; properties=x.properties, var => a)
+        else
+            cc = x.cubes
+            Dataset(; properties=x.properties, map(ds -> ds => subsetifdimexists(cc[ds]; kwargs...), collect(keys(cc)))...)
+        end
     elseif isa(var, String) || isa(var, Symbol)
         getindex(getproperty(x, Symbol(var)); kwargs...)
     else
