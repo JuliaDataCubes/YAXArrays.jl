@@ -242,7 +242,7 @@ function Base.getindex(x::Dataset; var = nothing, kwargs...)
     if var === nothing
         if length(x.cubes) == 1
             # reduce overhead for datasets with just one array
-            var = first(keys(x.cubes))
+            var = Symbol(first(keys(x.cubes)))
             a = getindex(x[var]; kwargs...)
             Dataset(; properties=x.properties, var => a)
         else
