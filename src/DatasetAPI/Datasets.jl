@@ -441,13 +441,14 @@ end
 
 
 """
-    open_dataset(g; skip_keys=(), driver=:all)
+    open_dataset(g; path=nothing,skip_keys=(), driver=:all, force_datetime=false)
 
 Open the dataset at `g` with the given `driver`.
 The default driver will search for available drivers and tries to detect the useable driver from the filename extension.
 
 ### Keyword arguments
 
+- `path` specifies the path for opening datasets in a hierarchical structure, e.g. a sub-group in a zarr or hdf dataset
 - `skip_keys` are passed as symbols, i.e., `skip_keys = (:a, :b)`
 - `driver=:all`, common options are `:netcdf` or `:zarr`.
 - `force_datetime=false` force conversion when CFTime fails with an InexactError even if milliseconds must be rounded
@@ -458,9 +459,9 @@ Example:
 ds = open_dataset(f, driver=:zarr, skip_keys = (:c,))
 ````
 """
-function open_dataset(g; skip_keys=(), driver=:all, force_datetime=false)
+function open_dataset(g; skip_keys=(), driver=:all, force_datetime=false, path=nothing)
     str_skipkeys = string.(skip_keys)
-    dsopen = YAXArrayBase.to_dataset(g, driver = driver)
+    dsopen = path === nothing ? YAXArrayBase.to_dataset(g, driver=driver) : YAXArrayBase.to_dataset(g, driver=driver, path=path)
     YAXArrayBase.open_dataset_handle(dsopen) do g 
         isempty(get_varnames(g)) && throw(ArgumentError("Group does not contain datasets."))
         dimlist = collectdims(g; force_datetime)
