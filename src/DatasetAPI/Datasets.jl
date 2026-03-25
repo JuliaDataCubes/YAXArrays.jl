@@ -6,7 +6,7 @@ using DataStructures: OrderedDict, counter
 using Dates: Dates, Day, Hour, Minute, Second, Month, Year, Date, DateTime, TimeType, AbstractDateTime, Period
 using Statistics: mean
 using IntervalSets: Interval, (..)
-using CFTime: timedecode, timeencode, DateTimeNoLeap, DateTime360Day, DateTimeAllLeap, CFTime
+using CFTime: timedecode, timeencode, DateTimeNoLeap, DateTime360Day, DateTimeAllLeap, CFTime, DateTimeProlepticGregorian
 using YAXArrayBase
 using YAXArrayBase: iscontdimval, add_var
 using DiskArrayTools: CFDiskArray, diskstack
@@ -963,6 +963,7 @@ function createdataset(
     defaultcal(::Type{<:DateTimeNoLeap}) = "noleap"
     defaultcal(::Type{<:DateTimeAllLeap}) = "allleap"
     defaultcal(::Type{<:DateTime360Day}) = "360_day"
+    defaultcal(::Type{<:DateTimeProlepticGregorian}) = "proleptic_gregorian"
 
     datetodatetime(vals::AbstractArray{<:Date}) = DateTime.(vals)
     datetodatetime(vals) = vals
@@ -986,9 +987,11 @@ function createdataset(
     #     prependrange(1:length(ax.values),n), Dict{String,Any}("_ARRAYVALUES"=>collect(ax.values))
     # end
     function dataattfromaxis(ax::DD.Dimension, n, T::Type{<:TimeType})
-        data = timeencode(datetodatetime(DD.lookup(ax)), "days since 1980-01-01", defaultcal(T))
+        axunits = CFTime.units(first(ax))
+        @show eltype(DD.lookup(ax))
+        data = timeencode(datetodatetime(DD.lookup(ax)), axunits, defaultcal(T))
         prependrange(data, n),
-        Dict{String,Any}("units" => "days since 1980-01-01", "calendar" => defaultcal(T))
+        Dict{String,Any}("units" => axunits, "calendar" => defaultcal(T))
     end
 
     #The good old Cube function:
