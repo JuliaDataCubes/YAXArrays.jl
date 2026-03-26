@@ -8,6 +8,7 @@ import ..Cubes: YAXArray
 import DiskArrayEngine as DAE
 import IntervalSets: Interval
 import DiskArrayEngine.compute
+import DiskArrays: isdisk
 
 const LAZY_INMEMORY_XMAP = Ref(false)
 
@@ -240,7 +241,7 @@ function DD._group_indices(dim::DD.Dimension, m::MovingIntervals{<:Any,<:Any,L,R
 end
 
 # Should this be an AbstractDimArray?
-struct DimWindowArray{A,D,I,DO} <: DD.AbstractDimArray{Any, Any, D, A}
+struct DimWindowArray{A,D,I,DO}# <: DD.AbstractDimArray{Any, Any, D, A}
     data::A
     dims::D
     indices::I
@@ -253,6 +254,7 @@ Base.getindex(a::DimWindowArray, i::Int...) = a.data.data[map(index_group,a.indi
 DD.dims(a::DimWindowArray) = a.dims
 to_windowarray(d::DimWindowArray) = d
 to_windowarray(d) = windows(d)
+isdisk(a::DimWindowArray) = isdisk(a.data)
 function Base.show(io::IO, dw::DimWindowArray)
     println(io,"Windowed array view with dimensions: ")
     show(io, dw.dims)
@@ -364,13 +366,9 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...;
 
 
 """
-function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; args=(), kwargs=(;), output=nothing, inplace=nothing, function_args=(), function_kwargs=(;), lazy=nothing)
+function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; args=(), kwargs=(;), output=nothing, inplace=nothing, function_args=(), function_kwargs=(;), lazy=LAZY_INMEMORY_XMAP[])
     output === nothing && (output = default_output(f))
     inplace === nothing && (inplace = default_inplace(f))
-    if lazy === nothing
-        lazy = LAZY_INMEMORY_XMAP[]
-    end
-
     eagercomputation = all(!isdisk, ars) * !lazy
     
     alldims = mapreduce(approxunion!,ars,init=[]) do ar
