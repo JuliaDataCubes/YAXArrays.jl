@@ -24,6 +24,7 @@
         using YAXArrays
         a1 = YAXArray((Dim{:d1}(1:10),), 1:10)
         a2 = YAXArray((Dim{:d2}(1:20),), 1:20)
+        Xmap.LAZY_INMEMORY_XMAP[] = true
         outds = Dataset(a=a1 .* 2, b=a2 .+ 5)
         @test outds.a.data isa YAXArrays.Xmap.DAE.GMWOPResult
         @test outds.b.data isa YAXArrays.Xmap.DAE.GMWOPResult

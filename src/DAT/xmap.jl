@@ -8,6 +8,9 @@ import ..Cubes: YAXArray
 import DiskArrayEngine as DAE
 import IntervalSets: Interval
 import DiskArrayEngine.compute
+import DiskArrays: isdisk
+
+const LAZY_INMEMORY_XMAP = Ref(false)
 
 include("resample.jl")
 
@@ -237,7 +240,8 @@ function DD._group_indices(dim::DD.Dimension, m::MovingIntervals{<:Any,<:Any,L,R
     DD.rebuild(dim,look), r
 end
 
-struct DimWindowArray{A,D,I,DO}
+# Should this be an AbstractDimArray?
+struct DimWindowArray{A,D,I,DO}# <: DD.AbstractDimArray{Any, Any, D, A}
     data::A
     dims::D
     indices::I
@@ -250,6 +254,7 @@ Base.getindex(a::DimWindowArray, i::Int...) = a.data.data[map(index_group,a.indi
 DD.dims(a::DimWindowArray) = a.dims
 to_windowarray(d::DimWindowArray) = d
 to_windowarray(d) = windows(d)
+isdisk(a::DimWindowArray) = isdisk(a.data)
 function Base.show(io::IO, dw::DimWindowArray)
     println(io,"Windowed array view with dimensions: ")
     show(io, dw.dims)
@@ -339,7 +344,10 @@ Maps a function `f` over an array of `ar` of type `YAXArray` or `DimWindowArray`
 `xmap` requires the specification of a type for the output of `f`, with a default type which is 1 indicating 
 that the data type should be equal to the element type of the first input array. `output` must be a list of `XOutput` objects, where each contains a tuple of axes under which the results are stored and the type of the values stored. If `inplace` is `true`, then the original values are replaced in a place. `xmap` returns one or more objects of type `YAXArray` or `DimWindowArray` containing a view over the data passed to `f` by `overlaying` the outputs over the original data arrays. If reduction functions are specified, then the `xmap` outputs replace the original original data array with the reduced values. During the execution of `xmap`, the everything except `f` itself is compiled just once. Specifying `f` as an object of type `XFunction` waits until the actual function is called before compiling it.
 
-xmap will return a lazy representation of the resulting array. 
+xmap will return a lazy representation of the resulting array for not in memory arrays.
+For in-memory arrays it will compute the result immediately by default.
+This behaviour can be changed by setting Xmap.LAZY_INMEMORY_XMAP[] = true, which will return a lazy representation even for in-memory arrays.
+Setting Xmap.LAZY_INMEMORY_XMAP[] = false will compute the result immediately for all arrays.
 
 function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...;
     output=XOutput(),
@@ -358,9 +366,11 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...;
 
 
 """
-function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; args=(), kwargs=(;), output=nothing, inplace=nothing, function_args=(), function_kwargs=(;))
+function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; args=(), kwargs=(;), output=nothing, inplace=nothing, function_args=(), function_kwargs=(;), lazy=LAZY_INMEMORY_XMAP[])
     output === nothing && (output = default_output(f))
     inplace === nothing && (inplace = default_inplace(f))
+    eagercomputation = all(!isdisk, ars) * !lazy
+    
     alldims = mapreduce(approxunion!,ars,init=[]) do ar
         DD.dims(ar)
     end
@@ -446,7 +456,8 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; args=()
 
     outproperties = map(i->i.properties,output)
     outars = map((res...,),outaxes,outproperties) do r,ax,prop
-        YAXArray(ax,r,prop)
+        data = eagercomputation ? compute(r) : r
+        YAXArray(ax,data,prop)
     end
 
     if length(outars) == 1
