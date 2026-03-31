@@ -43,6 +43,18 @@ end
     @test r.data == Float16.(sum(a1.data, dims=1))
 end
 
+@testitem "time axis with different type should be broadcastable" begin
+    using Dates
+    using YAXArrays
+    using DimensionalData
+    t1 = Time(0):Hour(1):Time(23)
+    data = rand(24)
+    a = YAXArray((YAXArrays.time(t1),), data)
+    b = YAXArray((Dim{:time}(t1),), data)
+    c = a .- b
+    @test all(c[:] .== 0)
+end
+
 #=
 These should be reenabled once we decided what keyword arguments xmap gets. 
     @testset "max cache inputs" begin

@@ -11,7 +11,7 @@ import DiskArrayEngine.compute
 
 include("resample.jl")
 
-export windows, xmap, Whole, xmap, XOutput, compute_to_zarr, xresample, MovingIntervals, XFunction, ⊘, compute
+export windows, Whole, xmap, XOutput, compute_to_zarr, xresample, MovingIntervals, XFunction, ⊘, compute
 
 struct Whole <: DD.AbstractBins end
 function DD._group_indices(dim::DD.Dimension, ::Whole; labels=nothing)
@@ -269,36 +269,9 @@ end
 _step(x::AbstractArray{<:Number}) = length(x) > 1 ? (last(x)-first(x))/(length(x)-1) : zero(eltype(x))
 _step(x) = 1
 
-function approxequal(a::DD.Dimension,b::DD.Dimension)
-    DD.name(a) == DD.name(b) || return false
-    if !(eltype(a) <: Number && eltype(b) <: Number)
-        return isequal(a,b)
-    end
-    stepa = _step(a)
-    stepb = _step(b)
-    0.99 < stepa / stepb < 1.01 || return false
-    tres = 0.001*abs(stepa)    
-    all(zip(a,b)) do (x,y)
-        abs(x-y) < tres
-    end
-end
 approxequal(a::DD.Dimension) = Base.Fix1(approxequal, a)
+approxequal(a,b) = DD.comparedims(a,b, msg=DD.Dimensions.Warn(), type=DD.name(a)!=DD.name(b), val=true)
 
-function approxunion!(a, b)
-    for bb in b
-        found = false
-        for aa in a
-            if approxequal(aa,bb)
-                found = true
-                break
-            end
-        end
-        if !found
-            push!(a,bb)
-        end
-    end
-    a
-end
 
 dataeltype(y::YAXArray) = eltype(y.data)
 dataeltype(y::DimWindowArray) = eltype(y.data.data)
@@ -361,10 +334,8 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...;
 function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; args=(), kwargs=(;), output=nothing, inplace=nothing, function_args=(), function_kwargs=(;))
     output === nothing && (output = default_output(f))
     inplace === nothing && (inplace = default_inplace(f))
-    alldims = mapreduce(approxunion!,ars,init=[]) do ar
-        DD.dims(ar)
-    end
-    alldims = (alldims...,)
+    alldims = DD.combinedims(ars..., val=true, type=false)
+
     #Check for duplicated but different dimensions
     alldims_simple = unique(basedims(alldims))
 
@@ -383,10 +354,8 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; args=()
     #Create outspecs
     output = tupelize(output)
 
-    alloutdims = mapreduce(approxunion!, output, init=[]) do o
-        o.outaxes
-    end
 
+    alloutdims = DD.combinedims(map(x->x.outaxes, output)..., val=true, type=false)
     allinandoutdims = (unique(DD.basedims((alldims..., alloutdims...)))...,)
 
     outaxinfo = map(output) do o
