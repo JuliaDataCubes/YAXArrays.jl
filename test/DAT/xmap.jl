@@ -51,7 +51,7 @@ end
     data = rand(24)
     a = YAXArray((YAXArrays.time(t1),), data)
     b = YAXArray((Dim{:time}(t1),), data)
-    c = a .- b
+    @test_nowarn c = a .- b
     @test all(c[:] .== 0)
 end
 
