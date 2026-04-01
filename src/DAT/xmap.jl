@@ -275,7 +275,7 @@ _step(x::AbstractArray{<:Number}) = length(x) > 1 ? (last(x)-first(x))/(length(x
 _step(x) = 1
 
 approxequal(a::DD.Dimension) = Base.Fix1(approxequal, a)
-approxequal(a,b) = DD.comparedims(a,b, msg=DD.Dimensions.Warn(), type=DD.name(a)!=DD.name(b), val=true)
+approxequal(a,b) = DD.comparedims(a,b, msg=nothing, type=DD.name(a)!=DD.name(b), val=true)
 
 
 dataeltype(y::YAXArray) = eltype(y.data)
@@ -345,7 +345,7 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; args=()
 
     eagercomputation = all(!isdisk, ars) * !lazy
     
-    alldims = DD.combinedims(ars..., val=true, type=false)
+    alldims = DD.combinedims(ars..., val=true, type=false, msg=nothing)
 
     #Check for duplicated but different dimensions
     alldims_simple = unique(basedims(alldims))
@@ -366,7 +366,7 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; args=()
     output = tupelize(output)
 
 
-    alloutdims = DD.combinedims(map(x->x.outaxes, output)..., val=true, type=false)
+    alloutdims = DD.combinedims(map(x->x.outaxes, output)..., val=true, type=false, msg=nothing)
     allinandoutdims = (unique(DD.basedims((alldims..., alloutdims...)))...,)
 
     outaxinfo = map(output) do o

@@ -48,11 +48,12 @@ end
     using Dates
     using YAXArrays
     using DimensionalData
+    using Logging
     t1 = Time(0):Hour(1):Time(23)
     data = rand(24)
     a = YAXArray((YAXArrays.time(t1),), data)
     b = YAXArray((Dim{:time}(t1),), data)
-    c = a .- b
+    c = @test_logs min_level=Logging.Warn a .- b
     @test all(c[:] .== 0)
 end
 
