@@ -621,19 +621,29 @@ function compute_to_zarr(ods, path; max_cache=5e8, custom_loopranges=nothing, ov
                 l = findall(==(oid), rpd)
                 k = findfirst(in(l), outnodes)
             end
-            k => YAXArrays.Datasets.setchunks(ods.cubes[k], newcs)
+            # Handle case where not all cubes are written to output
+            if k === nothing
+                nothing
+            else
+                k => YAXArrays.Datasets.setchunks(ods.cubes[k], newcs)
+            end
         end
         op, lr, newcubes
     end
 
-    newds = Dataset(; reduce(vcat, last.(opinfo))...)
+    newds = Dataset(; filter(!isnothing, reduce(vcat, last.(opinfo)))...)
 
     emptyds = savedataset(newds, path=path, skeleton=true, overwrite=overwrite)
 
     for (op, lr, newcubes) in opinfo
 
-        outars = map(newcubes) do (k, _)
-            emptyds.cubes[k].data
+        outars = map(newcubes) do p
+            if isnothing(p)
+                nothing
+            else
+                k = first(p)
+                emptyds.cubes[k].data
+            end
         end
         runner = if DAE.Distributed.nworkers() > 1
             DAE.DaggerRunner(op, lr, outars)
