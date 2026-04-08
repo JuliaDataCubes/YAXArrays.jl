@@ -604,10 +604,18 @@ function compute_to_zarr(ods, path; max_cache=5e8, custom_loopranges=nothing, ov
     if !isa(ods,Dataset)
         throw(ArgumentError("Direct saving of YAXArrays is not supported. Please wrap your array `a` into a Dataset by calling `Dataset(layer=a)`"))
     end
+    #Replace everything that is not a GmwopResult with something that is
+    cubedict = copy(ods.cubes)
+    for k in collect(keys(cubedict))
+        if !(cubedict[k].data isa DAE.GMWOPResult)
+            cubedict[k] = xmap(identity, cubedict[k], lazy=true, inplace=false)
+        end
+    end
+
     g = DAE.MwopGraph()
     outnodes = Dict()
-    for k in keys(ods.cubes)
-        outnodes[k] = DAE.to_graph!(g, ods.cubes[k].data);
+    for k in keys(cubedict)
+        outnodes[k] = DAE.to_graph!(g, cubedict[k].data)
     end
     rpd = DAE.remove_aliases!(g)
     DAE.fuse_graph!(g)
@@ -637,7 +645,7 @@ function compute_to_zarr(ods, path; max_cache=5e8, custom_loopranges=nothing, ov
             if k === nothing
                 nothing
             else
-                k => YAXArrays.Datasets.setchunks(ods.cubes[k], newcs)
+                k => YAXArrays.Datasets.setchunks(cubedict[k], newcs)
             end
         end
         op, lr, newcubes
