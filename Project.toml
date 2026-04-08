@@ -1,7 +1,7 @@
 name = "YAXArrays"
 uuid = "c21b50f5-aa40-41ea-b809-c0f5e47bfa5c"
 authors = ["Fabian Gans <fgans@bgc-jena.mpg.de>"]
-version = "0.7.4"
+version = "0.7.5"
 
 [deps]
 CFTime = "179af706-886a-5703-950a-314cd64e0468"
@@ -56,5 +56,5 @@ Statistics = "1"
 StatsBase = "0.32, 0.33, 0.34"
 Tables = "0.2, 1.0"
 WeightedOnlineStats = "0.3, 0.4, 0.5, 0.6"
-YAXArrayBase = "0.7.9"
+YAXArrayBase = "0.7.10"
 julia = "1.10"
