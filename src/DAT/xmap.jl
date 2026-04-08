@@ -608,7 +608,6 @@ function compute_to_zarr(ods, path; max_cache=5e8, custom_loopranges=nothing, ov
     cubedict = copy(ods.cubes)
     for k in collect(keys(cubedict))
         if !(cubedict[k].data isa DAE.GMWOPResult)
-            @show typeof(cubedict[k])
             cubedict[k] = xmap(identity, cubedict[k], lazy=true, inplace=false)
         end
     end
