@@ -339,7 +339,7 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...;
 
 
 """
-function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; args=(), kwargs=(;), output=nothing, inplace=nothing, function_args=(), function_kwargs=(;), lazy=LAZY_INMEMORY_XMAP[])
+function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; allow_threads=false, args=(), kwargs=(;), output=nothing, inplace=nothing, function_args=(), function_kwargs=(;), lazy=LAZY_INMEMORY_XMAP[])
     output === nothing && (output = default_output(f))
     inplace === nothing && (inplace = default_inplace(f))
 
@@ -411,7 +411,7 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; args=()
     daefunction = if f isa DAE.UserOp
        f
     else
-        DAE.create_userfunction(f, (outtypes...,); is_mutating=inplace, allow_threads=false,
+        DAE.create_userfunction(f, (outtypes...,); is_mutating=inplace, allow_threads,
             args=function_args, kwargs=function_kwargs)
     end
     #Create DiskArrayEngine Input arrays
