@@ -36,6 +36,7 @@ function concatenatecubes(cl, cataxis::DD.Dimension)
     length(cataxis) == length(cl) ||
         error("cataxis must have same length as cube list")
     firstnontrivialcube = findfirst(c->ndims(c)>0, cl)
+    @show firstnontrivialcube
     axlist = DD.rebuild.(DD.dims(cl[firstnontrivialcube]))
     T = eltype(cl[firstnontrivialcube])
     N = ndims(cl[firstnontrivialcube])

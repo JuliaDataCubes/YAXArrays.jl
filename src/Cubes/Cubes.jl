@@ -180,11 +180,22 @@ function Base.permutedims(c::YAXArray, p)
     YAXArray(newdims, newdata, c.properties, newchunks, c.cleaner)
 end
 
+"""
+# Internal 
+    getcleaner(x)
+Get the cleaner for a YAXArray.
+This function is used to separate the cleaner access from the implementation in the Array.
+"""
+getcleaner(x) = CleanMe[]
+getcleaner(x::YAXArray) = x.cleaner
+
+
+
 # DimensionalData overloads
 
 DD.dims(x::YAXArray) = getfield(x,:axes)
 DD.refdims(::YAXArray) = ()
-DD.metadata(x::YAXArray) = getfield(x,:properties)
+DD.metadata(x::YAXArray) = DD.Lookups.Metadata(getfield(x,:properties))
 
 function DD.rebuild(A::YAXArray, data::AbstractArray, dims::Tuple, refdims::Tuple, name, metadata)
     #chunks = map(dims, eachchunk(data).chunks) do d, chunk

@@ -1,6 +1,6 @@
 module Datasets
 #import ..Cubes.Axes: axsym, axname, CubeAxis, findAxis, CategoricalAxis, RangeAxis, caxes
-import ..Cubes: Cubes, YAXArray, concatenatecubes, CleanMe, subsetcube, copy_diskarray, setchunks, caxes
+import ..Cubes: Cubes, YAXArray, concatenatecubes, CleanMe, subsetcube, copy_diskarray, setchunks, caxes, getcleaner
 using ...YAXArrays: YAXArrays, YAXDefaults, findAxis
 using DataStructures: OrderedDict, counter
 using Dates: Day, Hour, Minute, Second, Month, Year, Date, DateTime, TimeType, AbstractDateTime
@@ -77,9 +77,9 @@ function to_dataset(c;datasetaxis = "Variable", layername = get(c.properties,"na
     allcubes = map(enumerate(cubenames)) do (i,cn)
         if idatasetax !== nothing
             viewinds = Base.setindex(viewinds,i,idatasetax)
-            Symbol(cn)=>YAXArray(axlist, view(getdata(c),viewinds...), copy(atts),chunks=GridChunks(chunks),cleaner=c.cleaner)
+            Symbol(cn)=>YAXArray(axlist, view(getdata(c),viewinds...), copy(atts),chunks=GridChunks(chunks),cleaner=getcleaner(c))
         else
-            Symbol(cn)=>YAXArray(axlist, getdata(c), copy(atts),chunks=GridChunks(chunks),cleaner=c.cleaner)
+            Symbol(cn)=>YAXArray(axlist, getdata(c), copy(atts),chunks=GridChunks(chunks),cleaner=getcleaner(c))
         end
         
     end
@@ -375,10 +375,12 @@ function Cube(ds::Dataset; joinname = "Variable", target_type = nothing)
                 map(Base.Fix1(convert,prom_type),ds.cubes[k])
             end
         end
+        @show cubestomerge
         foreach(
         i -> haskey(i.properties, "name") && delete!(i.properties, "name"),
         cubestomerge,
         )
+        @show cubestomerge
         return concatenatecubes(cubestomerge, varax)
     end
 end
@@ -617,7 +619,7 @@ The keyword arguments are:
 function savecube(
     c,
     path::AbstractString;
-    layername = get(c.properties,"name","layer"),
+    layername = get(DD.metadata(c),"name","layer"),
     datasetaxis = "Variable",
     max_cache = 5e8,
     backend = :all,
