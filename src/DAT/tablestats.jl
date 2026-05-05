@@ -149,7 +149,7 @@ function tooutaxis(
     else
         iax = findAxis(string(s), iter.dc.LoopAxes)
         outAxis = iter.dc.LoopAxes[iax]
-        convertdict = Dict(k => i for (i, k) in enumerate(DD.LookupArrays.val(outAxis)))
+        convertdict = Dict(k => i for (i, k) in enumerate(DD.Lookups.val(outAxis)))
     end
     outAxis, convertdict
 end
