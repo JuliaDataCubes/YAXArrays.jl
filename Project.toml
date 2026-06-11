@@ -1,7 +1,7 @@
 name = "YAXArrays"
 uuid = "c21b50f5-aa40-41ea-b809-c0f5e47bfa5c"
-authors = ["Fabian Gans <fgans@bgc-jena.mpg.de>"]
 version = "0.7.6"
+authors = ["Fabian Gans <fgans@bgc-jena.mpg.de>"]
 
 [deps]
 CFTime = "179af706-886a-5703-950a-314cd64e0468"
@@ -47,7 +47,7 @@ IterTools = "1"
 OffsetArrays = "1"
 OnlineStats = "1"
 Optim = "1"
-OrderedCollections = "1"
+OrderedCollections = "1, 2"
 ParallelUtilities = "0.8"
 ProgressMeter = "1"
 Reexport = "1"
