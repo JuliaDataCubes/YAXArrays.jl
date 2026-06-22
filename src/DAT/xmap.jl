@@ -600,7 +600,7 @@ Computes the YAXArrays dataset `ods` and saves it to a Zarr dataset at `path`.
 - `max_cache`: The maximum amount of data to cache in memory while computing the dataset.
 - `overwrite`: Whether to overwrite the dataset at `path` if it already exists.
 """
-function compute_to_zarr(ods, path; max_cache=5e8, custom_loopranges=nothing, overwrite=false, showprogress=true)
+function compute_to_zarr(ods, path; max_cache=5e8, custom_loopranges=nothing, overwrite=false, showprogress=true, use_dagger=DAE.Distributed.nworkers() > 1)
     if !isa(ods,Dataset)
         throw(ArgumentError("Direct saving of YAXArrays is not supported. Please wrap your array `a` into a Dataset by calling `Dataset(layer=a)`"))
     end
@@ -665,7 +665,7 @@ function compute_to_zarr(ods, path; max_cache=5e8, custom_loopranges=nothing, ov
                 emptyds.cubes[k].data
             end
         end
-        runner = if DAE.Distributed.nworkers() > 1
+        runner = if use_dagger
             DAE.DaggerRunner(op, lr, outars; showprogress)
         else
             DAE.LocalRunner(op, lr, outars; showprogress)
