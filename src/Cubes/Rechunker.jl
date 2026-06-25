@@ -52,7 +52,7 @@ function outalign(buf,sout)
 end
 
 function get_copy_buffer_size(incube, outcube;writefac=4.0, maxbuf = YAXDefaults.max_cache[], align_output=true)
-    maxbuf = round(Int,maxbuf/sizeof(eltype(incube)))
+    maxbuf = round(Int,maxbuf/_elsize(eltype(incube)))
     nd = ndims(incube)
     if nd == 1
         return (min(maxbuf,length(incube)),)
