@@ -517,8 +517,19 @@ function formatbytes(x)
     end
     return string(round(x, digits=2), " ", exts[i])
 end
-cubesize(c::YAXArray{T}) where {T} = (sizeof(T)) * prod(map(length, caxes(c)))
-cubesize(::YAXArray{T,0}) where {T} = sizeof(T)
+
+"""
+    _elsize(T)
+
+Like `sizeof`, but returns a fallback estimate for element types without a
+definite size (e.g. `String` and other non-`isbitstype` types, which are stored
+by reference). Lets buffer- and size-computations work for variable-length
+element types instead of throwing `"Type ... does not have a definite size"`.
+"""
+_elsize(::Type{T}) where {T} = isconcretetype(T) && isbitstype(T) ? sizeof(T) : sizeof(Ptr{Cvoid})
+
+cubesize(c::YAXArray{T}) where {T} = _elsize(T) * prod(map(length, caxes(c)))
+cubesize(::YAXArray{T,0}) where {T} = _elsize(T)
 
 getCubeDes(::DD.Dimension) = "Cube axis"
 getCubeDes(::YAXArray) = "YAXArray"
