@@ -289,7 +289,7 @@ tupelize(x::Tuple) = x
 Function to handle groupby operations in `xmap`. It assumes that the only input array 
 is a DimWindowArray where one of the dimensions is a GroupIndices dimension.
 """
-function _groupby_xmap(f,ars...;output,inplace)
+function _groupby_xmap(f, ars...; output, inplace, min_nvalid=1)
 
     @assert length(ars) == 1
     g = only(ars)
@@ -300,7 +300,7 @@ function _groupby_xmap(f,ars...;output,inplace)
 
     preproc, groupconv = (identity, identity)
     _f = isa(f,XFunction) ? f.f : f
-    newf = DAE.disk_onlinestat(_f,preproc,groupconv)
+    newf = DAE.disk_onlinestat(_f, preproc, groupconv; min_nvalid)
 
     outputs = XOutput(g.dims[igroup],destroyaxes=DD.otherdims(g.dim_orig,g.dims))
 
@@ -339,7 +339,7 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...;
 
 
 """
-function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; allow_threads=false, args=(), kwargs=(;), output=nothing, inplace=nothing, function_args=(), function_kwargs=(;), lazy=LAZY_INMEMORY_XMAP[])
+function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; allow_threads=false, args=(), kwargs=(;), output=nothing, inplace=nothing, function_args=(), function_kwargs=(;), lazy=LAZY_INMEMORY_XMAP[], min_nvalid=1)
     output === nothing && (output = default_output(f))
     inplace === nothing && (inplace = default_inplace(f))
 
@@ -360,7 +360,7 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; allow_t
         any(Base.Fix2(isa,GroupIndices),a.indices)
     end
 
-    is_groupby && return _groupby_xmap(f,winars...;output,inplace)
+    is_groupby && return _groupby_xmap(f, winars...; output, inplace, min_nvalid)
 
     #Create outspecs
     output = tupelize(output)
