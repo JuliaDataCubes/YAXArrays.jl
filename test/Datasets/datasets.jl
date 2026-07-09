@@ -605,3 +605,22 @@ end
     @test ds.layer.data[:,:,1:2] == array1
     @test ds.layer.data[:,:,3:4] == array2
 end
+
+@testset "Saving variable-length strings" begin
+    using NetCDF, Zarr, YAXArrays
+    @test YAXArrays.Cubes._elsize(String) == sizeof(Ptr{Cvoid})
+    @test YAXArrays.Cubes._elsize(Float64) == 8
+
+    data = ["a", "bb", "ccc", "dddd"]
+    a = YAXArray((Dim{:Ax}(1:4),), data)
+
+    f = string(tempname(), ".zarr")
+    savecube(a, f, backend=:zarr)
+    @test ispath(f)
+    @test collect(Cube(f).data) == data
+
+    f = string(tempname(), ".nc")
+    savecube(a, f, backend=:netcdf)
+    @test ispath(f)
+    @test collect(Cube(f).data) == data
+end

@@ -758,7 +758,7 @@ end
 function getbackend(oc, ispar, max_cache)
     elementtype = Union{oc.outtype,Missing}
     outsize =
-        sizeof(elementtype) * (length(oc.allAxes) > 0 ? prod(map(length, oc.allAxes)) : 1)
+        Cubes._elsize(elementtype) * (length(oc.allAxes) > 0 ? prod(map(length, oc.allAxes)) : 1)
     rt = oc.desc.backend
     ispath =  get(oc.desc.backendargs, :path, nothing)
 
@@ -915,8 +915,7 @@ function analyzeAxes(dc::DATConfig{NIN,NOUT}) where {NIN,NOUT}
     return dc
 end
 
-mysizeof(x) = sizeof(x)
-mysizeof(x::Type{String}) = 1
+mysizeof(x) = Cubes._elsize(x)
 
 """
 Function that compares two cache miss specifiers by their importance
@@ -944,7 +943,7 @@ function getCacheSizes(dc::DATConfig, loopchunksizes)
     outblocksizes = map(
         C ->
             length(C.axesSmall) > 0 ?
-            sizeof(C.outtype) * prod(map(Int ∘ length, C.axesSmall)) : 1,
+            Cubes._elsize(C.outtype) * prod(map(Int ∘ length, C.axesSmall)) : 1,
         dc.outcubes,
     )
     outblocksize = length(outblocksizes) > 0 ? sum(outblocksizes) : 1
