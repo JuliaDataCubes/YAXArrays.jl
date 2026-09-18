@@ -2,8 +2,7 @@ import OnlineStats: OnlineStat, Extrema, fit!, value, HistogramStat, Ash
 #import ...Cubes.Axes: CategoricalAxis, RangeAxis
 import IterTools
 using WeightedOnlineStats
-using Distributed: nworkers
-using ParallelUtilities: pmapreduce
+using Distributed: nworkers, @distributed
 import ProgressMeter: next!, Progress, ProgressUnknown
 
 import WeightedOnlineStats: WeightedOnlineStat
@@ -246,12 +245,20 @@ fittable(iter,WeightedMean,:tair,weight=(i->abs(cosd(i.lat))),by=(i->month(i.tim
 ````
 """
 function fittable(tab::CubeIterator, o, fitsym; by = (), weight = nothing, showprog = false)
-    func = nworkers() > 1 ? pmapreduce : mapreduce
-    func(merge!,tab) do t
+    fitchunk = t -> begin
         agg = TableAggregator(t, o, fitsym, by = by, weight = weight)
         foreach(i -> fitrow!(agg, i), Tables.rows(t))
         GC.gc()
         agg
+    end
+    if nworkers() > 1 && length(tab) > 1
+        # Each worker fits its share of the chunks and merges them locally,
+        # so only one aggregator per worker is sent back to the master.
+        @distributed (merge!) for t in tab
+            fitchunk(t)
+        end
+    else
+        mapreduce(fitchunk, merge!, tab)
     end
 end
 fittable(tab::CubeIterator, o::Type{<:OnlineStat}, fitsym; kwargs...) =
