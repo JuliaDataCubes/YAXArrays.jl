@@ -626,7 +626,6 @@ function compute_to_zarr(ods, path; max_cache=5e8, custom_loopranges=nothing, ov
         else
             DAE.custom_loopranges(op, custom_loopranges)
         end
-
         newcubes = map(conn.outputids, op.outspecs) do oid, ospec
             looprange = lr.lr.members
             lw = ospec.lw
@@ -650,9 +649,26 @@ function compute_to_zarr(ods, path; max_cache=5e8, custom_loopranges=nothing, ov
         end
         op, lr, newcubes
     end
-
-    newds = Dataset(; filter(!isnothing, reduce(vcat, last.(opinfo)))...)
-
+    #Move the filtering here
+    #Merken der Cubes wo ich dimensionen zerstört habe und welche Dimensionsnummer
+    cubes = reduce(vcat, last.(opinfo))
+    alldims = union(dims.(last.(filter(!isnothing, cubes)))...)
+    longdims = filter(d->length(d)>1, alldims)
+    droppeddict = Dict{Symbol, Any}()
+    filteredcubes = map(cubes) do p
+        if !isnothing(p)
+        k, cube = p
+        singletondims = filter(d->length(d)==1, dims(cube))
+        removedims = (intersect(DD.name.(longdims), DD.name.(singletondims))...,)
+        if !isempty(removedims)
+            push!(droppeddict, k => size(cube))
+            k => dropdims(cube, dims=removedims)
+        else
+            k => cube
+        end
+    end
+    end
+    newds = Dataset(; filteredcubes...)
     emptyds = savedataset(newds, path=path, skeleton=true, overwrite=overwrite)
 
     for (op, lr, newcubes) in opinfo
@@ -662,7 +678,13 @@ function compute_to_zarr(ods, path; max_cache=5e8, custom_loopranges=nothing, ov
                 nothing
             else
                 k = first(p)
-                emptyds.cubes[k].data
+                # Fill in dimension here with reshape
+                droppeddims = get(droppeddict, k, nothing)
+                if !isnothing(droppeddims)
+                    reshape(emptyds.cubes[k].data, droppeddims)
+                else
+                    emptyds.cubes[k].data
+                end
             end
         end
         runner = if use_dagger
