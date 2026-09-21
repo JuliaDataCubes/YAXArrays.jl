@@ -27,19 +27,18 @@ end
 Interpolate the data in `yax` onto the grid of `target`.
 The interpolation is done lazily via DiskArrayEngine. 
 """
-function interpolate(yax, target::DD.AbstractDimArray;  method=Linear(), outspecs=nothing, outtype=Float32)
+function xinterpolate(yax, target::DD.AbstractDimArray;  method=Linear(), outspecs=nothing, outtype=Float32)
     targetdims = dims(target)
-    interpolate(yax, targetdims; method, outspecs, outtype)
+    xinterpolate(yax, targetdims; method, outspecs, outtype)
 end
-function interpolate(yax, targetdims;  method=Linear(), outspecs=nothing, outtype=Float32)
+function xinterpolate(yax, targetdims;  method=Linear(), outspecs=nothing, outtype=Float32)
     shareddims = DD.commondims(yax, targetdims)
     convtuples = map(shareddims, targetdims) do s,t
         (DD.val(s),DD.val(t))
     end
     shareddimnum = DD.dimnum(yax, shareddims)
     conv = DD.dimnum(yax, shareddims) .=> convtuples
-    interpdata = DAE.interpolate_diskarray(yax, conv)
+    interpdata = DAE.interpolate_diskarray(yax, conv; method)
     newdims = DD.Dimensions.setdims(dims(yax), targetdims)
-    @show length.(newdims)
     DD.rebuild(yax, interpdata, newdims)
 end

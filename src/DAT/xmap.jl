@@ -15,7 +15,7 @@ const LAZY_INMEMORY_XMAP = Ref(false)
 
 include("resample.jl")
 
-export windows, Whole, xmap, XOutput, compute_to_zarr, xresample, MovingIntervals, XFunction, ⊘, compute, interpolate
+export windows, Whole, xmap, XOutput, compute_to_zarr, xresample, MovingIntervals, XFunction, ⊘, compute, xinterpolate
 
 struct Whole <: DD.AbstractBins end
 function DD._group_indices(dim::DD.Dimension, ::Whole; labels=nothing)
