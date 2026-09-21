@@ -36,9 +36,8 @@ function xinterpolate(yax, targetdims;  method=Linear(), outspecs=nothing, outty
     convtuples = map(shareddims, targetdims) do s,t
         (DD.val(s),DD.val(t))
     end
-    shareddimnum = DD.dimnum(yax, shareddims)
     conv = DD.dimnum(yax, shareddims) .=> convtuples
-    interpdata = DAE.interpolate_diskarray(yax, conv; method)
+    interpdata = DAE.interpolate_diskarray(yax, conv; method, outspecs, outtype)
     newdims = DD.Dimensions.setdims(dims(yax), targetdims)
     DD.rebuild(yax, interpdata, newdims)
 end
