@@ -57,6 +57,20 @@ end
     @test all(c[:] .== 0)
 end
 
+@testitem "interpolate" begin
+    using YAXArrays.Xmap: interpolate
+    coarsedata = reshape(1:16, 4,4)
+    coarsedims = (X(3:6), Y(-4:-1))
+    coarse = YAXArray(coarsedims, coarsedata)
+    finedims = (X(3:0.5:6), Y(-4:0.5:-1))
+    interpdims = interpolate(coarse, finedims)
+        fine = YAXArray(finedims, rand(7,7))
+    interparr = interpolate(coarse, fine)
+    @test interpdims == interparr
+    @test interpdims[1] == coarsedata[1]
+    @test all(interpdims[1:2:end, 1:2:end] .== coarse)
+end
+
 #=
 These should be reenabled once we decided what keyword arguments xmap gets. 
     @testset "max cache inputs" begin

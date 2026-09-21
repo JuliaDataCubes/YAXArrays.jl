@@ -9,12 +9,13 @@ import DiskArrayEngine as DAE
 import IntervalSets: Interval
 import DiskArrayEngine.compute
 import DiskArrays: isdisk
+using Interpolations: Linear
 
 const LAZY_INMEMORY_XMAP = Ref(false)
 
 include("resample.jl")
 
-export windows, Whole, xmap, XOutput, compute_to_zarr, xresample, MovingIntervals, XFunction, ⊘, compute
+export windows, Whole, xmap, XOutput, compute_to_zarr, xresample, MovingIntervals, XFunction, ⊘, compute, interpolate
 
 struct Whole <: DD.AbstractBins end
 function DD._group_indices(dim::DD.Dimension, ::Whole; labels=nothing)
@@ -368,7 +369,6 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; allow_t
 
     alloutdims = DD.combinedims(map(x->x.outaxes, output)..., val=true, type=false, msg=nothing)
     allinandoutdims = (unique(DD.basedims((alldims..., alloutdims...)))...,)
-
     outaxinfo = map(output) do o
         outaxes = o.outaxes
         destroydims = o.destroyaxes
