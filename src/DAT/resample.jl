@@ -1,4 +1,5 @@
 to_dimtuple(x::Tuple) = x
+to_dimtuple(::Nothing) = ()
 to_dimtuple(x::DD.AbstractDimArray) = DD.dims(x)
 to_dimtuple(x::DD.Dim) = (x,)
 
@@ -6,38 +7,34 @@ valval(d::DD.Dimension) = valval(DD.val(d))
 valval(d::DD.Lookup) = valval(DD.val(d))
 valval(x) = x
 
-function xresample(yax::YAXArray;to=nothing,method=Linear(),outtype=Float32)
+"""
+    xresample(yax; to=nothing, method=Linear(), outspecs=nothing, outtype=Float32)
+
+Interpolate the data in `yax` onto a new grid specified by `to`.
+
+# Arguments
+- `yax`: A `YAXArray` or any `AbstractDimArray`
+- `to`: Tuple of new `Dimension` specifications. Only common dimensions are resampled; 
+  dimensions not in `to` are carried along unchanged.
+
+# Keywords
+- `method`: Interpolation method (default: `Linear()`)
+- `outspecs`: Output specification forwarded to `DiskArrayEngine.interpolate_diskarray`
+- `outtype`: Element type of the output (default: `Float32`)
+"""
+function xresample(yax::DD.AbstractDimArray; to=nothing, 
+                   method=Linear(), outspecs=nothing, outtype=Float32)
     newdims = to_dimtuple(to)
+    yaxdims = DD.dims(yax)
     conv = map(newdims) do d
-        dold = DD.dims(yax.axes,d)
+        dold = DD.dims(yaxdims, d)
         dold === nothing && return nothing
-        approxequal(dold,d) && return nothing
-        idim = DD.dimnum(yax.axes,d)
-        idim=>(valval(dold),valval(d))
+        approxequal(dold, d) && return nothing
+        idim = DD.dimnum(yaxdims, d)
+        idim => (valval(dold), valval(d))
     end
-    conv = filter(!isnothing,conv)
-    itp = DAE.interpolate_diskarray(yax.data,conv,method=method,outtype=outtype)
-    allnewdims = DD.setdims(yax.axes,newdims)
-    YAXArray(allnewdims, itp, yax.properties, cleaner=yax.cleaner)
-end
-
-
-"""
-    interpolate(yax, targetgrid; method=Linear(), outspecs=nothing, outtype=Float32)
-Interpolate the data in `yax` onto the grid of `target`.
-The interpolation is done lazily via DiskArrayEngine. 
-"""
-function xinterpolate(yax, target::DD.AbstractDimArray;  method=Linear(), outspecs=nothing, outtype=Float32)
-    targetdims = dims(target)
-    xinterpolate(yax, targetdims; method, outspecs, outtype)
-end
-function xinterpolate(yax, targetdims;  method=Linear(), outspecs=nothing, outtype=Float32)
-    shareddims = DD.commondims(yax, targetdims)
-    convtuples = map(shareddims, targetdims) do s,t
-        (DD.val(s),DD.val(t))
-    end
-    conv = DD.dimnum(yax, shareddims) .=> convtuples
+    conv = filter(!isnothing, conv)
     interpdata = DAE.interpolate_diskarray(yax, conv; method, outspecs, outtype)
-    newdims = DD.Dimensions.setdims(dims(yax), targetdims)
-    DD.rebuild(yax, interpdata, newdims)
+    allnewdims = DD.setdims(DD.dims(yax), newdims)
+    DD.rebuild(yax, interpdata, allnewdims)
 end

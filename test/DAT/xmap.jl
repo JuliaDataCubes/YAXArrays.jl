@@ -57,19 +57,59 @@ end
     @test all(c[:] .== 0)
 end
 
-@testitem "xinterpolate" begin
+@testitem "xresample with AbstractDimArray" begin
     using YAXArrays
     using DimensionalData
+    using DimensionalData: DimensionalData as DD, DimArray
+    using DiskArrayEngine: DiskArrayEngine as DAE
     coarsedata = reshape(1:16, 4,4)
     coarsedims = (X(3:6), Y(-4:-1))
     coarse = YAXArray(coarsedims, coarsedata)
     finedims = (X(3:0.5:6), Y(-4:0.5:-1))
-    interpdims = xinterpolate(coarse, finedims)
-        fine = YAXArray(finedims, rand(7,7))
-    interparr = xinterpolate(coarse, fine)
-    @test interpdims == interparr
-    @test interpdims[1] == coarsedata[1]
-    @test all(interpdims[1:2:end, 1:2:end] .== coarse)
+    
+    # Test with YAXArray
+    resampled = xresample(coarse; to=finedims)
+    computed = DAE.compute(resampled)
+    @test size(computed) == (7, 7)
+    @test computed[1] == 1.0
+    @test isapprox(computed[1:2:end, 1:2:end][:], coarsedata[:])
+    
+    # Test with plain DimArray (compute via data field for non-YAXArray)
+    coarse_da = DimArray(coarsedata, coarsedims)
+    resampled_da = xresample(coarse_da; to=finedims)
+    computed_da = DAE.compute(resampled_da.data)
+    @test size(computed_da) == (7, 7)
+    @test computed_da[1] == 1.0
+    
+    # Test that output preserves input struct type
+    @test typeof(resampled_da) <: DD.AbstractDimArray
+    @test DD.name(resampled_da) == DD.name(coarse_da)
+    
+    # Test partial dimension resampling (only X)
+    resampled_partial = xresample(coarse; to=(X(3:0.5:6),))
+    computed_partial = DAE.compute(resampled_partial)
+    @test size(computed_partial) == (7, 4)
+    @test computed_partial[1] == 1.0
+end
+
+@testitem "xresample with outspecs" begin
+    using YAXArrays
+    using DimensionalData
+    using DiskArrayEngine: DiskArrayEngine as DAE
+    coarsedata = reshape(1:16, 4,4)
+    coarsedims = (X(3:6), Y(-4:-1))
+    coarse = YAXArray(coarsedims, coarsedata)
+    finedims = (X(3:0.5:6), Y(-4:0.5:-1))
+    
+    # Test with explicit outtype
+    resampled = xresample(coarse; to=finedims, outtype=Float64)
+    computed = DAE.compute(resampled)
+    @test eltype(computed) == Union{Missing, Float64}
+    
+    # Test with Float32 (default)
+    resampled_f32 = xresample(coarse; to=finedims, outtype=Float32)
+    computed_f32 = DAE.compute(resampled_f32)
+    @test eltype(computed_f32) == Union{Missing, Float32}
 end
 
 #=
