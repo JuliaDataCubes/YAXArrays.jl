@@ -34,7 +34,7 @@ function xresample(yax::DD.AbstractDimArray; to=nothing,
         idim => (valval(dold), valval(d))
     end
     conv = filter(!isnothing, conv)
-    interpdata = DAE.interpolate_diskarray(yax, conv; method, outspecs, outtype)
+    interpdata = DAE.interpolate_diskarray(yax.data, conv; method, outspecs, outtype)
     allnewdims = DD.setdims(DD.dims(yax), newdims)
     DD.rebuild(yax, interpdata, allnewdims)
 end
