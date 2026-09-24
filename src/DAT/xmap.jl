@@ -290,7 +290,7 @@ tupelize(x::Tuple) = x
 Function to handle groupby operations in `xmap`. It assumes that the only input array 
 is a DimWindowArray where one of the dimensions is a GroupIndices dimension.
 """
-function _groupby_xmap(f,ars...;output,inplace)
+function _groupby_xmap(f, ars...; output, inplace, min_nvalid=1)
 
     @assert length(ars) == 1
     g = only(ars)
@@ -301,7 +301,7 @@ function _groupby_xmap(f,ars...;output,inplace)
 
     preproc, groupconv = (identity, identity)
     _f = isa(f,XFunction) ? f.f : f
-    newf = DAE.disk_onlinestat(_f,preproc,groupconv)
+    newf = DAE.disk_onlinestat(_f, preproc, groupconv; min_nvalid)
 
     outputs = XOutput(g.dims[igroup],destroyaxes=DD.otherdims(g.dim_orig,g.dims))
 
@@ -340,7 +340,7 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...;
 
 
 """
-function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; allow_threads=false, args=(), kwargs=(;), output=nothing, inplace=nothing, function_args=(), function_kwargs=(;), lazy=LAZY_INMEMORY_XMAP[])
+function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; allow_threads=false, args=(), kwargs=(;), output=nothing, inplace=nothing, function_args=(), function_kwargs=(;), lazy=LAZY_INMEMORY_XMAP[], min_nvalid=1)
     output === nothing && (output = default_output(f))
     inplace === nothing && (inplace = default_inplace(f))
 
@@ -361,7 +361,7 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; allow_t
         any(Base.Fix2(isa,GroupIndices),a.indices)
     end
 
-    is_groupby && return _groupby_xmap(f,winars...;output,inplace)
+    is_groupby && return _groupby_xmap(f, winars...; output, inplace, min_nvalid)
 
     #Create outspecs
     output = tupelize(output)
@@ -600,7 +600,7 @@ Computes the YAXArrays dataset `ods` and saves it to a Zarr dataset at `path`.
 - `max_cache`: The maximum amount of data to cache in memory while computing the dataset.
 - `overwrite`: Whether to overwrite the dataset at `path` if it already exists.
 """
-function compute_to_zarr(ods, path; max_cache=5e8, custom_loopranges=nothing, overwrite=false)
+function compute_to_zarr(ods, path; max_cache=5e8, custom_loopranges=nothing, overwrite=false, showprogress=true, use_dagger=DAE.Distributed.nworkers() > 1)
     if !isa(ods,Dataset)
         throw(ArgumentError("Direct saving of YAXArrays is not supported. Please wrap your array `a` into a Dataset by calling `Dataset(layer=a)`"))
     end
@@ -626,7 +626,6 @@ function compute_to_zarr(ods, path; max_cache=5e8, custom_loopranges=nothing, ov
         else
             DAE.custom_loopranges(op, custom_loopranges)
         end
-
         newcubes = map(conn.outputids, op.outspecs) do oid, ospec
             looprange = lr.lr.members
             lw = ospec.lw
@@ -650,9 +649,26 @@ function compute_to_zarr(ods, path; max_cache=5e8, custom_loopranges=nothing, ov
         end
         op, lr, newcubes
     end
-
-    newds = Dataset(; filter(!isnothing, reduce(vcat, last.(opinfo)))...)
-
+    #Move the filtering here
+    #Merken der Cubes wo ich dimensionen zerstört habe und welche Dimensionsnummer
+    cubes = reduce(vcat, last.(opinfo))
+    alldims = union(dims.(last.(filter(!isnothing, cubes)))...)
+    longdims = filter(d->length(d)>1, alldims)
+    droppeddict = Dict{Symbol, Any}()
+    filteredcubes = map(cubes) do p
+        if !isnothing(p)
+        k, cube = p
+        singletondims = filter(d->length(d)==1, dims(cube))
+        removedims = (intersect(DD.name.(longdims), DD.name.(singletondims))...,)
+        if !isempty(removedims)
+            push!(droppeddict, k => size(cube))
+            k => dropdims(cube, dims=removedims)
+        else
+            k => cube
+        end
+    end
+    end
+    newds = Dataset(; filteredcubes...)
     emptyds = savedataset(newds, path=path, skeleton=true, overwrite=overwrite)
 
     for (op, lr, newcubes) in opinfo
@@ -662,13 +678,19 @@ function compute_to_zarr(ods, path; max_cache=5e8, custom_loopranges=nothing, ov
                 nothing
             else
                 k = first(p)
-                emptyds.cubes[k].data
+                # Fill in dimension here with reshape
+                droppeddims = get(droppeddict, k, nothing)
+                if !isnothing(droppeddims)
+                    reshape(emptyds.cubes[k].data, droppeddims)
+                else
+                    emptyds.cubes[k].data
+                end
             end
         end
-        runner = if DAE.Distributed.nworkers() > 1
-            DAE.DaggerRunner(op, lr, outars)
+        runner = if use_dagger
+            DAE.DaggerRunner(op, lr, outars; showprogress)
         else
-            DAE.LocalRunner(op, lr, outars)
+            DAE.LocalRunner(op, lr, outars; showprogress)
         end
         run(runner)
     end
