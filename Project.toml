@@ -1,7 +1,8 @@
 name = "YAXArrays"
 uuid = "c21b50f5-aa40-41ea-b809-c0f5e47bfa5c"
-authors = ["Fabian Gans <fgans@bgc-jena.mpg.de>"]
+authors = ["Fabian Gans <fgans@bgc-jena.mpg.de>", "Felix Cremer <fcremer@bgc-jena.mpg.de>","Lazaro Alonso <lalonso@bgc-jena.mpg.de>", "Contributors"]
 version = "0.7.9"
+
 
 [deps]
 CFTime = "179af706-886a-5703-950a-314cd64e0468"
