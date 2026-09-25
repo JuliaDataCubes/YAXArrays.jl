@@ -19,8 +19,8 @@ function Base.materialize(bc::Broadcast.Broadcasted{XStyle})
     # determine output type by calling `eltype` on a dummy function call
     intypes = (eltype.(args2)...,)
     @debug intypes
-    outtypes = Base.return_types(bc.f, intypes)
-    outtype = Base.promote_type(outtypes...)
+    outtypes = Base.promote_op(bc.f, intypes...)
+    outtype = reduce(Base.promote_type, Base.uniontypes.(outtypes))
     @debug outtype
     return xmap(XFunction(bc.f; inplace=false), args2..., output=XOutput(; outtype))
 end

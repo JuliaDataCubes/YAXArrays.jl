@@ -67,7 +67,7 @@ a, b, c = sample_arrays()
         @test DiskArrays.isdisk(xscalar) == lazy
         @test isa(a .+ b, YAXArray)
 
-    end
+    
     xabs = abs.(xneg)
     @test all(xabs[:] .== 1.0)
 
@@ -95,6 +95,7 @@ a, b, c = sample_arrays()
     xscalar = a .* 3 .+ 1
     @test all(xscalar[:] .== 4.0)
     @test isa(a .+ b, YAXArray)
+    end
 end
 
 @testset "missing handling" begin
@@ -103,4 +104,8 @@ end
     @test eltype(aeq) == Union{Missing, Bool}
     @test ismissing(aeq[1,1])
     @test aeq[1,2]
+    am = YAXArray([1. 1. ; 2.  2.])
+    f = x-> rand() > 0.5 ? 1f0 : 1.
+    fam = f.(am)
+    @test eltype(fam) == Float64
 end
