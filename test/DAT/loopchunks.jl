@@ -100,7 +100,7 @@
 @testitem "Map Cubes with Different Chunks Issue #182" begin
    using YAXArrays
    using DimensionalData
-   using Zarr
+   #using Zarr
    d = tempdir()
    x,y,z = (X(1:400), Y(1:500), Z(1:600))
    a = rand(400,500,600)
@@ -112,4 +112,8 @@
    a2 = Cube(p2)
    a1 = Cube(p1)
    @test_throws ArgumentError mapped = map((x,y) -> x * y, a1, setchunks(a2, YAXArrays.Cubes.cubechunks(a1)))
+   # Tidy up the test data
+   rm(p1, force=true, recursive=true)
+   rm(p2, force=true, recursive=true)
+
 end
