@@ -1,6 +1,5 @@
 import YAXArrays.DAT: DATConfig
 import YAXArrays.YAXTools: PickAxisArray
-#using YAXArrays.Cubes.Axes: axcopy
 using DiskArrays: GridChunks, AbstractDiskArray
 using Tables: Tables, Schema, AbstractColumns
 
