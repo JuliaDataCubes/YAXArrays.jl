@@ -17,14 +17,10 @@ function Base.materialize(bc::Broadcast.Broadcasted{XStyle})
     args2 = map(arg -> arg isa Broadcast.Broadcasted ? Base.materialize(arg) : arg, bc.args)
     args2 = map(to_yax, args2)
     # determine output type by calling `eltype` on a dummy function call
-    dummy_args = map(a -> first(a.data), args2)
-    outtype = typeof(bc.f(dummy_args...))
+    intypes = (eltype.(args2)...,)
+    @debug intypes
+    outtypes = Base.promote_op(bc.f, intypes...)
+    outtype = reduce(Base.promote_type, Base.uniontypes.(outtypes))
+    @debug outtype
     return xmap(XFunction(bc.f; inplace=false), args2..., output=XOutput(; outtype))
-end
-function Base.materialize!(bc::Broadcast.Broadcasted{XStyle})
-    args2 = map(arg -> arg isa Broadcast.Broadcasted ? Base.materialize(arg) : arg, bc.args)
-    args2 = map(to_yax, args2)
-    dummy_args = map(a -> first(a.data), args2)
-    outtype = typeof(bc.f(dummy_args...))
-    return xmap(XFunction(bc.f; inplace=true), args2..., output=XOutput(; outtype))
 end
