@@ -112,6 +112,17 @@ end
     @test eltype(computed_f32) == Union{Missing, Float32}
 end
 
+@testitem "xresample with approxequal dimensions" begin
+    using YAXArrays
+    using DimensionalData
+    coarsedata = reshape(1:16, 4,4, 1)
+    coarsedims = (X(range(1.,1.5, length=4)), Y(range(-3.4, -2., length=4)), Ti(2:2))
+    coarse = YAXArray(coarsedims, coarsedata)
+    finedims = (X(range(1f0,1.5f0, length=4)), Y(range(-3.4f0, -2f0, length=4)))
+    interpdata = xresample(coarse, to=finedims)
+    @test interpdata.data === coarse.data
+    @test dims(interpdata, finedims) == finedims
+end
 #=
 These should be reenabled once we decided what keyword arguments xmap gets. 
     @testset "max cache inputs" begin
