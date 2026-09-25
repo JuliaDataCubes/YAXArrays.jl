@@ -18,7 +18,7 @@ Interpolate the data in `yax` onto a new grid specified by `to`.
   dimensions not in `to` are carried along unchanged.
 
 # Keywords
-- `method`: Interpolation method (default: `Linear()`)
+- `method`: Interpolation method from Interpolations.jl (default: `Linear()`)
 - `outspecs`: Output specification forwarded to `DiskArrayEngine.interpolate_diskarray`
 - `outtype`: Element type of the output (default: `Float32`)
 """
