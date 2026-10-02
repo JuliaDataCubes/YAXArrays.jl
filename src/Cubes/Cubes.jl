@@ -17,12 +17,9 @@ using Tables: istable, schema, columns
 using DimensionalData: DimensionalData as DD, AbstractDimArray, NoName
 import DimensionalData: name, label
 
-export concatenatecubes, caxes, subsetcube, readcubedata, renameaxis!, YAXArray, setchunks, cache
+export concatenatecubes, caxes, readcubedata, renameaxis!, YAXArray, setchunks, cache
 
-"""
-This function calculates a subset of a cube's data
-"""
-function subsetcube end
+
 
 "Returns the axes of a Cube"
 function caxes end
@@ -427,66 +424,7 @@ function renameaxis!(c::YAXArray, p::Pair{<:Any,<:CubeAxis})
     c
 end
 =#
-function _subsetcube end
 
-function subsetcube(z::YAXArray{T}; kwargs...) where {T}
-    newaxes, substuple = _subsetcube(z, collect(Any, map(Base.OneTo, size(z))); kwargs...)
-    newdata = view(getdata(z), substuple...)
-    YAXArray(newaxes, newdata, z.properties, cleaner=z.cleaner)
-end
-
-sorted(x, y) = x < y ? (x, y) : (y, x)
-
-#TODO move everything that is subset-related to its own file or to axes.jl
-#=
-interpretsubset(subexpr::Union{CartesianIndices{1},LinearIndices{1}}, ax) =
-    subexpr.indices[1]
-interpretsubset(subexpr::CartesianIndex{1}, ax) = subexpr.I[1]
-interpretsubset(subexpr, ax) = axVal2Index(ax, subexpr, fuzzy=true)
-function interpretsubset(subexpr::NTuple{2,Any}, ax)
-    x, y = sorted(subexpr...)
-    Colon()(sorted(axVal2Index_lb(ax, x), axVal2Index_ub(ax, y))...)
-end
-interpretsubset(subexpr::NTuple{2,Int}, ax::RangeAxis{T}) where {T<:TimeType} =
-    interpretsubset(map(T, subexpr), ax)
-interpretsubset(subexpr::UnitRange{<:Integer}, ax::RangeAxis{T}) where {T<:TimeType} =
-    interpretsubset(T(first(subexpr)) .. T(last(subexpr) + 1), ax)
-interpretsubset(subexpr::Interval, ax) = interpretsubset((subexpr.left, subexpr.right), ax)
-interpretsubset(subexpr::AbstractVector, ax::CategoricalAxis) =
-    axVal2Index.(Ref(ax), subexpr, fuzzy=true)
-=#
-
-function _subsetcube(z, subs; kwargs...)
-    kwargs = Dict{Any,Any}(kwargs)
-    for f in YAXDefaults.subsetextensions
-        f(kwargs)
-    end
-    newaxes = deepcopy(collect(DD.Dimension, caxes(z)))
-    foreach(kwargs) do kw
-        axdes, subexpr = kw
-        axdes = string(axdes)
-        iax = findAxis(axdes, caxes(z))
-        if isa(iax, Nothing)
-            throw(ArgumentError("Axis $axdes not found in cube"))
-        else
-            oldax = newaxes[iax]
-            subinds = interpretsubset(subexpr, oldax)
-            subs2 = subs[iax][subinds]
-            subs[iax] = subs2
-            if !isa(subinds, AbstractVector) && !isa(subinds, AbstractRange)
-                newaxes[iax] = axcopy(oldax, oldax.values[subinds:subinds])
-            else
-                newaxes[iax] = axcopy(oldax, oldax.values[subinds])
-            end
-        end
-    end
-    substuple = ntuple(i -> subs[i], length(subs))
-    inewaxes = findall(i -> isa(i, AbstractVector), substuple)
-    newaxes = newaxes[inewaxes]
-    @assert length.(newaxes) ==
-            map(length, filter(i -> isa(i, AbstractVector), collect(substuple)))
-    newaxes, substuple
-end
 
 
 function Base.getindex(a::YAXArray, args::DD.Dimension...; kwargs...)

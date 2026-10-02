@@ -19,8 +19,8 @@ c = esdc(res="low")
 
 # ## Subsets happen lazily
 
-europe = subsetcube(c, region="Europe", time=2000:2016, 
-	Variable=["air_temperature_2m", "net_ecosystem", "soil_moisture"])
+europe = c[region="Europe", time=2000:2016, 
+	Variable=["air_temperature_2m", "net_ecosystem", "soil_moisture"]]
 
     plot(europe.time.values,europe[Variable="air_temperature_2m", lat=50, lon=11].data)
 
