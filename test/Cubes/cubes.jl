@@ -117,6 +117,20 @@ using DimensionalData
         @test DimensionalData.name(a_cf) == Symbol("global mean air temperature")
         @test DimensionalData.label(a_cf) == "global mean air temperature [K]"
     end
+
+    @testset "Bool Zarr roundtrip preserves values (issue #114)" begin
+        a = YAXArray((X(1:2), Y(1:2)), [true true; false false])
+        @test eltype(a.data) == Bool
+        path = joinpath(mktempdir(), "bool.zarr")
+        savecube(a, path, overwrite=true)
+        a2 = Cube(path)
+        @test eltype(a2.data) == Bool
+        @test a2.data[1, 1] == true
+        @test a2.data[1, 2] == true
+        @test a2.data[2, 1] == false
+        @test a2.data[2, 2] == false
+    end
+
     #=
         @testset "Subsets" begin
             s = YAXArrays.Cubes.subsetcube(a, X = 1.5..3.5)
