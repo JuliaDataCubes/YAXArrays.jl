@@ -99,7 +99,13 @@ Internal function which copies the data from the input `inar` into the output `o
 function copydata(outar,inar,copybuf)
     @showprogress for ii in copybuf
         outar[ii...] = inar[ii...]
-        GC.gc()
+        # Collect the block just copied so memory stays bounded (#265), but only the
+        # young generation: a full collection has to mark every live reference, so
+        # with a large array of boxed elements (e.g. a String cube) in memory its cost
+        # scales with the whole array and is paid once per block. The block
+        # temporaries are young, so GC.gc(false) frees them at a cost independent of
+        # the heap size.
+        GC.gc(false)
     end
 end
 
