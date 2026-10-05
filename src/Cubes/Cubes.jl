@@ -405,15 +405,21 @@ end
 """
     _elsize(T)
 
-Like `sizeof`, but returns a fallback estimate for element types without a
-definite size (e.g. `String` and other non-`isbitstype` types, which are stored
-by reference). Lets buffer- and size-computations work for variable-length
-element types instead of throwing `"Type ... does not have a definite size"`.
+Approximate size in bytes of an element of type `T`, the type-level counterpart of
+`DiskArrays.element_size`: `sizeof` for bits types (ignoring a `Missing` in a
+`Union`), otherwise `DiskArrays.fallback_element_size[]`. Lets buffer- and
+size-computations work for element types without a definite size (e.g. `String`,
+stored by reference) instead of throwing `"Type ... does not have a definite size"`,
+and keeps YAXArrays' estimates consistent with those DiskArrays makes for the same
+arrays.
 """
-_elsize(::Type{T}) where {T} = isconcretetype(T) && isbitstype(T) ? sizeof(T) : sizeof(Ptr{Cvoid})
+function _elsize(::Type{T}) where {T}
+    S = Base.nonmissingtype(T)
+    isconcretetype(S) && isbitstype(S) ? sizeof(S) : DiskArrays.fallback_element_size[]
+end
 
-cubesize(c::YAXArray{T}) where {T} = _elsize(T) * prod(map(length, caxes(c)))
-cubesize(::YAXArray{T,0}) where {T} = _elsize(T)
+cubesize(c::YAXArray) = DiskArrays.element_size(c) * prod(map(length, caxes(c)))
+cubesize(c::YAXArray{<:Any,0}) = DiskArrays.element_size(c)
 
 loadingstatus(x) = "loaded in memory"
 loadingstatus(x::DiskArrays.AbstractDiskArray) = "loaded lazily"

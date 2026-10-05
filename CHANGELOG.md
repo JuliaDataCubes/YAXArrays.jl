@@ -3,7 +3,8 @@
 ## Unreleased
 
 - Support variable-length element types (e.g. `String`) in `savecube`/`savedataset` by no
-  longer requiring a definite `sizeof` for the element type
+  longer requiring a definite `sizeof` for the element type; the estimate uses
+  `DiskArrays.element_size` / `DiskArrays.fallback_element_size`, as DiskArrays does
 - `savecube`/`savedataset` (`copy_diskarray`) run an incremental `GC.gc(false)` instead
   of a full `GC.gc()` after every copied block: a full collection marks every live
   reference, so its cost scaled with the size of a cube of boxed elements (e.g. `String`)
