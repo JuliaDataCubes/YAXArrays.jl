@@ -51,6 +51,26 @@ function outalign(buf,sout)
     end
 end
 
+"""
+    chunk_aligned_buffer(cs, s, maxbuf)
+
+Copy buffer for writing an array of size `s` to chunks of size `cs` when reading
+costs nothing (an in-memory source): whole output chunks, as many at a time as fit
+in `maxbuf` elements, growing the fastest-varying dimension first so that blocks
+of a column-major `Array` are contiguous. A buffer that is not a multiple of the
+output chunks makes every chunk on its boundary be written more than once, each
+time reading, decoding, merging and re-encoding it.
+"""
+function chunk_aligned_buffer(cs, s, maxbuf)
+    buf = [min(cs[i], s[i]) for i in eachindex(cs)]
+    for i in eachindex(buf)
+        others = prod(buf) ÷ buf[i]                # elements per unit length along dim i
+        k = clamp(fld(fld(maxbuf, others), cs[i]), 1, cld(s[i], cs[i]))
+        buf[i] = min(k * cs[i], s[i])
+    end
+    Tuple(buf)
+end
+
 function get_copy_buffer_size(incube, outcube;writefac=4.0, maxbuf = YAXDefaults.max_cache[], align_output=true)
     maxbuf = round(Int,maxbuf/DiskArrays.element_size(incube))
     nd = ndims(incube)
@@ -68,6 +88,11 @@ function get_copy_buffer_size(incube, outcube;writefac=4.0, maxbuf = YAXDefaults
     #Catch case where buffer is larger than cube
     if maxbuf > prod(insize)
         return insize
+    end
+    # An in-memory source has no read cost and no chunks of its own (DiskArrays only
+    # estimates some for it), so there is nothing to trade off: write whole output chunks
+    if align_output && !DiskArrays.isdisk(incube)
+        return chunk_aligned_buffer(outcs, outsize, maxbuf)
     end
     r = nothing
     
