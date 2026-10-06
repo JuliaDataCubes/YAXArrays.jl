@@ -1,6 +1,9 @@
 using YAXArrays, YAXArrayBase, Test, Dates
 using DimensionalData
 
+DimensionalData.@dim D1
+DimensionalData.@dim D2
+
 @testset "YAXArrays" begin
     data = collect(reshape(1:20, 4, 5))
     axlist = (X(1.0:4.0), Dim{:YVals}([1, 2, 3, 4, 5]))
@@ -95,6 +98,28 @@ using DimensionalData
         @test YAXArrayBase.iscompressed(a) == false
     end
 
+
+    @testset "yaxconvert with DimensionalData keeps dimension types and metadata" begin
+        dd = rand(D1(["a", "b"]), D2(["x", "y"]))          # no metadata given
+        y = yaxconvert(YAXArray, dd)
+        @test typeof(dims(y)) == typeof(dims(dd)) && dims(y) == dims(dd)
+        @test y.properties isa Dict{String,Any} && isempty(y.properties)
+        @test parent(y) === parent(dd)
+        back = yaxconvert(DimArray, y)
+        @test back isa DimArray && typeof(dims(back)) == typeof(dims(dd)) && back == dd
+        @test back[D1(At("a"))] == dd[D1(At("a"))]
+        # lookups survive unchanged, including a regular sampled time axis, and so does metadata
+        t = DimArray(rand(5, 2), (Ti(DateTime(2020):Month(1):DateTime(2020, 5)), X(1:2)); metadata = Dict(:units => "K"))
+        yt = yaxconvert(YAXArray, t)
+        @test typeof(lookup(yt, Ti)) == typeof(lookup(t, Ti)) && lookup(yt, Ti) == lookup(t, Ti)
+        @test yt.properties == Dict{String,Any}("units" => "K")
+        @test lookup(yaxconvert(DimArray, yt), Ti) == lookup(t, Ti)
+        # the constructor path too
+        c = YAXArray(dd)
+        @test typeof(dims(c)) == typeof(dims(dd)) && c.properties isa Dict{String,Any} && isempty(c.properties)
+        # saving no longer needs `metadata = Dict{String,Any}()` on the DimArray
+        @test_nowarn savecube(yaxconvert(YAXArray, dd), tempname() * ".zarr", backend = :zarr)
+    end
 
     @testset "cubesize" begin
         @test Cubes.cubesize(a) == 160
