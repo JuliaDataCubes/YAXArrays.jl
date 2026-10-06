@@ -402,22 +402,6 @@ function formatbytes(x)
     return string(round(x, digits=2), " ", exts[i])
 end
 
-"""
-    _elsize(T)
-
-Approximate size in bytes of an element of type `T`, the type-level counterpart of
-`DiskArrays.element_size`: `sizeof` for bits types (ignoring a `Missing` in a
-`Union`), otherwise `DiskArrays.fallback_element_size[]`. Lets buffer- and
-size-computations work for element types without a definite size (e.g. `String`,
-stored by reference) instead of throwing `"Type ... does not have a definite size"`,
-and keeps YAXArrays' estimates consistent with those DiskArrays makes for the same
-arrays.
-"""
-function _elsize(::Type{T}) where {T}
-    S = Base.nonmissingtype(T)
-    isconcretetype(S) && isbitstype(S) ? sizeof(S) : DiskArrays.fallback_element_size[]
-end
-
 cubesize(c::YAXArray) = DiskArrays.element_size(c) * prod(map(length, caxes(c)))
 cubesize(c::YAXArray{<:Any,0}) = DiskArrays.element_size(c)
 

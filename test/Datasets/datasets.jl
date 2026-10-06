@@ -606,9 +606,6 @@ end
 @testset "Saving variable-length strings" begin
     using NetCDF, Zarr, YAXArrays
     DiskArrays = YAXArrays.Cubes.DiskArrays
-    @test YAXArrays.Cubes._elsize(String) == DiskArrays.fallback_element_size[]
-    @test YAXArrays.Cubes._elsize(Float64) == 8
-    @test YAXArrays.Cubes._elsize(Union{Missing,Float32}) == 4
     @test YAXArrays.Cubes.cubesize(YAXArray((Dim{:Ax}(1:4),), ["a", "bb", "ccc", "dddd"])) ==
           4 * DiskArrays.fallback_element_size[]
 
