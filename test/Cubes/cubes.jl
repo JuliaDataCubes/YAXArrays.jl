@@ -38,6 +38,18 @@ using DimensionalData
         @test propertynames(a, true) == (:X, :YVals, :axes, :data, :properties)
     end
 
+    @testset "keyword indexing" begin
+        # exact dimension names take the fast path straight to `view`; inexact ones
+        # (case, prefix, the `time` alias) go through the dynamic matcher; same result
+        @test a[X=2:3] == a[x=2:3] == view(a, X=2:3)
+        @test dims(a[X=2:3]) == dims(a[x=2:3]) == dims(view(a, X=2:3))
+        @test a[X=2:3, YVals=At(4)] == a[x=2:3, yv=At(4)]
+        @test a[X=2:3, YVals=At(4)].data == data[2:3, 4]
+        @test a[YVals=1:2] == a[Dim{:YVals}(1:2)]
+        a[X=2:3]
+        @test (@allocated a[X=2:3]) < 1000     # ~6 KB before the fast path
+    end
+
     @testset "YAXArray interface functions" begin
 
         a2 = readcubedata(a)

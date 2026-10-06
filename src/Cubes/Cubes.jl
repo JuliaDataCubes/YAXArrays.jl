@@ -90,9 +90,12 @@ struct YAXArray{T,N,A<:AbstractArray{T,N},D,Me} <: AbstractDimArray{T,N,D,A}
         elseif ndims(chunks) != ndims(data)
             throw(ArgumentError("Can not construct YAXArray, supplied chunk dimension is $(ndims(chunks)) while the number of dims is $(length(axes))"))
         else
-            axes = DD.format(axes, data)
-            return new{eltype(data),ndims(data),typeof(data),typeof(axes),typeof(properties)}(
-                axes,
+            # a new binding, not a reassignment of `axes`: `axes` is captured by the
+            # closures above, and a captured variable that is also reassigned gets boxed,
+            # which made every use of it in this constructor dynamically typed
+            faxes = DD.format(axes, data)
+            return new{eltype(data),ndims(data),typeof(data),typeof(faxes),typeof(properties)}(
+                faxes,
                 data,
                 properties,
                 chunks,
@@ -374,6 +377,11 @@ sorted(x, y) = x < y ? (x, y) : (y, x)
 
 
 function Base.getindex(a::YAXArray, args::DD.Dimension...; kwargs...)
+    # fast path: every keyword names a dimension exactly and no subset extension is
+    # registered, so the keywords can go straight to `view` with no dynamic lookup
+    if isempty(YAXDefaults.subsetextensions) && _all_exact_dims(a, keys(kwargs))
+        return view(a, args...; kwargs...)
+    end
     kwargsdict = Dict{Any,Any}(kwargs...)
     for ext in YAXDefaults.subsetextensions
         ext(kwargsdict)
@@ -389,6 +397,10 @@ function Base.getindex(a::YAXArray, args::DD.Dimension...; kwargs...)
     end
     view(a, args...; d2...)
 end
+
+# `ks` is a Tuple of Symbols known at compile time, as are the dimension names, so this
+# folds to a constant for every call site
+_all_exact_dims(a::YAXArray, ks::Tuple) = all(k -> k in DD.name(DD.dims(a)), ks)
 
 Base.read(d::YAXArray) = getindex_all(d)
 
