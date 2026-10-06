@@ -8,7 +8,7 @@ using Distributed: myid
 using Dates: TimeType, Date
 using IntervalSets: Interval, (..)
 using Base.Iterators: take, drop
-using ..YAXArrays: workdir, YAXDefaults, findAxis, getAxis
+using ..YAXArrays: workdir, YAXDefaults, findAxis, getAxis, match_axis_name, ByName
 using YAXArrayBase: YAXArrayBase, iscompressed, dimnames, iscontdimval
 import YAXArrayBase: getattributes, iscontdim, dimnames, dimvals, getdata
 using DiskArrayTools: CFDiskArray
@@ -377,10 +377,14 @@ sorted(x, y) = x < y ? (x, y) : (y, x)
 
 
 function Base.getindex(a::YAXArray, args::DD.Dimension...; kwargs...)
-    # fast path: every keyword names a dimension exactly and no subset extension is
-    # registered, so the keywords can go straight to `view` with no dynamic lookup
-    if isempty(YAXDefaults.subsetextensions) && _all_exact_dims(a, keys(kwargs))
-        return view(a, args...; kwargs...)
+    # fast path: resolve the keyword names to dimension names at compile time (see
+    # `_resolve_kwdims`) and hand them straight to `view`; the dynamic path below is for
+    # registered subset extensions and for keywords the compile-time rule cannot settle
+    if isempty(YAXDefaults.subsetextensions)
+        names = _resolve_kwdims(typeof(values(kwargs)), typeof(a))
+        if names !== nothing
+            return view(a, args...; NamedTuple{names}(Tuple(values(kwargs)))...)
+        end
     end
     kwargsdict = Dict{Any,Any}(kwargs...)
     for ext in YAXDefaults.subsetextensions
@@ -398,9 +402,28 @@ function Base.getindex(a::YAXArray, args::DD.Dimension...; kwargs...)
     view(a, args...; d2...)
 end
 
-# `ks` is a Tuple of Symbols known at compile time, as are the dimension names, so this
-# folds to a constant for every call site
-_all_exact_dims(a::YAXArray, ks::Tuple) = all(k -> k in DD.name(DD.dims(a)), ks)
+"""
+    _resolve_kwdims(::Type{<:NamedTuple}, ::Type{<:YAXArray})
+
+Map the keyword names of a `getindex` call to dimension names with the rule `findAxis`
+uses (`match_axis_name`: case-insensitive prefix, `time` for `Ti`). Both the keyword
+names and the dimension names are type information, so this runs once per call site at
+compile time and the result is a constant. Returns `nothing`, and the caller takes the
+dynamic path with its original errors, when a keyword matches no dimension or several, or
+when two keywords resolve to the same dimension.
+"""
+@generated function _resolve_kwdims(::Type{NT}, ::Type{A}) where {NT<:NamedTuple,A<:YAXArray}
+    D = A.parameters[4]
+    (D isa DataType && D <: Tuple) || return :nothing
+    dnames = map(DD.name, D.parameters)
+    all(n -> n isa Symbol, dnames) || return :nothing
+    resolved = map(fieldnames(NT)) do k
+        m = findall(d -> match_axis_name(ByName(String(k)), d), dnames)
+        length(m) == 1 ? dnames[m[1]] : nothing
+    end
+    (any(isnothing, resolved) || !allunique(resolved)) && return :nothing
+    return Expr(:tuple, map(QuoteNode, resolved)...)
+end
 
 Base.read(d::YAXArray) = getindex_all(d)
 
