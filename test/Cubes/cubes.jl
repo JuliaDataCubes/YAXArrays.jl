@@ -1,6 +1,9 @@
 using YAXArrays, YAXArrayBase, Test, Dates
 using DimensionalData
 
+DimensionalData.@dim D1
+DimensionalData.@dim D2
+
 @testset "YAXArrays" begin
     data = collect(reshape(1:20, 4, 5))
     axlist = (X(1.0:4.0), Dim{:YVals}([1, 2, 3, 4, 5]))
@@ -95,6 +98,18 @@ using DimensionalData
         @test YAXArrayBase.iscompressed(a) == false
     end
 
+
+    @testset "yaxconvert keeps dimension types" begin
+        dd = DimArray(rand(2, 2), (D1(["a", "b"]), D2(["x", "y"])); metadata = Dict{String,Any}())
+        y = yaxconvert(YAXArray, dd)
+        @test YAXArrayBase.dimtype(y, 1) === D1 && YAXArrayBase.dimtype(y, 2) === D2
+        @test typeof(dims(y)) == typeof(dims(dd))
+        back = yaxconvert(DimArray, y)
+        @test typeof(dims(back)) == typeof(dims(dd)) && back == dd
+        @test back[D1(At("a"))] == dd[D1(At("a"))]
+        # a source without dimension types still gets Dim{name}
+        @test dims(yaxconvert(YAXArray, reshape(1:6, 2, 3))) isa Tuple{Dim{:Dim_1}, Dim{:Dim_2}}
+    end
 
     @testset "cubesize" begin
         @test Cubes.cubesize(a) == 160
