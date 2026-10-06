@@ -17,7 +17,7 @@ using Tables: istable, schema, columns
 using DimensionalData: DimensionalData as DD, AbstractDimArray, NoName
 import DimensionalData: name, label
 
-export concatenatecubes, caxes, subsetcube, readcubedata, renameaxis!, YAXArray, setchunks, cache
+export concatenatecubes, caxes, readcubedata, renameaxis!, YAXArray, setchunks, cache
 
 
 "Returns the axes of a Cube"
