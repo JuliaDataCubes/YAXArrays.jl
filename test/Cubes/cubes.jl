@@ -95,6 +95,7 @@ using DimensionalData
         @test YAXArrayBase.iscompressed(a) == false
     end
 
+
     @testset "cubesize" begin
         @test Cubes.cubesize(a) == 160
         a32 = map(Float32, a)
