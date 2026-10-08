@@ -58,4 +58,5 @@ YAXArrayBase = "0.8"
 julia = "1.10"
 
 [sources]
+DiskArrayEngine = {url = "https://github.com/meggart/DiskArrayEngine.jl", rev = "main"}
 YAXArrayBase = {url = "https://github.com/JuliaDataCubes/YAXArrayBase.jl", rev = "la/zarrcore"}
