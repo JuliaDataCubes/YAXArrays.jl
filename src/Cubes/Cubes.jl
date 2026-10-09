@@ -350,6 +350,7 @@ chunkoffset(c) = grid_offset(eachchunk(c))
 # Implementation for YAXArrayBase interface
 YAXArrayBase.dimvals(x::YAXArray, i) = caxes(x)[i].val
 YAXArrayBase.dimname(x::YAXArray, i) = DD.name(DD.dims(x)[i])
+YAXArrayBase.dimtype(x::YAXArray, i) = DD.basetypeof(DD.dims(x)[i])
 YAXArrayBase.getattributes(x::YAXArray) = x.properties
 YAXArrayBase.iscontdim(x::YAXArray, i) = isa(caxes(x)[i], RangeAxis)
 YAXArrayBase.getdata(x::YAXArray) = getfield(x, :data)
@@ -357,6 +358,16 @@ function YAXArrayBase.yaxcreate(::Type{YAXArray}, data, dimnames, dimvals, atts)
     axlist = tuple(map(dimnames, dimvals) do dn, dv
         DD.Dim{dn}(dv)
     end...)
+    _yaxcreate(axlist, data, atts)
+end
+# with the source's dimension types where it has them (`dimtype`), e.g. `X` or a user's `@dim D1`
+function YAXArrayBase.yaxcreate(::Type{YAXArray}, data, dimnames, dimtypes, dimvals, atts)
+    axlist = tuple(map(dimnames, dimtypes, dimvals) do dn, dt, dv
+        dt === nothing ? DD.Dim{dn}(dv) : dt(dv)
+    end...)
+    _yaxcreate(axlist, data, atts)
+end
+function _yaxcreate(axlist, data, atts)
     if any(in(keys(atts)), ["missing_value", "scale_factor", "add_offset"]) && !(eltype(data) >: Missing)
         data = CFDiskArray(data, atts)
     end
