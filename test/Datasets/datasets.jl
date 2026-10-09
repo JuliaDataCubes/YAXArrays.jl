@@ -602,3 +602,39 @@ end
     @test ds.layer.data[:,:,1:2] == array1
     @test ds.layer.data[:,:,3:4] == array2
 end
+
+@testset "Saving variable-length strings" begin
+    using NetCDF, Zarr, YAXArrays
+    DiskArrays = YAXArrays.Cubes.DiskArrays
+    @test YAXArrays.Cubes.cubesize(YAXArray((Dim{:Ax}(1:4),), ["a", "bb", "ccc", "dddd"])) ==
+          4 * DiskArrays.fallback_element_size[]
+
+    data = ["a", "bb", "ccc", "dddd"]
+    a = YAXArray((Dim{:Ax}(1:4),), data)
+
+    f = string(tempname(), ".zarr")
+    savecube(a, f, backend=:zarr)
+    @test ispath(f)
+    @test collect(Cube(f).data) == data
+
+    # in-memory sources are copied in blocks that are whole multiples of the output chunks
+    cab = YAXArrays.Cubes.chunk_aligned_buffer
+    @test cab((256, 8, 127), (20222, 999, 127), 5_000_000) == (4864, 8, 127)
+    @test cab((256, 8, 127), (20222, 999, 127), 62_500_000) == (20222, 24, 127)
+    @test cab((256, 8, 127), (20222, 999, 127), 1000) == (256, 8, 127)   # never less than one chunk
+    @test cab((10,), (95,), 33) == (30,)
+    @test cab((4, 4), (6, 100), 1000) == (6, 100)
+    s3 = [string(i, "x", j, "/", k) for i in 1:40, j in 1:30, k in 1:20]
+    c3 = setchunks(YAXArray((Dim{:A}(1:40), Dim{:B}(1:30), Dim{:C}(1:20)), s3, Dict{String,Any}()),
+                   (A=16, B=8, C=20))
+    f = string(tempname(), ".zarr")
+    ds3 = savedataset(Dataset(v=c3); path=f, driver=:zarr, skeleton=true)
+    @test YAXArrays.Cubes.get_copy_buffer_size(s3, ds3.v.data; maxbuf=3 * 16 * 8 * 20 * 100) == (40, 8, 20)
+    savedataset(Dataset(v=c3); path=f, driver=:zarr, overwrite=true, max_cache=3 * 16 * 8 * 20 * 100)
+    @test collect(open_dataset(f).v.data) == s3
+
+    f = string(tempname(), ".nc")
+    savecube(a, f, backend=:netcdf)
+    @test ispath(f)
+    @test collect(Cube(f).data) == data
+end
