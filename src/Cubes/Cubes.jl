@@ -357,11 +357,39 @@ function YAXArrayBase.yaxcreate(::Type{YAXArray}, data, dimnames, dimvals, atts)
     axlist = tuple(map(dimnames, dimvals) do dn, dv
         DD.Dim{dn}(dv)
     end...)
+    _yaxcreate(axlist, data, atts)
+end
+
+# the part of creating a YAXArray that does not depend on where the axes came from: wrap
+# data whose attributes declare CF missing values or scaling, then construct
+function _yaxcreate(axlist, data, atts)
     if any(in(keys(atts)), ["missing_value", "scale_factor", "add_offset"]) && !(eltype(data) >: Missing)
         data = CFDiskArray(data, atts)
     end
     YAXArray(axlist, data, atts)
 end
+
+"""
+    _properties(metadata)
+
+YAXArray `properties` (a `Dict{String,Any}`) from DimensionalData metadata: an empty Dict
+for `NoMetadata`, the wrapped Dict of a `Metadata` with its keys as Strings, likewise for a
+plain Dict; anything else is passed through.
+"""
+_properties(::DD.NoMetadata) = Dict{String,Any}()
+_properties(m::DD.Metadata) = _properties(DD.val(m))
+_properties(d::AbstractDict) = Dict{String,Any}(string(k) => v for (k, v) in d)
+_properties(m) = m
+
+# Between DimensionalData arrays and YAXArrays, keep the Dimension objects (their types,
+# e.g. `X` or a user's `@dim D1`, and their lookups) instead of rebuilding `Dim{name}(values)`
+# from names and values as the generic interface does (#362). The generic path remains for
+# every other array type, which only has names.
+YAXArrayBase.yaxconvert(::Type{YAXArray}, x::AbstractDimArray) =
+    _yaxcreate(DD.dims(x), parent(x), _properties(DD.metadata(x)))
+YAXArrayBase.yaxconvert(::Type{<:DD.DimArray}, x::YAXArray) =
+    DD.DimArray(getdata(x), DD.dims(x); metadata = x.properties)
+YAXArray(x::AbstractDimArray) = _yaxcreate(DD.dims(x), parent(x), _properties(DD.metadata(x)))
 YAXArrayBase.iscompressed(c::YAXArray) = _iscompressed(getdata(c))
 _iscompressed(c::DiskArrays.PermutedDiskArray) = _iscompressed(c.a.parent)
 _iscompressed(c::DiskArrays.SubDiskArray) = _iscompressed(c.v.parent)
