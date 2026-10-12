@@ -38,6 +38,22 @@ savedataset(ds; path="ds_c.zarr", driver=:zarr, compressor=compression)
 nothing # hide
 ````
 
+The same keyword works for a single array, since `savecube` forwards any additional keyword arguments to `savedataset`:
+
+````@example write
+savecube(ds.tos, "tos_c.zarr", driver=:zarr, compressor=compression)
+nothing # hide
+````
+
+Zstandard is available too, either on its own or as the codec inside Blosc:
+
+````@example write
+zstd = Zarr.ZstdCompressor(; level=3) # 1 (fastest) to 22 (smallest)
+savecube(ds.tos, "tos_zstd.zarr", driver=:zarr, compressor=zstd)
+savecube(ds.tos, "tos_blosc_zstd.zarr", driver=:zarr, compressor=Zarr.BloscCompressor(; cname="zstd", clevel=n))
+nothing # hide
+````
+
 More on [Zarr Compressors](https://juliaio.github.io/Zarr.jl/latest/reference/#Compressors). Also, if you use this option and don't notice a significant improvement, please feel free to open an issue or start a discussion. 
 
 ## Write to cloud buckets
@@ -82,6 +98,13 @@ Save a dataset to NetCDF format with compression:
 ````@example write
 n = 7 # compression level, number between 0 (no compression) and 9 (max compression)
 savedataset(ds, path="ds_c.nc", driver=:netcdf, compress=n)
+nothing # hide
+````
+
+Likewise for a single array:
+
+````@example write
+savecube(ds.tos, "tos_c.nc", driver=:netcdf, compress=n)
 nothing # hide
 ````
 
