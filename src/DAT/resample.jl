@@ -1,3 +1,5 @@
+using Interpolations: Linear
+
 to_dimtuple(x::Tuple) = x
 to_dimtuple(::Nothing) = ()
 to_dimtuple(x::DD.AbstractDimArray) = DD.dims(x)

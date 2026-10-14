@@ -9,7 +9,6 @@ import DiskArrayEngine as DAE
 import IntervalSets: Interval
 import DiskArrayEngine.compute
 import DiskArrays: isdisk
-using Interpolations: Linear
 
 const LAZY_INMEMORY_XMAP = Ref(false)
 
