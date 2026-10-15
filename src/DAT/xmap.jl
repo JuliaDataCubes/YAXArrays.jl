@@ -368,7 +368,6 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; allow_t
 
     alloutdims = DD.combinedims(map(x->x.outaxes, output)..., val=true, type=false, msg=nothing)
     allinandoutdims = (unique(DD.basedims((alldims..., alloutdims...)))...,)
-
     outaxinfo = map(output) do o
         outaxes = o.outaxes
         destroydims = o.destroyaxes
