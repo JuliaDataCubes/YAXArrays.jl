@@ -16,6 +16,7 @@ include("Datasets/datasets.jl")
 
 include("DAT/PickAxisArray.jl")
 include("DAT/MovingWindow.jl")
+include("DAT/broadcast.jl")
 include("DAT/tablestats.jl")
 include("DAT/mapcube.jl")
 include("DAT/xmap.jl")

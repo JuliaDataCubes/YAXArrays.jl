@@ -347,13 +347,14 @@ end
     f = tempname()
     r = savecube(d, f, driver=:zarr, skeleton=true)
     @test all(==(YAXArrayBase.defaultfillval(Int32)), r[:, :])
+    rm(f, force=true, recursive=true)
 
 
     f = tempname() * ".zarr"
     a_chunked = setchunks(a, (5, 10))
     savecube(a_chunked, f, backend=:zarr)
     @test Cube(f).chunks == DiskArrays.GridChunks(size(a), (5, 10))
-
+    rm(f, force=true, recursive=true)
 
     ds = Dataset(; a, b, c)
     dschunked = setchunks(ds, Dict("Dim_1" => 5, "Dim_2" => 10, "Dim_3" => 2))
@@ -371,6 +372,7 @@ end
     @test ds.c.axes == c.axes
     @test ds.c.data[:, :, :] == z
     @test ds.c.chunks == DiskArrays.GridChunks(size(c), (5, 10, 2))
+    rm(f, force=true, recursive=true)
 
 
     ds = Dataset(; a, b, c)
@@ -390,6 +392,7 @@ end
     @test ds.c.axes == c.axes
     @test ds.c.data[:, :, :] == z
     @test ds.c.chunks == DiskArrays.GridChunks(size(c), (5, 10, 2))
+    rm(f, force=true, recursive=true)
 
 
     ds = Dataset(a=YAXArray(rand(10, 20)), b=YAXArray(rand(10, 20)), c=YAXArray(rand(10, 20)))
@@ -415,6 +418,7 @@ end
     @test :a in keys(ds3.cubes)
     @test :b in keys(ds3.cubes)
     @test !in(:c,keys(ds3.cubes))
+    rm(f, force=true, recursive=true)
 
     # arrays with a dimension of length 1
     a4 = YAXArray(ones(5, 1))
