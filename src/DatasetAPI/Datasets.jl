@@ -683,13 +683,24 @@ function setchunks(ds::Dataset, chunks)
 end
 
 """
-    savedataset(ds::Dataset; path= "", persist=nothing, overwrite=false, append=false, skeleton=false, backend=:all, driver=backend, max_cache=5e8, writefac=4.0)
+    savedataset(ds::Dataset; path="", persist=nothing, overwrite=false, append=false, skeleton=false, backend=:all, driver=backend, max_cache=5e8, writefac=4.0, kwargs...)
 
-Saves a Dataset into a file at `path` with the format given by `driver`, i.e., `driver=:netcdf` or `driver=:zarr`.
+Save `ds` to a file.
+Any keyword argument not listed is passed on to the backend when the dataset is created, e.g. `compressor=Zarr.BloscCompressor(clevel=9)` or `compressor=Zarr.ZstdCompressor(level=3)` for `driver=:zarr`, or `compress=7` for `driver=:netcdf`.
 
+# Extended help
 
-!!! warning
-    `overwrite=true`, deletes ALL your data and it will create a new file.
+The keyword arguments are:
+
+* `path=""`: where to write the dataset. Empty means a temporary location in `YAXDefaults.workdir[]`.
+* `persist=nothing`: whether the written data is kept when the returned dataset is garbage collected. Defaults to `!isempty(path)`, so an unnamed dataset is a temporary file that is deleted again.
+* `overwrite=false`: delete anything already at `path` before writing.
+* `append=false`: add the variables of `ds` to an existing dataset at `path` instead of throwing an error. The extra keyword arguments are not forwarded in this case.
+* `skeleton=false`: write only the axes and array metadata, not the array data.
+* `backend=:all`: the backend used to write the data, e.g. `:zarr` or `:netcdf`. `:all` infers it from the file extension of `path`.
+* `driver=backend`: an alias of `backend`, named as in [`open_dataset`](@ref). If both are given, `driver` wins.
+* `max_cache=5e8`: size in bytes of the buffer used while copying the data to disk.
+* `writefac=4.0`: cost of a write relative to a read, used when choosing the shape of that buffer.
 """
 function savedataset(
     ds::Dataset;
@@ -771,22 +782,22 @@ end
 
 
 """
-    savecube(cube,name::String)
+    savecube(cube, path::AbstractString; layername=get(cube.properties, "name", "layer"), datasetaxis="Variables", max_cache=5e8, backend=:all, driver=backend, overwrite=false, append=false, skeleton=false, writefac=4.0, kwargs...)
 
-Save a [`YAXArray`](@ref) to the `path`.
+Save `cube` to `path`.
+Any keyword argument not listed is forwarded to [`savedataset`](@ref) and from there to the backend, e.g. `compressor=Zarr.BloscCompressor(clevel=9)` or `compressor=Zarr.ZstdCompressor(level=3)` for `driver=:zarr`, or `compress=7` for `driver=:netcdf`.
 
-# Extended Help
+# Extended help
 
 The keyword arguments are:
 
-* `name`:
+* `layername`: the name of the variable the array is stored under, defaulting to the cube's `"name"` property or `"layer"`.
 * `datasetaxis="Variables"` special treatment of a categorical axis that gets written into separate zarr arrays
-* `max_cache`: The number of bits that are used as cache for the data handling.
-* `backend`: The backend, that is used to save the data. Falls back to searching the backend according to the extension of the path.
-* `driver`: The same setting as `backend`.
-* `overwrite::Bool=false` overwrite cube if it already exists
-
-
+* `max_cache=5e8`: size in bytes of the buffer used while copying the data to disk.
+* `backend=:all`: the backend used to write the data, e.g. `:zarr` or `:netcdf`. `:all` infers it from the file extension of `path`.
+* `driver=backend`: an alias of `backend`, named as in [`open_dataset`](@ref). If both are given, `driver` wins.
+* `overwrite=false` overwrite cube if it already exists
+* `append=false`, `skeleton=false`, `writefac=4.0`: as in [`savedataset`](@ref).
 """
 function savecube(
     c,
