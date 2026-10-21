@@ -401,8 +401,9 @@ function formatbytes(x)
     end
     return string(round(x, digits=2), " ", exts[i])
 end
-cubesize(c::YAXArray{T}) where {T} = (sizeof(T)) * prod(map(length, caxes(c)))
-cubesize(::YAXArray{T,0}) where {T} = sizeof(T)
+
+cubesize(c::YAXArray) = DiskArrays.element_size(c) * prod(map(length, caxes(c)))
+cubesize(c::YAXArray{<:Any,0}) = DiskArrays.element_size(c)
 
 loadingstatus(x) = "loaded in memory"
 loadingstatus(x::DiskArrays.AbstractDiskArray) = "loaded lazily"

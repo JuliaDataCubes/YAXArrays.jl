@@ -24,7 +24,7 @@ import ...YAXArrays.workdir
 import YAXArrayBase
 import ProgressMeter: Progress, next!, progress_pmap, progress_map
 using YAXArrayBase
-using DiskArrays: grid_offset, approx_chunksize, max_chunksize, RegularChunks, 
+using DiskArrays: DiskArrays, grid_offset, approx_chunksize, max_chunksize, RegularChunks,
   IrregularChunks, GridChunks, eachchunk, ChunkVector
 using OffsetArrays: OffsetArray
 using Dates
@@ -756,7 +756,7 @@ end
 function getbackend(oc, ispar, max_cache)
     elementtype = Union{oc.outtype,Missing}
     outsize =
-        sizeof(elementtype) * (length(oc.allAxes) > 0 ? prod(map(length, oc.allAxes)) : 1)
+        DiskArrays.element_size(elementtype) * (length(oc.allAxes) > 0 ? prod(map(length, oc.allAxes)) : 1)
     rt = oc.desc.backend
     ispath =  get(oc.desc.backendargs, :path, nothing)
 
@@ -913,8 +913,7 @@ function analyzeAxes(dc::DATConfig{NIN,NOUT}) where {NIN,NOUT}
     return dc
 end
 
-mysizeof(x) = sizeof(x)
-mysizeof(x::Type{String}) = 1
+mysizeof(x) = DiskArrays.element_size(x)
 
 """
 Function that compares two cache miss specifiers by their importance
@@ -942,7 +941,7 @@ function getCacheSizes(dc::DATConfig, loopchunksizes)
     outblocksizes = map(
         C ->
             length(C.axesSmall) > 0 ?
-            sizeof(C.outtype) * prod(map(Int ∘ length, C.axesSmall)) : 1,
+            DiskArrays.element_size(C.outtype) * prod(map(Int ∘ length, C.axesSmall)) : 1,
         dc.outcubes,
     )
     outblocksize = length(outblocksizes) > 0 ? sum(outblocksizes) : 1
