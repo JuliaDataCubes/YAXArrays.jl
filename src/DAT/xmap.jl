@@ -340,6 +340,10 @@ function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...;
 
 """
 function xmap(f, ars::Union{YAXArrays.Cubes.YAXArray,DimWindowArray}...; allow_threads=false, args=(), kwargs=(;), output=nothing, inplace=nothing, function_args=(), function_kwargs=(;), lazy=LAZY_INMEMORY_XMAP[], min_nvalid=1)
+    xmap(f, ars; allow_threaded, args, output, inplace, function_args, function_kwargs, lazy, min_valid, kwargs...)
+end
+
+function xmap(f, ars::Tuple; allow_threads=false, args=(), kwargs=(;), output=nothing, inplace=nothing, function_args=(), function_kwargs=(;), lazy=LAZY_INMEMORY_XMAP[], min_nvalid=1)
     output === nothing && (output = default_output(f))
     inplace === nothing && (inplace = default_inplace(f))
 
