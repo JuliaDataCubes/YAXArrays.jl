@@ -123,6 +123,16 @@ end
     @test interpdata.data === coarse.data
     @test dims(interpdata, finedims) == finedims
 end
+
+@testitem "input array construction" begin
+    using DimensionalData
+    dims1 = (X(1:10), Ti(1:10))
+    a = YAXArray(dims1, rand(10,10))
+    dims_fine = (X(1:0.5:10), Ti(1:10))
+    a_fine = YAXArray(dims_fine, rand(19,10))
+    @test_broken all(!isnothing, Xmap.make_input_array(a_fine, dims1).lw)
+end
+
 #=
 These should be reenabled once we decided what keyword arguments xmap gets. 
     @testset "max cache inputs" begin

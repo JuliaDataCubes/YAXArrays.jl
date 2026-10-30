@@ -418,11 +418,7 @@ function xmap(f, ars::Tuple; allow_threads=false, args=(), kwargs=(;), output=no
             args=function_args, kwargs=function_kwargs)
     end
     #Create DiskArrayEngine Input arrays
-    input_arrays = map(ars) do ar
-        a = to_windowarray(ar)
-        dimsmap = map(d -> findfirst(approxequal(d), alldims), DD.dims(a))
-        DAE.InputArray(a.data.data; dimsmap, windows=a.indices)
-    end
+    input_arrays = map(ar->make_input_array(ar, alldims), ars)
     op = DAE.GMDWop(input_arrays,outspecs,daefunction)
 
     res = DAE.results_as_diskarrays(op)
@@ -438,6 +434,12 @@ function xmap(f, ars::Tuple; allow_threads=false, args=(), kwargs=(;), output=no
     else
         outars
     end
+end
+
+function make_input_array(ar, alldims)
+    a = to_windowarray(ar)
+    dimsmap = map(d -> findfirst(approxequal(d), alldims), DD.dims(a))
+    DAE.InputArray(a.data.data; dimsmap, windows=a.indices)
 end
 
 """
