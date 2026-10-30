@@ -46,7 +46,7 @@ using YAXArrayBase: getattributes
 
 @reexport using Dates: Date, DateTime
 @reexport using IntervalSets: (..)
-@reexport using DimensionalData: Dim, At, Touches, Near, Where, Contains, lookup
+@reexport using DimensionalData: DimensionalData, Dim, At, Touches, Near, Where, Contains, lookup
 @reexport using .Cubes
 
 #@reexport using .Cubes.Axes
@@ -54,9 +54,23 @@ using YAXArrayBase: getattributes
 @reexport using .DAT
 @reexport using .Xmap
 @reexport using .Datasets
+using PrecompileTools
 # from YAXTools
 
 # include("precompile.jl")
 # _precompile_()
+
+@setup_workload begin
+    @compile_workload begin
+        xax = DD.X(1:10)
+        yax = DD.Y(1:10)
+        data = rand(10,10)
+        arr = YAXArray((xax, yax), data, Dict())
+        path = tempname()*".zarr"
+        savecube(arr, path)
+        arrdisk = Cube(path)
+        YAXArray(DD.dims(arr), arrdisk.data, arr.properties)
+    end
+end
 
 end # module
