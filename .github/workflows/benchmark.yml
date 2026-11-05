@@ -10,11 +10,13 @@ jobs:
       - uses: actions/checkout@v7
       - uses: julia-actions/setup-julia@latest
         with:
-          version: 1
+          # BenchmarkCI's julia_info fails on Julia 1.12+ (world age), and
+          # BenchmarkCI is no longer maintained
+          version: '1.10'
       - name: Install dependencies
-        run: julia -e 'using Pkg; pkg"add PkgBenchmark BenchmarkCI@0.1; dev ."'
+        run: julia -e 'using Pkg; pkg"add PkgBenchmark BenchmarkCI@0.1"'
       - name: Run benchmarks
-        run: julia -e 'using BenchmarkCI; BenchmarkCI.judge()'
+        run: julia -e 'using BenchmarkCI; BenchmarkCI.judge(baseline = joinpath("origin", ENV["GITHUB_BASE_REF"]))'
       - name: Post results
         run: julia -e 'using BenchmarkCI; BenchmarkCI.postjudge()'
         env:
