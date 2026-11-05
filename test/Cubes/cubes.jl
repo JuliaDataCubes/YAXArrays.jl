@@ -14,6 +14,10 @@ using DimensionalData
             data,
             props,
         )
+        # the result type is inferable (for lookups whose formatting `DD.format` can infer,
+        # e.g. integer ranges); it was not while the constructor boxed `axes`
+        @test (@inferred YAXArray((X(1:4), Dim{:YVals}(1:5)), data, props)) isa YAXArray
+        @test (@inferred view(a, X=2:3)).data == data[2:3, :]
     end
 
     @testset "Basic array Functions" begin
