@@ -8,7 +8,7 @@ using Distributed: myid
 using Dates: TimeType, Date
 using IntervalSets: Interval, (..)
 using Base.Iterators: take, drop
-using ..YAXArrays: workdir, YAXDefaults, findAxis, getAxis
+using ..YAXArrays: workdir, YAXDefaults, findAxis, getAxis, match_axis_name, ByName
 using YAXArrayBase: YAXArrayBase, iscompressed, dimnames, iscontdimval
 import YAXArrayBase: getattributes, iscontdim, dimnames, dimvals, getdata
 using DiskArrayTools: CFDiskArray
@@ -90,9 +90,12 @@ struct YAXArray{T,N,A<:AbstractArray{T,N},D,Me} <: AbstractDimArray{T,N,D,A}
         elseif ndims(chunks) != ndims(data)
             throw(ArgumentError("Can not construct YAXArray, supplied chunk dimension is $(ndims(chunks)) while the number of dims is $(length(axes))"))
         else
-            axes = DD.format(axes, data)
-            return new{eltype(data),ndims(data),typeof(data),typeof(axes),typeof(properties)}(
-                axes,
+            # a new binding, not a reassignment of `axes`: `axes` is captured by the
+            # closures above, and a captured variable that is also reassigned gets boxed,
+            # which made every use of it in this constructor dynamically typed
+            faxes = DD.format(axes, data)
+            return new{eltype(data),ndims(data),typeof(data),typeof(faxes),typeof(properties)}(
+                faxes,
                 data,
                 properties,
                 chunks,
@@ -374,6 +377,17 @@ sorted(x, y) = x < y ? (x, y) : (y, x)
 
 
 function Base.getindex(a::YAXArray, args::DD.Dimension...; kwargs...)
+    # fast path: resolve the keyword names to dimension names at compile time (see
+    # `_resolve_kwdims`) and hand them straight to `view`; the dynamic path below is for
+    # registered subset extensions and for keywords the compile-time rule cannot settle
+    if isempty(YAXDefaults.subsetextensions)
+        # (keyword names from the NamedTuple type: `Val(keys(kwargs))` is not constant-folded
+        # on Julia 1.10, which makes every call ~10x slower)
+        names = _resolve_kwdims(typeof(values(kwargs)), Val(DD.name(DD.dims(a))))
+        if names !== nothing
+            return view(a, args...; NamedTuple{names}(Tuple(values(kwargs)))...)
+        end
+    end
     kwargsdict = Dict{Any,Any}(kwargs...)
     for ext in YAXDefaults.subsetextensions
         ext(kwargsdict)
@@ -388,6 +402,27 @@ function Base.getindex(a::YAXArray, args::DD.Dimension...; kwargs...)
         end
     end
     view(a, args...; d2...)
+end
+
+"""
+    _resolve_kwdims(::Type{<:NamedTuple}, ::Val{dimnames})
+
+Map the keyword names of a `getindex` call (the field names of the keywords' `NamedTuple`
+type) to dimension names with the rule `findAxis` uses (`match_axis_name`:
+case-insensitive prefix, `time` for `Ti`). Both sets of names are constant at a call site,
+so this runs at compile time and the result is a constant. Returns `nothing`, and the
+caller takes the dynamic path, when a keyword matches no dimension (passed through to
+`view`) or several (the "multiple possible axis matches" error), or when two keywords
+resolve to the same dimension (the dynamic path keeps one of them).
+"""
+@generated function _resolve_kwdims(::Type{NT}, ::Val{D}) where {NT<:NamedTuple,D}
+    D isa Tuple{Vararg{Symbol}} || return :nothing
+    resolved = map(fieldnames(NT)) do k
+        m = findall(d -> match_axis_name(ByName(String(k)), d), D)
+        length(m) == 1 ? D[m[1]] : nothing
+    end
+    (any(isnothing, resolved) || !allunique(resolved)) && return :nothing
+    return QuoteNode(resolved)
 end
 
 Base.read(d::YAXArray) = getindex_all(d)

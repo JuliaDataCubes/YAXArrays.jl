@@ -58,13 +58,22 @@ Internal function
     This is used to find different axes and to make certain axis description the same.
     For example to disregard differences of captialisation.
 """
-function match_axis(bs::ByName, ax)
+match_axis(bs::ByName, ax) = match_axis_name(bs, DD.name(ax))
+
+"""
+    match_axis_name(bs::ByName, name::Symbol)
+
+The rule `match_axis` applies to a dimension, on its name alone: a case-insensitive prefix
+match, with `time` standing for `Ti`. Separate so that `Cubes._resolve_kwdims` can apply it
+to dimension names at compile time.
+"""
+function match_axis_name(bs::ByName, name::Symbol)
     name_corrected = if lowercase(bs.name) == "time"
         "Ti"
     else
         bs.name
     end
-    startswith(lowercase(string(DD.name(ax))), lowercase(name_corrected))
+    startswith(lowercase(string(name)), lowercase(name_corrected))
 end
 function match_axis(bs::ByValue, ax)
     isequal(bs.v, ax)

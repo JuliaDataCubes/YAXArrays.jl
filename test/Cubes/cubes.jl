@@ -38,6 +38,31 @@ using DimensionalData
         @test propertynames(a, true) == (:X, :YVals, :axes, :data, :properties)
     end
 
+    @testset "keyword indexing" begin
+        # exact and inexact names (case, prefix, the `time` alias) are resolved at compile
+        # time and go straight to `view`; same result as the dynamic matcher
+        @test a[X=2:3] == a[x=2:3] == view(a, X=2:3)
+        @test dims(a[X=2:3]) == dims(a[x=2:3]) == dims(view(a, X=2:3))
+        @test a[X=2:3, YVals=At(4)] == a[x=2:3, yv=At(4)]
+        @test a[X=2:3, YVals=At(4)].data == data[2:3, 4]
+        @test a[YVals=1:2] == a[Dim{:YVals}(1:2)]
+        a[X=2:3]
+        @test (@allocated a[X=2:3]) < 1000     # ~6 KB before the fast path
+        a[x=2:3]
+        @test (@allocated a[x=2:3]) < 1000     # inexact names are resolved at compile time too
+        # the compile-time resolution follows the dynamic rule exactly: a keyword that is
+        # a prefix of two dimension names is still ambiguous, and `time` still means `Ti`
+        b = YAXArray((Dim{:lon}(1:3), Dim{:longitude}(1:4)), collect(reshape(1:12, 3, 4)))
+        @test_throws ErrorException b[lon=1:2]
+        @test b[longitude=1:2].data == reshape(1:12, 3, 4)[:, 1:2]
+        c = YAXArray((Ti(1:5), X(1:2)), collect(reshape(1:10, 5, 2)))
+        @test c[time=2:3] == c[Ti=2:3] == c[TIME=2:3]
+        @test a[nosuchdim=1:2] == view(a, nosuchdim=1:2)   # unknown keywords pass through as before
+        # two keywords for one dimension fall back to the dynamic path, which keeps one
+        @test YAXArrays.Cubes._resolve_kwdims(typeof((X=1, x=2)), Val((:X, :YVals))) === nothing
+        @test a[X=2:3, x=2:3] == view(a, X=2:3)
+    end
+
     @testset "YAXArray interface functions" begin
 
         a2 = readcubedata(a)
