@@ -381,7 +381,9 @@ function Base.getindex(a::YAXArray, args::DD.Dimension...; kwargs...)
     # `_resolve_kwdims`) and hand them straight to `view`; the dynamic path below is for
     # registered subset extensions and for keywords the compile-time rule cannot settle
     if isempty(YAXDefaults.subsetextensions)
-        names = _resolve_kwdims(typeof(values(kwargs)), typeof(a))
+        # (keyword names from the NamedTuple type: `Val(keys(kwargs))` is not constant-folded
+        # on Julia 1.10, which makes every call ~10x slower)
+        names = _resolve_kwdims(typeof(values(kwargs)), Val(DD.name(DD.dims(a))))
         if names !== nothing
             return view(a, args...; NamedTuple{names}(Tuple(values(kwargs)))...)
         end
@@ -403,26 +405,24 @@ function Base.getindex(a::YAXArray, args::DD.Dimension...; kwargs...)
 end
 
 """
-    _resolve_kwdims(::Type{<:NamedTuple}, ::Type{<:YAXArray})
+    _resolve_kwdims(::Type{<:NamedTuple}, ::Val{dimnames})
 
-Map the keyword names of a `getindex` call to dimension names with the rule `findAxis`
-uses (`match_axis_name`: case-insensitive prefix, `time` for `Ti`). Both the keyword
-names and the dimension names are type information, so this runs once per call site at
-compile time and the result is a constant. Returns `nothing`, and the caller takes the
-dynamic path with its original errors, when a keyword matches no dimension or several, or
-when two keywords resolve to the same dimension.
+Map the keyword names of a `getindex` call (the field names of the keywords' `NamedTuple`
+type) to dimension names with the rule `findAxis` uses (`match_axis_name`:
+case-insensitive prefix, `time` for `Ti`). Both sets of names are constant at a call site,
+so this runs at compile time and the result is a constant. Returns `nothing`, and the
+caller takes the dynamic path, when a keyword matches no dimension (passed through to
+`view`) or several (the "multiple possible axis matches" error), or when two keywords
+resolve to the same dimension (the dynamic path keeps one of them).
 """
-@generated function _resolve_kwdims(::Type{NT}, ::Type{A}) where {NT<:NamedTuple,A<:YAXArray}
-    D = A.parameters[4]
-    (D isa DataType && D <: Tuple) || return :nothing
-    dnames = map(DD.name, D.parameters)
-    all(n -> n isa Symbol, dnames) || return :nothing
+@generated function _resolve_kwdims(::Type{NT}, ::Val{D}) where {NT<:NamedTuple,D}
+    D isa Tuple{Vararg{Symbol}} || return :nothing
     resolved = map(fieldnames(NT)) do k
-        m = findall(d -> match_axis_name(ByName(String(k)), d), dnames)
-        length(m) == 1 ? dnames[m[1]] : nothing
+        m = findall(d -> match_axis_name(ByName(String(k)), d), D)
+        length(m) == 1 ? D[m[1]] : nothing
     end
     (any(isnothing, resolved) || !allunique(resolved)) && return :nothing
-    return Expr(:tuple, map(QuoteNode, resolved)...)
+    return QuoteNode(resolved)
 end
 
 Base.read(d::YAXArray) = getindex_all(d)

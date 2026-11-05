@@ -64,8 +64,8 @@ match_axis(bs::ByName, ax) = match_axis_name(bs, DD.name(ax))
     match_axis_name(bs::ByName, name::Symbol)
 
 The rule `match_axis` applies to a dimension, on its name alone: a case-insensitive prefix
-match, with `time` standing for `Ti`. Separate so that it can also run on dimension names
-taken from types, in `Cubes._resolve_kwdims`.
+match, with `time` standing for `Ti`. Separate so that `Cubes._resolve_kwdims` can apply it
+to dimension names at compile time.
 """
 function match_axis_name(bs::ByName, name::Symbol)
     name_corrected = if lowercase(bs.name) == "time"
